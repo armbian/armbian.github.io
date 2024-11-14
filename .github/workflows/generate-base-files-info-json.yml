@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
       # Step 2: Set up Python environment
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.x
       # Step 3: Install dependencies (if you have any)
