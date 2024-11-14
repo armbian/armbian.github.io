@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - data
   workflow_dispatch:
 
 jobs:
