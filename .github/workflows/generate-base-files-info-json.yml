@@ -33,6 +33,6 @@ jobs:
           mv base-files.json data/base-files.json
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add base-files.json
+          git add data/base-files.json
           git diff --cached --quiet || git commit -m "Update base-files package info"
           git push
