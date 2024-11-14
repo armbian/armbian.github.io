@@ -11,6 +11,8 @@ jobs:
       # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v4
