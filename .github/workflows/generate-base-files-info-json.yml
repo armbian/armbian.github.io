@@ -30,6 +30,7 @@ jobs:
       - name: Commit changes if any
         run: |
           git checkout data
+          git rebase main
           mkdir -p data/
           mv base-files.json data/base-files.json
           git config --global user.name "github-actions"
