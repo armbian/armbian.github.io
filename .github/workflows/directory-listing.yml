@@ -9,7 +9,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: main #checkout different branch
+          ref: www #checkout different branch
 
       - name: Generate Directory Listings
         uses: jayanta525/github-pages-directory-listing@v4.0.0
