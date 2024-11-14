@@ -22,7 +22,7 @@ jobs:
           sudo apt install -y python3-requests python3-lxml
       # Step 4: Run the Python script
       - name: Run parser script
-        run: scripts/generate-base-files-info-json.py base-files
+        run: python3 scripts/generate-base-files-info-json.py base-files
       # Step 5: Commit changes if any
       - name: Commit changes if any
         run: |
