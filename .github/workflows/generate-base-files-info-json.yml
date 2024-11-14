@@ -1,0 +1,34 @@
+name: Update base-files pacakge info
+# Trigger this workflow on a manual dispatch or a scheduled time
+on:
+  workflow_dispatch:   # Manually triggered via GitHub Actions UI
+  schedule:
+    - cron: '0 * * * *'   # Run every hour
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      # Step 3: Install dependencies (if you have any)
+      - name: Install dependencies
+        run: |
+          sudo apt install -y python3-requests python3-lxml
+      # Step 4: Run the Python script
+      - name: Run parser script
+        run: scripts/package-info-parser.py base-files
+      # Step 5: Commit changes if any
+      - name: Commit changes if any
+        run: |
+          git checkout www
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add base-files.json
+          git diff --cached --quiet || git commit -m "Update base-files package info"
+          git push
