@@ -1,28 +1,30 @@
-name: directory-listing
-on: 
+name: "Generate directory listing"
+on:
   push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   pages-directory-listing:
     runs-on: ubuntu-latest
-    name: Directory Listings Index
+    name: "Directory Listings Index"
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: www #checkout different branch
+          ref: data # branch where we push data to
 
       - name: Generate Directory Listings
         uses: jayanta525/github-pages-directory-listing@v4.0.0
         with:
-          FOLDER: data      #directory to generate index
+          FOLDER: data # directory to generate index
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: 'data'      # upload generated folder
-  
+
   deploy:
     needs: pages-directory-listing
     permissions:
