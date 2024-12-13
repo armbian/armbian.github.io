@@ -20,3 +20,39 @@ cacheSize: 2048
 # optional: latitude, longitude (float)
 
 servers:
+
+  # America/New_York - 1000 Mbit/s
+  - server: armbian.tnahosting.net/beta/
+    latitude: 42.112
+    longitude: -88.0353
+    weight: 10
+
+  # Europe/Paris - 1000 Mbit/s
+  - server: armbian.nardol.ovh/beta/
+    latitude: 48.8582
+    longitude: 2.3387
+    weight: 10
+
+  # Europe/Berlin - 1000 Mbit/s
+  - server: fi.mirror.armbian.de/beta/
+    latitude: 51.2993
+    longitude: 9.491
+    weight: 10
+
+  # Europe/Tallinn - 10000 Mbit/s
+  - server: k-space.ee.armbian.com/beta/
+    latitude: 59.397987
+    longitude: 24.661898
+    weight: 10
+
+  # Europe/Berlin - 2500 Mbit/s
+  - server: netcup.armbian.com/beta/
+    latitude: 49.4478
+    longitude: 11.0683
+    weight: 10
+
+  # Via Bivio Foresta - 113,Italy,Europe/Rome,1000, Mbit/s
+  - server: armbian.atomonetworks.com/beta/
+    latitude: 38.157745
+    longitude: 13.195175
+    weight: 10
