@@ -1,0 +1,22 @@
+#
+# debs-beta.armbian.com
+#
+geodb: /scripts/redirect-config/GeoLite2-City.mmdb
+asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
+dl_map: /scripts/redirect-config/all-images.json
+bind: ':8083'
+
+# Reload authorization key
+reloadKey: NLnC4QNF862QumEpt7zwVPZAEvqAz6cZ
+
+# LRU Cache Size (in items)
+cacheSize: 2048
+
+# Server definition
+# Weights are just like nginx, where if it's > 1 it'll be chosen x out of x + total times
+# By default, the top 3 servers are used for choosing the best.
+# server = full url or host+path
+# weight = int
+# optional: latitude, longitude (float)
+
+servers:
