@@ -50,9 +50,3 @@ servers:
     latitude: 49.4478
     longitude: 11.0683
     weight: 10
-
-  # Via Bivio Foresta - 113,Italy,Europe/Rome,1000, Mbit/s
-  - server: armbian.atomonetworks.com/beta/
-    latitude: 38.157745
-    longitude: 13.195175
-    weight: 10
