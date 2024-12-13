@@ -1,0 +1,577 @@
+name: "Update redirector yaml config"
+# Trigger this workflow on a manual dispatch or a scheduled time
+on:
+  schedule:
+    - cron: '0 * * * *'   # Run every hour
+  workflow_dispatch:   # Manually triggered via GitHub Actions UI
+
+env:
+  GEODB: "/scripts/redirect-config/GeoLite2-City.mmdb"
+  ASNDB: "/scripts/redirect-config/GeoLite2-ASN.mmdb"
+  DL_MAP: "/scripts/redirect-config/all-images.json"
+  SOURCE_OF_TRUTH: "upload@k-space.ee.armbian.com:/storage/www/"
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+
+  Check:
+
+    name: "Check permissions"
+    runs-on: "ubuntu-24.04"
+    steps:
+
+      - name: "Check permissions"
+        uses: armbian/actions/team-check@main
+        with:
+          ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAM: "Release manager"
+
+  build:
+    name: "Get source of truth"
+    runs-on: ubuntu-24.04
+    needs: Check
+    strategy:
+      fail-fast: true
+      matrix:
+        platform:
+          - beta
+          - apt
+          - dl
+          - archive
+    steps:
+
+      - name: "Install dependencies: lftp"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lftp
+          version: 1.0
+
+      - name: "Download from  ${{ env.SOURCE_OF_TRUTH }}${{ matrix.platform }}"
+        run: |
+
+          mkdir -p source destination
+          if [[ "${{ matrix.platform }}" =~ ^(dl|archive) ]]; then
+              cd source ; lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}
+              cd ..
+              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} destination/ \;
+          else
+              cd destination; lftp -e "mirror --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}/dists
+          fi
+
+      - name: "Upload ${{ matrix.platform }} index"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: destination
+          compression-level: 0
+          retention-days: 2
+
+  Debs-beta-index:
+    name: "Compare beta deb mirrors"
+    needs: build
+    outputs:
+      matrix: ${{steps.json.outputs.JSON_CONTENT}}
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Get beta packages mirrors from database"
+        id: json
+        run: |
+
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=debs-beta&status=active" \
+          | jq '.results[] | .name,.custom_fields["download_path_debs"],.id' | sed "s|null|beta|" | sed "s/\"//g" \
+          | xargs -n3 -d'\n' | sed -e 's/\s\+/\//' | sed "s/ /,/" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  Debs-stable-index:
+    name: "Compare stable deb mirrors"
+    needs: build
+    outputs:
+      matrix: ${{steps.json.outputs.JSON_CONTENT}}
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Get beta packages mirrors from database"
+        id: json
+        run: |
+
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=debs&status=active" \
+          | jq '.results[] | .name,.custom_fields["download_path_debs"],.id' | sed "s|null|apt|" | sed "s/\"//g" \
+          | xargs -n3 -d'\n' | sed -e 's/\s\+/\//' | sed "s/ /,/" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  Images-stable-index:
+    name: "Compare stable images mirrors"
+    needs: build
+    outputs:
+      matrix: ${{steps.json.outputs.JSON_CONTENT}}
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Get stable images mirrors from database"
+        id: json
+        run: |
+
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=images&status=active" \
+          | jq '.results[] | .name,.custom_fields["download_path_images"],.id' | sed "s|null|dl|" | sed "s/\"//g" \
+          | xargs -n3 -d'\n' | sed -e 's/\s\+/\//' | sed "s/ /,/" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  Images-archive-index:
+    name: "Compare archive images mirrors"
+    needs: build
+    outputs:
+      matrix: ${{steps.json.outputs.JSON_CONTENT}}
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Get archive images mirrors from database"
+        id: json
+        run: |
+
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=archive&status=active" \
+          | jq '.results[] | .name,.custom_fields["download_path_images"],.id' | sed "s|null|archive|" | sed "s/\"//g" \
+          | xargs -n3 -d'\n' | sed -e 's/\s\+/\//' | sed "s/ /,/" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  Debs-beta:
+    name: "B"
+    runs-on: ubuntu-24.04
+    needs: [ Debs-beta-index ]
+    outputs:
+      matrix: ${{needs.Debs-beta-index.outputs.matrix}}
+    if: ${{ needs.Debs-beta-index.outputs.matrix != '[]' && needs.Debs-beta-index.outputs.matrix != '' }}
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ${{fromJson(needs.Debs-beta-index.outputs.matrix)}}
+        
+    steps:
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: beta
+          path: debs-beta
+
+      - name: "Install dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lftp
+          version: 1.0
+
+      - name: "Check ${{ matrix.node }} "
+        run: |
+
+          SERVER_URL=$(echo "${{ matrix.node }}" | cut -d"," -f1)
+          SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
+          echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
+          mkdir -p compare; cd compare
+          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/dists/"; then
+              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/dists/ || true
+          fi
+          cd ..
+          OUT=$(diff -rq compare debs || true)
+          mkdir -p status
+          if [[ -z "${OUT}" ]]; then
+              echo "true" >> status/${SERVER_ID}
+              echo "STATUS=true" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 0 ]]; then
+              echo "not_in_sync" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 124 ]]; then
+              echo "timeout" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          fi
+
+      - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-beta-${{ env.SERVER_ID }}
+          path: status
+          if-no-files-found: ignore
+
+  Debs-stable:
+    name: "S"
+    runs-on: ubuntu-24.04
+    needs: [ Debs-stable-index ]
+    outputs:
+      matrix: ${{needs.Debs-stable-index.outputs.matrix}}
+    if: ${{ needs.Debs-stable-index.outputs.matrix != '[]' && needs.Debs-stable-index.outputs.matrix != '' }}
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ${{fromJson(needs.Debs-stable-index.outputs.matrix)}}
+        
+    steps:
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: apt
+          path: debs
+
+      - name: "Install dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lftp
+          version: 1.0
+
+      - name: "Check ${{ matrix.node }} "
+        run: |
+
+          SERVER_URL=$(echo "${{ matrix.node }}" | cut -d"," -f1)
+          SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
+          echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
+          mkdir -p compare; cd compare
+          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/dists/"; then
+              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/dists/ || exit_status=$?
+          fi
+          cd ..
+          OUT=$(diff -rq compare debs || true)
+          mkdir -p status
+          if [[ -z "${OUT}" ]]; then
+              echo "true" >> status/${SERVER_ID}
+              echo "STATUS=true" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 0 ]]; then
+              echo "not_in_sync" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 124 ]]; then
+              echo "timeout" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          fi
+
+      - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: debs-${{ env.SERVER_ID }}
+          path: status
+          if-no-files-found: ignore
+
+  Images-stable:
+    name: "I"
+    runs-on: ubuntu-24.04
+    needs: [ Images-stable-index ]
+    outputs:
+      matrix: ${{needs.Images-stable-index.outputs.matrix}}
+    if: ${{ needs.Images-stable-index.outputs.matrix != '[]' && needs.Images-stable-index.outputs.matrix != '' }}
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ${{fromJson(needs.Images-stable-index.outputs.matrix)}}
+
+    steps:
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dl
+          path: dl
+
+      - name: "Install dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lftp
+          version: 1.0
+
+      - name: "Check ${{ matrix.node }} "
+        run: |
+
+          SERVER_URL=$(echo "${{ matrix.node }}" | cut -d"," -f1)
+          SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
+          echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
+          mkdir -p compare source; cd source
+          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
+              timeout 5m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
+              cd ..              
+              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \;
+          fi
+          OUT=$(diff -rq compare dl || true)
+          mkdir -p status
+          if [[ -z "${OUT}" ]]; then
+              echo "true" >> status/${SERVER_ID}
+              echo "STATUS=true" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 0 ]]; then
+              echo "not_in_sync" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 124 ]]; then
+              echo "timeout" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          fi
+
+      - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dl-${{ env.SERVER_ID }}
+          path: status
+          if-no-files-found: ignore
+
+  Images-archive:
+    name: "A"
+    runs-on: ubuntu-24.04
+    needs: [ Images-archive-index ]
+    outputs:
+      matrix: ${{needs.Images-archive-index.outputs.matrix}}
+    if: ${{ needs.Images-archive-index.outputs.matrix != '[]' && needs.Images-archive-index.outputs.matrix != '' }}
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ${{fromJson(needs.Images-archive-index.outputs.matrix)}}
+
+    steps:
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: archive
+          path: archive
+
+      - name: "Install dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lftp
+          version: 1.0
+
+      - name: "Check ${{ matrix.node }} "
+        run: |
+
+          SERVER_URL=$(echo "${{ matrix.node }}" | cut -d"," -f1)
+          SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
+          echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
+          mkdir -p compare source; cd source
+          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
+              timeout 5m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
+              cd ..              
+              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \;
+          fi
+          OUT=$(diff -rq compare archive || true)
+          mkdir -p status
+          if [[ -z "${OUT}" ]]; then
+              echo "true" >> status/${SERVER_ID}
+              echo "STATUS=true" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 0 ]]; then
+              echo "not_in_sync" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 124 ]]; then
+              echo "timeout" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          fi
+
+      - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ env.SERVER_ID }}
+          path: status
+          if-no-files-found: ignore
+
+  download:
+    needs: [ Debs-beta,Debs-stable,Images-stable,Images-archive ]
+    runs-on: ubuntu-24.04
+    steps:
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: status
+        pattern: debs-beta-*
+        merge-multiple: true
+
+    - name: "Start log"
+      run: |
+
+        echo "# Test summary" >> $GITHUB_STEP_SUMMARY
+
+
+    - name: "Grep only those that are in sync"
+      run: |
+        echo "# Not in sync" >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep not_in_sync status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        grep not_in_sync status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
+        grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+
+        echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
+        echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
+        rm -rf status
+
+    - name: Test debs
+      uses: armbian/actions/make-yaml-redirector@main
+      with:
+        variant: debs-beta
+        failoverserver: "${{ env.failoverserver }}"
+        port: 8083I
+        dl_map: "${{ env.DL_MAP }}"
+        reloadKey: ${{ env.reloadKey }}
+        netbox: ${{ secrets.NETBOX_TOKEN }}
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: status
+        pattern: debs*
+        merge-multiple: true
+
+    - name: "Grep only those that are in sync"
+      run: |
+        echo "# Not in sync" >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep not_in_sync status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        grep not_in_sync status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
+        grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
+        echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
+        rm -rf status
+
+    - name: Test debs
+      uses: armbian/actions/make-yaml-redirector@main
+      with:
+        variant: debs
+        failoverserver: "${{ env.failoverserver }}"
+        port: 8083
+        geodb: "${{ env.GEODB }}"
+        asndb: "${{ env.ASNDB }}"
+        dl_map: "${{ env.DL_MAP }}"
+        reloadKey: ${{ env.reloadKey }}
+        netbox: ${{ secrets.NETBOX_TOKEN }}
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: status
+        pattern: dl*
+        merge-multiple: true
+
+    - name: "Grep only those that are in sync"
+      run: |
+        echo "# Not in sync" >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep not_in_sync status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        grep not_in_sync status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
+        grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+
+        echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
+        echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
+        rm -rf status
+
+    - name: Test debs
+      uses: armbian/actions/make-yaml-redirector@main
+      with:
+        variant: images
+        failoverserver: "${{ env.failoverserver }}"
+        port: 8083
+        geodb: "${{ env.GEODB }}"
+        asndb: "${{ env.ASNDB }}"
+        dl_map: "${{ env.DL_MAP }}"
+        reloadKey: ${{ env.reloadKey }}
+        netbox: ${{ secrets.NETBOX_TOKEN }}
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: status
+        pattern: archive*
+        merge-multiple: true
+
+    - name: "Grep only those that are in sync"
+      run: |
+        echo "# Not in sync" >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep not_in_sync status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        grep not_in_sync status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
+        grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+
+        echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
+        echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
+        rm -rf status
+
+    - name: Archive
+      uses: armbian/actions/make-yaml-redirector@main
+      with:
+        variant: archive
+        failoverserver: "${{ env.failoverserver }}"
+        port: 8083
+        geodb: "${{ env.GEODB }}"
+        asndb: "${{ env.ASNDB }}"
+        dl_map: "${{ env.DL_MAP }}"
+        reloadKey: ${{ env.reloadKey }}
+        netbox: ${{ secrets.NETBOX_TOKEN }}
+
+  Close:
+    needs: [ download ]
+    runs-on: ubuntu-24.04
+    steps:
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        path: armbian.github.io
+
+    - uses: robinraju/release-downloader@v1.11
+      with:
+        repository: "P3TERX/GeoLite.mmdb"
+        tag: '2024.12.10'
+        fileName: "*.mmdb"
+
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: status
+        pattern: config-*
+        merge-multiple: true
+
+    - name: "Check"
+      run: |
+
+        ls -l status
+        echo "-"
+        ls -l ${{ github.workspace }}/
+
+    - name: Commit changes if any
+      run: |
+
+        cd armbian.github.io
+        git checkout data
+        mkdir -p data/
+        cp ${{ github.workspace }}/status/*.yaml data/
+        cp ${{ github.workspace }}/*.mmdb data/
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add data/.
+        git diff --cached --quiet || git commit -m "Update Redirector YAML configuration"
+        git push
+
+    - uses: geekyeggo/delete-artifact@v5
+      with:
+        name: |
+            debs-*
+            dl-*
+            archive-*
+            apt
+            beta
+            dl
+            archive
