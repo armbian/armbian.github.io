@@ -7,17 +7,12 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8083'
 
 # Reload authorization key
-reloadKey: 96a6fc168ca06e56282824abcddb6256
+reloadKey: 43928d870b000bcd81153625af0c2f74
 
 # LRU Cache Size (in items)
 cacheSize: 2048
 
-# Server definition
-# Weights are just like nginx, where if it's > 1 it'll be chosen x out of x + total times
-# By default, the top 3 servers are used for choosing the best.
-# server = full url or host+path
-# weight = int
-# optional: latitude, longitude (float)
+# Documentation: https://github.com/armbian/armbian-router
 
 servers:
 
@@ -50,6 +45,11 @@ servers:
     latitude: 49.4478
     longitude: 11.0683
     weight: 10
+
+  # Asia/Taipei - 50000 Mbit/s
+  - server: mirror.twds.com.tw/armbian-apt/
+    latitude: 25.0382
+    longitude: 121.5636
 
   # Via Bivio Foresta - 113,Italy,Europe/Rome,1000, Mbit/s
   - server: armbian.atomonetworks.com/apt/
