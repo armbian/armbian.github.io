@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8083'
 
 # Reload authorization key
-reloadKey: e52e74f583ffb002f2edba334d376eb2
+reloadKey: 0b4dfd1d71fe2043ad60bb783da10f16
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -16,22 +16,10 @@ cacheSize: 2048
 
 servers:
 
-  # America/Chicago - 1000 Mbit/s
-  - server: armbian.chi.auroradev.org/archive/
-    latitude: 41.881832
-    longitude: -87.623177
-    weight: 10
-
   # Europe/Paris - 1000 Mbit/s
   - server: armbian.nardol.ovh/archive/
     latitude: 48.8582
     longitude: 2.3387
-    weight: 10
-
-  # Australia/Sydney - 1000 Mbit/s
-  - server: au.sbcmirror.org/archive/
-    latitude: -33.8715
-    longitude: 151.2006
     weight: 10
 
   # Europe/Berlin - 1000 Mbit/s
@@ -40,92 +28,10 @@ servers:
     longitude: 9.491
     weight: 10
 
-  # null - 1000 Mbit/s
-  - server: mirror.albony.in/archive/
-    weight: 5
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirror.iscas.ac.cn/archive/
-    latitude: 39.9075
-    longitude: 116.3971
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.aliyun.com/archive/
-    latitude: 34.7732
-    longitude: 113.722
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.bfsu.edu.cn/archive/
-    latitude: 39.911
-    longitude: 116.395
-    weight: 10
-
-  # Europe/Copenhagen - 20000 Mbit/s
-  - server: mirrors.dotsrc.org/archive/
-    latitude: 55.6802
-    longitude: 12.5892
-    weight: 10
-
-  # America/New_York - 10000 Mbit/s
-  - server: mirrors.jevincanders.net/archive/
-    latitude: 42.8868
-    longitude: -78.8787
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirror.sjtu.edu.cn/archive/
-    latitude: 34.7732
-    longitude: 113.722
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.nju.edu.cn/archive/
-    latitude: 34.7732
-    longitude: 113.722
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.tuna.tsinghua.edu.cn/archive/
-    latitude: 34.7732
-    longitude: 113.722
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.ustc.edu.cn/archive/
-    latitude: 34.7732
-    longitude: 113.722
-    weight: 10
-
-  # America/Chicago - 1000 Mbit/s
-  - server: mirror-us-stl1.armbian.airframes.io/archive/
-    latitude: 38.6287
-    longitude: -90.1988
-    weight: 10
-
   # Europe/Moscow - 10000 Mbit/s
   - server: mirror.yandex.ru/mirrors/armbian/archive/
     latitude: 55.7483
     longitude: 37.6171
-    weight: 10
-
-  # Asia/Singapore - null Mbit/s
-  - server: sg.sbcmirror.org/archive/
-    latitude: 1.3673
-    longitude: 103.8014
-    weight: 10
-
-  # Europe/London - 1000 Mbit/s
-  - server: mirror.vinehost.net/armbian/archive/
-    latitude: 54.1448
-    longitude: -0.1555
-    weight: 10
-
-  # Europe/Kiev - 1000 Mbit/s
-  - server: fastmirror.pp.ua/archive/
-    latitude: 50.458
-    longitude: 30.5303
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
@@ -134,31 +40,8 @@ servers:
     longitude: 24.661898
     weight: 10
 
-  # Asia/Tokyo - 10000 Mbit/s
-  - server: repo.jing.rocks/archive/
-    latitude: 35.652832
-    longitude: 139.839478
-    weight: 10
-
-  # Europe/Berlin - 2500 Mbit/s
-  - server: netcup.armbian.com/archive/
-    latitude: 49.4478
-    longitude: 11.0683
-    weight: 10
-
-  # Asia/Taipei - 50000 Mbit/s
-  - server: mirror.twds.com.tw/archive/
-    latitude: 25.0382
-    longitude: 121.5636
-
   # Europe/Rome - 2500 Mbit/s
   - server: armbian.atomonetworks.com/archive/
     latitude: 38.157745
     longitude: 13.195175
-    weight: 10
-
-  # Europe/Kiev - 20000 Mbit/s
-  - server: mirror.hostiko.network/archive/
-    latitude: 50.4547
-    longitude: 30.5238
     weight: 10
