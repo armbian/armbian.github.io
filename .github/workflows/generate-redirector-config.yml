@@ -420,7 +420,7 @@ jobs:
       with:
         variant: debs-beta
         failoverserver: "${{ env.failoverserver }}"
-        port: 8083I
+        port: 8083
         dl_map: "${{ env.DL_MAP }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
@@ -444,12 +444,11 @@ jobs:
         echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
         rm -rf status
 
-    - name: Test debs
+    - name: Stable debs
       uses: armbian/actions/make-yaml-redirector@main
       with:
         variant: debs
         failoverserver: "${{ env.failoverserver }}"
-        port: 8083
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"
         dl_map: "${{ env.DL_MAP }}"
@@ -476,12 +475,12 @@ jobs:
         echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
         rm -rf status
 
-    - name: Test debs
+    - name: Images
       uses: armbian/actions/make-yaml-redirector@main
       with:
         variant: images
         failoverserver: "${{ env.failoverserver }}"
-        port: 8083
+        port: 8081
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"
         dl_map: "${{ env.DL_MAP }}"
@@ -513,7 +512,7 @@ jobs:
       with:
         variant: archive
         failoverserver: "${{ env.failoverserver }}"
-        port: 8083
+        port: 8082
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"
         dl_map: "${{ env.DL_MAP }}"
