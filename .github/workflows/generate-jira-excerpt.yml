@@ -1,0 +1,45 @@
+name: "Pull from Armbian Jira"
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+  jira:
+    runs-on: ubuntu-24.04
+    name: "Get from Jira"
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: armbian.github.io
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.8 #install the python needed
+
+      - name: "Run script"
+        run: |
+          pip install jira
+          ./armbian.github.io/scripts/pull-from-jira.py
+
+      - name: Commit changes if any
+        run: |
+
+          cd armbian.github.io
+          git checkout data
+          mkdir -p data/
+          mv ${{ github.workspace }}/jira-current.html data/
+          mv ${{ github.workspace }}/jira-next.html data/
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/.
+          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git push
