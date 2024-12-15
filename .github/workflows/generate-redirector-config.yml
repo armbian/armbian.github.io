@@ -300,7 +300,7 @@ jobs:
           if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
               timeout 5m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
               cd ..              
-              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \;
+              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \; || true
           fi
           OUT=$(diff -rq compare dl || true)
           mkdir -p status
@@ -360,7 +360,7 @@ jobs:
           if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
               timeout 5m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
               cd ..              
-              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \;
+              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \; || true
           fi
           OUT=$(diff -rq compare archive || true)
           mkdir -p status
