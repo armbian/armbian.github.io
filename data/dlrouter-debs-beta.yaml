@@ -4,10 +4,10 @@
 geodb: 
 asndb: 
 dl_map: /scripts/redirect-config/all-images.json
-bind: ':8083I'
+bind: ':8083'
 
 # Reload authorization key
-reloadKey: a0ad6cfd2fde653bcb1cb21002220645
+reloadKey: 8225c8e0de9db88611afdf08eb0a4555
 
 # LRU Cache Size (in items)
 cacheSize: 2048

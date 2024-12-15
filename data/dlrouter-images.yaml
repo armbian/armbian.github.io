@@ -4,10 +4,10 @@
 geodb: /scripts/redirect-config/GeoLite2-City.mmdb
 asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
-bind: ':8083'
+bind: ':8081'
 
 # Reload authorization key
-reloadKey: ea547a9e8b33850020085b901e950e0d
+reloadKey: 06cf85897f20691389fdd636e9feab24
 
 # LRU Cache Size (in items)
 cacheSize: 2048
