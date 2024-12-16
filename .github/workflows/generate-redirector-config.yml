@@ -269,7 +269,7 @@ jobs:
   Images-stable:
     name: "I"
     runs-on: ubuntu-24.04
-    needs: [ Images-stable-index ]
+    needs: [ Images-stable-index ]Update generate-jira-excerpt.yml
     outputs:
       matrix: ${{needs.Images-stable-index.outputs.matrix}}
     if: ${{ needs.Images-stable-index.outputs.matrix != '[]' && needs.Images-stable-index.outputs.matrix != '' }}
@@ -584,3 +584,9 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         event-type: "Webindex update"
+
+    - name: "Run Jira update action"
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: "Jira update"
