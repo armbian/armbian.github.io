@@ -8,6 +8,9 @@ on:
     - cron: '*/15 * * * *'
   workflow_dispatch:
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 concurrency:
   group: watchdog-${{ github.ref }}
   cancel-in-progress: true
