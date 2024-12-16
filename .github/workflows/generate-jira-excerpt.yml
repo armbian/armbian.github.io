@@ -1,7 +1,7 @@
 name: "Pull from Armbian Jira"
 on:
   repository_dispatch:
-    types: ["Redirector update"]
+    types: ["Jira update"]
 
 concurrency:
   group: redirector
