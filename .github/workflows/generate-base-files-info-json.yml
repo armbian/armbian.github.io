@@ -1,9 +1,9 @@
 name: "Update base-files package info"
-# Trigger this workflow on a manual dispatch or a scheduled time
+# Trigger this in a train (from generate-jira-excerpt.yml)
 on:
-  workflow_dispatch:   # Manually triggered via GitHub Actions UI
-  schedule:
-    - cron: '0 * * * *'   # Run every hour
+  repository_dispatch:
+    types: ["Base files"]
+
 jobs:
   run-script:
     runs-on: ubuntu-latest
