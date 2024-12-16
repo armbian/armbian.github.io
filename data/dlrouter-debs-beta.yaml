@@ -1,13 +1,13 @@
 #
 # debs-beta.armbian.com
 #
-geodb: 
-asndb: 
+geodb: /scripts/redirect-config/GeoLite2-City.mmdb
+asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 bind: ':8083'
 
 # Reload authorization key
-reloadKey: 883b47dc451c4f20dc3db1ab69af4936
+reloadKey: 890bb190099942a51c3d9bd3777d8681
 
 # LRU Cache Size (in items)
 cacheSize: 2048
