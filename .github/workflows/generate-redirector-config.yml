@@ -44,7 +44,7 @@ jobs:
           - apt
           - dl
           - archive
-    steps:
+    steps:Update generate-jira-excerpt.yml
 
       - name: "Install dependencies: lftp"
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -269,7 +269,7 @@ jobs:
   Images-stable:
     name: "I"
     runs-on: ubuntu-24.04
-    needs: [ Images-stable-index ]Update generate-jira-excerpt.yml
+    needs: [ Images-stable-index ]
     outputs:
       matrix: ${{needs.Images-stable-index.outputs.matrix}}
     if: ${{ needs.Images-stable-index.outputs.matrix != '[]' && needs.Images-stable-index.outputs.matrix != '' }}
