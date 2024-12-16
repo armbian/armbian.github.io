@@ -584,9 +584,3 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         event-type: "Webindex update"
-
-    - name: "Run Jira update action"
-      uses: peter-evans/repository-dispatch@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        event-type: "Jira update"
