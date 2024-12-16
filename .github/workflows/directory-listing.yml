@@ -5,6 +5,7 @@ on:
 
 jobs:
   pages-directory-listing:
+    if: github.ref == 'refs/heads/data'
     runs-on: ubuntu-latest
     name: "Directory Listings Index"
     steps:
@@ -24,6 +25,7 @@ jobs:
           path: 'data'      # upload generated folder
 
   deploy:
+    if: github.ref == 'refs/heads/data'
     needs: pages-directory-listing
     permissions:
       pages: write      # to deploy to Pages
