@@ -421,6 +421,8 @@ jobs:
         variant: debs-beta
         failoverserver: "${{ env.failoverserver }}"
         port: 8083
+        geodb: "${{ env.GEODB }}"
+        asndb: "${{ env.ASNDB }}"        
         dl_map: "${{ env.DL_MAP }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
