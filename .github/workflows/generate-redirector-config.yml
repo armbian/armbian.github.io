@@ -31,7 +31,7 @@ jobs:
           ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEAM: "Release manager"
-
+GITHUB_TOKEN
   build:
     name: "Get source of truth"
     runs-on: ubuntu-24.04
@@ -578,3 +578,9 @@ jobs:
             beta
             dl
             archive
+
+    - name: "Run webindex update action"
+      uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        event-type: "Webindex update"
