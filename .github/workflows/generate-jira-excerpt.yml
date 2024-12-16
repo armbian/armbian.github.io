@@ -1,8 +1,7 @@
 name: "Pull from Armbian Jira"
 on:
-  schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+  repository_dispatch:
+    types: ["Redirector update"]
 
 concurrency:
   group: redirector
@@ -11,7 +10,7 @@ concurrency:
 jobs:
   jira:
     runs-on: ubuntu-24.04
-    name: "Get from Jira"
+    name: "Get from Armbian Jira"
     steps:
 
       - name: Checkout repository
