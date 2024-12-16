@@ -197,3 +197,10 @@ jobs:
           git add data/.
           git diff --cached --quiet || git commit -m "Update WEB indes files"
           git push
+
+
+      - name: "Run Jira update action"
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Jira update"
