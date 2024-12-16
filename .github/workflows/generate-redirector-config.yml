@@ -1,4 +1,4 @@
-name: "Update redirector yaml config"
+name: "Update redirector YAML config"
 # Trigger this workflow on a manual dispatch or a scheduled time
 on:
   schedule:
