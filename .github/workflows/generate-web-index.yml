@@ -2,26 +2,12 @@ name: Update download JSON index
 on:
   repository_dispatch:
     types: ["Webindex update"]
-  workflow_dispatch:
 
 concurrency:
   group: redirector
   cancel-in-progress: false
 
 jobs:
-
-  Check:
-
-    name: "Check membership"
-    runs-on: "ubuntu-24.04"
-    steps:
-
-      - name: "Check membership"
-        uses: armbian/actions/team-check@main
-        with:
-          ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TEAM: "Release manager"
 
   Webindex:
 
@@ -30,7 +16,6 @@ jobs:
 
     name: "Generate JSON Index"
     runs-on: "ubuntu-24.04"
-    needs: Check
     steps:
 
       - name: Checkout build framework repository
