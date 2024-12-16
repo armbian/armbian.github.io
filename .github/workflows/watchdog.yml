@@ -40,7 +40,7 @@ jobs:
           ATTEMPTS="3"
           SCRIPT="${{ matrix.script }}"
 
-          WORKFLOW=$(gh api "/repos/${{ github.repository }}/actions/workflows" | jq '.workflows[] | select(.path==".github/workflows/'${{ matrix.script }}'.yml")' | jq -r '.id')
+          WORKFLOW=$(gh api "/repos/${{ github.repository }}/actions/workflows" | jq '.workflows[] | select(.path==".github/workflows/${{ matrix.script }}.yml")' | jq -r '.id')
           read ID STATUS ATTEMPT <<< $(gh api "/repos/${{ github.repository }}/actions/workflows/${WORKFLOW}/runs" | jq '.workflow_runs[]' | jq -r '.id,.conclusion,.run_attempt' | head -3 | xargs -n3 -d'\n')
 
           # if attempt is lower then 5 and status is "cancelled" or "failed", rerun failed jobs
