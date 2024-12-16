@@ -44,8 +44,7 @@ jobs:
           - apt
           - dl
           - archive
-    steps:Update generate-jira-excerpt.yml
-
+    steps:
       - name: "Install dependencies: lftp"
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
