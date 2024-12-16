@@ -1,6 +1,8 @@
 name: "Update redirector YAML config"
 # Trigger this workflow on a manual dispatch or a scheduled time
 on:
+  repository_dispatch:
+    types: ["Redirector update"]
   schedule:
     - cron: '0 * * * *'   # Run every hour
   workflow_dispatch:   # Manually triggered via GitHub Actions UI
