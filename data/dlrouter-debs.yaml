@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: dcfa6bfa7d0fb4beaf6459c23c2b002e
+reloadKey: 9553657994f12804d8c946806e1d5fbd
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -27,10 +27,52 @@ servers:
     longitude: 2.3387
     weight: 10
 
+  # Australia/Sydney - 1000 Mbit/s
+  - server: au.sbcmirror.org/armbian/apt/
+    latitude: -33.8715
+    longitude: 151.2006
+    weight: 10
+
+  # Europe/Madrid - 1000 Mbit/s
+  - server: es.sbcmirror.org/apt/
+    latitude: 40.4163
+    longitude: -3.6934
+    weight: 10
+
   # Europe/Berlin - 1000 Mbit/s
   - server: fi.mirror.armbian.de/apt/
     latitude: 51.2993
     longitude: 9.491
+    weight: 10
+
+  # Europe/Copenhagen - 20000 Mbit/s
+  - server: mirrors.dotsrc.org/armbian-apt/
+    latitude: 55.6802
+    longitude: 12.5892
+    weight: 10
+
+  # America/New_York - 10000 Mbit/s
+  - server: mirrors.jevincanders.net/armbian/apt/
+    latitude: 42.8868
+    longitude: -78.8787
+    weight: 10
+
+  # America/Chicago - 1000 Mbit/s
+  - server: mirror-us-stl1.armbian.airframes.io/apt/
+    latitude: 38.6287
+    longitude: -90.1988
+    weight: 10
+
+  # Asia/Singapore - 1000 Mbit/s
+  - server: sg.sbcmirror.org/armbian/apt/
+    latitude: 1.3673
+    longitude: 103.8014
+    weight: 10
+
+  # Europe/Moscow - 2000 Mbit/s
+  - server: stpete-mirror.armbian.com/apt/
+    latitude: 59.9417
+    longitude: 30.3096
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
