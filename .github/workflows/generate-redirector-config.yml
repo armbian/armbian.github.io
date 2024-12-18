@@ -155,7 +155,7 @@ jobs:
     outputs:
       matrix: ${{needs.Debs-beta-index.outputs.matrix}}
     if: ${{ needs.Debs-beta-index.outputs.matrix != '[]' && needs.Debs-beta-index.outputs.matrix != '' }}
-    timeout-minutes: 6
+    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
@@ -214,7 +214,7 @@ jobs:
     outputs:
       matrix: ${{needs.Debs-stable-index.outputs.matrix}}
     if: ${{ needs.Debs-stable-index.outputs.matrix != '[]' && needs.Debs-stable-index.outputs.matrix != '' }}
-    timeout-minutes: 6
+    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
@@ -273,7 +273,7 @@ jobs:
     outputs:
       matrix: ${{needs.Images-stable-index.outputs.matrix}}
     if: ${{ needs.Images-stable-index.outputs.matrix != '[]' && needs.Images-stable-index.outputs.matrix != '' }}
-    timeout-minutes: 6
+    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
@@ -333,7 +333,7 @@ jobs:
     outputs:
       matrix: ${{needs.Images-archive-index.outputs.matrix}}
     if: ${{ needs.Images-archive-index.outputs.matrix != '[]' && needs.Images-archive-index.outputs.matrix != '' }}
-    timeout-minutes: 6
+    timeout-minutes: 7
     strategy:
       fail-fast: false
       matrix:
