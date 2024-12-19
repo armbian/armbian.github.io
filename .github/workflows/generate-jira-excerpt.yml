@@ -47,4 +47,4 @@ jobs:
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Base files"
+          event-type: "Generate directory"
