@@ -538,6 +538,7 @@ jobs:
       with:
         repository: "P3TERX/GeoLite.mmdb"
         fileName: "*.mmdb"
+        latest: true
 
     - name: Download All Artifacts
       uses: actions/download-artifact@v4
