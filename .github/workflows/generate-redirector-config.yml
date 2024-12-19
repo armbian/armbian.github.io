@@ -537,7 +537,6 @@ jobs:
     - uses: robinraju/release-downloader@v1.11
       with:
         repository: "P3TERX/GeoLite.mmdb"
-        tag: '2024.12.10'
         fileName: "*.mmdb"
 
     - name: Download All Artifacts
