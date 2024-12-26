@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 0dcb2d8b5d9bc0da4b5381f86bcfc43c
+reloadKey: b6e44ea75365f5fbb74fc82fe0a7719f
 
 # LRU Cache Size (in items)
 cacheSize: 2048
