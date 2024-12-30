@@ -1,0 +1,72 @@
+name: "Generate runners status"
+
+on:
+  push:
+#  schedule:
+#    - cron: '0 * * * *'   # Run every hour
+  workflow_dispatch:   # Manually triggered via GitHub Actions UI
+
+#concurrency:
+#  group: redirector
+#  cancel-in-progress: false
+
+jobs:
+
+  Check:
+
+    name: "Check permissions"
+    runs-on: "ubuntu-24.04"
+    steps:
+
+      - name: "Check permissions"
+        uses: armbian/actions/team-check@main
+        with:
+          ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAM: "Release manager"
+
+  build:
+    name: "Get self hosted runners status"
+    runs-on: ubuntu-24.04
+    needs: Check
+    steps:
+
+      - name: "Install dependencies: jq"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: jq
+          version: 1.0
+
+      - name: "Get runners from ORG"
+        env:
+          GH_TOKEN: ${{ secrets.RUNNERS }}
+        run: |
+
+          # get list of self hosted runners
+          for i in `seq 0 1 10`; do
+          curl -s -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.RUNNERS }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/orgs/armbian/actions/runners?page=${i} >> runners.json
+          done
+
+          echo "<table>" >> $GITHUB_STEP_SUMMARY
+          echo "<tr><td>Name</td><td>CPU cores</td><td>Memory GB</td><td>Storage GB</td><td alignt=right>Runners</td></tr>" >> $GITHUB_STEP_SUMMARY
+          SERVERS=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&role=userlevel-runner&status=active" \
+          | jq -r '.results[] | .id')
+
+          for s in ${SERVERS}; do
+              IFS=' ' read -r NAME CPU MEM DISK RUNNERS ID<<< "$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+              "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?id=$s" | jq -r '.results[] | .name,.vcpus,.memory,.disk,.custom_fields["runners"],.id' | xargs -n6 -d'\n')"
+              printf "<tr><td>%s</td><td align=right>%3d</td><td align=right>%d</td><td align=right>%d</td><td align=right>%d</td></tr>\n" $NAME ${CPU/.*/} $MEM $DISK $RUNNERS >> $GITHUB_STEP_SUMMARY
+              unset IFS
+              echo -e "<tr><td colspan=5>" >> $GITHUB_STEP_SUMMARY
+              for runner in $(seq -f "%02g" 1 $RUNNERS | sed -e "s/.*/$NAME-&/"); do
+                  INFO=$(cat runners.json | jq -r '.runners[] | select(.name | startswith("'$runner'"))' | jq -r '.name,.status,.busy' | xargs -n3 -d'\n' | sort | uniq)
+                  [[ -n $INFO ]] && echo ":+1:" >> $GITHUB_STEP_SUMMARY || echo ":exclamation: <small>($runner)</small>" >> $GITHUB_STEP_SUMMARY
+              done
+          echo -e "</td></tr>" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "</table>" >> $GITHUB_STEP_SUMMARY
