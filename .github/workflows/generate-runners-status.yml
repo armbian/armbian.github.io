@@ -15,7 +15,7 @@ jobs:
   Check:
 
     name: "Check permissions"
-    runs-on: "ubuntu-24.04"
+    runs-on: "ubuntu-22.04"
     steps:
 
       - name: "Check permissions"
@@ -52,7 +52,7 @@ jobs:
           done
 
           echo "<table>" >> $GITHUB_STEP_SUMMARY
-          echo "<tr><td>Name</td><td>CPU cores</td><td>Memory GB</td><td>Storage GB</td><td alignt=right>Runners</td></tr>" >> $GITHUB_STEP_SUMMARY
+          echo "<tr><td>Name</td><td alignt=right>CPU cores</td><td alignt=right>Memory GB</td><td alignt=right>Storage GB</td><td alignt=right>Runners</td></tr>" >> $GITHUB_STEP_SUMMARY
           SERVERS=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
           "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&role=userlevel-runner&status=active" \
           | jq -r '.results[] | .id')
@@ -66,7 +66,7 @@ jobs:
               echo -e "<tr><td colspan=5>" >> $GITHUB_STEP_SUMMARY
               for runner in $(seq -f "%02g" 1 $RUNNERS | sed -e "s/.*/$NAME-&/"); do
                   INFO=$(cat runners.json | jq -r '.runners[] | select(.name | startswith("'$runner'"))' | jq -r '.name,.status,.busy' | xargs -n3 -d'\n' | sort | uniq)
-                  [[ -n $INFO ]] && echo ":+1:" >> $GITHUB_STEP_SUMMARY || echo ":exclamation: <small>($runner)</small>" >> $GITHUB_STEP_SUMMARY
+                  [[ -n $INFO || ${NAME} == github ]] && echo ":+1:" >> $GITHUB_STEP_SUMMARY || echo ":exclamation: <small>($runner)</small>" >> $GITHUB_STEP_SUMMARY
               done
           echo -e "</td></tr>" >> $GITHUB_STEP_SUMMARY
           done
