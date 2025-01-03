@@ -60,7 +60,8 @@ jobs:
           for s in ${SERVERS}; do
               IFS=' ' read -r NAME CPU MEM DISK RUNNERS ID<<< "$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
               "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?id=$s" | jq -r '.results[] | .name,.vcpus,.memory,.disk,.custom_fields["runners"],.id' | xargs -n6 -d'\n')"
-              printf "<tr><td>%s</td><td align=right>%3d</td><td align=right>%d</td><td align=right>%d</td><td align=right>%d</td></tr>\n" $NAME ${CPU/.*/} $MEM $DISK $RUNNERS >> $GITHUB_STEP_SUMMARY
+              CALC_MEM=$(echo $MEM | awk '{$1/=1024;printf "%.0f\n",$1}')
+              printf "<tr><td>%s</td><td align=right>%3d</td><td align=right>%d</td><td align=right>%d</td><td align=right>%d</td></tr>\n" $NAME ${CPU/.*/} $CALC_MEM $DISK $RUNNERS >> $GITHUB_STEP_SUMMARY
               unset IFS
               echo -e "<tr><td colspan=5>" >> $GITHUB_STEP_SUMMARY
               for runner in $(seq -f "%02g" 1 $RUNNERS | sed -e "s/.*/$NAME-&/"); do
