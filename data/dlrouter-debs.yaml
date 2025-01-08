@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 5a313a87e0d9dc72057a32b6072a7375
+reloadKey: e77bedbf0f73ac477f349e3c4cec163f
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -14,12 +14,6 @@ cacheSize: 2048
 # Documentation: https://github.com/armbian/armbian-router
 
 servers:
-
-  # America/New_York - 1000 Mbit/s
-  - server: armbian.tnahosting.net/apt/
-    latitude: 42.112
-    longitude: -88.0353
-    weight: 1
 
   # America/Chicago - 1000 Mbit/s
   - server: armbian.chi.auroradev.org/apt/
@@ -104,6 +98,12 @@ servers:
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.nju.edu.cn/armbian/
+    latitude: 34.7732
+    longitude: 113.722
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
   - server: mirrors.sustech.edu.cn/armbian/
     latitude: 22.2767
     longitude: 113.5788
@@ -113,6 +113,12 @@ servers:
   - server: mirrors.tuna.tsinghua.edu.cn/armbian/
     latitude: 34.7732
     longitude: 113.722
+    weight: 10
+
+  # Europe/Berlin - 10000 Mbit/s
+  - server: mirrors.xtom.de/armbian/
+    latitude: 51.2215
+    longitude: 6.7762
     weight: 10
 
   # America/Chicago - 1000 Mbit/s
