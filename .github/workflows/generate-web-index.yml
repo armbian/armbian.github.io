@@ -2,6 +2,7 @@ name: Update download JSON index
 on:
   repository_dispatch:
     types: ["Webindex update"]
+  workflow_dispatch:   # Manually triggered via GitHub Actions UI    
 
 concurrency:
   group: redirector
