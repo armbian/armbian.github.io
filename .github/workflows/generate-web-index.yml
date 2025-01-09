@@ -162,7 +162,7 @@ jobs:
               REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD,,}/${IMAGE_RELEASE^}_${KERNEL_BRANCH}${IMAGE_TARGET:+_$IMAGE_TARGET}${IMAGE_EXTENSION:+-$IMAGE_EXTENSION}${REDI_EXT:+.$REDI_EXT}"
 
               # bypass redirector for weirdos
-              if [[ "${FILE_EXTENSION}" =~ boot|csot|boe|sms|rootfs ]]; then REDI_URL=${IMAGE_URL}; fi
+              if [[ "${FILE_EXTENSION}" =~ boot|csot|boe|sms|rootfs|qcow2 ]]; then REDI_URL=${IMAGE_URL}; fi
 
               # check if image is exposed
               while read exposed; do
