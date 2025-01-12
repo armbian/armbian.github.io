@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 9b0e28cd0ede8f417842f7a002b3ed31
+reloadKey: d720b01d55ad4ab38c7815f76bb3786b
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -15,6 +15,12 @@ cacheSize: 2048
 # Documentation: https://github.com/armbian/armbian-router
 
 servers:
+
+  # Europe/Paris - 1000 Mbit/s
+  - server: armbian.nardol.ovh/dl/
+    latitude: 48.8582
+    longitude: 2.3387
+    weight: 10
 
   # Europe/Berlin - 1000 Mbit/s
   - server: fi.mirror.armbian.de/dl/
@@ -34,20 +40,32 @@ servers:
     longitude: 116.3971
     weight: 10
 
-  # Europe/Moscow - 10000 Mbit/s
-  - server: mirror.yandex.ru/mirrors/armbian/dl/
-    latitude: 55.7483
-    longitude: 37.6171
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.bfsu.edu.cn/armbian-releases/
+    latitude: 39.911
+    longitude: 116.395
     weight: 10
 
-  # Europe/Rome - 2500 Mbit/s
-  - server: armbian.atomonetworks.com/dl/
-    latitude: 38.157745
-    longitude: 13.195175
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.tuna.tsinghua.edu.cn/armbian-releases/
+    latitude: 34.7732
+    longitude: 113.722
     weight: 10
 
-  # Europe/Kiev - 20000 Mbit/s
-  - server: mirror.hostiko.network/armbian-dl/
-    latitude: 50.4547
-    longitude: 30.5238
+  # Europe/Moscow - 2000 Mbit/s
+  - server: stpete-mirror.armbian.com/dl/
+    latitude: 59.9417
+    longitude: 30.3096
+    weight: 10
+
+  # Europe/Tallinn - 10000 Mbit/s
+  - server: k-space.ee.armbian.com/dl/
+    latitude: 59.397987
+    longitude: 24.661898
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: repo.jing.rocks/armbian-dl/
+    latitude: 35.652832
+    longitude: 139.839478
     weight: 10
