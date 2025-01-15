@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 2ee1c01f745f73b364393e7b0aa9b54c
+reloadKey: 19fb3ac0188555983acc6159e2626838
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -16,10 +16,28 @@ cacheSize: 2048
 
 servers:
 
+  # America/New_York - 1000 Mbit/s
+  - server: armbian.tnahosting.net/dl/
+    latitude: 42.112
+    longitude: -88.0353
+    weight: 1
+
   # Europe/Paris - 1000 Mbit/s
   - server: armbian.nardol.ovh/dl/
     latitude: 48.8582
     longitude: 2.3387
+    weight: 10
+
+  # Europe/Vienna - 1000 Mbit/s
+  - server: armbian.systemonachip.net/dl/
+    latitude: 48.3003
+    longitude: 16.3441
+    weight: 10
+
+  # Europe/Madrid - 1000 Mbit/s
+  - server: es.sbcmirror.org/dl/
+    latitude: 40.4163
+    longitude: -3.6934
     weight: 10
 
   # Europe/Berlin - 1000 Mbit/s
@@ -46,6 +64,18 @@ servers:
     longitude: 116.395
     weight: 10
 
+  # Europe/Copenhagen - 20000 Mbit/s
+  - server: mirrors.dotsrc.org/armbian-dl/
+    latitude: 55.6802
+    longitude: 12.5892
+    weight: 10
+
+  # America/New_York - 10000 Mbit/s
+  - server: mirrors.jevincanders.net/armbian/dl/
+    latitude: 42.8868
+    longitude: -78.8787
+    weight: 10
+
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirrors.tuna.tsinghua.edu.cn/armbian-releases/
     latitude: 34.7732
@@ -68,6 +98,12 @@ servers:
   - server: stpete-mirror.armbian.com/dl/
     latitude: 59.9417
     longitude: 30.3096
+    weight: 10
+
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/dl/
+    latitude: 48.5144
+    longitude: -2.768
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
