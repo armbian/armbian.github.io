@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 19fb3ac0188555983acc6159e2626838
+reloadKey: 39b1013968e9ac5e14cd7776f0a52751
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -22,6 +22,18 @@ servers:
     longitude: -88.0353
     weight: 1
 
+  # America/Chicago - 1000 Mbit/s
+  - server: armbian.chi.auroradev.org/dl/
+    latitude: 41.881832
+    longitude: -87.623177
+    weight: 10
+
+  # America/Los_Angeles - 10000 Mbit/s
+  - server: armbian.lv.auroradev.org/dl/
+    latitude: 36.18811
+    longitude: -115.176468
+    weight: 10
+
   # Europe/Paris - 1000 Mbit/s
   - server: armbian.nardol.ovh/dl/
     latitude: 48.8582
@@ -32,6 +44,12 @@ servers:
   - server: armbian.systemonachip.net/dl/
     latitude: 48.3003
     longitude: 16.3441
+    weight: 10
+
+  # Australia/Sydney - 1000 Mbit/s
+  - server: au.sbcmirror.org/armbian/dl/
+    latitude: -33.8715
+    longitude: 151.2006
     weight: 10
 
   # Europe/Madrid - 1000 Mbit/s
@@ -94,6 +112,12 @@ servers:
     longitude: 37.6171
     weight: 10
 
+  # Asia/Singapore - 1000 Mbit/s
+  - server: sg.sbcmirror.org/armbian/dl/
+    latitude: 1.3673
+    longitude: 103.8014
+    weight: 10
+
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/dl/
     latitude: 59.9417
@@ -104,6 +128,12 @@ servers:
   - server: xogium.performanceservers.nl/dl/
     latitude: 48.5144
     longitude: -2.768
+    weight: 10
+
+  # Europe/London - 1000 Mbit/s
+  - server: mirror.vinehost.net/armbian/dl/
+    latitude: 54.1448
+    longitude: -0.1555
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
@@ -117,6 +147,11 @@ servers:
     latitude: 35.652832
     longitude: 139.839478
     weight: 10
+
+  # Asia/Taipei - 50000 Mbit/s
+  - server: mirror.twds.com.tw/armbian-dl/
+    latitude: 25.0382
+    longitude: 121.5636
 
   # Europe/Rome - 2500 Mbit/s
   - server: armbian.atomonetworks.com/dl/
