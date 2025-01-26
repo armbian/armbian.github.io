@@ -11771,7 +11771,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -11786,7 +11786,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -11801,7 +11801,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -11816,7 +11816,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
@@ -11951,7 +11951,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -11966,7 +11966,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -11981,7 +11981,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -11996,7 +11996,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
@@ -12251,7 +12251,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -12266,7 +12266,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -12281,7 +12281,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -12296,7 +12296,7 @@
       "kernel_branch": "current",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
@@ -12431,7 +12431,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -12446,7 +12446,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -12461,7 +12461,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -12476,7 +12476,7 @@
       "kernel_branch": "current",
       "image_variant": "xfce",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
