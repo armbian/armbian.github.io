@@ -43,8 +43,8 @@ jobs:
           git diff --cached --quiet || git commit -m "Update WEB indes files"
           git push
 
-      - name: "Run webindex update action"
+      - name: "Run base-files update action"
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Generate directory"
+          event-type: "Base files"
