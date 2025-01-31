@@ -1,0 +1,135 @@
+# .github/workflows/reusable.yml
+name: "Reusable Workflow for Mirroring"
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'Name'
+        required: true
+        type: string
+      cdntag:
+        description: 'Folder on CDN'
+        required: true
+        type: string
+      latest:
+        description: 'Release tag'
+        required: true
+        type: string
+    secrets:
+      KEY_UPLOAD:
+        required: true
+      KNOWN_HOSTS_ARMBIAN_UPLOAD:
+        required: true
+      GH_TOKEN:
+        required: true
+
+jobs:
+  example-job:
+    name: "Download"
+    runs-on: ubuntu-latest
+    outputs:
+      DEPLOYMENT_MATRIX: "${{ steps.files.outputs.DEPLOYMENT_MATRIX }}"
+    steps:
+      - name: Download ${{ matrix.name }}
+        uses: actions/download-artifact@v4
+        with:
+          name: parts
+          pattern: part*
+      - name: "Get devices from database ${{ inputs.name }}"
+        id: files
+        run: |
+          delimiter="$(openssl rand -hex 8)"
+          echo "DEPLOYMENT_MATRIX<<${delimiter}" >> "${GITHUB_OUTPUT}"
+          sed -i -e '$a\' "${{ inputs.name }}"
+          cat "${{ inputs.name }}" | jq >> "${GITHUB_OUTPUT}"
+          echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+
+  gradle:
+    name: "${{ matrix.base.name }}"
+    runs-on: "ubuntu-24.04"
+    needs: example-job
+    if: ${{ needs.example-job.outputs.DEPLOYMENT_MATRIX != '[]' }}
+    timeout-minutes: 20
+    strategy:
+      max-parallel: 16
+      fail-fast: false
+      matrix:
+        base: ${{ fromJSON(needs.example-job.outputs.DEPLOYMENT_MATRIX) }}
+    steps:
+
+      - name: Download ${{ matrix.name }}
+        uses: actions/download-artifact@v4
+        with:
+          name: parts
+          pattern: servers.json
+
+      - name: Check API rate limits
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+
+          while true
+            do
+            API_CALLS_TOTAL=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /rate_limit | jq -r '.rate.limit')
+            API_CALLS_LEFT=$(gh api -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /rate_limit | jq -r '.rate.remaining')
+            PERCENT=$(( API_CALLS_LEFT * 100 / API_CALLS_TOTAL ))
+            if (( $PERCENT > 20 )); then
+                echo "API rate in good shape $PERCENT % free"
+                exit 0
+            fi
+            echo "API rate lower then 20%, sleping 10m"
+            sleep 10m
+          done
+          # show current api rate
+          curl -s -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ secrets.ACCESS_TOKEN }}" https://api.github.com/rate_limit
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_UPLOAD }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+          if_key_exists: replace
+
+      - name: "Download artifact ${{ matrix.base.name }} from Git"
+        run: |
+
+          curl \
+          --progress-bar \
+          --create-dir \
+          --output-dir ${{ inputs.cdntag }}/${{ inputs.latest }} \
+          -o ${{ matrix.base.name }} \
+          -L ${{ matrix.base.url }}
+          ls -l
+          ls -l ${{ inputs.cdntag }}
+          chmod -R 755 ${{ inputs.cdntag }}
+
+      - name: "Upload artifact to CDN"
+        run: |
+
+          # we use servers.json definitions that was build in main workflow
+          # so we don't call API for every file
+          for row in $( cat servers.json | jq -r '@base64'); do
+            # Decode the base64 encoded JSON and extract values
+            _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+            }
+            # Extract values from each item
+            id=$(_jq '.id')
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            download_path_archive=$(_jq '.custom_fields.download_path_archive')
+            download_path_debs=$(_jq '.custom_fields.download_path_debs')
+            download_path_images=$(_jq '.custom_fields.download_path_images')
+            known_hosts=$(_jq '.custom_fields.known_hosts')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            runners=$(_jq '.custom_fields.runners')
+            username=$(_jq '.custom_fields.username')
+            weight=$(_jq '.custom_fields.weight')
+
+            # rsync
+            rsync --progress -e \
+            "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+            -ArvP . "${username}@${name}:${path}/cache" --exclude='servers.json' --exclude='part*.json'
+          done
