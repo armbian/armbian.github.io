@@ -38,3 +38,10 @@ jobs:
           git add data/base-files.json
           git diff --cached --quiet || git commit -m "Update base-files package info"
           git push
+
+      - name: "Generate directory"
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Generate directory"
+
