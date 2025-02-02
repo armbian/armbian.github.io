@@ -6,8 +6,8 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository }}" # username/repository
-  CDN_TAG: "${{ github.event.client_payload.cdn_tag }}" # folder on server
+  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || 'cli/cli' }}" # username/repository
+  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'os' }}" # folder on server
   PULL_TAG: "" # leave empty for latest
 
 jobs:
@@ -107,17 +107,40 @@ jobs:
           name: parts
           pattern: part*
           merge-multiple: true
-      - name: "Make JSON"
+      - name: "Clean older files on servers"
         id: json
         run: |
           LATEST=$(cat part*.json | jq -r '.[].tag' | sort | uniq)
           CDN_TAG=$(cat part*.json | jq -r '.[].cdn_tag' | sort | uniq)
           echo "Delete all except $LATEST on $CDN_TAG"
           tempfolder=$(mktemp -d)
-          rsync --delete -e \
-             "ssh -p 10023 -o StrictHostKeyChecking=accept-new" \
-             -rvP ${tempfolder}/ "upload@k-space.ee.armbian.com:/storage/www/cache/${CDN_TAG}" --exclude=${LATEST}
 
+          # we use servers.json definitions that was build in main workflow
+          # so we don't call API for every file
+          for row in $( cat servers.json | jq -r '@base64'); do
+            # Decode the base64 encoded JSON and extract values
+            _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+            }
+            # Extract values from each item
+            id=$(_jq '.id')
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            download_path_archive=$(_jq '.custom_fields.download_path_archive')
+            download_path_debs=$(_jq '.custom_fields.download_path_debs')
+            download_path_images=$(_jq '.custom_fields.download_path_images')
+            known_hosts=$(_jq '.custom_fields.known_hosts')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            runners=$(_jq '.custom_fields.runners')
+            username=$(_jq '.custom_fields.username')
+            weight=$(_jq '.custom_fields.weight')
+            # rsync
+            rsync --delete -e \
+            "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+            -rvP ${tempfolder}/ "${username}@${name}:${path}/cache/${CDN_TAG}" --exclude=${LATEST}
+          done
       - uses: geekyeggo/delete-artifact@v5
         with:
           name: |
