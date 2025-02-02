@@ -80,7 +80,7 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    uses: armbian/armbian.github.io/.github/workflows/reusable.yml@mirror
+    uses: armbian/armbian.github.io/.github/workflows/reusable.yml@main
     with:
       name: "${{ matrix.name }}"
       cdntag: "${{ matrix.cdn_tag }}"
