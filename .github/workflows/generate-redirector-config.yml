@@ -44,6 +44,7 @@ jobs:
           - apt
           - dl
           - archive
+          - cache
     steps:
 
       - name: "Install dependencies: lftp"
@@ -60,6 +61,10 @@ jobs:
               cd source ; lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}
               cd ..
               find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} destination/ \;
+          elif [[ "${{ matrix.platform }}" =~ ^(cache) ]]; then
+              cd source ; lftp -e "mirror --include-glob=*.torrent --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}
+              cd ..
+              find source/*/* -mindepth 1 -maxdepth 1 -exec mv -i -- {} destination/ \;
           else
               cd destination; lftp -e "mirror --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}/dists
           fi
@@ -145,6 +150,25 @@ jobs:
           curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
           "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=archive&status=active" \
           | jq '.results[] | .name,.custom_fields["download_path_images"],.id' | sed "s|null|archive|" | sed "s/\"//g" \
+          | xargs -n3 -d'\n' | sed -e 's/\s\+/\//' | sed "s/ /,/" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  Cache-index:
+    name: "Compare cache mirrors"
+    needs: build
+    outputs:
+      matrix: ${{steps.json.outputs.JSON_CONTENT}}
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Get cache mirrors from database"
+        id: json
+        run: |
+
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=cache&status=active" \
+          | jq '.results[] | .name,.custom_fields["download_path_images"],.id' | sed "s|null|cache|" | sed "s/\"//g" \
           | xargs -n3 -d'\n' | sed -e 's/\s\+/\//' | sed "s/ /,/" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
@@ -386,8 +410,68 @@ jobs:
           path: status
           if-no-files-found: ignore
 
+  Cache:
+    name: "C"
+    runs-on: ubuntu-24.04
+    needs: [ Cache-index ]
+    outputs:
+      matrix: ${{needs.Cache-index.outputs.matrix}}
+    if: ${{ needs.Cache-index.outputs.matrix != '[]' && needs.Cache-index.outputs.matrix != '' }}
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ${{fromJson(needs.Cache-index.outputs.matrix)}}
+
+    steps:
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cache
+          path: cache
+
+      - name: "Install dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lftp
+          version: 1.0
+
+      - name: "Check ${{ matrix.node }} "
+        run: |
+
+          SERVER_URL=$(echo "${{ matrix.node }}" | cut -d"," -f1)
+          SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
+          echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
+          mkdir -p compare source; cd source
+          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
+              timeout 5m lftp -e "mirror --include-glob=*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
+              cd ..
+              find source/*/*/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \; || true
+          fi
+          OUT=$(diff -rq compare archive || true)
+          mkdir -p status
+          if [[ -z "${OUT}" ]]; then
+              echo "true" >> status/${SERVER_ID}
+              echo "STATUS=true" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 0 ]]; then
+              echo "not_in_sync" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          elif [[ "${exit_status}" -eq 124 ]]; then
+              echo "timeout" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=not_in_sync" >> $GITHUB_ENV
+          fi
+
+      - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-${{ env.SERVER_ID }}
+          path: status
+          if-no-files-found: ignore
+
   download:
-    needs: [ Debs-beta,Debs-stable,Images-stable,Images-archive ]
+    needs: [ Debs-beta,Debs-stable,Images-stable,Images-archive, Cache ]
     runs-on: ubuntu-24.04
     steps:
 
@@ -523,6 +607,38 @@ jobs:
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
 
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: status
+        pattern: cache*
+        merge-multiple: true
+
+    - name: "Grep only those that are in sync"
+      run: |
+        echo "# Not in sync" >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep not_in_sync status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        grep not_in_sync status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
+        grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+        #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+
+        echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
+        echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
+        rm -rf status
+
+    - name: Cache
+      uses: armbian/actions/make-yaml-redirector@main
+      with:
+        variant: cache
+        failoverserver: "${{ env.failoverserver }}"
+        port: 8084
+        geodb: "${{ env.GEODB }}"
+        asndb: "${{ env.ASNDB }}"
+        dl_map: "${{ env.DL_MAP }}"
+        reloadKey: ${{ env.reloadKey }}
+        netbox: ${{ secrets.NETBOX_TOKEN }}
+
   Close:
     needs: [ download ]
     runs-on: ubuntu-24.04
@@ -578,6 +694,7 @@ jobs:
             beta
             dl
             archive
+            cache
 
     - name: "Run webindex update action"
       uses: peter-evans/repository-dispatch@v3
