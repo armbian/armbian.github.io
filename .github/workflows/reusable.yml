@@ -49,7 +49,7 @@ jobs:
     runs-on: "ubuntu-24.04"
     needs: example-job
     if: ${{ needs.example-job.outputs.DEPLOYMENT_MATRIX != '[]' }}
-    timeout-minutes: 20
+    timeout-minutes: 60
     strategy:
       max-parallel: 16
       fail-fast: false
