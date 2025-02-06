@@ -1,0 +1,17 @@
+#
+# cache.armbian.com
+#
+geodb: /scripts/redirect-config/GeoLite2-City.mmdb
+asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
+dl_map: /scripts/redirect-config/all-images.json
+bind: ':8084'
+
+# Reload authorization key
+reloadKey: ce8b98153fe17dd37315d7c483d33b9d
+
+# LRU Cache Size (in items)
+cacheSize: 2048
+
+# Documentation: https://github.com/armbian/armbian-router
+
+servers:
