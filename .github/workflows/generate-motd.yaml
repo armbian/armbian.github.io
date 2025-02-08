@@ -1,0 +1,52 @@
+name: "Generate motd for Linux OS"
+on:
+  push:
+  repository_dispatch:
+    types: ["MOTD update"]
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+  jira:
+    runs-on: ubuntu-24.04
+    name: "Get from Armbian Jira"
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: armbian.github.io
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: "armbian/os"
+          ref: motd
+          fetch-depth: 0
+          path: os
+
+      - name: "Generate file"
+        run: |
+
+          cat os/motd.json | jq '.[] | .expiration,.message,.url' | xargs -n3 -d'\n' | sed -e 's/" "/|/'  | sed "s/\"//g" > quotes.txt
+
+      - name: Commit changes if any
+        run: |
+          cd armbian.github.io
+          git checkout data
+          mkdir -p data/
+          mv ${{ github.workspace }}/quotes.txt data/
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/.
+          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git push
+
+#      - name: "Run base-files update action"
+#        uses: peter-evans/repository-dispatch@v3
+#        with:
+#          token: ${{ secrets.GITHUB_TOKEN }}
+#          event-type: "Base files"
