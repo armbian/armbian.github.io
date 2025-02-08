@@ -24,7 +24,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: "armbian/os"
-          ref: motd
           fetch-depth: 0
           path: os
 
@@ -32,6 +31,8 @@ jobs:
         run: |
 
           cat os/motd.json | jq '.[] | .expiration,.message,.url' | xargs -n3 -d'\n' | sed -e 's/" "/|/'  | sed "s/\"//g" > quotes.txt
+          # Get random application from armbion-config TBD: json structure needs primary field, so we only display top level info
+          # cat lib/armbian-config/config.jobs.json | jq -c '.menu[] | select(.id=="Software") .sub[] | select(.id=="Media") .sub[]' | shuf -n 1
 
       - name: Commit changes if any
         run: |
