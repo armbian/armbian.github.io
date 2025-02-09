@@ -1,1 +1,2 @@
-
+2025-04-15|Help Armbian Grow: Support & Join Our Team! https://forum.armbian.com/crowdfunding/project/16-help-armbian-grow-support-join-our-team/
+2026-01-01|Armbian config utility - state of the art system config tool https://docs.armbian.com/User-Guide_Armbian-Config/
