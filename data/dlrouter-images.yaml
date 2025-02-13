@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 3325b69b643ff6aebe2f5279fd759f7e
+reloadKey: 4d741275b8c189b1cce23028ee2eb49a
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -15,9 +15,3 @@ cacheSize: 2048
 # Documentation: https://github.com/armbian/armbian-router
 
 servers:
-
-  # Europe/Ljubljana - 200 Mbit/s
-  - server: imola.armbian.com/dl/
-    latitude: 46.081638
-    longitude: 14.526054
-    weight: 10
