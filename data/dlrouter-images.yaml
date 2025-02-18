@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: d57ca7fc94313078157391b5bf642c39
+reloadKey: ee2e4a8dc2d4f5ec895bee9bd11f21ce
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -15,6 +15,12 @@ cacheSize: 2048
 # Documentation: https://github.com/armbian/armbian-router
 
 servers:
+
+  # America/New_York - 1000 Mbit/s
+  - server: armbian.tnahosting.net/dl/
+    latitude: 42.112
+    longitude: -88.0353
+    weight: 1
 
   # America/Chicago - 1000 Mbit/s
   - server: armbian.chi.auroradev.org/dl/
