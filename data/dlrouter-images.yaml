@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: cfd0af1f8d3c4e68aa733a70296c0262
+reloadKey: e481fb3c02ebdc06177052b9d791d2f2
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -64,12 +64,6 @@ servers:
     longitude: 116.3971
     weight: 10
 
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.aliyun.com/armbian-releases/
-    latitude: 34.7732
-    longitude: 113.722
-    weight: 10
-
   # Europe/Copenhagen - 20000 Mbit/s
   - server: mirrors.dotsrc.org/armbian-dl/
     latitude: 55.6802
@@ -96,7 +90,10 @@ servers:
 
   # Europe/Moscow - 10000 Mbit/s
   - server: mirror.yandex.ru/mirrors/armbian/dl/
-    exlude: ua
+    rules: ua
+    - field: location.country.iso_code
+        not_in:
+          - ua
     latitude: 55.7483
     longitude: 37.6171
     weight: 10
@@ -109,7 +106,10 @@ servers:
 
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/dl/
-    exlude: ua
+    rules: ua
+    - field: location.country.iso_code
+        not_in:
+          - ua
     latitude: 59.9417
     longitude: 30.3096
     weight: 10
@@ -128,7 +128,10 @@ servers:
 
   # Europe/Kiev - 1000 Mbit/s
   - server: fastmirror.pp.ua/armbian-dl/
-    exlude: ru
+    rules: ru
+    - field: location.country.iso_code
+        not_in:
+          - ru
     latitude: 50.458
     longitude: 30.5303
     weight: 10
@@ -158,7 +161,10 @@ servers:
 
   # Europe/Kiev - 20000 Mbit/s
   - server: mirror.hostiko.network/armbian-dl/
-    exlude: ru
+    rules: ru
+    - field: location.country.iso_code
+        not_in:
+          - ru
     latitude: 50.4547
     longitude: 30.5238
     weight: 10
