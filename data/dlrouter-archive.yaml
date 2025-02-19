@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: 3db7106880e3ca3f2ffe73c3fb54a6ac
+reloadKey: 93dfac396392cf9ae4fba0ecfd576065
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -24,12 +24,20 @@ servers:
 
   # Europe/Moscow - 10000 Mbit/s
   - server: mirror.yandex.ru/mirrors/armbian/archive/
+    rules: UA
+    - field: location.country.iso_code
+        not_in:
+          - UA
     latitude: 55.7483
     longitude: 37.6171
     weight: 10
 
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/archive/
+    rules: UA
+    - field: location.country.iso_code
+        not_in:
+          - UA
     latitude: 59.9417
     longitude: 30.3096
     weight: 10
