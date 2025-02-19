@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8083'
 
 # Reload authorization key
-reloadKey: 0330810ddcd98b084e74a9ee2ebe3a13
+reloadKey: 0081752b9b729bbf9cb5244f1ae9ae8c
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -36,7 +36,7 @@ servers:
 
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/beta/
-    rules: UA
+    rules:
     - field: location.country.iso_code
         not_in:
           - UA
