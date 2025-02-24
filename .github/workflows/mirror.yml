@@ -1,6 +1,7 @@
 # .github/workflows/mirror.yml
 name: "Mirror repository artifacts"
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: ["Mirror"]
 
