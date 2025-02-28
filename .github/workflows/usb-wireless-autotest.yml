@@ -1,0 +1,191 @@
+name: "Scan USB devices"
+on:
+  workflow_dispatch:   # Manually triggered via GitHub Actions UI    
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+
+  prepare:
+    name: "Power system on"
+    outputs:
+      DEPLOYMENT_MATRIX: "${{ steps.json.outputs.DEPLOYMENT_MATRIX }}"
+    runs-on: "ubuntu-24.04"
+    steps:
+
+      # step for actual powering on / off TBD
+
+      - name: Get devices from database
+        id: json
+        run: |
+
+          delimiter="$(openssl rand -hex 8)"
+          echo "DEPLOYMENT_MATRIX<<${delimiter}" >> "${GITHUB_OUTPUT}"
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "https://stuff.armbian.com/netbox/api/dcim/devices/?limit=500&name__empty=false&status=active" | \
+          jq '.results[] | select(.device_role.slug == "wifi-dut") | {name: .name, serial: .serial, device_type: .device_type.model, device_class: .custom_fields.class}' | \
+          jq -s >> $GITHUB_OUTPUT
+          echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+
+  gradle:
+    name: "Testing ${{ matrix.json.name }}"
+    runs-on: "ubuntu-24.04"
+    needs: prepare
+    if: ${{ needs.prepare.outputs.DEPLOYMENT_MATRIX != '[]' }}
+    timeout-minutes: 20
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        json: ${{ fromJSON(needs.prepare.outputs.DEPLOYMENT_MATRIX) }}
+    steps:
+
+       - name: "Connect to Tailscale network"
+         uses: tailscale/github-action@v3
+         with:
+           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+           tags: tag:ci
+
+       - name: "Install SSH key"
+         uses: shimataro/ssh-key-action@v2
+         with:
+           key: ${{ secrets.KEY_CI }}
+           known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_CI }}
+           if_key_exists: replace
+
+       - name: "Generate YAML for wireless device"
+         shell: bash
+         run: |
+
+           DEVICE=$(echo "wlx${{ matrix.json.serial }}" | sed "s/://g")
+
+           case "${{ matrix.json.device_class }}" in
+           "AC600")
+              ACCESS_POINT="GOSTJE50"
+              ;;
+           *)
+              ACCESS_POINT="GOSTJE24"
+              ;;
+           esac
+
+           cat > wireless.yaml <<- EOT
+           network:
+             version: 2
+             renderer: networkd
+             wifis:
+               ${DEVICE}:
+                 addresses:
+                 - "10.0.50.50/24"
+                 nameservers:
+                   addresses:
+                   - 9.9.9.9
+                   - 1.1.1.1
+                 dhcp4: false
+                 dhcp6: false
+                 macaddress: "${{ matrix.json.serial }}"
+                 access-points:
+                   "${ACCESS_POINT}":
+                     auth:
+                       key-management: "psk"
+                       password: "password"
+           EOT
+
+       - name: "Enable wireless adapter"
+         shell: bash
+         run: |
+
+           scp wireless.yaml ci@100.113.54.60:/tmp
+           ssh ci@100.113.54.60 "sudo mv /tmp/wireless.yaml /etc/netplan/"
+           ssh ci@100.113.54.60 "sudo chmod 600 /etc/netplan/*"
+           ssh ci@100.113.54.60 "sudo netplan apply"
+
+       - name: "Make sure its connected"
+         timeout-minutes: 1
+         shell: bash
+         run: |
+
+           DEVICE=$(echo "wlx${{ matrix.json.serial }}" | sed "s/://g")
+           while true; do
+               #CONNECTION=$(ssh ci@100.113.54.60 "nmcli -t -f NAME connection show --active | grep ${DEVICE} || true")
+               CONNECTION=$(ssh ci@100.113.54.60 "networkctl | grep ${DEVICE} | grep routable || true")
+               if [[ -n "${CONNECTION}" ]]; then
+                   break
+               fi
+               sleep 2
+           done
+
+       - name: "Do some perf testing"
+         shell: bash
+         run: |
+
+           DEVICE=$(echo "wlx${{ matrix.json.serial }}" | sed "s/://g")
+           echo "DEVICE=$DEVICE" >> $GITHUB_ENV
+           rm -rf test; mkdir -p test
+           numbers=$(ssh ci@100.113.54.60 "iperf3 -R -c 10.0.60.10 -B 10.0.50.50 -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
+           mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
+           echo "|${{ matrix.json.name }}|${{ matrix.json.device_type }}| ${{ matrix.json.serial }} | ${{ matrix.json.device_class }} | ${mbits} |" > test/${DEVICE}.iperf
+
+           # get Armbian version and kernel
+           echo "$(ssh ci@100.113.54.60 "cat /etc/armbian-release | grep VERSION")" > test/${DEVICE}.system
+           echo "$(ssh ci@100.113.54.60 "cat /etc/armbian-release | grep ^ARCH")" > test/${DEVICE}.system
+           echo "KERNEL=$(ssh ci@100.113.54.60 "uname -r")" >> test/${DEVICE}.system
+
+       - name: "Remove adapter"
+         shell: bash
+         run: |
+
+           ssh ci@100.113.54.60 "sudo rm /etc/netplan/wireless.yaml"
+           ssh ci@100.113.54.60 "sudo netplan apply"
+
+       - name: "Upload test summary"
+         uses: actions/upload-artifact@v4
+         with:
+           name: test-${{ env.DEVICE }}
+           path: test
+           if-no-files-found: ignore
+
+  stop:
+    name: "Merge test artifacts"
+    if: always()
+    needs: gradle
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: "Connect to Tailscale network"
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_CI }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_CI }}
+          if_key_exists: replace
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test
+          pattern: test-*
+          merge-multiple: true
+
+      - name: Install
+        run: |
+
+          source test/*.system
+          echo "# USB dongles performance test:" >> $GITHUB_STEP_SUMMARY
+          echo "Armbian: $VERSION - Kernel: $KERNEL - Architecture: $ARCH" >> $GITHUB_STEP_SUMMARY
+          echo "|Name|Chip|MAC|Class|Average Iperf|" >> $GITHUB_STEP_SUMMARY
+          echo "|:---|:---|:---|:---|---:|" >> $GITHUB_STEP_SUMMARY
+          cat test/*.iperf | sed '$ s/.$//' >> $GITHUB_STEP_SUMMARY
+          echo "### System logs" >> $GITHUB_STEP_SUMMARY
+          echo "$(ssh ci@100.113.54.60 "sudo dmesg")" >> $GITHUB_STEP_SUMMARY
+
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            test-*

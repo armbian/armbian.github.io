@@ -1,13 +1,14 @@
 name: "Update base-files package info"
 # Trigger this in a train (from generate-jira-excerpt.yml)
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: ["Base files"]
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       # Step 1: Checkout the repository
       - name: Checkout repository

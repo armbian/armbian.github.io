@@ -1,0 +1,148 @@
+# .github/workflows/mirror.yml
+name: "Mirror repository artifacts"
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: ["Mirror"]
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || 'cli/cli' }}" # username/repository
+  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'os' }}" # folder on server
+  PULL_TAG: "" # leave empty for latest
+
+jobs:
+
+  prepare:
+    name: "Split JSON into parts"
+    runs-on: "ubuntu-24.04"
+    outputs:
+      matrix:  ${{steps.json.outputs.JSON_CONTENT}}
+    steps:
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: "${{ secrets.KEY_UPLOAD }}"
+          known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
+          if_key_exists: replace
+      - name: "Get latest release TAG"
+        run: |
+          echo "LATEST=$(gh release list --repo https://github.com/${{ env.PULL_REPOSITORY }} --json isLatest,tagName | jq -r '.[] | select(.isLatest == true) | .tagName')" >> $GITHUB_ENV
+      - name: "Get upload servers"
+        run: |
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+          -H "Accept: application/json; indent=4" \
+          "https://stuff.armbian.com/netbox/api/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" | \
+          jq '.results[] | select(.tags.[].name == "cache") | {name, custom_fields}' > servers.json
+      - name: "Get release artefacts"
+        run: |
+          gh release view --json \
+          assets --repo https://github.com/${{ env.PULL_REPOSITORY }} | \
+          jq '.assets[] | { "tag": "'${{ env.LATEST }}'","cdn_tag": "'${{ env.CDN_TAG }}'", name: .name, url: .url, size: .size}' | \
+          jq -s > artifacts.json
+      - name: "Split JSON file into parts"
+        run: |
+          cat >> "split.py" <<- EOT
+          import json
+          def split_json(input_file, output_prefix, chunk_size):
+              # Open and load the large JSON file
+              with open(input_file, 'r') as infile:
+                  data = json.load(infile)
+              # Split the data into chunks
+              total_chunks = len(data) // chunk_size + (1 if len(data) % chunk_size != 0 else 0)
+              for i in range(total_chunks):
+                  chunk = data[i * chunk_size:(i + 1) * chunk_size]
+                  output_filename = f"{output_prefix}_{i + 1}.json"
+                  # Write each chunk into a separate JSON file
+                  with open(output_filename, 'w') as outfile:
+                      json.dump(chunk, outfile, indent=4)
+          split_json('artifacts.json', 'part', 200)
+          EOT
+          python3 split.py
+      - name: "Upload JSON parts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: parts
+          path: |
+            part*
+            servers.json
+          if-no-files-found: ignore
+          compression-level: 9
+      - name: "Make JSON"
+        id: json
+        run: |
+            echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+            find * -name "part*.json" -type f -exec stat --format '{"latest": "'${{ env.LATEST }}'","cdn_tag": "'${{ env.CDN_TAG }}'","name": "%n"}' {} \; | jq -s . >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT            
+  gradle:
+    needs: prepare
+    name: "JSON: ${{ matrix.name }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    uses: armbian/armbian.github.io/.github/workflows/reusable.yml@main
+    with:
+      name: "${{ matrix.name }}"
+      cdntag: "${{ matrix.cdn_tag }}"
+      latest: "${{ matrix.latest }}"
+    secrets:
+      KEY_UPLOAD: ${{ secrets.KEY_UPLOAD }}
+      KNOWN_HOSTS_ARMBIAN_UPLOAD: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup:
+    needs: gradle
+    name: "Cleaning"
+    runs-on: "ubuntu-24.04"
+    steps:
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: "${{ secrets.KEY_UPLOAD }}"
+          known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
+          if_key_exists: replace
+      - name: Download ${{ matrix.name }}
+        uses: actions/download-artifact@v4
+        with:
+          name: parts
+          pattern: part*
+          merge-multiple: true
+      - name: "Clean older files on servers"
+        id: json
+        run: |
+          LATEST=$(cat part*.json | jq -r '.[].tag' | sort | uniq)
+          CDN_TAG=$(cat part*.json | jq -r '.[].cdn_tag' | sort | uniq)
+          echo "Delete all except $LATEST on $CDN_TAG"
+          tempfolder=$(mktemp -d)
+
+          # we use servers.json definitions that was build in main workflow
+          # so we don't call API for every file
+          for row in $( cat servers.json | jq -r '@base64'); do
+            # Decode the base64 encoded JSON and extract values
+            _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+            }
+            # Extract values from each item
+            id=$(_jq '.id')
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            download_path_archive=$(_jq '.custom_fields.download_path_archive')
+            download_path_debs=$(_jq '.custom_fields.download_path_debs')
+            download_path_images=$(_jq '.custom_fields.download_path_images')
+            known_hosts=$(_jq '.custom_fields.known_hosts')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            runners=$(_jq '.custom_fields.runners')
+            username=$(_jq '.custom_fields.username')
+            weight=$(_jq '.custom_fields.weight')
+            # rsync
+            rsync --delete -e \
+            "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+            -rvP ${tempfolder}/ "${username}@${name}:${path}/cache/${CDN_TAG}" --exclude=${LATEST}
+          done
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            parts*

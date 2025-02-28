@@ -27,6 +27,7 @@ jobs:
         script:
           - generate-redirector-config
           - generate-base-files-info-json
+          - mirror
 
     name: "R"
     runs-on: ubuntu-24.04
