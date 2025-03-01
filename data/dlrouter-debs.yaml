@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 73f4c30263f8c43e672f19e8ebfae771
+reloadKey: 796275df4c4d2c531021fbd50c7f52ce
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -98,6 +98,12 @@ servers:
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.sustech.edu.cn/armbian/
+    latitude: 22.2767
+    longitude: 113.5788
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
   - server: mirrors.tuna.tsinghua.edu.cn/armbian/
     latitude: 34.7732
     longitude: 113.722
@@ -107,6 +113,12 @@ servers:
   - server: mirrors.xtom.de/armbian/
     latitude: 51.2215
     longitude: 6.7762
+    weight: 10
+
+  # America/Chicago - 1000 Mbit/s
+  - server: mirror-us-stl1.armbian.airframes.io/apt/
+    latitude: 38.6287
+    longitude: -90.1988
     weight: 10
 
   # Asia/Singapore - 1000 Mbit/s
