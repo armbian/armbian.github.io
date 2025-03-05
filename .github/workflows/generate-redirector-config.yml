@@ -11,7 +11,7 @@ env:
   GEODB: "/scripts/redirect-config/GeoLite2-City.mmdb"
   ASNDB: "/scripts/redirect-config/GeoLite2-ASN.mmdb"
   DL_MAP: "/scripts/redirect-config/all-images.json"
-  SOURCE_OF_TRUTH: "upload@k-space.ee.armbian.com:/storage/www/"
+  SOURCE_OF_TRUTH: "https://k-space.ee.armbian.com"
 
 concurrency:
   group: redirector
@@ -57,11 +57,11 @@ jobs:
 
           mkdir -p source destination
           if [[ "${{ matrix.platform }}" =~ ^(dl|archive) ]]; then
-              cd source ; lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}
+              cd source ; lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" ${{ env.SOURCE_OF_TRUTH }}${{ matrix.platform }}
               cd ..
               find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} destination/ \;
           else
-              cd destination; lftp -e "mirror --parallel=64; exit" https://rsync.armbian.com/${{ matrix.platform }}/dists
+              cd destination; lftp -e "mirror --parallel=64; exit" ${{ env.SOURCE_OF_TRUTH }}${{ matrix.platform }}/dists
           fi
 
       - name: "Upload ${{ matrix.platform }} index"
