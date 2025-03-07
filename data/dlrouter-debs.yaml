@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 447463d4cd186ec67d04b28bd35f8eca
+reloadKey: de92cafae0c7fed22de3326a92423470
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -15,10 +15,28 @@ cacheSize: 2048
 
 servers:
 
+  # America/Chicago - 1000 Mbit/s
+  - server: armbian.chi.auroradev.org/apt/
+    latitude: 41.881832
+    longitude: -87.623177
+    weight: 10
+
+  # America/Los_Angeles - 10000 Mbit/s
+  - server: armbian.lv.auroradev.org/apt/
+    latitude: 36.18811
+    longitude: -115.176468
+    weight: 10
+
   # Europe/Paris - 1000 Mbit/s
   - server: armbian.nardol.ovh/apt/
     latitude: 48.8582
     longitude: 2.3387
+    weight: 10
+
+  # Europe/Vienna - 1000 Mbit/s
+  - server: armbian.systemonachip.net/apt/
+    latitude: 48.3003
+    longitude: 16.3441
     weight: 10
 
   # Australia/Sydney - 1000 Mbit/s
@@ -39,10 +57,22 @@ servers:
     longitude: 9.491
     weight: 10
 
+  # Asia/Taipei - 1000 Mbit/s
+  - server: mirror.ossplanet.net/armbian/apt/
+    latitude: 24.0
+    longitude: 121.0
+    weight: 10
+
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirror.iscas.ac.cn/armbian/
     latitude: 39.9075
     longitude: 116.3971
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.bfsu.edu.cn/armbian/
+    latitude: 39.911
+    longitude: 116.395
     weight: 10
 
   # Europe/Copenhagen - 20000 Mbit/s
@@ -73,6 +103,12 @@ servers:
     longitude: 30.3096
     weight: 10
 
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/apt/
+    latitude: 48.5144
+    longitude: -2.768
+    weight: 10
+
   # Europe/London - 1000 Mbit/s
   - server: mirror.vinehost.net/armbian/apt/
     latitude: 54.1448
@@ -95,6 +131,12 @@ servers:
   - server: kr.mirrors.naho.moe/armbian/
     latitude: 37.499177
     longitude: 126.922828
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: repo.jing.rocks/armbian-apt/
+    latitude: 35.652832
+    longitude: 139.839478
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
