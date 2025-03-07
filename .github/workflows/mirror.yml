@@ -2,13 +2,20 @@
 name: "Mirror repository artifacts"
 on:
   workflow_dispatch:
+    inputs:
+      repository:
+        required: false
+        type: string
+      folder:
+        required: false
+        type: string
   repository_dispatch:
     types: ["Mirror"]
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || 'cli/cli' }}" # username/repository
-  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'os' }}" # folder on server
+  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || inputs.repository }}" # username/repository
+  CDN_TAG: "${{ github.event.client_payload.cdn_tag || inputs.folder }}" # folder on server
   PULL_TAG: "" # leave empty for latest
 
 jobs:
