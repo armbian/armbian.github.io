@@ -61,6 +61,9 @@ jobs:
            DEVICE=$(echo "wlx${{ matrix.json.serial }}" | sed "s/://g")
 
            case "${{ matrix.json.device_class }}" in
+           "AX")
+              ACCESS_POINT="GOSTJE60"
+              ;;
            "AC600")
               ACCESS_POINT="GOSTJE50"
               ;;
