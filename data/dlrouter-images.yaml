@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 2540cf2c04acf08d27f9d2caf3cd8110
+reloadKey: 6a64c8f0bd2a3c227fc81d37a9578c28
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -16,10 +16,40 @@ cacheSize: 2048
 
 servers:
 
+  # America/New_York - 1000 Mbit/s
+  - server: armbian.tnahosting.net/dl/
+    latitude: 42.112
+    longitude: -88.0353
+    weight: 1
+
+  # America/Chicago - 1000 Mbit/s
+  - server: armbian.chi.auroradev.org/dl/
+    latitude: 41.881832
+    longitude: -87.623177
+    weight: 10
+
+  # America/Los_Angeles - 10000 Mbit/s
+  - server: armbian.lv.auroradev.org/dl/
+    latitude: 36.18811
+    longitude: -115.176468
+    weight: 10
+
   # Europe/Paris - 1000 Mbit/s
   - server: armbian.nardol.ovh/dl/
     latitude: 48.8582
     longitude: 2.3387
+    weight: 10
+
+  # Europe/Vienna - 1000 Mbit/s
+  - server: armbian.systemonachip.net/dl/
+    latitude: 48.3003
+    longitude: 16.3441
+    weight: 10
+
+  # Europe/Madrid - 1000 Mbit/s
+  - server: es.sbcmirror.org/dl/
+    latitude: 40.4163
+    longitude: -3.6934
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -50,10 +80,26 @@ servers:
     longitude: 30.3096
     weight: 10
 
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/dl/
+    latitude: 48.5144
+    longitude: -2.768
+    weight: 10
+
   # Europe/Tallinn - 10000 Mbit/s
   - server: k-space.ee.armbian.com/dl/
     latitude: 59.397987
     longitude: 24.661898
+    weight: 10
+
+  # Europe/Kiev - 20000 Mbit/s
+  - server: mirror.hostiko.network/armbian-dl/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - RU
+    latitude: 50.4547
+    longitude: 30.5238
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
