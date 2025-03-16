@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8083'
 
 # Reload authorization key
-reloadKey: ab17e2480e1146e5e4673eb3ea984d99
+reloadKey: d553b35d726d7ade6d9ef5e8a4a6f558
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -26,6 +26,12 @@ servers:
   - server: fi.mirror.armbian.de/beta/
     latitude: 51.2993
     longitude: 9.491
+    weight: 10
+
+  # Europe/Tallinn - 10000 Mbit/s
+  - server: k-space.ee.armbian.com/beta/
+    latitude: 59.397987
+    longitude: 24.661898
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
