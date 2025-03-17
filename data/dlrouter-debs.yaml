@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 72e570a24a1fb49b1c244e8e606546c9
+reloadKey: b292ad711f74aa0222ef83be3d4b6bf7
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -27,10 +27,66 @@ servers:
     longitude: 9.491
     weight: 10
 
+  # Asia/Kolkata - 1000 Mbit/s
+  - server: mirror.albony.in/armbian/
+    weight: 5
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirror.iscas.ac.cn/armbian/
+    latitude: 39.9075
+    longitude: 116.3971
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.bfsu.edu.cn/armbian/
+    latitude: 39.911
+    longitude: 116.395
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.tuna.tsinghua.edu.cn/armbian/
+    latitude: 34.7732
+    longitude: 113.722
+    weight: 10
+
+  # Europe/Berlin - 10000 Mbit/s
+  - server: mirrors.xtom.de/armbian/
+    latitude: 51.2215
+    longitude: 6.7762
+    weight: 10
+
+  # Europe/Moscow - 2000 Mbit/s
+  - server: stpete-mirror.armbian.com/apt/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - UA
+    latitude: 59.9417
+    longitude: 30.3096
+    weight: 10
+
   # Europe/Tallinn - 10000 Mbit/s
   - server: k-space.ee.armbian.com/apt/
     latitude: 59.397987
     longitude: 24.661898
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: jp.mirrors.naho.moe/armbian/
+    latitude: 35.6895
+    longitude: 139.6923
+    weight: 10
+
+  # Asia/Seoul - 1000 Mbit/s
+  - server: kr.mirrors.naho.moe/armbian/
+    latitude: 37.499177
+    longitude: 126.922828
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: repo.jing.rocks/armbian-apt/
+    latitude: 35.652832
+    longitude: 139.839478
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
@@ -39,10 +95,25 @@ servers:
     longitude: 11.0683
     weight: 10
 
+  # Asia/Taipei - 50000 Mbit/s
+  - server: mirror.twds.com.tw/armbian-apt/
+    latitude: 25.0382
+    longitude: 121.5636
+
   # Europe/Rome - 2500 Mbit/s
   - server: armbian.atomonetworks.com/apt/
     latitude: 38.157745
     longitude: 13.195175
+    weight: 10
+
+  # Europe/Kiev - 20000 Mbit/s
+  - server: mirror.hostiko.network/armbian/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - RU
+    latitude: 50.4547
+    longitude: 30.5238
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
