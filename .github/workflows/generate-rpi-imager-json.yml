@@ -1,0 +1,139 @@
+name: Update Rpi imager download JSON index
+on:
+#  repository_dispatch:
+#    types: ["Webindex update"]
+  workflow_dispatch:   # Manually triggered via GitHub Actions UI    
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+
+  Webindex:
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    name: "Generate JSON Index"
+    runs-on: "ubuntu-24.04"
+    steps:
+
+      - name: Checkout build framework repository
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          fetch-depth: 1
+          clean: false
+          path: build
+
+      - name: Checkout OS repository
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          fetch-depth: 1
+          clean: false
+          path: os
+
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/armbian.github.io
+          fetch-depth: 0
+          clean: false
+          path: armbian.github.io
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_UPLOAD }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+          if_key_exists: replace
+
+      - name: "Install dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: gh jc zip
+          version: 1.0
+
+
+      - name: "Build JSON file"
+        run: |
+
+          # prepare feeds
+          A=$(rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -ar upload@k-space.ee.armbian.com:/storage/www/dl/ | awk '{ print ""$2"|https://dl.armbian.com/"$5"|"$3"T"$4"Z" }' | grep rpi4b | grep -v "sha\|torrent\|asc" | grep "archive/" | grep -v ".txt\|homeassistant\|openhab\|kali\|omv")
+
+          # debug
+          echo "$A" > a.txt
+
+          # join all in one file and compress
+          for line in $A; do
+
+              BOARD=$(echo $line | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | cut -d"_" -f2)
+              ARMBIAN_VERSION=$(echo $line | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | cut -d"_" -f1)
+              IMAGE_SIZE=$(echo $line | cut -d"|" -f1 | sed "s/\.//g" | sed "s/\,//g")
+              KERNEL_BRANCH=$(echo $line | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | cut -d"_" -f4)
+              IMAGE_RELEASE=$(echo $line | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | cut -d"_" -f3)
+              IMAGE_URL=$(echo $line | cut -d"|" -f2)
+
+              # Release
+              if [[ "$IMAGE_RELEASE" =~ ^(jammy|noble|plucky)$ ]]; then
+              RELEASE="Ubuntu"
+              else
+              RELEASE="Debian"
+              fi
+
+              # workarounds
+              STEP_A=1
+              STEP_B=2
+              [[ $IMAGE_URL == *i3-wm* || $IMAGE_URL == *kde-* || $IMAGE_URL == *-rc* ]] && STEP_A=2 && STEP_B=3
+              IMAGE_TARGET=$(echo $IMAGE_URL | cut -d"|" -f2 | grep "minimal\|desktop" | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | cut -d"_" -f4- | grep -Po '_[a-z].*' | cut -d"." -f1 | sed "s/_//" | sed "s/_desktop//" | sed "s/-kisak//" | sed "s/-backported-mesa//" | cut -d"-" -f1,${STEP_A})
+              IMAGE_EXTENSION=$(echo $IMAGE_URL | cut -d"|" -f2 | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | sed 's/_sm8250-xiaomi-umi\|_sm8250-xiaomi-elish//g' | sed "s/rc[0-9]//g" | cut -d"_" -f4- | cut -d"-" -f${STEP_B}- | cut -d"_" -f1 | cut -d"." -f1)
+              [[ $IMAGE_EXTENSION == $KERNEL_BRANCH || $IMAGE_EXTENSION == ${IMAGE_TARGET} || $IMAGE_EXTENSION =~ boot|csot|boe|sms ]] && unset IMAGE_EXTENSION
+              [[ -z ${IMAGE_TARGET} ]] && IMAGE_TARGET="server"
+              FILE_EXTENSION=$(echo $IMAGE_URL | cut -d"|" -f2 | cut -d"|" -f2 | grep -Po 'Armbian.*[0-9][0-9].[0-9].*' | grep -Po '[0-9][0-9].[0-9].*' | sed 's/_sm8250-xiaomi-umi\|_sm8250-xiaomi-elish//g' | sed "s/-rc[0-9]//g" | rev | cut -d"_" -f1 | rev | sed 's/.*[^0-9]\([0-9]*\.[0-9]*\.[0-9]*\)//' | sed "s/desktop.\|minimal.//")
+              #FILE_EXTENSION=$(echo $IMAGE_URL | grep -o "oowow.*\|img.*")
+
+              # Clean out application from extension
+              FILE_EXTENSION=$(echo $FILE_EXTENSION | sed 's/.*-'$IMAGE_EXTENSION'//g'  | sed -e 's/^\.//g')
+
+              # Extract extensions for weird type of images
+              WEIRD_EXT=$(echo $FILE_EXTENSION | sed "s/img//g" | sed "s/^\.//g" | sed "s/\..*//g" | sed "s/xz//g" | sed "s/oowow//g")
+
+              IMAGE_TYPE=$(echo $IMAGE_URL | cut -d"/" -f5)
+              IMAGE_CREATED=$(echo $line | cut -d"|" -f3 | sed "s/\//-/g")
+              EXPOSED=false
+              # Assemble redirector link
+              PREFIX=""
+              [[ "${IMAGE_TYPE}" == "os" ]] && PREFIX="nightly/"
+              REDI_EXT=$(echo $FILE_EXTENSION | rev | cut -d"." -f1 | rev | sed "s/xz//g")
+              REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD,,}/${IMAGE_RELEASE^}_${KERNEL_BRANCH}${IMAGE_TARGET:+_$IMAGE_TARGET}${IMAGE_EXTENSION:+-$IMAGE_EXTENSION}${WEIRD_EXT:+-$WEIRD_EXT}${REDI_EXT:+.$REDI_EXT}"
+
+              # Download, unpack, make sha
+              wget $IMAGE_URL
+              FILENAME=$(echo $IMAGE_URL | rev | cut -d"/" -f1 | rev)
+              FILENAME_FINAL=${FILENAME/.xz/}
+              xz -d $FILENAME
+              extract_size=$(stat -c%s $FILENAME_FINAL)
+              extract_sha256=$(sha256sum $FILENAME_FINAL | cut -d" " -f1)
+              rm $FILENAME_FINAL
+
+              image_download_sha256=$(wget -qO- "${REDI_URL}.sha" | cut -d" " -f1)
+              echo "Armbian OS $IMAGE_RELEASE $IMAGE_TARGET $ARMBIAN_VERSION|Ultralight custom $RELEASE OS for single board computers|$IMAGE_URL|https://www.armbian.com/armbian-logo-40x40.png|https://www.armbian.com|${IMAGE_CREATED:0:10}|$extract_size|$extract_sha256|$IMAGE_SIZE|$image_download_sha256||systemd"
+
+          done | sed '1s/^/"name"|"description"|"url"|"icon"|"website"|"release_date"|"extract_size"|"extract_sha256"|"image_download_size"|"image_download_sha256"|"devices"|"init_format"\n/' | jc --csv | jq '{"os_list": ([.[] | .devices = ["pi5-64bit", "pi4-64bit", "pi3-64bit"]])}' > rpi-imager.json
+
+      - name: Commit changes if any
+        run: |
+
+          cd armbian.github.io
+          git checkout data
+          mkdir -p data/
+
+          cp ${{ github.workspace }}/rpi-imager.json data/
+
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/.
+          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git push
