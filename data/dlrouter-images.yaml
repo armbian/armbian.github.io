@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 3b9c72d8effd71d08c3535d9f449e15e
+reloadKey: a72ce5fc6fcf8e571c48cd58c2a79db7
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -46,10 +46,22 @@ servers:
     longitude: 16.3441
     weight: 10
 
+  # Australia/Sydney - 1000 Mbit/s
+  - server: au.sbcmirror.org/armbian/dl/
+    latitude: -33.8715
+    longitude: 151.2006
+    weight: 10
+
   # Europe/Madrid - 1000 Mbit/s
   - server: es.sbcmirror.org/dl/
     latitude: 40.4163
     longitude: -3.6934
+    weight: 10
+
+  # Europe/Ljubljana - 200 Mbit/s
+  - server: imola.armbian.com/dl/
+    latitude: 46.081638
+    longitude: 14.526054
     weight: 10
 
   # Europe/Copenhagen - 20000 Mbit/s
@@ -58,10 +70,22 @@ servers:
     longitude: 12.5892
     weight: 10
 
+  # America/New_York - 10000 Mbit/s
+  - server: mirrors.jevincanders.net/armbian/dl/
+    latitude: 42.8868
+    longitude: -78.8787
+    weight: 10
+
   # America/Chicago - 1000 Mbit/s
   - server: mirror-us-stl1.armbian.airframes.io/dl/
     latitude: 38.6287
     longitude: -90.1988
+    weight: 10
+
+  # Asia/Singapore - 1000 Mbit/s
+  - server: sg.sbcmirror.org/armbian/dl/
+    latitude: 1.3673
+    longitude: 103.8014
     weight: 10
 
   # Europe/Moscow - 2000 Mbit/s
@@ -80,11 +104,22 @@ servers:
     longitude: -2.768
     weight: 10
 
+  # Europe/London - 1000 Mbit/s
+  - server: mirror.vinehost.net/armbian/dl/
+    latitude: 54.1448
+    longitude: -0.1555
+    weight: 10
+
   # Europe/Tallinn - 10000 Mbit/s
   - server: k-space.ee.armbian.com/dl/
     latitude: 59.397987
     longitude: 24.661898
     weight: 10
+
+  # Asia/Taipei - 50000 Mbit/s
+  - server: mirror.twds.com.tw/armbian-dl/
+    latitude: 25.0382
+    longitude: 121.5636
 
   # Europe/Kiev - 20000 Mbit/s
   - server: mirror.hostiko.network/armbian-dl/
