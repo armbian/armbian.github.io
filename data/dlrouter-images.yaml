@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: af8a50738aeb6fd9150ca5c46fcb3ce2
+reloadKey: 5cd9a815962d45a6b57635df881cb2ed
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -15,6 +15,12 @@ cacheSize: 2048
 # Documentation: https://github.com/armbian/armbian-router
 
 servers:
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirror.iscas.ac.cn/armbian-releases/
+    latitude: 39.9075
+    longitude: 116.3971
+    weight: 10
 
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/dl/
@@ -30,4 +36,10 @@ servers:
   - server: k-space.ee.armbian.com/dl/
     latitude: 59.397987
     longitude: 24.661898
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: repo.jing.rocks/armbian-dl/
+    latitude: 35.652832
+    longitude: 139.839478
     weight: 10
