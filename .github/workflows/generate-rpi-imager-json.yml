@@ -121,7 +121,7 @@ jobs:
               image_download_sha256=$(wget -qO- "${REDI_URL}.sha" | cut -d" " -f1)
               echo "Armbian OS $IMAGE_RELEASE $IMAGE_TARGET $ARMBIAN_VERSION|Ultralight custom $RELEASE OS for single board computers|$IMAGE_URL|https://www.armbian.com/armbian-logo-40x40.png|https://www.armbian.com|${IMAGE_CREATED:0:10}|$extract_size|$extract_sha256|$IMAGE_SIZE|$image_download_sha256||systemd"
 
-          done | sed '1s/^/"name"|"description"|"url"|"icon"|"website"|"release_date"|"extract_size"|"extract_sha256"|"image_download_size"|"image_download_sha256"|"devices"|"init_format"\n/' | jc --csv | jq '{"os_list": ([.[] | .devices = ["pi5-64bit", "pi4-64bit", "pi3-64bit"]])}' > rpi-imager.json
+          done | sed '1s/^/"name"|"description"|"url"|"icon"|"website"|"release_date"|extract_size|"extract_sha256"|image_download_size|"image_download_sha256"|"devices"|"init_format"\n/' | jc --csv | jq '{"os_list": ([.[] | .devices = ["pi5-64bit", "pi4-64bit", "pi3-64bit"]])}' > rpi-imager.json
 
       - name: Commit changes if any
         run: |
