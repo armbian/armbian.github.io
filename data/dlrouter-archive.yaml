@@ -7,12 +7,22 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: d605cf91276d6e12f7a001e496eafa66
+reloadKey: 30a4d3ef233c9406dfd2b2e6ea284d19
 
 # LRU Cache Size (in items)
 cacheSize: 2048
 
 # Documentation: https://github.com/armbian/armbian-router
+
+specialExtensions:
+  boot-sms.img.xz: -boot-sms
+  boot-boe.img.xz: -boot-boe
+  boot-csot.img.xz: -boot-csot
+  rootfs.img.xz: -rootfs
+  img.qcow2: -qcow2
+  img.qcow2.xz: -qcow2
+  boot.bin.xz: -uboot-bin
+  hyperv.zip: -hyperv
 
 servers:
 
