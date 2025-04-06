@@ -98,6 +98,7 @@ jobs:
          shell: bash
          run: |
 
+           ssh-keygen -f '/home/runner/.ssh/known_hosts' -R '100.113.54.60'
            scp wireless.yaml ci@100.113.54.60:/tmp
            ssh ci@100.113.54.60 "sudo mv /tmp/wireless.yaml /etc/netplan/"
            ssh ci@100.113.54.60 "sudo chmod 600 /etc/netplan/*"
