@@ -23,7 +23,7 @@ jobs:
           echo "DEPLOYMENT_MATRIX<<${delimiter}" >> "${GITHUB_OUTPUT}"
           curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
           "https://stuff.armbian.com/netbox/api/dcim/devices/?limit=500&name__empty=false&status=active" | \
-          jq '.results[] | select(.device_role.slug == "wifi-dut") | {name: .name, serial: .serial, device_type: .device_type.model, device_class: .custom_fields.class}' | \
+          jq '.results[] | select(.device_role.slug == "wifi-dut") | {name: .name, serial: .serial, device_type: .device_type.model, device_class: .custom_fields.class, device_ip: .primary_ip.address}' | \
           jq -s >> $GITHUB_OUTPUT
           echo "${delimiter}" >> "${GITHUB_OUTPUT}"
 
@@ -94,14 +94,15 @@ jobs:
                        password: "password"
            EOT
 
-       - name: "Enable wireless adapter"
+       - name: "Enable wireless adapter on ${{ matrix.json.device_ip }}"
          shell: bash
          run: |
 
-           scp wireless.yaml ci@100.113.54.60:/tmp
-           ssh ci@100.113.54.60 "sudo mv /tmp/wireless.yaml /etc/netplan/"
-           ssh ci@100.113.54.60 "sudo chmod 600 /etc/netplan/*"
-           ssh ci@100.113.54.60 "sudo netplan apply"
+           ip_addr=$(echo "${{ matrix.json.device_ip }}" | sed 's#/.*##')
+           scp wireless.yaml ci@${ip_addr}:/tmp
+           ssh ci@${ip_addr} "sudo mv /tmp/wireless.yaml /etc/netplan/"
+           ssh ci@${ip_addr} "sudo chmod 600 /etc/netplan/*"
+           ssh ci@${ip_addr} "sudo netplan apply"
 
        - name: "Make sure its connected"
          timeout-minutes: 1
