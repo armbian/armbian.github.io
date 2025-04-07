@@ -109,10 +109,11 @@ jobs:
          shell: bash
          run: |
 
+           ip_addr=$(echo "${{ matrix.json.device_ip }}" | sed 's#/.*##')
            DEVICE=$(echo "wlx${{ matrix.json.serial }}" | sed "s/://g")
            while true; do
-               #CONNECTION=$(ssh ci@100.113.54.60 "nmcli -t -f NAME connection show --active | grep ${DEVICE} || true")
-               CONNECTION=$(ssh ci@100.113.54.60 "networkctl | grep ${DEVICE} | grep routable || true")
+               #CONNECTION=$(ssh ci@${ip_addr} "nmcli -t -f NAME connection show --active | grep ${DEVICE} || true")
+               CONNECTION=$(ssh ci@${ip_addr} "networkctl | grep ${DEVICE} | grep routable || true")
                if [[ -n "${CONNECTION}" ]]; then
                    break
                fi
@@ -123,24 +124,26 @@ jobs:
          shell: bash
          run: |
 
+           ip_addr=$(echo "${{ matrix.json.device_ip }}" | sed 's#/.*##')
            DEVICE=$(echo "wlx${{ matrix.json.serial }}" | sed "s/://g")
            echo "DEVICE=$DEVICE" >> $GITHUB_ENV
            rm -rf test; mkdir -p test
-           numbers=$(ssh ci@100.113.54.60 "iperf3 -R -c 10.0.60.10 -B 10.0.50.50 -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
+           numbers=$(ssh ci@${ip_addr} "iperf3 -R -c 10.0.60.10 -B 10.0.50.50 -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
            mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
            echo "|${{ matrix.json.name }}|${{ matrix.json.device_type }}| ${{ matrix.json.serial }} | ${{ matrix.json.device_class }} | ${mbits} |" > test/${DEVICE}.iperf
 
            # get Armbian version and kernel
-           echo "$(ssh ci@100.113.54.60 "cat /etc/armbian-release | grep VERSION")" > test/${DEVICE}.system
-           echo "$(ssh ci@100.113.54.60 "cat /etc/armbian-release | grep ^ARCH")" > test/${DEVICE}.system
-           echo "KERNEL=$(ssh ci@100.113.54.60 "uname -r")" >> test/${DEVICE}.system
+           echo "$(ssh ci@${ip_addr} "cat /etc/armbian-release | grep VERSION")" > test/${DEVICE}.system
+           echo "$(ssh ci@${ip_addr} "cat /etc/armbian-release | grep ^ARCH")" > test/${DEVICE}.system
+           echo "KERNEL=$(ssh ci@${ip_addr} "uname -r")" >> test/${DEVICE}.system
 
        - name: "Remove adapter"
          shell: bash
          run: |
 
-           ssh ci@100.113.54.60 "sudo rm /etc/netplan/wireless.yaml"
-           ssh ci@100.113.54.60 "sudo netplan apply"
+           ip_addr=$(echo "${{ matrix.json.device_ip }}" | sed 's#/.*##')
+           ssh ci@${ip_addr} "sudo rm /etc/netplan/wireless.yaml"
+           ssh ci@${ip_addr} "sudo netplan apply"
 
        - name: "Upload test summary"
          uses: actions/upload-artifact@v4
@@ -186,8 +189,8 @@ jobs:
           echo "|Name|Chip|MAC|Class|Average Iperf|" >> $GITHUB_STEP_SUMMARY
           echo "|:---|:---|:---|:---|---:|" >> $GITHUB_STEP_SUMMARY
           cat test/*.iperf | sed '$ s/.$//' >> $GITHUB_STEP_SUMMARY
-          echo "### System logs" >> $GITHUB_STEP_SUMMARY
-          echo "$(ssh ci@100.113.54.60 "sudo dmesg")" >> $GITHUB_STEP_SUMMARY
+          #echo "### System logs" >> $GITHUB_STEP_SUMMARY
+          #echo "$(ssh ci@100.113.54.60 "sudo dmesg")" >> $GITHUB_STEP_SUMMARY
 
       - uses: geekyeggo/delete-artifact@v5
         with:
