@@ -68,16 +68,7 @@ jobs:
          shell: bash
          run: |
 
-           # determine the access point name
-           # based on the device class
-           # AX - 6GHz
-           # AC600 - 5GHz
-           # AC - 2.4GHz
-           case "${{ matrix.json.device_class }}" in
-              AX) ACCESS_POINT="GOSTJE60" ;;
-              AC600) ACCESS_POINT="GOSTJE50" ;;
-              *) ACCESS_POINT="GOSTJE24" ;;
-           esac
+           ACCESS_POINT="GOSTJE60"
 
            # generate the YAML file
            # for the wireless device
@@ -92,14 +83,8 @@ jobs:
              renderer: networkd
              wifis:
                ${{ env.DEVICE }}:
-                 addresses:
-                 - "10.0.50.50/24"
-                 nameservers:
-                   addresses:
-                   - 9.9.9.9
-                   - 1.1.1.1
-                 dhcp4: false
-                 dhcp6: false
+                 dhcp4: true
+                 dhcp6: true
                  macaddress: "${{ matrix.json.serial }}"
                  access-points:
                    "${ACCESS_POINT}":
@@ -125,18 +110,21 @@ jobs:
            while true; do
                # nmcli -t -f NAME connection show --active | grep ${DEVICE}
                CONNECTION=$(ssh ci@${{ env.IP_ADDR }} "networkctl | grep ${{ env.DEVICE }} | grep routable || true")
-               if [[ -n "${CONNECTION}" ]]; then
+               CLIENTIP=$(ssh ci@${{ env.IP_ADDR }} "ip -4 addr show ${{ env.DEVICE }} | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || true")
+               # check if the connection is routable
+               if [[ -n "${CONNECTION}" && -n "${CLIENTIP}" ]]; then
                    break
                fi
                sleep 2
            done
+           echo "CLIENTIP=${CLIENTIP}" >> $GITHUB_ENV
 
        - name: "Do some perf testing"
          shell: bash
          run: |
 
            mkdir -p test
-           numbers=$(ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B 10.0.50.50 -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
+           numbers=$(ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }} -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
            mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
            echo "|${{ matrix.json.name }}|${{ matrix.json.device_type }}| ${{ matrix.json.serial }} | ${{ matrix.json.device_class }} | ${mbits} |" > test/ci@${{ env.DEVICE }}.iperf
 
