@@ -69,12 +69,12 @@ jobs:
            DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
            DEFAULT_DEVICE_CIDR=$(ssh ci@${IP_ADDR} "ip route show | grep -oP '\d+\.\d+\.\d+\.\d+/\d+'")
            #
-           echo "IP_ADDR=${IP_ADDR}" >> $GITHUB_ENV
-           echo "DEVICE=${DEVICE}" >> $GITHUB_ENV           
-           echo "DEFAULT_DEVICE=${DEFAULT_DEVICE}" >> $GITHUB_ENV
-           echo "DEFAULT_DEVICE_IP=${DEFAULT_DEVICE_IP}" >> $GITHUB_ENV
-           echo "DEFAULT_DEVICE_GW=${DEFAULT_DEVICE_GW}" >> $GITHUB_ENV
-           echo "DEFAULT_DEVICE_CIDR=${DEFAULT_DEVICE_CIDR}" >> $GITHUB_ENV
+           #echo "IP_ADDR=${IP_ADDR}" >> $GITHUB_ENV
+           #echo "DEVICE=${DEVICE}" >> $GITHUB_ENV           
+           #echo "DEFAULT_DEVICE=${DEFAULT_DEVICE}" >> $GITHUB_ENV
+           #echo "DEFAULT_DEVICE_IP=${DEFAULT_DEVICE_IP}" >> $GITHUB_ENV
+           #echo "DEFAULT_DEVICE_GW=${DEFAULT_DEVICE_GW}" >> $GITHUB_ENV
+           #echo "DEFAULT_DEVICE_CIDR=${DEFAULT_DEVICE_CIDR}" >> $GITHUB_ENV
            
        - name: "Generate YAML for wireless device"
          shell: bash
