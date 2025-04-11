@@ -69,7 +69,7 @@ jobs:
          shell: bash
          run: |
 
-           echo "DEFAULT_DEVICE=$(ssh ci@${{ env.IP_ADDR }} "ip route show default | awk '{print $5}'")" >> $GITHUB_ENV
+           echo "DEFAULT_DEVICE=$(ssh ci@${{ env.IP_ADDR }} "ip route show default | awk '$5 ~ /^enp|^eth/ { print $5 }'")" >> $GITHUB_ENV
            ACCESS_POINT="GOSTJE60"
 
            # generate the YAML file
