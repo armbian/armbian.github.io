@@ -102,6 +102,13 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo chmod 600 /etc/netplan/*"
            ssh ci@${{ env.IP_ADDR }} "sudo netplan apply"
 
+       - name: "Drop default route on ${{ env.IP_ADDR }}"
+         shell: bash
+         run: |
+
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route del 10.0.60.0/24 dev enp1s0"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev enp1s0"
+
        - name: "Make sure its connected"
          timeout-minutes: 1
          shell: bash
@@ -128,10 +135,21 @@ jobs:
            mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
            echo "|${{ matrix.json.name }}|${{ matrix.json.device_type }}| ${{ matrix.json.serial }} | ${{ matrix.json.device_class }} | ${mbits} |" > test/ci@${{ env.DEVICE }}.iperf
 
+           # Run full iperf test
+           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-tx.iperf
+           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-rx.iperf
+
            # get Armbian version and kernel
            echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep VERSION")" >> test/ci@${{ env.DEVICE }}.system
            echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep ^ARCH")" >> test/ci@${{ env.DEVICE }}.system
            echo "KERNEL=$(ssh ci@${{ env.IP_ADDR }} "uname -r")" >> test/ci@${{ env.DEVICE }}.system
+
+       - name: "Enable default route on ${{ env.IP_ADDR }}"
+         shell: bash
+         run: |
+
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route add 10.0.60.0/24 dev enp1s0 src 10.0.60.11"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route add default via 10.0.60.1 dev enp1s0 metric 200"
 
        - name: "Remove adapter"
          shell: bash
