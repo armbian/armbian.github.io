@@ -108,6 +108,7 @@ jobs:
          shell: bash
          run: |
 
+           ssh ci@${{ env.IP_ADDR }} "ip route show default dev ${{ env.DEFAULT_DEVICE }} | awk '/default/ {print $3}'"
            ssh ci@${{ env.IP_ADDR }} "sudo ip route del 10.0.60.0/24 dev ${{ env.DEFAULT_DEVICE }}"
            ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev ${{ env.DEFAULT_DEVICE }}"
 
