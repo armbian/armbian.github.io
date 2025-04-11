@@ -146,7 +146,7 @@ jobs:
 
            mkdir -p test
            # read info about connection and store it
-           ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/ci@${{ env.DEVICE }}-info.iperf
+           ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/ci@${{ env.DEVICE }}-info.log
           
            numbers=$(ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }} -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
            mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
