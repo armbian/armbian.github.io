@@ -64,7 +64,7 @@ jobs:
            # set the default device
            echo "IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)" >> $GITHUB_ENV
            echo "DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')" >> $GITHUB_ENV
-           echo "DEFAULT_DEVICE=$(ip route show default | awk '{print $5}')" >> $GITHUB_ENV
+           echo "DEFAULT_DEVICE=$(ssh ci@${{ env.IP_ADDR }} "ip route show default | awk '{print $5}'")" >> $GITHUB_ENV
 
        - name: "Generate YAML for wireless device"
          shell: bash
