@@ -64,6 +64,8 @@ jobs:
            # set the default device
            DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')
            IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)
+           ssh ci@${IP_ADDR} "sudo rm /etc/netplan/wireless.yaml"
+           ssh ci@${IP_ADDR} "sudo netplan apply"           
            DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (enp[^ ]+|eth[^ ]+)' | cut -d' ' -f2")
            DEFAULT_DEVICE_IP=$(ssh ci@${IP_ADDR} "ip route get 9.9.9.9 | grep -oP 'src \K[\d.]+'")
            DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
