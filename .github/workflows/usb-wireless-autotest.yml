@@ -120,8 +120,6 @@ jobs:
                CLIENTIP=$(ssh ci@${{ env.IP_ADDR }} "ip -4 addr show ${{ env.DEVICE }} | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || true")
                # check if the connection is routable
                if [[ -n "${CONNECTION}" && -n "${CLIENTIP}" ]]; then
-                   # read info about connection and store it
-                   ssh ci@${{ env.IP_ADDR }} "sudo iw dev wlx7cdd90ebf00a link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/ci@${{ env.DEVICE }}-info.iperf
                    break
                fi
                sleep 2
@@ -133,13 +131,16 @@ jobs:
          run: |
 
            mkdir -p test
+           # read info about connection and store it
+           ssh ci@${{ env.IP_ADDR }} "sudo iw dev wlx7cdd90ebf00a link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/ci@${{ env.DEVICE }}-info.iperf
+          
            numbers=$(ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }} -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
            mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
            echo "|${{ matrix.json.name }}|${{ matrix.json.device_type }}| ${{ matrix.json.serial }} | ${{ matrix.json.device_class }} | ${mbits} |" > test/ci@${{ env.DEVICE }}.iperf
 
            # Run full iperf test
-           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-tx.iperf
-           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-rx.iperf
+           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-tx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-rx.log
 
            # get Armbian version and kernel
            echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep VERSION")" >> test/ci@${{ env.DEVICE }}.system
