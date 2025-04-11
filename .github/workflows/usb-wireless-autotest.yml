@@ -66,7 +66,7 @@ jobs:
            IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)
            DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (enp[^ ]+|eth[^ ]+)' | cut -d' ' -f2")
            DEFAULT_DEVICE_IP=$(ssh ci@${IP_ADDR} "ip route get 9.9.9.9 | grep -oP 'src \K[\d.]+'")
-           DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${{ env.DEFAULT_DEVICE }} | awk '/default/ {print \$3}'")
+           DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
            DEFAULT_DEVICE_CIDR=$(ssh ci@${IP_ADDR} "ip route show | grep -oP '\d+\.\d+\.\d+\.\d+/\d+'")
            #
            echo "IP_ADDR=${IP_ADDR}" >> $GITHUB_ENV
