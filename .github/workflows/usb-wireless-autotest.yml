@@ -61,8 +61,10 @@ jobs:
 
            # set the device IP address
            # set the device name
+           # set the default device
            echo "IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)" >> $GITHUB_ENV
            echo "DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')" >> $GITHUB_ENV
+           echo "DEFAULT_DEVICE=$(ip route show default | awk '{print $5}')" >> $GITHUB_ENV
 
        - name: "Generate YAML for wireless device"
          shell: bash
@@ -106,8 +108,8 @@ jobs:
          shell: bash
          run: |
 
-           ssh ci@${{ env.IP_ADDR }} "sudo ip route del 10.0.60.0/24 dev enp1s0"
-           ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev enp1s0"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route del 10.0.60.0/24 dev ${{ env.DEFAULT_DEVICE }}"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev ${{ env.DEFAULT_DEVICE }}"
 
        - name: "Make sure its connected"
          timeout-minutes: 1
@@ -151,8 +153,8 @@ jobs:
          shell: bash
          run: |
 
-           ssh ci@${{ env.IP_ADDR }} "sudo ip route add 10.0.60.0/24 dev enp1s0 src 10.0.60.11"
-           ssh ci@${{ env.IP_ADDR }} "sudo ip route add default via 10.0.60.1 dev enp1s0 metric 200"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route add 10.0.60.0/24 dev ${{ env.DEFAULT_DEVICE }} src 10.0.60.11"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route add default via 10.0.60.1 dev ${{ env.DEFAULT_DEVICE }} metric 200"
 
        - name: "Remove adapter"
          shell: bash
