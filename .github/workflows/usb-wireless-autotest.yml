@@ -6,7 +6,7 @@ on:
 
 jobs:
 
-  prepare:
+  power-on:
     name: "Power system on"
     outputs:
       DEPLOYMENT_MATRIX: "${{ steps.json.outputs.DEPLOYMENT_MATRIX }}"
@@ -30,14 +30,14 @@ jobs:
   gradle:
     name: "${{ matrix.json.name }} (${{ matrix.json.device_class }})"
     runs-on: "ubuntu-24.04"
-    needs: prepare
-    if: ${{ needs.prepare.outputs.DEPLOYMENT_MATRIX != '[]' }}
+    needs: power-on
+    if: ${{ needs.power-on.outputs.DEPLOYMENT_MATRIX != '[]' }}
     timeout-minutes: 20
     strategy:
       max-parallel: 1
       fail-fast: false
       matrix:
-        json: ${{ fromJSON(needs.prepare.outputs.DEPLOYMENT_MATRIX) }}
+        json: ${{ fromJSON(needs.power-on.outputs.DEPLOYMENT_MATRIX) }}
     steps:
 
        - name: "Connect to Tailscale network"
@@ -182,7 +182,7 @@ jobs:
            path: test
            if-no-files-found: ignore
 
-  stop:
+  merge:
     name: "Merge test artifacts"
     if: always()
     needs: gradle
@@ -226,3 +226,12 @@ jobs:
         with:
           name: |
             test-*
+
+  power-off:
+    name: "Power system off"
+    runs-on: ubuntu-24.04
+    needs: merge
+    steps:
+      - name: "Power off system"
+        run: |
+          echo "This job is left blank for power-off actions."
