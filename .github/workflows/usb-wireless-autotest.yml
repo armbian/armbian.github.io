@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 8 * * *'
 
+permissions:
+   contents: write
+   pull-requests: write
+
 jobs:
 
   power-on:
@@ -202,6 +206,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
 
+      - name: Checkout main documentation
+        uses: actions/checkout@v4
+        with:
+          ref: 'wifi'
+          repository: 'armbian/documentation'
+          path: 'documentation'
+
       - name: "Connect to Tailscale network"
         uses: tailscale/github-action@v3
         with:
@@ -267,6 +278,23 @@ jobs:
           EOT
           done
           cat $FILENAME >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Pull Request to documentation
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: documentation
+          commit-message: '`Automatic` wireless performance tests'
+          signoff: false
+          branch: wireless-tests
+          delete-branch: true
+          title: '`Automatic` wireless performance tests'
+          body: |
+            Generate documentation.
+
+          labels: |
+            Needs review
+          draft: false
 
       - uses: geekyeggo/delete-artifact@v5
         with:
