@@ -59,18 +59,21 @@ jobs:
          shell: bash
          run: |
 
-           # set the device IP address
-           # set the device name
-           # set the default device
+           # extract IP address and device name
            DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')
            IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)
+
+           # clean leftovers from previous runs
            ssh ci@${IP_ADDR} "sudo rm -f /etc/netplan/wireless.yaml"
-           ssh ci@${IP_ADDR} "sudo netplan apply"           
+           ssh ci@${IP_ADDR} "sudo netplan apply"
+
+           # read fixed network parameters
            DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (en[^ ]+|eth[^ ]+)' | cut -d' ' -f2")
            DEFAULT_DEVICE_IP=$(ssh ci@${IP_ADDR} "ip route get 9.9.9.9 | grep -oP 'src \K[\d.]+'")
            DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
            DEFAULT_DEVICE_CIDR=$(ssh ci@${IP_ADDR} "ip route show | grep -oP '\d+\.\d+\.\d+\.\d+/\d+'")
-           #
+
+           # Store variables for further use
            echo "IP_ADDR=${IP_ADDR}" >> $GITHUB_ENV
            echo "DEVICE=${DEVICE}" >> $GITHUB_ENV           
            echo "DEFAULT_DEVICE=${DEFAULT_DEVICE}" >> $GITHUB_ENV
@@ -123,7 +126,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo ip route del ${{ env.DEFAULT_DEVICE_CIDR }} dev ${{ env.DEFAULT_DEVICE }}"
            ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev ${{ env.DEFAULT_DEVICE }}"
 
-       - name: "Make sure its connected"
+       - name: "Make sure device is connected"
          timeout-minutes: 1
          shell: bash
          run: |
@@ -138,6 +141,7 @@ jobs:
                fi
                sleep 2
            done
+           # store client IP for further usage
            echo "CLIENTIP=${CLIENTIP}" >> $GITHUB_ENV
 
        - name: "Do some perf testing"
@@ -146,20 +150,25 @@ jobs:
 
            mkdir -p test
            # read info about connection and store it
-           ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/ci@${{ env.DEVICE }}-info.log
-          
-           numbers=$(ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }} -t 5 -J | jq '.intervals[] .sum .bits_per_second' | LC_ALL=C datamash median 1 | cut -d"-" -f2")
-           mbits=$(echo $numbers | LC_ALL=C awk '{$1/=1048576;printf "%.0f Mbps\n",$1}') 
-           echo "|${{ matrix.json.name }}|${{ matrix.json.device_type }}| ${{ matrix.json.serial }} | ${{ matrix.json.device_class }} | ${mbits} |" > test/ci@${{ env.DEVICE }}.iperf
+           ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/${{ env.DEVICE }}-info.log
 
-           # Run full iperf test
-           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-tx.log
-           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/ci@${{ env.DEVICE }}-rx.log
+           # Run iperf test in both directions
+           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-tx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-rx.log
+
+           # Extract the sender and receiver speeds
+           tx_speed=$(cat test/${{ env.DEVICE }}-tx.log | grep "sender" | awk '{print $7}')
+           rx_speed=$(cat test/${{ env.DEVICE }}-rx.log | grep "sender" | awk '{print $7}')
 
            # get Armbian version and kernel
-           echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep VERSION")" >> test/ci@${{ env.DEVICE }}.system
-           echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep ^ARCH")" >> test/ci@${{ env.DEVICE }}.system
-           echo "KERNEL=$(ssh ci@${{ env.IP_ADDR }} "uname -r")" >> test/ci@${{ env.DEVICE }}.system
+           echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep VERSION")" >> test/${{ env.DEVICE }}.sysinfo
+           echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep ^ARCH")" >> test/${{ env.DEVICE }}.sysinfo
+           echo "KERNEL=\"$(ssh ci@${{ env.IP_ADDR }} "uname -r")\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_NAME=\"${{ matrix.json.name }}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_TYPE=\"${{ matrix.json.device_type }}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_CLASS=\"${{ matrix.json.device_class }}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_TX=\"${tx_speed}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_RX=\"${rx_speed}\"" >> test/${{ env.DEVICE }}.sysinfo
 
        - name: "Enable default route on ${{ env.IP_ADDR }}"
          shell: bash
