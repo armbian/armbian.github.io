@@ -55,6 +55,7 @@ jobs:
            if_key_exists: replace
 
        - name: "Prepare device variables"
+         timeout-minutes: 1
          id: vars
          shell: bash
          run: |
@@ -111,6 +112,7 @@ jobs:
            EOT
 
        - name: "Enable wireless adapter on ${{ env.IP_ADDR }}"
+         timeout-minutes: 1
          shell: bash
          run: |
 
@@ -120,6 +122,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo netplan apply"
 
        - name: "Drop default route on ${{ env.IP_ADDR }}"
+         timeout-minutes: 1
          shell: bash
          run: |
            
@@ -145,6 +148,7 @@ jobs:
            echo "CLIENTIP=${CLIENTIP}" >> $GITHUB_ENV
 
        - name: "Do some perf testing"
+         timeout-minutes: 1
          shell: bash
          run: |
 
@@ -222,14 +226,47 @@ jobs:
       - name: Install
         run: |
 
-          source test/*.system
-          echo "# WiFi performance test:" >> $GITHUB_STEP_SUMMARY
-          echo "Armbian: $VERSION - Kernel: $KERNEL - Architecture: $ARCH" >> $GITHUB_STEP_SUMMARY
-          echo "|Name|Chip|MAC|Class|Average Iperf|" >> $GITHUB_STEP_SUMMARY
-          echo "|:---|:---|:---|:---|---:|" >> $GITHUB_STEP_SUMMARY
-          cat test/*.iperf | sed '$ s/.$//' >> $GITHUB_STEP_SUMMARY
-          #echo "### System logs" >> $GITHUB_STEP_SUMMARY
-          #echo "$(ssh ci@100.113.54.60 "sudo dmesg")" >> $GITHUB_STEP_SUMMARY
+          FILENAME=output.md
+          cat > "$FILENAME" <<- EOT
+          ## Devices Under Tests
+
+          This section presents the performance test results, including key metrics and technical details from the test execution.
+          **Test Date:** 15.3.2025
+          EOT
+          for device in $(ls test | grep -oP 'wlx\w+' | sort | uniq); do
+          source test/$device.sysinfo
+          cat >> "$FILENAME" <<- EOT
+          ### $DEVICE_NAME
+
+          <img src=https://stuff.armbian.com/netbox/media/devicetype-images/$DEVICE_TYPE.png>
+
+          <span style="font-size: 0.5rem;">OS: Armbian v${VERSION}, ${KERNEL}</span>
+
+          | Chipset | Class | Average forward speed | Average reverse speed |
+          |:-----|------|:-------|:-------|
+          |<span style="font-size: 1.5rem;">$DEVICE_TYPE</span> | <span style="font-size: 1.5rem;">$DEVICE_CLASS</span> | <span style="font-size: 1.5rem;">$DEVICE_TX</span> Mbits/sec | <span style="font-size: 1.5rem;">$DEVICE_RX</span> Mbits/sec |
+
+          === "Forward mode (client to server)"
+
+              \`\`\`
+          $(cat test/$device-tx.log | sed 's/^/    /')
+              \`\`\`
+
+          === "Reverse mode (server to client)"
+
+              \`\`\`
+          $(cat test/$device-rx.log | sed 's/^/    /')
+              \`\`\`
+
+          === "Wireless link info"
+
+              \`\`\`
+          $(cat test/$device-info.log | sed 's/^/    /')
+              \`\`\`
+
+          EOT
+          done
+          cat $FILENAME >> $GITHUB_STEP_SUMMARY
 
       - uses: geekyeggo/delete-artifact@v5
         with:
