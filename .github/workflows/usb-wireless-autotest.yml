@@ -242,7 +242,7 @@ jobs:
           ## Devices Under Tests
 
           This section presents the performance test results, including key metrics and technical details from the test execution.
-          **Test Date:** 15.3.2025
+          **Test Date:** [15.3.2025](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
           EOT
           for device in $(ls test | grep -oP 'wlx\w+' | sort | uniq); do
           source test/$device.sysinfo
@@ -254,7 +254,7 @@ jobs:
           <span style="font-size: 0.5rem;">OS: Armbian v${VERSION}, ${KERNEL}</span>
 
           | Chipset | Class | Average forward speed | Average reverse speed |
-          |:-----|------|:-------|:-------|
+          |:-----|------|-------:|-------:|
           |<span style="font-size: 1.5rem;">$DEVICE_TYPE</span> | <span style="font-size: 1.5rem;">$DEVICE_CLASS</span> | <span style="font-size: 1.5rem;">$DEVICE_TX</span> Mbits/sec | <span style="font-size: 1.5rem;">$DEVICE_RX</span> Mbits/sec |
 
           === "Forward mode (client to server)"
@@ -279,10 +279,24 @@ jobs:
           done
           cat $FILENAME >> $GITHUB_STEP_SUMMARY
 
+      - name: Replace content in markdown document
+        run: |
+
+          FILE="documentation/docs/WifiPerformance.md"
+          NEW_CONTENT=$(cat output.md)
+
+          # Delete content between <!-- DUT-START --> and <!-- DUT-STOP -->
+          sed -i '/<!-- DUT-START -->/,/<!-- DUT-STOP -->/{
+            /<!-- DUT-START -->/!{/<!-- DUT-STOP -->/!d}
+          }' "$FILE"
+
+          # Insert new content between markers using printf to handle multiline correctly
+          printf "\n$NEW_CONTENT\n" | sed -i "/<!-- DUT-START -->/r /dev/stdin" "$FILE"
+
       - name: Create Pull Request to documentation
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           path: documentation
           commit-message: '`Automatic` wireless performance tests'
           signoff: false
