@@ -1,0 +1,324 @@
+name: "WiFi performance test"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *'
+
+permissions:
+   contents: write
+   pull-requests: write
+
+jobs:
+
+  power-on:
+    name: "Power system on"
+    outputs:
+      DEPLOYMENT_MATRIX: "${{ steps.json.outputs.DEPLOYMENT_MATRIX }}"
+    runs-on: "ubuntu-24.04"
+    steps:
+
+      # step for actual powering on / off TBD
+
+      - name: Get devices from database
+        id: json
+        run: |
+
+          delimiter="$(openssl rand -hex 8)"
+          echo "DEPLOYMENT_MATRIX<<${delimiter}" >> "${GITHUB_OUTPUT}"
+          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
+          "https://stuff.armbian.com/netbox/api/dcim/devices/?limit=500&name__empty=false&status=active" | \
+          jq '.results[] | select(.device_role.slug == "wifi-dut") | {name: .name, serial: .serial, device_type: .device_type.model, device_class: .custom_fields.class, device_ip: .primary_ip.address}' | \
+          jq -s >> $GITHUB_OUTPUT
+          echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+
+  gradle:
+    name: "${{ matrix.json.name }} (${{ matrix.json.device_class }})"
+    runs-on: "ubuntu-24.04"
+    needs: power-on
+    if: ${{ needs.power-on.outputs.DEPLOYMENT_MATRIX != '[]' }}
+    timeout-minutes: 20
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        json: ${{ fromJSON(needs.power-on.outputs.DEPLOYMENT_MATRIX) }}
+    steps:
+
+       - name: "Connect to Tailscale network"
+         uses: tailscale/github-action@v3
+         with:
+           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+           tags: tag:ci
+
+       - name: "Install SSH key"
+         uses: shimataro/ssh-key-action@v2
+         with:
+           key: ${{ secrets.KEY_CI }}
+           known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_CI }}
+           if_key_exists: replace
+
+       - name: "Prepare device variables"
+         timeout-minutes: 1
+         id: vars
+         shell: bash
+         run: |
+
+           # extract IP address and device name
+           DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')
+           IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)
+
+           # clean leftovers from previous runs
+           ssh ci@${IP_ADDR} "sudo rm -f /etc/netplan/wireless.yaml"
+           ssh ci@${IP_ADDR} "sudo netplan apply"
+
+           # read fixed network parameters
+           DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (en[^ ]+|eth[^ ]+)' | cut -d' ' -f2")
+           DEFAULT_DEVICE_IP=$(ssh ci@${IP_ADDR} "ip route get 9.9.9.9 | grep -oP 'src \K[\d.]+'")
+           DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
+           DEFAULT_DEVICE_CIDR=$(ssh ci@${IP_ADDR} "ip route show | grep -oP '\d+\.\d+\.\d+\.\d+/\d+'")
+
+           # Store variables for further use
+           echo "IP_ADDR=${IP_ADDR}" >> $GITHUB_ENV
+           echo "DEVICE=${DEVICE}" >> $GITHUB_ENV           
+           echo "DEFAULT_DEVICE=${DEFAULT_DEVICE}" >> $GITHUB_ENV
+           echo "DEFAULT_DEVICE_IP=${DEFAULT_DEVICE_IP}" >> $GITHUB_ENV
+           echo "DEFAULT_DEVICE_GW=${DEFAULT_DEVICE_GW}" >> $GITHUB_ENV
+           echo "DEFAULT_DEVICE_CIDR=${DEFAULT_DEVICE_CIDR}" >> $GITHUB_ENV
+           
+       - name: "Generate YAML for wireless device"
+         shell: bash
+         run: |
+           
+           ACCESS_POINT="GOSTJE60"
+
+           # generate the YAML file
+           # for the wireless device
+           # the file is used to configure
+           # the wireless device
+           # to connect to the access point
+           # and to set the IP address
+           # and the MAC address
+           cat > wireless.yaml <<- EOT
+           network:
+             version: 2
+             renderer: networkd
+             wifis:
+               ${{ env.DEVICE }}:
+                 dhcp4: true
+                 dhcp6: true
+                 macaddress: "${{ matrix.json.serial }}"
+                 access-points:
+                   "${ACCESS_POINT}":
+                     auth:
+                       key-management: "psk"
+                       password: "password"
+           EOT
+
+       - name: "Enable wireless adapter on ${{ env.IP_ADDR }}"
+         timeout-minutes: 1
+         shell: bash
+         run: |
+
+           scp wireless.yaml ci@${{ env.IP_ADDR }}:/tmp
+           ssh ci@${{ env.IP_ADDR }} "sudo mv /tmp/wireless.yaml /etc/netplan/"
+           ssh ci@${{ env.IP_ADDR }} "sudo chmod 600 /etc/netplan/*"
+           ssh ci@${{ env.IP_ADDR }} "sudo netplan apply"
+
+       - name: "Drop default route on ${{ env.IP_ADDR }}"
+         timeout-minutes: 1
+         shell: bash
+         run: |
+           
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route del ${{ env.DEFAULT_DEVICE_CIDR }} dev ${{ env.DEFAULT_DEVICE }}"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev ${{ env.DEFAULT_DEVICE }}"
+
+       - name: "Make sure device is connected"
+         timeout-minutes: 1
+         shell: bash
+         run: |
+
+           while true; do
+               # nmcli -t -f NAME connection show --active | grep ${DEVICE}
+               CONNECTION=$(ssh ci@${{ env.IP_ADDR }} "networkctl | grep ${{ env.DEVICE }} | grep routable || true")
+               CLIENTIP=$(ssh ci@${{ env.IP_ADDR }} "ip -4 addr show ${{ env.DEVICE }} | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || true")
+               # check if the connection is routable
+               if [[ -n "${CONNECTION}" && -n "${CLIENTIP}" ]]; then
+                   break
+               fi
+               sleep 2
+           done
+           # store client IP for further usage
+           echo "CLIENTIP=${CLIENTIP}" >> $GITHUB_ENV
+
+       - name: "Do some perf testing"
+         timeout-minutes: 1
+         shell: bash
+         run: |
+
+           mkdir -p test
+           # read info about connection and store it
+           ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/${{ env.DEVICE }}-info.log
+
+           # Run iperf test in both directions
+           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-tx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-rx.log
+
+           # Extract the sender and receiver speeds
+           tx_speed=$(cat test/${{ env.DEVICE }}-tx.log | grep "sender" | awk '{print $7}')
+           rx_speed=$(cat test/${{ env.DEVICE }}-rx.log | grep "sender" | awk '{print $7}')
+
+           # get Armbian version and kernel
+           echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep VERSION")" >> test/${{ env.DEVICE }}.sysinfo
+           echo "$(ssh ci@${{ env.IP_ADDR }} "cat /etc/armbian-release | grep ^ARCH")" >> test/${{ env.DEVICE }}.sysinfo
+           echo "KERNEL=\"$(ssh ci@${{ env.IP_ADDR }} "uname -r")\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_NAME=\"${{ matrix.json.name }}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_TYPE=\"${{ matrix.json.device_type }}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_CLASS=\"${{ matrix.json.device_class }}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_TX=\"${tx_speed}\"" >> test/${{ env.DEVICE }}.sysinfo
+           echo "DEVICE_RX=\"${rx_speed}\"" >> test/${{ env.DEVICE }}.sysinfo
+
+       - name: "Enable default route on ${{ env.IP_ADDR }}"
+         shell: bash
+         run: |
+
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route add ${{ env.DEFAULT_DEVICE_CIDR }} dev ${{ env.DEFAULT_DEVICE }} src ${{ env.DEFAULT_DEVICE_IP }}"
+           ssh ci@${{ env.IP_ADDR }} "sudo ip route add default via ${{ env.DEFAULT_DEVICE_GW }} dev ${{ env.DEFAULT_DEVICE }} metric 200"
+
+       - name: "Remove adapter"
+         shell: bash
+         run: |
+
+           ssh ci@${{ env.IP_ADDR }} "sudo rm /etc/netplan/wireless.yaml"
+           ssh ci@${{ env.IP_ADDR }} "sudo netplan apply"
+
+       - name: "Upload test summary"
+         uses: actions/upload-artifact@v4
+         with:
+           name: test-${{ env.DEVICE }}
+           path: test
+           if-no-files-found: ignore
+
+  merge:
+    name: "Merge test artifacts"
+    if: always()
+    needs: gradle
+    runs-on: ubuntu-24.04
+    steps:
+
+      - name: Checkout main documentation
+        uses: actions/checkout@v4
+        with:
+          repository: 'armbian/documentation'
+          path: 'documentation'
+
+      - name: "Connect to Tailscale network"
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_CI }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_CI }}
+          if_key_exists: replace
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test
+          pattern: test-*
+          merge-multiple: true
+
+      - name: Install
+        run: |
+
+          FILENAME=output.md
+          cat > "$FILENAME" <<- EOT
+          ## Devices Under Tests
+
+          This section presents the performance test results, including key metrics and technical details from the test execution.
+          **Test Date:** [15.3.2025](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+          EOT
+          for device in $(ls test | grep -oP 'wlx\w+' | sort | uniq); do
+          source test/$device.sysinfo
+          cat >> "$FILENAME" <<- EOT
+          ### $DEVICE_NAME
+
+          <img src=https://stuff.armbian.com/netbox/media/devicetype-images/$DEVICE_TYPE.png>
+
+          <span style="font-size: 0.5rem;">OS: Armbian v${VERSION}, ${KERNEL}</span>
+
+          | Chipset | Class | Average forward speed | Average reverse speed |
+          |:-----|------|-------:|-------:|
+          |<span style="font-size: 1.5rem;">$DEVICE_TYPE</span> | <span style="font-size: 1.5rem;">$DEVICE_CLASS</span> | <span style="font-size: 1.5rem;">$DEVICE_TX</span> Mbits/sec | <span style="font-size: 1.5rem;">$DEVICE_RX</span> Mbits/sec |
+
+          === "Forward mode (client to server)"
+
+              \`\`\`
+          $(cat test/$device-tx.log | sed 's/^/    /')
+              \`\`\`
+
+          === "Reverse mode (server to client)"
+
+              \`\`\`
+          $(cat test/$device-rx.log | sed 's/^/    /')
+              \`\`\`
+
+          === "Wireless link info"
+
+              \`\`\`
+          $(cat test/$device-info.log | sed 's/^/    /')
+              \`\`\`
+
+          EOT
+          done
+          cat $FILENAME >> $GITHUB_STEP_SUMMARY
+
+      - name: Replace content in markdown document
+        run: |
+
+          FILE="documentation/docs/WifiPerformance.md"
+          NEW_CONTENT=$(cat output.md)
+
+          # Delete content between <!-- DUT-START --> and <!-- DUT-STOP -->
+          sed -i '/<!-- DUT-START -->/,/<!-- DUT-STOP -->/{
+            /<!-- DUT-START -->/!{/<!-- DUT-STOP -->/!d}
+          }' "$FILE"
+
+          # Insert new content between markers using printf to handle multiline correctly
+          printf "\n$NEW_CONTENT\n" | sed -i "/<!-- DUT-START -->/r /dev/stdin" "$FILE"
+
+      - name: Create Pull Request to documentation
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          path: documentation
+          commit-message: '`Automatic` wireless performance tests'
+          signoff: false
+          branch: wireless-tests
+          delete-branch: true
+          title: '`Automatic` wireless performance tests'
+          body: |
+            Generate documentation.
+
+          labels: |
+            Needs review
+          draft: false
+
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            test-*
+
+  power-off:
+    name: "Power system off"
+    runs-on: ubuntu-24.04
+    needs: merge
+    steps:
+      - name: "Power off system"
+        run: |
+          echo "This job is left blank for power-off actions."
