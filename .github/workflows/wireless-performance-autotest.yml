@@ -209,7 +209,6 @@ jobs:
       - name: Checkout main documentation
         uses: actions/checkout@v4
         with:
-          ref: 'wifi'
           repository: 'armbian/documentation'
           path: 'documentation'
 
