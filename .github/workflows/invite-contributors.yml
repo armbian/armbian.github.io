@@ -1,4 +1,4 @@
-name: Invite Recent Contributors to organization
+name: Invite Recent Contributors to ORG
 on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly
