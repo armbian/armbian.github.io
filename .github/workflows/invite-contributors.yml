@@ -1,0 +1,119 @@
+name: Invite Recent Contributors to organization
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Run without actually inviting users'
+        required: false
+        default: 'false'
+
+jobs:
+  check-eligibility:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect PR authors from multiple Armbian repositories
+        id: get-contributors
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const org = 'armbian';
+            const repos = ['build', 'firmware', 'documentation', 'configng', 'os', 'armbian.github.io','linux-rockchip', 'apa'];
+            const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // last ~6 months
+            //const since = new Date(Date.now() - 182 * 24 * 60 * 60 * 1000).toISOString(); // last ~6 months
+            const isBot = (username) => username.endsWith('[bot]');
+            const contributors = new Set();
+
+            for (const repo of repos) {
+              console.log(`🔍 Searching PRs created since ${since} in ${org}/${repo}`);
+              let page = 1;
+              let results;
+
+              do {
+                results = await github.rest.search.issuesAndPullRequests({
+                  q: `is:pr repo:${org}/${repo} created:>=${since}`,
+                  per_page: 100,
+                  page,
+                });
+
+                for (const pr of results.data.items) {
+                  if (pr.user && pr.user.login) {
+                    const username = pr.user.login;
+                    if (!isBot(username)) {
+                      contributors.add(username);
+                      console.log(`✅ ${username} opened a PR in ${repo}`);
+                    } else {
+                      console.log(`🤖 Skipping bot: ${username}`);
+                    }
+                  }
+                }
+
+                page++;
+              } while (results.data.items.length === 100);
+            }
+
+            const usernames = Array.from(contributors);
+            console.log("🧾 Unique PR authors from all repos:", usernames);
+            core.setOutput("usernames", JSON.stringify(usernames));
+
+
+      - name: Check if users are already members of Armbian org (display eligible users)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ORG_INVITE }}
+          script: |
+            const dryRun = '${{ github.event.inputs.dry-run }}' === 'true';
+            const usernames = JSON.parse('${{ steps.get-contributors.outputs.usernames }}');
+            const org = 'armbian';
+            const eligibleUsers = [];
+
+            let tableMarkdown = '\n| Username | Full Name |\n|----------|-----------|\n';
+
+            for (const username of usernames) {
+              try {
+                await github.rest.orgs.getMembershipForUser({ org, username });
+                console.log(`ℹ️ ${username} is already a member of ${org}`);
+              } catch (error) {
+                if (error.status === 404) {
+                  try {
+                    const { data: user } = await github.rest.users.getByUsername({ username });
+                    const name = user.name || '(no name provided)';
+                    eligibleUsers.push({ username, name });
+
+                    tableMarkdown += `| [${username}](https://github.com/${username}) | ${name} |\n`;
+
+                    if (dryRun) {
+                      console.log(`🛑 Dry-run: Would invite ${username} to ${org}`);
+                    } else {
+                      await github.rest.orgs.createInvitation({
+                        org,
+                        invitee_id: user.id,
+                        role: 'direct_member',
+                      });
+                      invited = '✅';
+                      console.log(`✅ Invited ${username} to ${org}`);
+                    }
+                  } catch (err) {
+                    console.log(`⚠️ Error fetching details for ${username}: ${err.message}`);
+                  }
+                } else {
+                  console.log(`⚠️ Error checking membership for ${username}: ${error.message}`);
+                }
+              }
+            }
+
+            if (eligibleUsers.length === 0) {
+              console.log(`No users eligible for invitation.`);
+              await core.summary
+                .addHeading('Eligible Users')
+                .addRaw('No eligible users found.')
+                .write();
+            } else {
+              console.log(`Eligible users to invite: ${eligibleUsers.map(u => u.username).join(', ')}`);
+              await core.summary
+                .addHeading('Eligible Users to Invite')
+                .addRaw(tableMarkdown, true)
+                .write();
+            }
