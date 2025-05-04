@@ -1,0 +1,59 @@
+#
+# archive.armbian.com
+#
+geodb: /scripts/redirect-config/GeoLite2-City.mmdb
+asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
+dl_map: /scripts/redirect-config/all-images.json
+bind: ':8082'
+
+# Reload authorization key
+reloadKey: d33367a35b7b95badbf964e996e5bf10
+
+# LRU Cache Size (in items)
+cacheSize: 2048
+
+# Documentation: https://github.com/armbian/armbian-router
+
+specialExtensions:
+  - boot-sms.img.xz: -boot-sms
+  - boot-boe.img.xz: -boot-boe
+  - boot-csot.img.xz: -boot-csot
+  - rootfs.img.xz: -rootfs
+  - img.qcow2: -qcow2
+  - img.qcow2.xz: -qcow2
+  - boot.bin.xz: -uboot-bin
+  - hyperv.zip: -hyperv
+
+servers:
+
+  # Europe/Moscow - 10000 Mbit/s
+  - server: mirror.yandex.ru/mirrors/armbian/archive/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - UA
+    latitude: 55.7483
+    longitude: 37.6171
+    weight: 10
+
+  # Europe/Moscow - 2000 Mbit/s
+  - server: stpete-mirror.armbian.com/archive/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - UA
+    latitude: 59.9417
+    longitude: 30.3096
+    weight: 10
+
+  # Europe/Tallinn - 10000 Mbit/s
+  - server: k-space.ee.armbian.com/archive/
+    latitude: 59.397987
+    longitude: 24.661898
+    weight: 10
+
+  # Europe/Rome - 2500 Mbit/s
+  - server: armbian.atomonetworks.com/archive/
+    latitude: 38.157745
+    longitude: 13.195175
+    weight: 10

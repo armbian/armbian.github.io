@@ -1,0 +1,4 @@
+2025-04-15|Support Armbian’s Crowdfunding Campaign https://tinyurl.com/3wtvesfe
+2025-05-31|Win a NanoPi R3S dual Gbps router https://tinyurl.com/n7y5hae9
+2026-01-01|Armbian config utility - state of the art system config tool https://docs.armbian.com/User-Guide_Armbian-Config/
+2025-04-31|Check what is new in Armbian v25.2 https://www.armbian.com/newsflash/armbian-v25-2/

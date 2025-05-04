@@ -1,0 +1,148 @@
+{
+  "os_list": [
+    {
+      "name": "Armbian OS bookworm cinnamon 25.2.4",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_bookworm_current_6.12.22_cinnamon_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 7793016832,
+      "extract_sha256": "33f6c2c4651eb0c6250b55836897056dc7ca2f638b0399ee797fb85bbadf5c83",
+      "image_download_size": 1448200088,
+      "image_download_sha256": "6bbf5ed9696fca06750907294002d1ab4a9e68888efdfb5a4cca680670ddf71a",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS bookworm minimal 25.2.4",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_bookworm_current_6.12.22_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 1551892480,
+      "extract_sha256": "3e66840218f2fa7e26193f6cd053c25350f1601cdbbd262c509ba36aa0af6740",
+      "image_download_size": 201184440,
+      "image_download_sha256": "6031c9f787b6264f18b4baee83b7c57e0c207e85afbbcfe38d5e4c472da12453",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS bookworm xfce 25.2.4",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_bookworm_current_6.12.22_xfce_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 7537164288,
+      "extract_sha256": "9ff4fbc8dce6b559e3d99503d92d0ec0336244e524a6d45b7bf05e6cdfcc54f4",
+      "image_download_size": 1367794608,
+      "image_download_sha256": "17f93157b542775ee8aa12c9da26c8747310ea8f4df78f264720c161b8b446d4",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble server 25.2.4",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_noble_current_6.12.22.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 2638217216,
+      "extract_sha256": "652b1c937dc33d4264571919d678a2c20e4c72a5eb2541a513f0e36b07ae14b1",
+      "image_download_size": 417261832,
+      "image_download_sha256": "f47075e8cb8c2eb15aab0a67b3f888654fd9f88410217416f13ef6e778d233d1",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble gnome 25.2.4",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_noble_current_6.12.22_gnome_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 6899630080,
+      "extract_sha256": "33be4feb155af215f13badaedcbc9d4a49e8d9a8068abc59537328dd508e5dd6",
+      "image_download_size": 1222324084,
+      "image_download_sha256": "0f2f1d7bfc7593bf8d8f26b221bc7abbeddf156b4dda4b76345062872f0d8289",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble kde-neon 25.2.4",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_noble_current_6.12.22_kde-neon_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 8875147264,
+      "extract_sha256": "b437830f38661e344cbf1443ad4c2a22c7db611c8b93ae2c1cdb056d939a22ec",
+      "image_download_size": 1584009040,
+      "image_download_sha256": "e562437e5ecba2043ecbc4a8d046a75a4a3aa4e4361953928c17c1379d772163",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble minimal 25.2.4",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_noble_current_6.12.22_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 1501560832,
+      "extract_sha256": "ac10b7f222c5e87057d56aa3d1c1ab898c57086d0d26afd8bf2f89a287939d58",
+      "image_download_size": 196247884,
+      "image_download_sha256": "22634aaa215e14967b6b229c5bd5b538e98909bb8b436da727029a9de5dce805",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble xfce 25.2.4",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.2.4_Rpi4b_noble_current_6.12.22_xfce_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-04-23",
+      "extract_size": 7423918080,
+      "extract_sha256": "b56d6ba47494ad803f7361d19a3dfbfcadd4032141365a794a219493e103e9de",
+      "image_download_size": 1301578396,
+      "image_download_sha256": "4c08eab526c14e6c62816abf3b81184a99f68c83feedd28df931abce6bc115d2",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    }
+  ]
+}
