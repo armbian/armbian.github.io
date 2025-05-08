@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: f6b0f9f2d69483f19a3e29e38093c6af
+reloadKey: 1f91e4fc1ada96a74d6ab0373fde2aae
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -66,6 +66,12 @@ servers:
   - server: es.sbcmirror.org/dl/
     latitude: 40.4163
     longitude: -3.6934
+    weight: 10
+
+  # Europe/Ljubljana - 200 Mbit/s
+  - server: imola.armbian.com/dl/
+    latitude: 46.081638
+    longitude: 14.526054
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
