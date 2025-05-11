@@ -43,7 +43,7 @@ jobs:
           curl --silent --request GET \
             --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:Platinum%20Partner)and(Promoted:equals:true))' \
             --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description, Promoted}' > platinum-partner.json
+            | jq '.data[] | {Account_Name, Logo, Website, Description}' > platinum-partner.json
 
           curl --silent --request GET \
             --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Gold%20Partner)and(Promoted:equals:true))' \
