@@ -41,7 +41,7 @@ jobs:
           curl --silent --request GET \
             --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:Platinum%20Partner)and(Promoted:equals:true))' \
             --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description, Promoted}' > platinum-partner.json
+            | jq '.data[] | {Account_Name, Logo, Website, Description}' > platinum-partner.json
 
           curl --silent --request GET \
             --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Gold%20Partner)and(Promoted:equals:true))' \
@@ -107,12 +107,10 @@ jobs:
           cd armbian.github.io
           git checkout data
           mkdir -p data/
-
           cp ${{ github.workspace }}/*.json data/
-
           git config user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
-          git add platinum-partner.json gold-partner.json silver-partner.json maintainers.json
+          git add data/platinum-partner.json data/gold-partner.json data/silver-partner.json data/maintainers.json
           git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
           git push
 
