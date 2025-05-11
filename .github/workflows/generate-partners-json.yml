@@ -1,6 +1,7 @@
 name: Generate Bigin JSONs
 
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: ["Bigin update"]
 
@@ -107,12 +108,10 @@ jobs:
           cd armbian.github.io
           git checkout data
           mkdir -p data/
-
           cp ${{ github.workspace }}/*.json data/
-
           git config user.name "github-actions[bot]"
           git config --global user.email "github-actions@github.com"
-          git add platinum-partner.json gold-partner.json silver-partner.json maintainers.json
+          git add data/platinum-partner.json data/gold-partner.json data/silver-partner.json data/maintainers.json
           git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
           git push
 
