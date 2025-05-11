@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 04895b4dd5ac8cda730a78f7c68e047c
+reloadKey: e606be49ac023eeedb40194c1c1f1d9d
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -116,6 +116,12 @@ servers:
     longitude: 113.722
     weight: 10
 
+  # America/Chicago - 1000 Mbit/s
+  - server: mirror-us-stl1.armbian.airframes.io/dl/
+    latitude: 38.6287
+    longitude: -90.1988
+    weight: 10
+
   # Europe/Moscow - 10000 Mbit/s
   - server: mirror.yandex.ru/mirrors/armbian/dl/
     rules:
@@ -152,16 +158,6 @@ servers:
   - server: mirror.vinehost.net/armbian/dl/
     latitude: 54.1448
     longitude: -0.1555
-    weight: 10
-
-  # Europe/Kiev - 1000 Mbit/s
-  - server: distrohub.kyiv.ua/armbian-dl/
-    rules:
-      - field: location.country.iso_code
-        not_in:
-          - RU
-    latitude: 50.458
-    longitude: 30.5303
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
