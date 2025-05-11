@@ -2,6 +2,7 @@ name: Generate Bigin JSONs
 
 on:
   workflow_dispatch:
+  push:
   repository_dispatch:
     types: ["Bigin update"]
 
