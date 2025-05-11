@@ -1,0 +1,123 @@
+name: Generate Bigin JSONs
+
+on:
+  repository_dispatch:
+    types: ["Bigin update"]
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+  fetch-bigin-data:
+    runs-on: ubuntu-latest
+    name: "Fetch data"
+    steps:
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/armbian.github.io
+          fetch-depth: 0
+          clean: false
+          path: armbian.github.io
+
+      - name: Fetch and generate partner JSON files
+        env:
+          CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ACCESS_TOKEN=$(curl -sH "Content-type: multipart/form-data" \
+            -F refresh_token=$REFRESH_TOKEN \
+            -F client_id=$CLIENT_ID \
+            -F client_secret=$CLIENT_SECRET \
+            -F grant_type=refresh_token \
+            -X POST https://accounts.zoho.eu/oauth/v2/token \
+            | jq -r '.access_token')
+
+          echo "Access token obtained."
+
+          curl --silent --request GET \
+            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:Platinum%20Partner)and(Promoted:equals:true))' \
+            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+            | jq '.data[] | {Account_Name, Logo, Website, Description, Promoted}' > platinum-partner.json
+
+          curl --silent --request GET \
+            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Gold%20Partner)and(Promoted:equals:true))' \
+            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+            | jq '.data[] | {Account_Name, Logo, Website, Description}' > gold-partner.json
+
+          curl --silent --request GET \
+            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Silver%20Partner)and(Promoted:equals:true))' \
+            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+            | jq '.data[] | {Account_Name, Logo, Website, Description}' > silver-partner.json
+
+          # Create a temporary file for maintainers_with_avatars.json
+          temp_file=$(mktemp)
+
+          # Start the JSON array
+          echo "[" > "$temp_file"
+
+          # Flag for commas between records
+          first=1
+
+          # Fetch the maintainers from Zoho Bigin
+          curl --silent --request GET \
+            --url 'https://www.zohoapis.eu/bigin/v2/Contacts/search?fields=Team,First_Name,Github,Maintaining,Your_core_competences&criteria=((Tag:equals:maintainer)and(Email_Opt_Out:equals:false))' \
+            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+          | jq -c '.data[] | {First_Name, Github, Team, Maintaining, Your_core_competences}' \
+          | while read -r row; do
+              # Extract GitHub username from the URL
+              github_url=$(echo "$row" | jq -r '.Github')
+              username=$(basename "$github_url")
+
+              # Assume GH_TOKEN is exported as env var or injected from GitHub Actions secrets
+              auth_header="Authorization: token $GH_TOKEN"
+
+              # Fetch GitHub profile for avatar URL
+              avatar_url=$(curl -s -H "$auth_header" "https://api.github.com/users/$username" | jq -r '.avatar_url')
+
+              # Enrich Zoho data with GitHub avatar
+              enriched=$(echo "$row" | jq --arg avatar "$avatar_url" '. + {Avatar: $avatar}')
+
+              # Manage commas between JSON objects
+              if [ $first -eq 1 ]; then
+                first=0
+              else
+                echo -e "," >> "$temp_file"
+              fi
+
+              # Write the enriched data to the temporary file
+              echo "$enriched" >> "$temp_file"
+          done
+
+          # Close the JSON array
+          echo "]" >> "$temp_file"
+
+          # Format and save the final output to fixed.json
+          cat "$temp_file" | jq . > maintainers.json
+
+          # Clean up the temporary file
+          rm "$temp_file"
+
+      - name: Commit and push JSON files
+        run: |
+
+          cd armbian.github.io
+          git checkout data
+          mkdir -p data/
+
+          cp ${{ github.workspace }}/*.json data/
+
+          git config user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+          git add platinum-partner.json gold-partner.json silver-partner.json maintainers.json
+          git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
+          git push
+
+      - name: "Run base-files update action"
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Base files"
