@@ -64,7 +64,7 @@ jobs:
 
           # Fetch the maintainers from Zoho Bigin
           curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Contacts/search?fields=Team,First_Name,Github,Maintaining,Your_core_competences&criteria=((Tag:equals:maintainer)and(Email_Opt_Out:equals:false))' \
+            --url 'https://www.zohoapis.eu/bigin/v2/Contacts/search?fields=Team,First_Name,Github,Maintaining,Your_core_competences&criteria=((Tag:equals:maintainer)and(Inactive:equals:false))' \
             --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
           | jq -c '.data[] | {First_Name, Github, Team, Maintaining, Your_core_competences}' \
           | while read -r row; do
