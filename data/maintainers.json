@@ -63,6 +63,20 @@
     "Avatar": "https://avatars.githubusercontent.com/u/7153954?v=4"
   },
   {
+    "First_Name": "Rolf",
+    "Github": "https://github.com/leggewie",
+    "Team": [],
+    "Maintaining": "bananapim2plus",
+    "Your_core_competences": [
+      "OS and desktop development",
+      "Project management",
+      "Devops and servers",
+      "CI & automated testing",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
+  },
+  {
     "First_Name": "Nicolas",
     "Github": "https://github.com/hqnicolas",
     "Team": [],
@@ -224,6 +238,14 @@
     "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
   },
   {
+    "First_Name": "Fridtjof",
+    "Github": "https://github.com/fridtjof",
+    "Team": [],
+    "Maintaining": "rock-5b-plus",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/2780577?v=4"
+  },
+  {
     "First_Name": "Muhammed Efe",
     "Github": "https://github.com/efectn",
     "Team": [
@@ -268,6 +290,18 @@
     "Avatar": "https://avatars.githubusercontent.com/u/55603444?v=4"
   },
   {
+    "First_Name": "Jianfeng",
+    "Github": "https://github.com/amazingfate/",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "Rockchip legacy kernel, rock-5b, rock-5a, rock-3a, xiaomi-elish, armsom-sige1, bananapim7, radxa-e52c, rock-5-itx, armsom-sige3, oneplus-kebab",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/5022901?v=4"
+  },
+  {
     "First_Name": "Jannis",
     "Github": "https://github.com/Heisath",
     "Team": [
@@ -303,6 +337,31 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/10520670?v=4"
+  },
+  {
+    "First_Name": "Gunjan",
+    "Github": "https://github.com/viraniac",
+    "Team": [
+      "Framework",
+      "Allwinner"
+    ],
+    "Maintaining": "khadas-vim1s, khadas-vim4",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "CI & automated testing"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/6690664?v=4"
+  },
+  {
+    "First_Name": "IsMrX",
+    "Github": "https://github.com/IsMrX",
+    "Team": [],
+    "Maintaining": "cherryba-m1",
+    "Your_core_competences": [
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/57215835?v=4"
   },
   {
     "First_Name": "tdleiyao",
@@ -496,6 +555,18 @@
     "Avatar": "https://avatars.githubusercontent.com/u/130305927?v=4"
   },
   {
+    "First_Name": "Viacheslav",
+    "Github": "https://github.com/adeepn",
+    "Team": [
+      "Amlogic"
+    ],
+    "Maintaining": "jethubj80, jethubj100, jethubj200, khadas-vim4",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/64684523?v=4"
+  },
+  {
     "First_Name": "Ivan",
     "Github": "https://github.com/ginkage",
     "Team": [],
@@ -600,6 +671,18 @@
     "Avatar": "https://avatars.githubusercontent.com/u/23667947?v=4"
   },
   {
+    "First_Name": "Janos",
+    "Github": "https://github.com/Janmcha",
+    "Team": [
+      "Allwinner"
+    ],
+    "Maintaining": "orangepipcplus",
+    "Your_core_competences": [
+      "CI & automated testing"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/160396823?v=4"
+  },
+  {
     "First_Name": "Elias",
     "Github": "https://github.com/eliasbakken",
     "Team": [
@@ -647,6 +730,28 @@
     "Avatar": "https://avatars.githubusercontent.com/u/8259405?v=4"
   },
   {
+    "First_Name": "Seele",
+    "Github": "https://github.com/SeeleVolleri",
+    "Team": [],
+    "Maintaining": "firefly-itx-3588j",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/166212217?v=4"
+  },
+  {
+    "First_Name": "Michele",
+    "Github": "https://github.com/ilmich",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": null,
+    "Your_core_competences": [
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/148796?v=4"
+  },
+  {
     "First_Name": "David",
     "Github": "https://github.com/davidandreoletti",
     "Team": [],
@@ -656,6 +761,16 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/1195702?v=4"
+  },
+  {
+    "First_Name": "Jacob",
+    "Github": "https://github.com/Kreyren",
+    "Team": [
+      "Allwinner"
+    ],
+    "Maintaining": "olimex-teres-a64",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/11302521?v=4"
   },
   {
     "First_Name": "Andrew",
@@ -693,6 +808,19 @@
       "Forum moderating"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/36392828?v=4"
+  },
+  {
+    "First_Name": "Pete",
+    "Github": "https://github.com/PeterChrz",
+    "Team": [],
+    "Maintaining": "thinkpad-x13s",
+    "Your_core_competences": [
+      "Project management",
+      "Devops and servers",
+      "Professional support",
+      "CI & automated testing"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/8849117?v=4"
   },
   {
     "First_Name": "Hz",
@@ -772,6 +900,30 @@
       "CI & automated testing"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/639959?v=4"
+  },
+  {
+    "First_Name": "Benjamin",
+    "Github": null,
+    "Team": [],
+    "Maintaining": "star64",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
+    "First_Name": "ertugrul",
+    "Github": null,
+    "Team": [],
+    "Maintaining": "orangepi3-lts",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
+    "First_Name": "valium",
+    "Github": null,
+    "Team": [],
+    "Maintaining": "visionfive2",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
   },
   {
     "First_Name": "Heiko",
@@ -940,6 +1092,18 @@
     "Avatar": "https://avatars.githubusercontent.com/u/47453382?v=4"
   },
   {
+    "First_Name": "Martin",
+    "Github": "https://github.com/martinayotte",
+    "Team": [
+      "Allwinner"
+    ],
+    "Maintaining": "Allwinner",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/9724344?v=4"
+  },
+  {
     "First_Name": "Chris",
     "Github": "https://github.com/clee",
     "Team": [
@@ -1049,5 +1213,13 @@
       "Professional support"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/6294936?v=4"
+  },
+  {
+    "First_Name": null,
+    "Github": null,
+    "Team": [],
+    "Maintaining": "orangepizeroplus2-h3",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
   }
 ]
