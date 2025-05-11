@@ -1,0 +1,49 @@
+{
+  "Account_Name": "Sinovoip",
+  "Logo": null,
+  "Website": "https://www.banana-pi.org/",
+  "Description": "SinoVoip is a single board computer vendor who has many of their SBC's supported by Armbian! They are more commonly known by their moniker \"Banana Pi\" and have boards such as the Banana Pi M5 and Banana Pi M2 Pro which are supported by Armbian available for purchase now!",
+  "Promoted": true
+}
+{
+  "Account_Name": "Mekotronics Co., Ltd",
+  "Logo": null,
+  "Website": "https://www.mekotronics.com/",
+  "Description": "Digital Signage solutions",
+  "Promoted": true
+}
+{
+  "Account_Name": "Inovato",
+  "Logo": null,
+  "Website": "https://www.inovato.com/",
+  "Description": null,
+  "Promoted": true
+}
+{
+  "Account_Name": "BIQU Innovation Technology Co.,Ltd.",
+  "Logo": null,
+  "Website": "http://www.BIQU3D.com",
+  "Description": "3D printer maker",
+  "Promoted": true
+}
+{
+  "Account_Name": "FriendlyElec",
+  "Logo": null,
+  "Website": "https://www.friendlyelec.com/",
+  "Description": null,
+  "Promoted": true
+}
+{
+  "Account_Name": "Khadas",
+  "Logo": "https://cdn.armbian.com/wp-content/uploads/2023/05/khadas-logo.jpg",
+  "Website": "https://www.khadas.com/",
+  "Description": null,
+  "Promoted": true
+}
+{
+  "Account_Name": "Radxa",
+  "Logo": null,
+  "Website": "https://wiki.radxa.com",
+  "Description": null,
+  "Promoted": true
+}
