@@ -1,5 +1,33 @@
 [
   {
+    "First_Name": "Rolf",
+    "Github": "https://github.com/leggewie",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "bananapim2plus",
+    "Your_core_competences": [
+      "OS and desktop development",
+      "Project management",
+      "Devops and servers",
+      "CI & automated testing",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
+  },
+  {
+    "First_Name": "Michael",
+    "Github": null,
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "newsletter",
+    "Your_core_competences": [
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
     "First_Name": "Joseph",
     "Github": "https://github.com/Tearran",
     "Team": [
@@ -61,20 +89,6 @@
       "Project management"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/7153954?v=4"
-  },
-  {
-    "First_Name": "Rolf",
-    "Github": "https://github.com/leggewie",
-    "Team": [],
-    "Maintaining": "bananapim2plus",
-    "Your_core_competences": [
-      "OS and desktop development",
-      "Project management",
-      "Devops and servers",
-      "CI & automated testing",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
   },
   {
     "First_Name": "Nicolas",
@@ -464,18 +478,6 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/1937740?v=4"
-  },
-  {
-    "First_Name": "Michael",
-    "Github": null,
-    "Team": [
-      "Infrastructure"
-    ],
-    "Maintaining": "newsletter",
-    "Your_core_competences": [
-      "OS and desktop development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
   },
   {
     "First_Name": null,
