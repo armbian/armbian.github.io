@@ -240,13 +240,27 @@ jobs:
           cat > "$FILENAME" <<- EOT
           ## Devices Under Tests
 
-          This section presents the performance test results, including key metrics and technical details from the test execution.
+          This section presents the performance test results, including key metrics and technical details from the test execution.  
           **Test Date:** [15.3.2025](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
           EOT
-          for device in $(ls test | grep -oP 'wlx\w+' | sort | uniq); do
-          source test/$device.sysinfo
-          cat >> "$FILENAME" <<- EOT
-          ### $DEVICE_NAME
+
+          # Step 1: Get all device identifiers
+          device_ids=$(ls test | grep -oP 'wlx\w+' | sort | uniq)
+
+          # Step 2: Build a list of unique classes
+          classes=$(for device in $device_ids; do
+              source test/$device.sysinfo
+              echo "$DEVICE_CLASS"
+          done | sort -u)
+
+          # Step 3: Group and output by class
+          for class in $classes; do
+              echo "### $class" >> "$FILENAME"
+              for device in $device_ids; do
+                  source test/$device.sysinfo
+                  if [ "$DEVICE_CLASS" = "$class" ]; then
+                      cat >> "$FILENAME" <<- EOT
+          #### $DEVICE_NAME
 
           <img src=https://stuff.armbian.com/netbox/media/devicetype-images/$DEVICE_TYPE.png>
 
@@ -258,25 +272,29 @@ jobs:
 
           === "Forward mode (client to server)"
 
-              \`\`\`
+          \`\`\`
           $(cat test/$device-tx.log | sed 's/^/    /')
-              \`\`\`
+          \`\`\`
 
           === "Reverse mode (server to client)"
 
-              \`\`\`
+          \`\`\`
           $(cat test/$device-rx.log | sed 's/^/    /')
-              \`\`\`
+          \`\`\`
 
           === "Wireless link info"
 
-              \`\`\`
+          \`\`\`
           $(cat test/$device-info.log | sed 's/^/    /')
-              \`\`\`
+          \`\`\`
 
           EOT
+                  fi
+              done
           done
-          cat $FILENAME >> $GITHUB_STEP_SUMMARY
+
+          cat "$FILENAME" >> "$GITHUB_STEP_SUMMARY"
+
 
       - name: Replace content in markdown document
         run: |
