@@ -1,5 +1,18 @@
 [
   {
+    "First_Name": "Igor",
+    "Github": "https://github.com/igorpecovnik",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, odroidhc4, bananapim2pro, bananapim5",
+    "Your_core_competences": [
+      "Project management",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
+  },
+  {
     "First_Name": "Rolf",
     "Github": "https://github.com/leggewie",
     "Team": [
@@ -239,17 +252,6 @@
     "Maintaining": "leez-p710, coolpi-cm5, lubancat2, coolpi-genbook",
     "Your_core_competences": [],
     "Avatar": "https://avatars.githubusercontent.com/u/8164734?v=4"
-  },
-  {
-    "First_Name": "Igor",
-    "Github": "https://github.com/igorpecovnik",
-    "Team": [],
-    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, odroidhc4, bananapim2pro, bananapim5",
-    "Your_core_competences": [
-      "Project management",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
   },
   {
     "First_Name": "Fridtjof",
