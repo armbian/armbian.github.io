@@ -28,7 +28,7 @@ jobs:
           curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
           "https://stuff.armbian.com/netbox/api/dcim/devices/?limit=500&name__empty=false&status=active" | \
           jq '.results[] | select(.device_role.slug == "wifi-dut") | {name: .name, serial: .serial, device_type: .device_type.model, device_class: .custom_fields.class, device_ip: .primary_ip.address}' | \
-          jq -s >> $GITHUB_OUTPUT
+          jq -s 'sort_by(.device_class)' >> $GITHUB_OUTPUT
           echo "${delimiter}" >> "${GITHUB_OUTPUT}"
 
   gradle:
