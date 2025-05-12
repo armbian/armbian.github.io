@@ -34,7 +34,7 @@ jobs:
                 device_class: .custom_fields.class,
                 device_ip: .primary_ip.address
               }' | \
-          jq -s 'sort_by(.device_class, .name)' >> $GITHUB_OUTPUT
+          jq -s 'sort_by([.device_class, .name])' >> $GITHUB_OUTPUT
           echo "${delimiter}" >> "${GITHUB_OUTPUT}"
 
   gradle:
