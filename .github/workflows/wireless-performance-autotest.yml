@@ -280,17 +280,17 @@ jobs:
           |<span style="font-size: 1.5rem;">$DEVICE_TYPE</span> | <span style="font-size: 1.5rem;">$DEVICE_CLASS</span> | <span style="font-size: 1.5rem;">$DEVICE_TX</span> Mbits/sec | <span style="font-size: 1.5rem;">$DEVICE_RX</span> Mbits/sec |
 
           === "Forward mode (client to server)"
-          \`\`\`
+              \`\`\`
           $(sed 's/^/    /' test/$device-tx.log)
-          \`\`\`
+              \`\`\`
           === "Reverse mode (server to client)"
-          \`\`\`
+              \`\`\`
           $(sed 's/^/    /' test/$device-rx.log)
-          \`\`\`
+              \`\`\`
           === "Wireless link info"
-          \`\`\`
+              \`\`\`
           $(sed 's/^/    /' test/$device-info.log)
-          \`\`\`
+              \`\`\`
           EOT
 
           done <<< "$sorted_devices"
