@@ -245,31 +245,34 @@ jobs:
           FILENAME=output.md
           cat > "$FILENAME" <<- EOT
           ## Devices Under Tests
-
           This section presents the performance test results, including key metrics and technical details from the test execution.  
-          **Test Date:** [15.3.2025](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+          **Test Date:** [$(date -u '+%Y-%m-%d %H:%M UTC')](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
           EOT
 
           # Step 1: Get all device identifiers
-          device_ids=$(ls test | grep -oP 'wlx\w+' | sort | uniq)
+          device_ids=$(ls test | grep -oP 'wlx\w+' | sort -u)
 
-          # Step 2: Build a list of unique classes
-          classes=$(for device in $device_ids; do
+          # Step 2: Collect all metadata and sort by class, then name
+          sorted_devices=$(for device in $device_ids; do
               source test/$device.sysinfo
-              echo "$DEVICE_CLASS"
-          done | sort -u)
+              echo "$DEVICE_CLASS|$DEVICE_NAME|$device"
+          done | sort)
 
-          # Step 3: Group and output by class
-          for class in $classes; do
-              echo "### $class" >> "$FILENAME"
-              for device in $device_ids; do
-                  source test/$device.sysinfo
-                  if [ "$DEVICE_CLASS" = "$class" ]; then
-                      cat >> "$FILENAME" <<- EOT
+          # Step 3: Output by class and device
+          current_class=""
+          while IFS='|' read -r class name device; do
+              if [ "$class" != "$current_class" ]; then
+                  echo "### $class" >> "$FILENAME"
+                  current_class="$class"
+              fi
+
+              source test/$device.sysinfo
+
+              cat >> "$FILENAME" <<- EOT
+
           #### $DEVICE_NAME
 
           <img src=https://stuff.armbian.com/netbox/media/devicetype-images/$DEVICE_TYPE.png>
-
           <span style="font-size: 0.5rem;">OS: Armbian v${VERSION}, ${KERNEL}</span>
 
           | Chipset | Class | Average forward speed | Average reverse speed |
@@ -277,30 +280,22 @@ jobs:
           |<span style="font-size: 1.5rem;">$DEVICE_TYPE</span> | <span style="font-size: 1.5rem;">$DEVICE_CLASS</span> | <span style="font-size: 1.5rem;">$DEVICE_TX</span> Mbits/sec | <span style="font-size: 1.5rem;">$DEVICE_RX</span> Mbits/sec |
 
           === "Forward mode (client to server)"
-
           \`\`\`
-          $(cat test/$device-tx.log | sed 's/^/    /')
+          $(sed 's/^/    /' test/$device-tx.log)
           \`\`\`
-
           === "Reverse mode (server to client)"
-
           \`\`\`
-          $(cat test/$device-rx.log | sed 's/^/    /')
+          $(sed 's/^/    /' test/$device-rx.log)
           \`\`\`
-
           === "Wireless link info"
-
           \`\`\`
-          $(cat test/$device-info.log | sed 's/^/    /')
+          $(sed 's/^/    /' test/$device-info.log)
           \`\`\`
-
           EOT
-                  fi
-              done
-          done
+
+          done <<< "$sorted_devices"
 
           cat "$FILENAME" >> "$GITHUB_STEP_SUMMARY"
-
 
       - name: Replace content in markdown document
         run: |
