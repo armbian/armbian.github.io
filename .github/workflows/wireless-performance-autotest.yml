@@ -65,7 +65,7 @@ jobs:
            if_key_exists: replace
 
        - name: "Prepare device variables"
-         timeout-minutes: 1
+         timeout-minutes: 2
          id: vars
          shell: bash
          run: |
