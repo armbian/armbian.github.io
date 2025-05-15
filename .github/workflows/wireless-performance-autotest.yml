@@ -185,6 +185,7 @@ jobs:
            echo "DEVICE_RX=\"${rx_speed}\"" >> test/${{ env.DEVICE }}.sysinfo
 
        - name: "Enable default route on ${{ env.IP_ADDR }}"
+         timeout-minutes: 1
          shell: bash
          run: |
 
@@ -192,6 +193,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo ip route add default via ${{ env.DEFAULT_DEVICE_GW }} dev ${{ env.DEFAULT_DEVICE }} metric 200"
 
        - name: "Remove adapter"
+         timeout-minutes: 1
          shell: bash
          run: |
 
@@ -199,6 +201,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo netplan apply"
 
        - name: "Upload test summary"
+         timeout-minutes: 3
          uses: actions/upload-artifact@v4
          with:
            name: test-${{ env.DEVICE }}
