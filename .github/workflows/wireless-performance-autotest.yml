@@ -122,7 +122,7 @@ jobs:
            EOT
 
        - name: "Enable wireless adapter on ${{ env.IP_ADDR }}"
-         timeout-minutes: 1
+         timeout-minutes: 2
          shell: bash
          run: |
 
@@ -132,7 +132,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo netplan apply"
 
        - name: "Drop default route on ${{ env.IP_ADDR }}"
-         timeout-minutes: 1
+         timeout-minutes: 2
          shell: bash
          run: |
            
@@ -140,7 +140,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo ip route del default dev ${{ env.DEFAULT_DEVICE }}"
 
        - name: "Make sure device is connected"
-         timeout-minutes: 1
+         timeout-minutes: 2
          shell: bash
          run: |
 
@@ -158,7 +158,7 @@ jobs:
            echo "CLIENTIP=${CLIENTIP}" >> $GITHUB_ENV
 
        - name: "Do some perf testing"
-         timeout-minutes: 1
+         timeout-minutes: 2
          shell: bash
          run: |
 
@@ -193,7 +193,7 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo ip route add default via ${{ env.DEFAULT_DEVICE_GW }} dev ${{ env.DEFAULT_DEVICE }} metric 200"
 
        - name: "Remove adapter"
-         timeout-minutes: 1
+         timeout-minutes: 2
          shell: bash
          run: |
 
