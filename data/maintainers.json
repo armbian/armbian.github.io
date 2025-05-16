@@ -1,5 +1,60 @@
 [
   {
+    "First_Name": "Chen",
+    "Github": "https://github.com/CodeChenL",
+    "Team": [],
+    "Maintaining": "rock-2a, rock-2f",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/43897062?v=4"
+  },
+  {
+    "First_Name": "Martin",
+    "Github": "https://github.com/schmiedelm",
+    "Team": [],
+    "Maintaining": "mba8mpxl-ras314, mba8mpxl",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/73469302?v=4"
+  },
+  {
+    "First_Name": "Mahdi",
+    "Github": "https://github.com/mahdichi",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "fxblox-rk1",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/3342690?v=4"
+  },
+  {
+    "First_Name": "Andrew",
+    "Github": "https://github.com/glneo",
+    "Team": [],
+    "Maintaining": "sk-am64b, sk-am62b, sk-tda4vm, sk-am68, sk-am69",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "Devops and servers"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/1456044?v=4"
+  },
+  {
+    "First_Name": "Elias",
+    "Github": "https://github.com/eliasbakken",
+    "Team": [
+      "Allwinner"
+    ],
+    "Maintaining": "recore",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/3756249?v=4"
+  },
+  {
     "First_Name": "Igor",
     "Github": "https://github.com/igorpecovnik",
     "Team": [
@@ -81,16 +136,6 @@
     "Avatar": "https://avatars.githubusercontent.com/u/83122123?v=4"
   },
   {
-    "First_Name": "Chen",
-    "Github": "https://github.com/CodeChenL",
-    "Team": [],
-    "Maintaining": "rock-2a, rock-2f",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/43897062?v=4"
-  },
-  {
     "First_Name": "Andrei",
     "Github": "https://github.com/Grippy98",
     "Team": [],
@@ -110,18 +155,6 @@
     "Maintaining": "h96-tvbox-3566, yy3568",
     "Your_core_competences": [],
     "Avatar": "https://avatars.githubusercontent.com/u/41456803?v=4"
-  },
-  {
-    "First_Name": "Andrew",
-    "Github": "https://github.com/glneo",
-    "Team": [],
-    "Maintaining": "sk-am64b, sk-am62b, sk-tda4vm, sk-am68, sk-am69",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development",
-      "Devops and servers"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/1456044?v=4"
   },
   {
     "First_Name": "Bret",
@@ -282,14 +315,6 @@
     "Maintaining": "nanopi-r6c, cm3588-nas",
     "Your_core_competences": [],
     "Avatar": "https://avatars.githubusercontent.com/u/131405023?v=4"
-  },
-  {
-    "First_Name": "Martin",
-    "Github": "https://github.com/schmiedelm",
-    "Team": [],
-    "Maintaining": "mba8mpxl-ras314, mba8mpxl",
-    "Your_core_competences": [],
-    "Avatar": "https://avatars.githubusercontent.com/u/73469302?v=4"
   },
   {
     "First_Name": "Michael",
@@ -687,18 +712,6 @@
     "Avatar": "https://avatars.githubusercontent.com/u/160396823?v=4"
   },
   {
-    "First_Name": "Elias",
-    "Github": "https://github.com/eliasbakken",
-    "Team": [
-      "Allwinner"
-    ],
-    "Maintaining": "recore",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/3756249?v=4"
-  },
-  {
     "First_Name": "Aaron",
     "Github": "https://github.com/ahoneybun",
     "Team": [
@@ -984,19 +997,6 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
-  },
-  {
-    "First_Name": "Mahdi",
-    "Github": "https://github.com/mahdichi",
-    "Team": [
-      "Rockchip"
-    ],
-    "Maintaining": "fxblox-rk1",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/3342690?v=4"
   },
   {
     "First_Name": "Dylan",
