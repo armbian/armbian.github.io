@@ -120,8 +120,20 @@ jobs:
         run: |
 
           # prepare feeds
-          #A=$(rsync -ar rsync://rsync.armbian.com/dl/ | awk '{ print ""$2"|https://dl.armbian.com/"$5"|"$3"T"$4"Z" }' | grep "archive/" | grep -v ".txt")
-          A=$(rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -ar upload@k-space.ee.armbian.com:/storage/www/dl/ | awk '{ print ""$2"|https://dl.armbian.com/"$5"|"$3"T"$4"Z" }' | grep "archive/" | grep -v ".txt\|homeassistant\|openhab\|kali\|omv")
+          A=$(rsync --recursive --list-only rsync://rsync.armbian.com/dl/ \
+              | awk '{
+              gsub(",", "", $2);                    # Remove commas in size
+              gsub("/", "-", $3);                   # Fix date format
+              url = "https://dl.armbian.com/" $5;  # Construct URL
+
+              # Include URLs matching /<folder>/archive/Armbian
+              if (url ~ /\/[^\/]+\/archive\/Armbian/) {
+              # Exclude if url matches any of the unwanted substrings
+              if (url !~ /\.txt|homeassistant|openhab|kali|omv/) {
+              print $2 "|" url "|" $3 "T" $4 "Z"
+              }
+              }
+              }')
           B=$(gh release view --json assets --repo github.com/armbian/community | jq '.assets[] | .size, .url, .createdAt' | xargs -n3 -d'\n' | grep -v ".txt" | sed "s/\"//g" | sed -e 's| |\||g')
           C=$(gh release view --json assets --repo github.com/armbian/os | jq '.assets[] | .size, .url, .createdAt' | xargs -n3 -d'\n' | grep -v ".txt" | sed "s/\"//g" | sed -e 's| |\||g')
           D=$(gh release view --json assets --repo github.com/armbian/distribution | jq '.assets[] | .size, .url, .createdAt' | xargs -n3 -d'\n' | grep -v ".txt" | sed "s/\"//g" | sed -e 's| |\||g')
@@ -184,7 +196,7 @@ jobs:
 
           SOURCE=$(mktemp -d)
           DESTINATION=$(mktemp -d)
-          rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -zqvr --include="*/archive/*.torrent" --exclude="/*/*/*" --exclude="_*/" --exclude="control" --exclude="quotes.txt" --exclude="*/all-torrents.zip" upload@k-space.ee.armbian.com:/storage/www/dl/ ${SOURCE}
+          rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -zqvr --include="*/archive/*.torrent" --exclude="/*/*/*" --exclude="_*/" --exclude="control" --exclude="quotes.txt" --exclude="*/all-torrents.zip" upload@fi.mirror.armbian.de:/mirror/dl/ ${SOURCE}
           find ${SOURCE}/. -mindepth 3 -exec mv -i -- {} ${DESTINATION}/ \;
           zip -qj all-torrents.zip ${DESTINATION}/*.torrent
 
