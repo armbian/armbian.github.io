@@ -197,7 +197,7 @@ jobs:
           SOURCE=$(mktemp -d)
           DESTINATION=$(mktemp -d)
           rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -zqvr --include="*/archive/*.torrent" --exclude="/*/*/*" --exclude="_*/" --exclude="control" --exclude="quotes.txt" --exclude="*/all-torrents.zip" upload@fi.mirror.armbian.de:/mirror/dl/ ${SOURCE}
-          find "${SOURCE}" -type f -name '*.torrent' -mindepth 3 -exec mv -i -- {} "${DESTINATION}/" \;
+          find ${SOURCE}/. -mindepth 3 -exec mv -i -- {} ${DESTINATION}/ \;
           zip -qj all-torrents.zip ${DESTINATION}/*.torrent
 
       - name: Commit changes if any
