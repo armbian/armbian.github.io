@@ -195,7 +195,7 @@ jobs:
         run: |
 
           DESTINATION=$(mktemp -d)
-          rsync --recursive --list-only rsync://rsync.armbian.com/dl/ \
+          rsync --recursive --list-only rsync://fi.mirror.armbian.de/dl/ \
           | awk '{
               gsub(",", "", $2);
               url = "https://dl.armbian.com/" $5;
