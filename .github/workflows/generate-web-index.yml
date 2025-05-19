@@ -194,10 +194,16 @@ jobs:
       - name: "Download and compress torrent files"
         run: |
 
-          SOURCE=$(mktemp -d)
           DESTINATION=$(mktemp -d)
-          rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -zqvr --include="*/archive/*.torrent" --exclude="/*/*/*" --exclude="_*/" --exclude="control" --exclude="quotes.txt" --exclude="*/all-torrents.zip" upload@k-space.ee.armbian.com:/storage/www/dl/ ${SOURCE}
-          find ${SOURCE}/. -mindepth 3 -exec mv -i -- {} ${DESTINATION}/ \;
+          rsync --recursive --list-only rsync://rsync.armbian.com/dl/ \
+          | awk '{
+              gsub(",", "", $2);
+              url = "https://dl.armbian.com/" $5;
+              if (url ~ /\/[^\/]+\/archive\/Armbian/ && url ~ /\.torrent$/) {
+                      print url
+              }
+          }' \
+          | xargs -n 1 -P 4 wget -P ${DESTINATION}/
           zip -qj all-torrents.zip ${DESTINATION}/*.torrent
 
       - name: Commit changes if any
