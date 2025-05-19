@@ -63,7 +63,11 @@ jobs:
           rm -f exposed.map.autoproposal
 
           # get all stable files we provide
-          rsync -e "ssh -p 10023 -o StrictHostKeyChecking=accept-new" -ar upload@k-space.ee.armbian.com:/storage/www/dl/ | awk '{ print $5 }' | grep "archive/" | grep -v ".txt\|.xz.\|homeassistant\|openhab\|kali\|omv" | grep ".xz" > /tmp/stable.txt
+          rsync --recursive --list-only rsync://rsync.armbian.com/dl/ \
+          | awk '{ print $5 }' \
+          | grep '\.xz$' \
+          | grep -vE '\.txt|\.xz\.|homeassistant|openhab|kali|omv' \
+          > /tmp/stable.txt
 
           # generate map entries
           # $1 = board
