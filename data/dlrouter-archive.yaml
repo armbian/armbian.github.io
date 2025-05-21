@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: 671a92ea74cba9f3129b9546e5160a97
+reloadKey: 38857b44e942cae5aae8be23f8283767
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -25,12 +25,6 @@ specialExtensions:
   - hyperv.zip: -hyperv
 
 servers:
-
-  # Europe/Ljubljana - 200 Mbit/s
-  - server: imola.armbian.com/archive/
-    latitude: 46.081638
-    longitude: 14.526054
-    weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
   - server: k-space.ee.armbian.com/archive/
