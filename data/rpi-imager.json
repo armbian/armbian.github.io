@@ -1,0 +1,148 @@
+{
+  "os_list": [
+    {
+      "name": "Armbian OS bookworm cinnamon 25.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_bookworm_current_6.12.28_cinnamon_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 7830765568,
+      "extract_sha256": "ec48e047552e26be9744f52dbec398149c84bdf2533cf7a089cdf2ca11ac47bc",
+      "image_download_size": 1462627516,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS bookworm minimal 25.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_bookworm_current_6.12.28_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 1581252608,
+      "extract_sha256": "20a87d8bfc3df0cb5afa35f3b3742a2dfd9dee98a809262f931616c7cacda410",
+      "image_download_size": 209077120,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS bookworm xfce 25.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_bookworm_current_6.12.28_xfce_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 7549747200,
+      "extract_sha256": "474bb080f9faee25b7b5f5b746925a68cb0ce246818dc9bd8ba6630e54d5f098",
+      "image_download_size": 1394174968,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble server 25.5.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_noble_current_6.12.28.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 2646605824,
+      "extract_sha256": "4345372fd461f443297b5d8bf6fad3f7c745fe5e28fbabd93b49ea4e86b4a5d7",
+      "image_download_size": 431860372,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble gnome 25.5.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_noble_current_6.12.28_gnome_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 6912212992,
+      "extract_sha256": "f2dbb3483f2e328691f26795bc3099d557be1dd4eaa49f09cd76e7b9e2dff14a",
+      "image_download_size": 1236841380,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble kde-neon 25.5.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_noble_current_6.12.28_kde-neon_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 8900313088,
+      "extract_sha256": "cf9473e60b8850a9b32f9b9c4950e0a02a4dbce59f8a4396ea7aca8fb3a12939",
+      "image_download_size": 1603653168,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble minimal 25.5.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_noble_current_6.12.28_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 1472200704,
+      "extract_sha256": "43d7f17f903003e0ffbe8feae258f4d79ebd61478f3940f114d92f14de07d537",
+      "image_download_size": 191947324,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble xfce 25.5.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.5.1_Rpi4b_noble_current_6.12.28_xfce_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-05-26",
+      "extract_size": 7432306688,
+      "extract_sha256": "fe13ca6e159e065250ce138fd0b1af890caf0ab42867279d112e23949ac12fa4",
+      "image_download_size": 1336804496,
+      "image_download_sha256": "",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    }
+  ]
+}
