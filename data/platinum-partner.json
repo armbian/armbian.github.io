@@ -1,4 +1,10 @@
 {
+  "Account_Name": "Shenzhen Wesion Technology Co., Ltd.",
+  "Logo": "https://cdn.armbian.com/wp-content/uploads/2023/05/khadas-logo.jpg",
+  "Website": "https://www.khadas.com/",
+  "Description": null
+}
+{
   "Account_Name": "Mekotronics Co., Ltd",
   "Logo": null,
   "Website": "https://www.mekotronics.com/",
@@ -20,12 +26,6 @@
   "Account_Name": "FriendlyElec",
   "Logo": null,
   "Website": "https://www.friendlyelec.com/",
-  "Description": null
-}
-{
-  "Account_Name": "Khadas",
-  "Logo": "https://cdn.armbian.com/wp-content/uploads/2023/05/khadas-logo.jpg",
-  "Website": "https://www.khadas.com/",
   "Description": null
 }
 {
