@@ -1,0 +1,91 @@
+name: "Weekly Journalistic Summary (GitHub Model)"
+
+on:
+  workflow_dispatch:
+  push:
+  schedule:
+    - cron: '0 9 * * MON'
+
+jobs:
+  summarize-commits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout armbian/build
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install OpenAI SDK
+        run: pip install 'openai>=1.0.0'
+
+      - name: Generate summary using GitHub model
+        env:
+          GITHUB_TOKEN: ${{ secrets.AI_MODELS }}
+        run: |
+          python3 << 'EOF'
+          import os
+          import subprocess
+          import datetime
+          from openai import OpenAI
+
+          token = os.environ["GITHUB_TOKEN"]
+          endpoint = "https://models.github.ai/inference"
+          model = "openai/gpt-4.1"
+
+          client = OpenAI(
+              base_url=endpoint,
+              api_key=token,
+          )
+
+          # Get commits from the last week, excluding 'automatic'
+          today = datetime.date.today()
+          last_week = today - datetime.timedelta(days=7)
+          result = subprocess.run(
+              ["git", "log", f"--since={last_week.isoformat()}", "--pretty=format:%h %s (%an)"],
+              capture_output=True,
+              text=True
+          )
+          commits = [line for line in result.stdout.splitlines() if "automatic" not in line.lower()]
+
+          if not commits:
+              print("No relevant commits found.")
+              exit(0)
+
+          # Prompt
+          prompt = (
+              "Write a journalistic-style weekly summary from these Git commit messages:\n\n" +
+              "\n".join(commits) +
+              "\n\nSkip trivial or automated changes. Emphasize noteworthy improvements or technical decisions. Format in Markdown."
+          )
+
+          response = client.chat.completions.create(
+              model=model,
+              messages=[
+                  {"role": "system", "content": "You are a helpful assistant."},
+                  {"role": "user", "content": prompt}
+              ],
+              temperature=0.7,
+              top_p=1.0
+          )
+
+          article = response.choices[0].message.content
+          with open("weekly-summary.md", "w") as f:
+              f.write(article)
+          EOF
+
+      - name: Upload Markdown summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-summary
+          path: weekly-summary.md
