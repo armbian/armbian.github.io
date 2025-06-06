@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 38a0bbca78495d890c64ecfdea423391
+reloadKey: f300b7e92693f32e9537e277b8b7e077
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -25,6 +25,12 @@ specialExtensions:
 
 servers:
 
+  # America/Chicago - 1000 Mbit/s
+  - server: armbian.chi.auroradev.org/apt/
+    latitude: 41.881832
+    longitude: -87.623177
+    weight: 10
+
   # America/Los_Angeles - 10000 Mbit/s
   - server: armbian.lv.auroradev.org/apt/
     latitude: 36.18811
@@ -35,6 +41,12 @@ servers:
   - server: armbian.nardol.ovh/apt/
     latitude: 48.8582
     longitude: 2.3387
+    weight: 10
+
+  # Europe/Vienna - 1000 Mbit/s
+  - server: armbian.systemonachip.net/apt/
+    latitude: 48.3003
+    longitude: 16.3441
     weight: 10
 
   # Australia/Sydney - 1000 Mbit/s
@@ -90,6 +102,12 @@ servers:
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.sustech.edu.cn/armbian/
+    latitude: 22.2767
+    longitude: 113.5788
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
   - server: mirrors.tuna.tsinghua.edu.cn/armbian/
     latitude: 34.7732
     longitude: 113.722
@@ -109,6 +127,12 @@ servers:
           - UA
     latitude: 59.9417
     longitude: 30.3096
+    weight: 10
+
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/apt/
+    latitude: 48.5144
+    longitude: -2.768
     weight: 10
 
   # Europe/London - 1000 Mbit/s
