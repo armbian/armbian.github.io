@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 531fb63c378685a095f022dfa3c6c731
+reloadKey: 4b88629631b6bec35eaaf83af9c42bae
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -49,6 +49,12 @@ servers:
     longitude: 116.3971
     weight: 10
 
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.tuna.tsinghua.edu.cn/armbian/
+    latitude: 34.7732
+    longitude: 113.722
+    weight: 10
+
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/apt/
     rules:
@@ -75,10 +81,37 @@ servers:
     longitude: 24.661898
     weight: 10
 
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: jp.mirrors.naho.moe/armbian/
+    latitude: 35.6895
+    longitude: 139.6923
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: repo.jing.rocks/armbian-apt/
+    latitude: 35.652832
+    longitude: 139.839478
+    weight: 10
+
+  # Asia/Taipei - 50000 Mbit/s
+  - server: mirror.twds.com.tw/armbian-apt/
+    latitude: 25.0382
+    longitude: 121.5636
+
   # Europe/Rome - 2500 Mbit/s
   - server: armbian.atomonetworks.com/apt/
     latitude: 38.157745
     longitude: 13.195175
+    weight: 10
+
+  # Europe/Kiev - 20000 Mbit/s
+  - server: mirror.hostiko.network/armbian/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - RU
+    latitude: 50.4547
+    longitude: 30.5238
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
@@ -97,4 +130,10 @@ servers:
   - server: netcup-03.armbian.com/apt/
     latitude: 49.4478
     longitude: 11.0683
+    weight: 10
+
+  # Europe/Copenhagen - 1000 Mbit/s
+  - server: mirrors.c0urier.net/linux/armbian/apt/
+    latitude: 56.0656
+    longitude: 12.2851
     weight: 10
