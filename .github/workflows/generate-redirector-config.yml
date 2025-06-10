@@ -538,7 +538,7 @@ jobs:
       with:
         repository: "P3TERX/GeoLite.mmdb"
         fileName: "*.mmdb"
-        latest: true
+        tag: '2025.06.07'
 
     - name: Download All Artifacts
       uses: actions/download-artifact@v4
