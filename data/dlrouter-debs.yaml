@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 6239f5963f5daa46013e0618fe80847d
+reloadKey: c61b9c1fb37e7c317573d4c059d7bfa3
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -29,18 +29,6 @@ servers:
   - server: armbian.chi.auroradev.org/apt/
     latitude: 41.881832
     longitude: -87.623177
-    weight: 10
-
-  # America/Los_Angeles - 10000 Mbit/s
-  - server: armbian.lv.auroradev.org/apt/
-    latitude: 36.18811
-    longitude: -115.176468
-    weight: 10
-
-  # Europe/Paris - 1000 Mbit/s
-  - server: armbian.nardol.ovh/apt/
-    latitude: 48.8582
-    longitude: 2.3387
     weight: 10
 
   # Australia/Sydney - 1000 Mbit/s
@@ -66,10 +54,6 @@ servers:
     latitude: 24.0
     longitude: 121.0
     weight: 10
-
-  # Asia/Kolkata - 1000 Mbit/s
-  - server: mirror.albony.in/armbian/
-    weight: 5
 
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirror.iscas.ac.cn/armbian/
@@ -151,12 +135,6 @@ servers:
     longitude: 30.5303
     weight: 10
 
-  # Europe/Tallinn - 10000 Mbit/s
-  - server: k-space.ee.armbian.com/apt/
-    latitude: 59.397987
-    longitude: 24.661898
-    weight: 10
-
   # Asia/Tokyo - 10000 Mbit/s
   - server: jp.mirrors.naho.moe/armbian/
     latitude: 35.6895
@@ -168,12 +146,6 @@ servers:
     latitude: 25.0382
     longitude: 121.5636
 
-  # Europe/Rome - 2500 Mbit/s
-  - server: armbian.atomonetworks.com/apt/
-    latitude: 38.157745
-    longitude: 13.195175
-    weight: 10
-
   # Europe/Kiev - 20000 Mbit/s
   - server: mirror.hostiko.network/armbian/
     rules:
@@ -182,24 +154,6 @@ servers:
           - RU
     latitude: 50.4547
     longitude: 30.5238
-    weight: 10
-
-  # Europe/Berlin - 2500 Mbit/s
-  - server: netcup-01.armbian.com/apt/
-    latitude: 49.4478
-    longitude: 11.0683
-    weight: 10
-
-  # Europe/Berlin - 2500 Mbit/s
-  - server: netcup-02.armbian.com/apt/
-    latitude: 49.4478
-    longitude: 11.0683
-    weight: 10
-
-  # Europe/Berlin - 2500 Mbit/s
-  - server: netcup-03.armbian.com/apt/
-    latitude: 49.4478
-    longitude: 11.0683
     weight: 10
 
   # Europe/Copenhagen - 1000 Mbit/s
