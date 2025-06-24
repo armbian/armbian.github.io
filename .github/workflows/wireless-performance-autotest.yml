@@ -30,6 +30,7 @@ jobs:
           jq '.results[] | select(.device_role.slug == "wifi-dut") | {
                 name: .name,
                 serial: .serial,
+                site_id: (.site.id // empty),
                 device_type: .device_type.model,
                 device_class: .custom_fields.class,
                 device_ip: .primary_ip.address
@@ -70,6 +71,35 @@ jobs:
          shell: bash
          run: |
 
+           # extract site ID
+           SITE_ID=${{ matrix.json.site_id }}
+           
+           # Fetch JSON from NetBox
+           DATA=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+             -H "Accept: application/json; indent=4" \
+             "https://stuff.armbian.com/netbox/api/dcim/sites/?limit=500&name__empty=false&id=${SITE_ID}")
+
+           count=$(echo "$DATA" | jq '.results | length')
+           if [[ "$count" -eq 0 ]]; then
+               echo "::error::Site id $SITE_ID not found in NetBox"
+               exit 1
+           fi
+           
+           # Extract fields from the first (and only) result
+           name=$(echo "$DATA" | jq -r '.results[0].name')
+           location=$(echo "$DATA" | jq -r '.results[0].region.name')
+           access_point=$(echo "$DATA" | jq -r '.results[0].custom_fields.access_point')
+           access_point_password=$(echo "$DATA" | jq -r '.results[0].custom_fields.access_point_password')
+           iperf_server=$(echo "$DATA" | jq -r '.results[0].custom_fields.iperf_server')
+
+           # Export to GitHub environment
+           echo "SITE_NAME=$name" >> "$GITHUB_ENV"
+           echo "SITE_LOCATION=$location" >> "$GITHUB_ENV"
+           echo "ACCESS_POINT=$access_point" >> "$GITHUB_ENV"
+           echo "ACCESS_POINT_PASSWORD=$access_point_password" >> "$GITHUB_ENV"
+           echo "IPERF_SERVER=$iperf_server" >> "$GITHUB_ENV"
+           echo "SITE_ID=$SITE_ID" >> "$GITHUB_ENV"
+           
            # extract IP address and device name
            DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')
            IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)
@@ -115,10 +145,10 @@ jobs:
                  dhcp6: true
                  macaddress: "${{ matrix.json.serial }}"
                  access-points:
-                   "${ACCESS_POINT}":
+                   "${{ env.ACCESS_POINT }}":
                      auth:
                        key-management: "psk"
-                       password: "password"
+                       password: "${{ env.ACCESS_POINT_PASSWORD }}"
            EOT
 
        - name: "Enable wireless adapter on ${{ env.IP_ADDR }}"
@@ -167,8 +197,8 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/${{ env.DEVICE }}-info.log
 
            # Run iperf test in both directions
-           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-tx.log
-           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-rx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c ${{ env.IPERF_SERVER }} -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-tx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3    -c ${{ env.IPERF_SERVER }} -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-rx.log
 
            # Extract the sender and receiver speeds
            tx_speed=$(cat test/${{ env.DEVICE }}-tx.log | grep "sender" | awk '{print $7}')
