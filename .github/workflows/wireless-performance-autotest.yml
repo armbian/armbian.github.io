@@ -89,12 +89,14 @@ jobs:
            name=$(echo "$DATA" | jq -r '.results[0].name')
            location=$(echo "$DATA" | jq -r '.results[0].region.name')
            access_point=$(echo "$DATA" | jq -r '.results[0].custom_fields.access_point')
+           access_point_password=$(echo "$DATA" | jq -r '.results[0].custom_fields.access_point_password')
            iperf_server=$(echo "$DATA" | jq -r '.results[0].custom_fields.iperf_server')
 
            # Export to GitHub environment
            echo "SITE_NAME=$name" >> "$GITHUB_ENV"
            echo "SITE_LOCATION=$location" >> "$GITHUB_ENV"
            echo "ACCESS_POINT=$access_point" >> "$GITHUB_ENV"
+           echo "ACCESS_POINT_PASSWORD=$access_point_password" >> "$GITHUB_ENV"
            echo "IPERF_SERVER=$iperf_server" >> "$GITHUB_ENV"
            echo "SITE_ID=$SITE_ID" >> "$GITHUB_ENV"
            
@@ -146,7 +148,7 @@ jobs:
                    "${{ env.ACCESS_POINT }}":
                      auth:
                        key-management: "psk"
-                       password: "password"
+                       password: "${{ env.ACCESS_POINT_PASSWORD }}"
            EOT
 
        - name: "Enable wireless adapter on ${{ env.IP_ADDR }}"
