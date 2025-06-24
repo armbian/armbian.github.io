@@ -30,6 +30,7 @@ jobs:
           jq '.results[] | select(.device_role.slug == "wifi-dut") | {
                 name: .name,
                 serial: .serial,
+                site_id: .site.id,
                 device_type: .device_type.model,
                 device_class: .custom_fields.class,
                 device_ip: .primary_ip.address
@@ -70,6 +71,35 @@ jobs:
          shell: bash
          run: |
 
+           # extract site ID
+           SITE_ID=${{ matrix.json.site_id }}
+           
+           # Fetch JSON from NetBox
+           DATA=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+             -H "Accept: application/json; indent=4" \
+             "https://stuff.armbian.com/netbox/api/dcim/sites/?limit=500&name__empty=false&id=${SITE_ID}")
+
+           # Extract fields from the first (and only) result
+           name=$(echo "$DATA" | jq -r '.results[0].name')
+           location=$(echo "$DATA" | jq -r '.results[0].region.name')
+           access_point=$(echo "$DATA" | jq -r '.results[0].custom_fields.access_point')
+           iperf_server=$(echo "$DATA" | jq -r '.results[0].custom_fields.iperf_server')
+
+           # 🔍 Debug print
+           echo "DEBUG: Site info from NetBox:"
+           echo "  SITE_ID       = $SITE_ID"
+           echo "  SITE_NAME     = $name"
+           echo "  SITE_LOCATION = $location"
+           echo "  ACCESS_POINT  = $access_point"
+           echo "  IPERF_SERVER  = $iperf_server"
+
+           # Export to GitHub environment
+           echo "SITE_NAME=$name" >> "$GITHUB_ENV"
+           echo "SITE_LOCATION=$location" >> "$GITHUB_ENV"
+           echo "ACCESS_POINT=$access_point" >> "$GITHUB_ENV"
+           echo "IPERF_SERVER=$iperf_server" >> "$GITHUB_ENV"
+           echo "SITE_ID=$SITE_ID" >> "$GITHUB_ENV"
+           
            # extract IP address and device name
            DEVICE=wlx$(echo '${{ matrix.json.serial }}' | sed 's/://g')
            IP_ADDR=$(echo '${{ matrix.json.device_ip }}' | cut -d'/' -f1)
