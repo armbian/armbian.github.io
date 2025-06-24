@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       max-parallel: 1
-      fail-fast: false| ![Alt text](https://stuff.armbian.com/netbox/media/devicetype-images/AIC8800.png){ width=300 } | AIC8800 | AIC8800 | AX |
+      fail-fast: false
       matrix:
         json: ${{ fromJSON(needs.power-on.outputs.DEPLOYMENT_MATRIX) }}
     steps:
