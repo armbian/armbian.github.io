@@ -30,7 +30,7 @@ jobs:
           jq '.results[] | select(.device_role.slug == "wifi-dut") | {
                 name: .name,
                 serial: .serial,
-                site_id: .site.id,
+                site_id: (.site.id // empty),
                 device_type: .device_type.model,
                 device_class: .custom_fields.class,
                 device_ip: .primary_ip.address
