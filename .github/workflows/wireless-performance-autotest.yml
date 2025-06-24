@@ -85,14 +85,6 @@ jobs:
            access_point=$(echo "$DATA" | jq -r '.results[0].custom_fields.access_point')
            iperf_server=$(echo "$DATA" | jq -r '.results[0].custom_fields.iperf_server')
 
-           # 🔍 Debug print
-           echo "DEBUG: Site info from NetBox:"
-           echo "  SITE_ID       = $SITE_ID"
-           echo "  SITE_NAME     = $name"
-           echo "  SITE_LOCATION = $location"
-           echo "  ACCESS_POINT  = $access_point"
-           echo "  IPERF_SERVER  = $iperf_server"
-
            # Export to GitHub environment
            echo "SITE_NAME=$name" >> "$GITHUB_ENV"
            echo "SITE_LOCATION=$location" >> "$GITHUB_ENV"
@@ -145,7 +137,7 @@ jobs:
                  dhcp6: true
                  macaddress: "${{ matrix.json.serial }}"
                  access-points:
-                   "${ACCESS_POINT}":
+                   "${{ env.ACCESS_POINT }}":
                      auth:
                        key-management: "psk"
                        password: "password"
@@ -197,8 +189,8 @@ jobs:
            ssh ci@${{ env.IP_ADDR }} "sudo iw dev ${{ env.DEVICE }} link | tail -n +2 | sed 's/^\t*//' | head -n -3 | sed '1d'" > test/${{ env.DEVICE }}-info.log
 
            # Run iperf test in both directions
-           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-tx.log
-           ssh ci@${{ env.IP_ADDR }} "iperf3    -c 10.0.60.10 -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-rx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3 -R -c ${{ env.IPERF_SERVER }} -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-tx.log
+           ssh ci@${{ env.IP_ADDR }} "iperf3    -c ${{ env.IPERF_SERVER }} -B ${{ env.CLIENTIP }}" > test/${{ env.DEVICE }}-rx.log
 
            # Extract the sender and receiver speeds
            tx_speed=$(cat test/${{ env.DEVICE }}-tx.log | grep "sender" | awk '{print $7}')
