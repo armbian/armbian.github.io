@@ -109,7 +109,7 @@ jobs:
            ssh ci@${IP_ADDR} "sudo netplan apply"
 
            # read fixed network parameters
-           DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (en[^ ]+|eth[^ ]+)' | cut -d' ' -f2")
+           DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (en[^ ]+|eth[^ ]+|wan[^ ]+|lan[^ ])' | cut -d' ' -f2 | head -1")
            DEFAULT_DEVICE_IP=$(ssh ci@${IP_ADDR} "ip route get 9.9.9.9 | grep -oP 'src \K[\d.]+'")
            DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
            DEFAULT_DEVICE_CIDR=$(ssh ci@${IP_ADDR} "ip route show | grep -oP '\d+\.\d+\.\d+\.\d+/\d+'")
@@ -329,6 +329,25 @@ jobs:
           done <<< "$sorted_devices"
 
           cat "$FILENAME" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Add section for failed devices
+        run: |
+        
+          echo >> output.md
+          echo "## Failed Devices" >> output.md
+          echo >> output.md
+          echo "| Commercial Name | Chip | Class |" >> output.md
+          echo "|:-----|:--------|:------|" >> output.md
+          
+          curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+               -H "Accept: application/json; indent=4" \
+               "https://stuff.armbian.com/netbox/api/dcim/devices/?limit=500&name__empty=false&status=failed" | \
+          jq -r '.results[] | select(.device_role.slug == "wifi-dut") |
+                [.name, .device_type.model, .custom_fields.class] |
+                @tsv' | \
+          while IFS=$'\t' read -r name model class; do
+            echo "| $name | $model | $class |"
+          done >> output.md
 
       - name: Replace content in markdown document
         run: |
