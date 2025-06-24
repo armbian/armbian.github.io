@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 20
     strategy:
       max-parallel: 1
-      fail-fast: false
+      fail-fast: false| ![Alt text](https://stuff.armbian.com/netbox/media/devicetype-images/AIC8800.png){ width=300 } | AIC8800 | AIC8800 | AX |
       matrix:
         json: ${{ fromJSON(needs.power-on.outputs.DEPLOYMENT_MATRIX) }}
     steps:
@@ -336,8 +336,8 @@ jobs:
           echo >> output.md
           echo "## Failed Devices" >> output.md
           echo >> output.md
-          echo "| | Commercial Name | Chip | Class |" >> output.md
-          echo "|:---:|:-----|:--------|:------|" >> output.md
+          echo "| Commercial Name | Chip | Class |" >> output.md
+          echo "|:-----|:--------|:------|" >> output.md
           
           curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
                -H "Accept: application/json; indent=4" \
@@ -346,7 +346,7 @@ jobs:
                 [.name, .device_type.model, .custom_fields.class] |
                 @tsv' | \
           while IFS=$'\t' read -r name model class; do
-            echo "|<img src=https://stuff.armbian.com/netbox/media/devicetype-images/$model.png height=64> | $name | $model | $class |"
+            echo "| $name | $model | $class |"
           done >> output.md
 
       - name: Replace content in markdown document
