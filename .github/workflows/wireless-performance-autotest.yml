@@ -109,7 +109,7 @@ jobs:
            ssh ci@${IP_ADDR} "sudo netplan apply"
 
            # read fixed network parameters
-           DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (en[^ ]+|eth[^ ]+)' | cut -d' ' -f2")
+           DEFAULT_DEVICE=$(ssh ci@${IP_ADDR} "ip route show default | grep -Eo 'dev (en[^ ]+|eth[^ ]+|wan[^ ]+|lan[^ ])' | cut -d' ' -f2 | head -1")
            DEFAULT_DEVICE_IP=$(ssh ci@${IP_ADDR} "ip route get 9.9.9.9 | grep -oP 'src \K[\d.]+'")
            DEFAULT_DEVICE_GW=$(ssh ci@${IP_ADDR} "ip route show default dev ${DEFAULT_DEVICE} | awk '/default/ {print \$3}'")
            DEFAULT_DEVICE_CIDR=$(ssh ci@${IP_ADDR} "ip route show | grep -oP '\d+\.\d+\.\d+\.\d+/\d+'")
