@@ -79,6 +79,12 @@ jobs:
              -H "Accept: application/json; indent=4" \
              "https://stuff.armbian.com/netbox/api/dcim/sites/?limit=500&name__empty=false&id=${SITE_ID}")
 
+           count=$(echo "$DATA" | jq '.results | length')
+           if [[ "$count" -eq 0 ]]; then
+               echo "::error::Site id $SITE_ID not found in NetBox"
+               exit 1
+           fi
+           
            # Extract fields from the first (and only) result
            name=$(echo "$DATA" | jq -r '.results[0].name')
            location=$(echo "$DATA" | jq -r '.results[0].region.name')
