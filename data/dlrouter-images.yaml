@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 5ccf695c665ab3538a887f8bfd9ab76f
+reloadKey: 564e27b4f298ff3b1061c6e3b193d648
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -189,4 +189,10 @@ servers:
   - server: mirrors.c0urier.net/linux/armbian/dl/
     latitude: 56.0656
     longitude: 12.2851
+    weight: 10
+
+  # Europe/Amsterdam - 1000 Mbit/s
+  - server: armbian.hosthatch.com/dl/
+    latitude: 52.3759
+    longitude: 4.8975
     weight: 10
