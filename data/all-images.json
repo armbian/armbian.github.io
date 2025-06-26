@@ -40706,7 +40706,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -40721,7 +40721,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -40736,7 +40736,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -40751,7 +40751,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
@@ -40886,7 +40886,7 @@
       "kernel_branch": "vendor",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -40901,7 +40901,7 @@
       "kernel_branch": "vendor",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -40916,7 +40916,7 @@
       "kernel_branch": "vendor",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -40931,7 +40931,7 @@
       "kernel_branch": "vendor",
       "image_variant": "gnome",
       "preinstalled_application": "",
-      "promoted": "false",
+      "promoted": "true",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
