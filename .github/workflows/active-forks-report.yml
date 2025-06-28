@@ -1,0 +1,115 @@
+name: Monitor Active Forks With Commits
+
+on:
+  push:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  monitor-forks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare report
+        run: echo "## Active Forks With Recent Commits (Last 30 Days)\n" > active-forks.md
+
+      - name: Analyze forks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | 
+
+          set -euo pipefail
+
+          OWNER="armbian"
+          REPO="build"
+          DAYS=30
+          NOW=$(date -u +%s)
+          PAGE=1
+          PER_PAGE=100
+
+          echo "## Active and Ahead Forks (Last $DAYS Days)\n" > active-forks.md
+
+          echo "📊 Checking GitHub API rate limits:"
+          curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/rate_limit | jq '.rate'
+
+          while true; do
+            echo "🔄 Fetching page $PAGE of forks..."
+
+            RESPONSE=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$OWNER/$REPO/forks?per_page=$PER_PAGE&page=$PAGE")
+
+            # Detect HTML or broken response (rate limit or error)
+            if echo "$RESPONSE" | grep -q '<html>'; then
+              echo "❌ GitHub API returned HTML (likely rate limited). Exiting."
+              exit 1
+            fi
+
+            echo "$RESPONSE" > forks.json
+
+            # Check JSON validity
+            if ! jq empty forks.json 2>/dev/null; then
+              echo "❌ Failed to parse forks.json. API response:"
+              cat forks.json
+              exit 1
+            fi
+
+            COUNT=$(jq length forks.json)
+            [[ "$COUNT" -eq 0 ]] && break
+
+            jq -c '.[]' forks.json | while read -r fork; do
+              full_name=$(echo "$fork" | jq -r '.full_name')
+              url=$(echo "$fork" | jq -r '.html_url')
+              pushed_at=$(echo "$fork" | jq -r '.pushed_at')
+              fork_owner=$(echo "$full_name" | cut -d'/' -f1)
+              fork_repo=$(echo "$full_name" | cut -d'/' -f2)
+
+              [[ "$pushed_at" == "null" ]] && continue
+              pushed_sec=$(date -d "$pushed_at" +%s || echo 0)
+              delta_days=$(( (NOW - pushed_sec) / 86400 ))
+              (( delta_days > DAYS )) && continue
+
+              # 🔍 Detect most recently updated branch
+              branches=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+                "https://api.github.com/repos/$fork_owner/$fork_repo/branches?per_page=100")
+
+              latest_branch=""
+              latest_date=0
+
+              for row in $(echo "$branches" | jq -c '.[]'); do
+                bname=$(echo "$row" | jq -r '.name')
+                cdate=$(echo "$row" | jq -r '.commit.commit.committer.date')
+                [[ "$cdate" == "null" ]] && continue
+                cts=$(date -d "$cdate" +%s || echo 0)
+                if (( cts > latest_date )); then
+                  latest_branch="$bname"
+                  latest_date=$cts
+                fi
+              done
+
+              [[ -z "$latest_branch" ]] && continue
+
+              # 🔁 Compare this branch with upstream
+              compare_url="https://api.github.com/repos/${OWNER}/${REPO}/compare/${latest_branch}...${fork_owner}:${latest_branch}"
+              cmp=$(curl -sf -H "Authorization: Bearer $GH_TOKEN" "$compare_url") || {
+                echo "⚠️  Failed to compare $full_name"
+                continue
+              }
+
+              ahead_by=$(echo "$cmp" | jq -r '.ahead_by // 0')
+              (( ahead_by == 0 )) && continue
+
+              # ✅ Print and save
+              echo "::group::🔍 $full_name — pushed $delta_days days ago — 🟢 Ahead by $ahead_by commits"
+              echo "- [$full_name]($url) — pushed $delta_days days ago — 🟢 Ahead by $ahead_by commits" >> active-forks.md
+              echo '```' >> active-forks.md
+              echo "$cmp" | jq -r '.commits[] | "- \(.sha[0:7]) \(.commit.author.date) \(.commit.message | split("\n")[0])"' | head -n 30 >> active-forks.md
+              echo '```' >> active-forks.md
+              echo "" >> active-forks.md
+              echo "::endgroup::"
+            done
+
+            (( COUNT < PER_PAGE )) && break
+            (( PAGE++ ))
+          done
+          cat active-forks.md >> $GITHUB_STEP_SUMMARY
