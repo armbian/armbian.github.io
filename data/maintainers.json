@@ -1,5 +1,32 @@
 [
   {
+    "First_Name": "Nico",
+    "Github": "https://github.com/NicoD-SBC",
+    "Team": [
+      "Rockchip",
+      "Amlogic"
+    ],
+    "Maintaining": "khadas-vim3, odroidn2",
+    "Your_core_competences": [
+      "OS and desktop development",
+      "Forum moderating"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/46458369?v=4"
+  },
+  {
+    "First_Name": "Igor",
+    "Github": "https://github.com/igorpecovnik",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, odroidhc4, bananapim2pro, bananapim5, inovato-quadra",
+    "Your_core_competences": [
+      "Project management",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
+  },
+  {
     "First_Name": "Patrick",
     "Github": "https://github.com/pyavitz",
     "Team": [
@@ -112,19 +139,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/3756249?v=4"
-  },
-  {
-    "First_Name": "Igor",
-    "Github": "https://github.com/igorpecovnik",
-    "Team": [
-      "Support"
-    ],
-    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, odroidhc4, bananapim2pro, bananapim5",
-    "Your_core_competences": [
-      "Project management",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
   },
   {
     "First_Name": "Michael",
@@ -684,20 +698,6 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/10427125?v=4"
-  },
-  {
-    "First_Name": "Nico",
-    "Github": "https://github.com/NicoD-SBC",
-    "Team": [
-      "Rockchip",
-      "Amlogic"
-    ],
-    "Maintaining": "khadas-vim3, odroidn2, inovato-quadra",
-    "Your_core_competences": [
-      "OS and desktop development",
-      "Forum moderating"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/46458369?v=4"
   },
   {
     "First_Name": "Alessandro",
