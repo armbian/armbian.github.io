@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: c94c97248ca02cb0a7f08d3e4de74849
+reloadKey: f855d78026b39e74747b741588fc1c14
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -31,12 +31,6 @@ servers:
     longitude: -87.623177
     weight: 10
 
-  # America/Los_Angeles - 10000 Mbit/s
-  - server: armbian.lv.auroradev.org/apt/
-    latitude: 36.18811
-    longitude: -115.176468
-    weight: 10
-
   # Europe/Paris - 1000 Mbit/s
   - server: armbian.nardol.ovh/apt/
     latitude: 48.8582
@@ -59,6 +53,12 @@ servers:
   - server: fi.mirror.armbian.de/apt/
     latitude: 51.2993
     longitude: 9.491
+    weight: 10
+
+  # Asia/Taipei - 1000 Mbit/s
+  - server: mirror.ossplanet.net/armbian/apt/
+    latitude: 24.0
+    longitude: 121.0
     weight: 10
 
   # Asia/Kolkata - 1000 Mbit/s
@@ -129,6 +129,16 @@ servers:
     longitude: -0.1555
     weight: 10
 
+  # Europe/Kiev - 1000 Mbit/s
+  - server: distrohub.kyiv.ua/armbian/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - RU
+    latitude: 50.458
+    longitude: 30.5303
+    weight: 10
+
   # Europe/Tallinn - 10000 Mbit/s
   - server: k-space.ee.armbian.com/apt/
     latitude: 59.397987
@@ -152,12 +162,6 @@ servers:
     latitude: 25.0382
     longitude: 121.5636
 
-  # Europe/Rome - 2500 Mbit/s
-  - server: armbian.atomonetworks.com/apt/
-    latitude: 38.157745
-    longitude: 13.195175
-    weight: 10
-
   # Europe/Kiev - 20000 Mbit/s
   - server: mirror.hostiko.network/armbian/
     rules:
@@ -180,16 +184,16 @@ servers:
     longitude: 11.0683
     weight: 10
 
-  # Europe/Berlin - 2500 Mbit/s
-  - server: netcup-03.armbian.com/apt/
-    latitude: 49.4478
-    longitude: 11.0683
-    weight: 10
-
   # Europe/Copenhagen - 1000 Mbit/s
   - server: mirrors.c0urier.net/linux/armbian/apt/
     latitude: 56.0656
     longitude: 12.2851
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.sdu.edu.cn/armbian/
+    latitude: 32.0617
+    longitude: 118.778
     weight: 10
 
   # Europe/Amsterdam - 1000 Mbit/s
