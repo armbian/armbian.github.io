@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 63935a8e014b57f84e38c25a78c648f0
+reloadKey: ce984576ba9f3b6162af18d62bb64636
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -177,6 +177,12 @@ servers:
           - RU
     latitude: 50.4547
     longitude: 30.5238
+    weight: 10
+
+  # Europe/Berlin - 2500 Mbit/s
+  - server: netcup-01.armbian.com/dl/
+    latitude: 49.4478
+    longitude: 11.0683
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
