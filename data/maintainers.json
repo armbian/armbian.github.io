@@ -1,5 +1,21 @@
 [
   {
+    "First_Name": "Acx",
+    "Github": null,
+    "Team": [
+      "Rockchip",
+      "Framework"
+    ],
+    "Maintaining": null,
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "Devops and servers",
+      "Professional support"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
     "First_Name": "Nico",
     "Github": "https://github.com/NicoD-SBC",
     "Team": [
