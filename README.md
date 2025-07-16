@@ -23,7 +23,7 @@ Monitors the CI workflows of the Armbian project and generates various [data exc
 <br>Parses Armbian-specific metadata—such as version details, build signatures, and release identifiers—and embeds it into upstream base-files packages for distribution.
 - **Mirror Comparison & Redirector Config Generation**
 <br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-redirector-config.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-redirector-config.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-<br>Compares contents of all Armbian mirror servers and generates dynamic redirector configurations to optimize download reliability and speed.
+<br>Compares contents of all [Armbian mirror servers](https://docs.armbian.com/Mirrors/) and generates dynamic [redirector configurations](https://github.com/armbian/armbian-router) to optimize download reliability and speed.
 - **Update Download JSON Index**
 <br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-web-index.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-web-index.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Automatically updates the download index to reflect the latest available images and metadata for all supported platforms.
