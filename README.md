@@ -11,10 +11,10 @@ Monitors the CI workflows of the Armbian project and generates various [data exc
 
 - **Build Artifacts Assembly**
 <br><a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-<br>Assembles packages and stores them into ORAS cache.
+<br>Assembles packages and stores them into [ORAS cache](https://github.com/orgs/armbian/packages).
 - **Generate APT Repository**
 <br><a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-<br>Fetch packages from the ORAS cache and third-party sources, then publish them to Debian-compatible APT repositories.
+<br>Fetch packages from the [ORAS cache](https://github.com/orgs/armbian/packages) and [third-party sources](https://github.com/armbian/os/tree/main/external), then publish them to Debian-compatible APT repositories.
 - **Applications Install Testing**
 <br><a href=https://github.com/armbian/configng/actions/workflows/unit-tests.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/configng/unit-tests.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Executes automated unit tests on `armbian-config` modules and related scripts to ensure functionality, detect regressions, and validate behavior across supported configurations.
