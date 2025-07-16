@@ -17,6 +17,4 @@ cacheSize: 2048
 servers:
   - server: netcup-01.armbian.com/cache/
   - server: k-space.ee.armbian.com/cache/
-  - server: imola.armbian.com/cache/
-  - server: netcup-02.armbian.com/cache/
   - server: fi.mirror.armbian.de/cache/
