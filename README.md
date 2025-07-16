@@ -32,13 +32,13 @@ Monitors the CI workflows of the Armbian project and generates various [data exc
 <br>Extracts public issue data and selected metadata from Armbian’s Jira project management system for integration or reporting purposes.
 - **Wireless Performance Testing**
 <br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/wireless-performance-autotest.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/wireless-performance-autotest.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-<br>Runs automated wireless network benchmarks to assess driver performance and identify regressions.
+<br>Runs automated [wireless network benchmarks](https://docs.armbian.com/WifiPerformance/) to assess driver performance and identify regressions.
 - **Mirror GitHub Artifacts to CDN**
 <br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/mirror.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/mirror.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-<br>Pushes release images to Armbian’s Content Delivery Network for fast and distributed access worldwide.
+<br>Pushes release images to [Armbian’s Content Delivery Network](http://cache.armbian.com/) for fast and distributed access worldwide.
 - **Invite Recent Contributors**
 <br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/invite-contributors.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/invite-contributors.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-<br>Identifies recent external contributors and automatically sends GitHub invitations to join the Armbian organization.
+<br>Identifies recent external contributors and automatically sends GitHub invitations to join [the Armbian organization](https://github.com/orgs/armbian/people).
 - **Generate Authors and Partners JSON**
 <br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-partners-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-partners-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Creates machine-readable JSON files listing current contributors, authors, sponsors, and partners for use in website, dashboard, or credits rendering.
