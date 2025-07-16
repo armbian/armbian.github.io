@@ -7,7 +7,7 @@
 
 ### What does armbian.github.io do?
 
-Monitors the CI workflows of the Armbian project and generates various data exchange files to support automation, integration, and reporting across the development pipeline.
+Monitors the CI workflows of the Armbian project and generates various [data exchange files](https://github.armbian.com/) to support automation, integration, and reporting across the development pipeline.
 
 - **Build Artifacts Assembly**
 <br><a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
