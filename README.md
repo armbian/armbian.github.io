@@ -9,16 +9,33 @@
 
 Monitors the CI workflows of the Armbian project and generates various data exchange files to support automation, integration, and reporting across the development pipeline.
 
-| Action  | Status  |
-|:--|---:|
-|**Build Artifacts Assembly**<br>Assembles kernel, bootloader, and root filesystem artifacts from CI workflows and prepares them for packaging and distribution.|<a href=https://github.com/armbian/os><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=dependabot&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>|
-|Generate APT Repository|<a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
-| [Publish content](https://github.armbian.com/) of what is pushed to `data` folder inside `data` repository.  |  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/directory-listing.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/directory-listing.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>  |
-| Extract and store information about _base-files_. | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-base-files-info-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-base-files-info-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a> | 
-| Compare all mirrors contents and generate redirector configs | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-redirector-config.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-redirector-config.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a> | 
-| Update download JSON index|<a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-web-index.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-web-index.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
-| Pull excerpts from Armbian Jira|<a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-jira-excerpt.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-jira-excerpt.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
-| [Wireless performance testing](https://docs.armbian.com/WifiPerformance/) |<a href=https://github.com/armbian/armbian.github.io/actions/workflows/wireless-performance-autotest.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/wireless-performance-autotest.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
-| Mirror repository artifacts to our CDN |<a href=https://github.com/armbian/armbian.github.io/actions/workflows/mirror.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/mirror.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
-| Invite recent contributors to organization |<a href=https://github.com/armbian/armbian.github.io/actions/workflows/invite-contributors.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/invite-contributors.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
-| Generate authors and partners JSON |<a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-partners-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-partners-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
+- **Build Artifacts Assembly**
+<br><a href=https://github.com/armbian/os><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Assembles packages and stores them into ORAS cache.
+- **Generate APT Repository**
+<br><a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Fetch packages from the ORAS cache and third-party sources, then publish them to Debian-compatible APT repositories.
+- **Extract Base-Files Metadata**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-base-files-info-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-base-files-info-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Parses Armbian-specific metadata—such as version details, build signatures, and release identifiers—and embeds it into upstream base-files packages for distribution.
+- **Mirror Comparison & Redirector Config Generation**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-redirector-config.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-redirector-config.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Compares contents of all Armbian mirror servers and generates dynamic redirector configurations to optimize download reliability and speed.
+- **Update Download JSON Index**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-web-index.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-web-index.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Automatically updates the download index to reflect the latest available images and metadata for all supported platforms.
+- **Pull Excerpts from Armbian Jira**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-jira-excerpt.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-jira-excerpt.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Extracts public issue data and selected metadata from Armbian’s Jira project management system for integration or reporting purposes.
+- **Wireless Performance Testing**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/wireless-performance-autotest.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/wireless-performance-autotest.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Runs automated wireless network benchmarks to assess driver performance and identify regressions.
+- **Mirror GitHub Artifacts to CDN**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/mirror.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/mirror.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Pushes release images to Armbian’s Content Delivery Network for fast and distributed access worldwide.
+- **Invite Recent Contributors**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/invite-contributors.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/invite-contributors.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Identifies recent external contributors and automatically sends GitHub invitations to join the Armbian organization.
+- **Generate Authors and Partners JSON**
+<br><a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-partners-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-partners-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Creates machine-readable JSON files listing current contributors, authors, sponsors, and partners for use in website, dashboard, or credits rendering.
