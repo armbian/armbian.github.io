@@ -1,20 +1,18 @@
 <p align="center">
-  <a href="#build-framework">
-   <img src="https://raw.githubusercontent.com/armbian/build/master/.github/armbian-logo.png" alt="Armbian logo" width="144">
-  </a><br>
-  <a href=https://github.armbian.com/>https://github.armbian.com/</a>
-  <br> 
-  Build jobs artifacts sharing
-  <br>
-<br>
-</p>
+  <h2 align=center><a href="#build-framework">
+  <img src="https://raw.githubusercontent.com/armbian/.github/master/profile/logo.png" alt="Armbian logo" width="50%">
+  </a>
+<br><br>
+</h2>
 
-## What does this project do?
+### What does armbian.github.io do?
 
-It prepares several data exchange files.
+Monitors the CI workflows of the Armbian project and generates various data exchange files to support automation, integration, and reporting across the development pipeline.
 
 | Action  | Status  |
 |:--|---:|
+|Build artifacts assembly|<a href=https://github.com/armbian/os><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=dependabot&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>|
+|Generate APT Repository|<a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>|
 | [Publish content](https://github.armbian.com/) of what is pushed to `data` folder inside `data` repository.  |  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/directory-listing.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/directory-listing.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a>  |
 | Extract and store information about _base-files_. | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-base-files-info-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-base-files-info-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a> | 
 | Compare all mirrors contents and generate redirector configs | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-redirector-config.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-redirector-config.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main"></a> | 
