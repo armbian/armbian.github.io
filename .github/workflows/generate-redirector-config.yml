@@ -187,7 +187,13 @@ jobs:
           cd ..
           OUT=$(diff -rq compare debs || true)
           mkdir -p status
-          if [[ -z "${OUT}" ]]; then
+          # Check for at least one Release file
+          RELEASE_FOUND=$(find compare/dists -type f -name Release | wc -l)
+          if [[ "$RELEASE_FOUND" -eq 0 ]]; then
+              echo "no_release" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=no_release" >> $GITHUB_ENV
+          elif [[ -z "${OUT}" ]]; then
               echo "true" >> status/${SERVER_ID}
               echo "STATUS=true" >> $GITHUB_ENV
           elif [[ "${exit_status}" -eq 0 ]]; then
@@ -246,7 +252,13 @@ jobs:
           cd ..
           OUT=$(diff -rq compare debs || true)
           mkdir -p status
-          if [[ -z "${OUT}" ]]; then
+          # Check for at least one Release file
+          RELEASE_FOUND=$(find compare/dists -type f -name Release | wc -l)
+          if [[ "$RELEASE_FOUND" -eq 0 ]]; then
+              echo "no_release" >> status/${SERVER_ID}
+              echo "${SERVER_URL}" >> status/${SERVER_ID}
+              echo "STATUS=no_release" >> $GITHUB_ENV
+          elif [[ -z "${OUT}" ]]; then
               echo "true" >> status/${SERVER_ID}
               echo "STATUS=true" >> $GITHUB_ENV
           elif [[ "${exit_status}" -eq 0 ]]; then
@@ -412,6 +424,8 @@ jobs:
         echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
         grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
         #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        echo "# No Release file" >> $GITHUB_STEP_SUMMARY
+        grep no_release status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
 
         echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
         echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
@@ -444,6 +458,9 @@ jobs:
         echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
         grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
         #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        echo "# No Release file" >> $GITHUB_STEP_SUMMARY
+        grep no_release status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
+
         echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
         echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
         rm -rf status
@@ -474,6 +491,8 @@ jobs:
         echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
         grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
         #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        echo "# No Release file" >> $GITHUB_STEP_SUMMARY
+        grep no_release status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
 
         echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
         echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
@@ -506,6 +525,8 @@ jobs:
         echo "# Timeouts" >> $GITHUB_STEP_SUMMARY
         grep timeout status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
         #echo "$(grep timeout status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_STEP_SUMMARY
+        echo "# No Release file" >> $GITHUB_STEP_SUMMARY
+        grep no_release status/* | cut -d":" -f1 | xargs awk 'FNR==2{print}' >> $GITHUB_STEP_SUMMARY
 
         echo "failoverserver=$(grep true status/* | cut -d":" -f1 | cut -d"/" -f2 | sed ':a; N; s/\n/ /; ta') " >> $GITHUB_ENV
         echo "reloadKey=$(openssl rand -hex 16)" >> $GITHUB_ENV
