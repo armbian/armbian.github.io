@@ -12,6 +12,9 @@ Monitors the CI workflows of the Armbian project and generates various [data exc
 - **Build Artifacts Assembly**
 <br><a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Assembles packages and stores them into [ORAS cache](https://github.com/orgs/armbian/packages).
+- **Generate Documentation**
+<br><a href=https://github.com/armbian/documentation/actions/workflows/release.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/documentation/release.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Generate documentation using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) from Markdown sources and configuration files. The output is published to [docs.armbian.com](https://docs.armbian.com), ensuring consistent and versioned developer and user documentation.
 - **Generate APT Repository**
 <br><a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Fetch packages from the [ORAS cache](https://github.com/orgs/armbian/packages) and [third-party sources](https://github.com/armbian/os/tree/main/external), then publish them to Debian-compatible APT repositories.
