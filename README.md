@@ -12,6 +12,9 @@ Monitors the CI workflows of the Armbian project and generates various [data exc
 - **Build Artifacts Assembly**
 <br><a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Assembles packages and stores them into [ORAS cache](https://github.com/orgs/armbian/packages).
+- **Build Armbian Docker image**
+<br><a href=https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/docker-armbian-build/update_docker.yml?logo=githubactions&label=Status&cacheSeconds=600&style=for-the-badge&branch=main&logoColor=white"></a>
+<br>Build and publish Docker images for the [Armbian Build Framework](https://github.com/armbian/build) to support isolated, reproducible, and architecture-independent builds. Images are tagged and pushed to the [GitHub Container Registry](https://github.com/orgs/armbian/packages) for use in CI pipelines, local development, and automation environments.
 - **Generate Documentation**
 <br><a href=https://github.com/armbian/documentation/actions/workflows/release.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/documentation/release.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
 <br>Generate documentation using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) from Markdown sources and configuration files. The output is published to [docs.armbian.com](https://docs.armbian.com), ensuring consistent and versioned developer and user documentation.
