@@ -5,7 +5,7 @@
 <br><br>
 </h2>
 
-### What does armbian.github.io do?
+### Purpose of This Repository
 
 This repository acts as a central **automation and orchestration hub** for the Armbian project. It coordinates CI workflows, maintains metadata, syncs external data, and generates machine-readable output to power [armbian.com](https://www.armbian.com), [docs.armbian.com](https://docs.armbian.com), and related services.
 
