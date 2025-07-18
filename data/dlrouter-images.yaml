@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 829bddda1aa250b01d8e4a89c58bf1f5
+reloadKey: 4d0e0d5ec52d41a9989b2cf5c84e1a3e
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -54,12 +54,6 @@ servers:
   - server: mirror.iscas.ac.cn/armbian-releases/
     latitude: 39.9075
     longitude: 116.3971
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.aliyun.com/armbian-releases/
-    latitude: 34.7732
-    longitude: 113.722
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -116,12 +110,6 @@ servers:
           - UA
     latitude: 59.9417
     longitude: 30.3096
-    weight: 10
-
-  # Europe/Paris - 500 Mbit/s
-  - server: xogium.performanceservers.nl/dl/
-    latitude: 48.5144
-    longitude: -2.768
     weight: 10
 
   # Europe/London - 1000 Mbit/s
