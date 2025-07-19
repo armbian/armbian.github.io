@@ -1,5 +1,17 @@
 [
   {
+    "First_Name": "Viacheslav",
+    "Github": "https://github.com/adeepn",
+    "Team": [
+      "Amlogic"
+    ],
+    "Maintaining": "jethubj80, jethubj100, jethubj200, khadas-vim4",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/64684523?v=4"
+  },
+  {
     "First_Name": "Acx",
     "Github": null,
     "Team": [
@@ -633,18 +645,6 @@
       "CI & automated testing"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/130305927?v=4"
-  },
-  {
-    "First_Name": "Viacheslav",
-    "Github": "https://github.com/adeepn",
-    "Team": [
-      "Amlogic"
-    ],
-    "Maintaining": "jethubj80, jethubj100, jethubj200, khadas-vim4",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/64684523?v=4"
   },
   {
     "First_Name": "Ivan",
