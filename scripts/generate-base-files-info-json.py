@@ -3,11 +3,11 @@ import requests
 from lxml import etree
 import json
 import sys
-def get_package_info_from_upstream(distro, pacakge_name):
+def get_package_info_from_upstream(distro, package_name):
     if distro == 'debian':
-        distro_url = "https://packages.debian.org/search?keywords=" + pacakge_name + "&searchon=names&suite=all&section=all"
+        distro_url = "https://packages.debian.org/search?keywords=" + package_name + "&searchon=names&suite=all&section=all"
     elif distro == 'ubuntu':
-        distro_url = "https://packages.ubuntu.com/search?keywords=" + pacakge_name + "&searchon=names&suite=all&section=all"
+        distro_url = "https://packages.ubuntu.com/search?keywords=" + package_name + "&searchon=names&suite=all&section=all"
     else:
         print("invalid distro %s, quit" % distro)
         sys.exit(1)
@@ -31,21 +31,21 @@ def get_package_info_from_upstream(distro, pacakge_name):
                 package_file_release = item_class
                 package_file_version = item_text[1].split(":")[0]
                 if "arm64" in item_text[1].split(":")[1]:
-                    package_file_arm64_full_name = pacakge_name + "_" + package_file_version + "_arm64.deb"
+                    package_file_arm64_full_name = package_name + "_" + package_file_version + "_arm64.deb"
                     debian_package_info["arm64"] = package_file_arm64_full_name
                 if "armhf" in item_text[1].split(":")[1]:
-                    package_file_armhf_full_name = pacakge_name + "_" + package_file_version + "_armhf.deb"
+                    package_file_armhf_full_name = package_name + "_" + package_file_version + "_armhf.deb"
                     debian_package_info["armhf"] = package_file_armhf_full_name
                 if "amd64" in item_text[1].split(":")[1]:
-                    package_file_amd64_full_name = pacakge_name + "_" + package_file_version + "_amd64.deb"
+                    package_file_amd64_full_name = package_name + "_" + package_file_version + "_amd64.deb"
                     debian_package_info["amd64"] = package_file_amd64_full_name
                 if "riscv64" in item_text[1].split(":")[1]:
-                    package_file_riscv64_full_name = pacakge_name + "_" + package_file_version + "_riscv64.deb"
+                    package_file_riscv64_full_name = package_name + "_" + package_file_version + "_riscv64.deb"
                     debian_package_info["riscv64"] = package_file_riscv64_full_name
                 debian_all_package_info[item_class] = debian_package_info
         return debian_all_package_info
 if len(sys.argv) < 2:
-    print("Usage: python parse.py <pacakge_name>")
+    print("Usage: python parse.py <package_name>")
     sys.exit(1)
 package_name = sys.argv[1]
 debian_info = get_package_info_from_upstream("debian", package_name)
