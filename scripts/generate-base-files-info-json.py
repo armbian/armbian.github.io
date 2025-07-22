@@ -30,18 +30,12 @@ def get_package_info_from_upstream(distro, package_name):
                 item_class = li.get("class")
                 package_file_release = item_class
                 package_file_version = item_text[1].split(":")[0]
-                if "arm64" in item_text[1].split(":")[1]:
-                    package_file_arm64_full_name = package_name + "_" + package_file_version + "_arm64.deb"
-                    debian_package_info["arm64"] = package_file_arm64_full_name
-                if "armhf" in item_text[1].split(":")[1]:
-                    package_file_armhf_full_name = package_name + "_" + package_file_version + "_armhf.deb"
-                    debian_package_info["armhf"] = package_file_armhf_full_name
-                if "amd64" in item_text[1].split(":")[1]:
-                    package_file_amd64_full_name = package_name + "_" + package_file_version + "_amd64.deb"
-                    debian_package_info["amd64"] = package_file_amd64_full_name
-                if "riscv64" in item_text[1].split(":")[1]:
-                    package_file_riscv64_full_name = package_name + "_" + package_file_version + "_riscv64.deb"
-                    debian_package_info["riscv64"] = package_file_riscv64_full_name
+                architectures = ["arm64", "armhf", "amd64", "riscv64", "loong64"]
+                arch_info = item_text[1].split(":")[1]
+                for arch in architectures:
+                    if arch in arch_info:
+                        package_filename = f"{package_name}_{package_file_version}_{arch}.deb"
+                        debian_package_info[arch] = package_filename
                 debian_all_package_info[item_class] = debian_package_info
         return debian_all_package_info
 if len(sys.argv) < 2:
