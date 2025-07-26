@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: a223975aa327a7840bf2b6af031e07b8
+reloadKey: 5315e0931d23b4e0fc7b396f046159ef
 
 # LRU Cache Size (in items)
 cacheSize: 2048
