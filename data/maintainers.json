@@ -1,5 +1,42 @@
 [
   {
+    "First_Name": "Didier",
+    "Github": "https://github.com/mult1c0re",
+    "Team": [
+      "Newsletter"
+    ],
+    "Maintaining": "Newsletter",
+    "Your_core_competences": [
+      "Devops and servers",
+      "Professional support",
+      "Human resources"
+    ],
+    "Avatar": "null"
+  },
+  {
+    "First_Name": "Michael",
+    "Github": null,
+    "Team": [
+      "Support",
+      "Newsletter"
+    ],
+    "Maintaining": "newsletter",
+    "Your_core_competences": [
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
+    "First_Name": "Inella",
+    "Github": null,
+    "Team": [
+      "Newsletter"
+    ],
+    "Maintaining": null,
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
     "First_Name": "Juan Miguel",
     "Github": "https://github.com/teacupx",
     "Team": [],
@@ -208,18 +245,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/3756249?v=4"
-  },
-  {
-    "First_Name": "Michael",
-    "Github": null,
-    "Team": [
-      "Support"
-    ],
-    "Maintaining": "newsletter",
-    "Your_core_competences": [
-      "OS and desktop development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
   },
   {
     "First_Name": "Joseph",
