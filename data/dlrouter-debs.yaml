@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: 039b7bd83d7f5dcfff2f35ec97b479e6
+reloadKey: 52e7f8291abe0bdbc90bb212fb06a131
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -25,6 +25,12 @@ specialExtensions:
 
 servers:
 
+  # America/Chicago - 1000 Mbit/s
+  - server: armbian.chi.auroradev.org/apt/
+    latitude: 41.881832
+    longitude: -87.623177
+    weight: 10
+
   # America/Los_Angeles - 10000 Mbit/s
   - server: armbian.lv.auroradev.org/apt/
     latitude: 36.18811
@@ -35,6 +41,18 @@ servers:
   - server: armbian.nardol.ovh/apt/
     latitude: 48.8582
     longitude: 2.3387
+    weight: 10
+
+  # Australia/Sydney - 1000 Mbit/s
+  - server: au.sbcmirror.org/armbian/apt/
+    latitude: -33.8715
+    longitude: 151.2006
+    weight: 10
+
+  # Europe/Madrid - 1000 Mbit/s
+  - server: es.sbcmirror.org/apt/
+    latitude: 40.4163
+    longitude: -3.6934
     weight: 10
 
   # Europe/Berlin - 1000 Mbit/s
@@ -49,6 +67,36 @@ servers:
     longitude: 116.3971
     weight: 10
 
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.bfsu.edu.cn/armbian/
+    latitude: 39.911
+    longitude: 116.395
+    weight: 10
+
+  # Europe/Copenhagen - 20000 Mbit/s
+  - server: mirrors.dotsrc.org/armbian-apt/
+    latitude: 55.6802
+    longitude: 12.5892
+    weight: 10
+
+  # America/New_York - 10000 Mbit/s
+  - server: mirrors.jevincanders.net/armbian/apt/
+    latitude: 42.8868
+    longitude: -78.8787
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.tuna.tsinghua.edu.cn/armbian/
+    latitude: 34.7732
+    longitude: 113.722
+    weight: 10
+
+  # Asia/Singapore - 1000 Mbit/s
+  - server: sg.sbcmirror.org/armbian/apt/
+    latitude: 1.3673
+    longitude: 103.8014
+    weight: 10
+
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/apt/
     rules:
@@ -57,6 +105,18 @@ servers:
           - UA
     latitude: 59.9417
     longitude: 30.3096
+    weight: 10
+
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/apt/
+    latitude: 48.5144
+    longitude: -2.768
+    weight: 10
+
+  # Europe/London - 1000 Mbit/s
+  - server: mirror.vinehost.net/armbian/apt/
+    latitude: 54.1448
+    longitude: -0.1555
     weight: 10
 
   # Europe/Kiev - 1000 Mbit/s
@@ -79,6 +139,12 @@ servers:
   - server: jp.mirrors.naho.moe/armbian/
     latitude: 35.6895
     longitude: 139.6923
+    weight: 10
+
+  # Asia/Tokyo - 10000 Mbit/s
+  - server: repo.jing.rocks/armbian-apt/
+    latitude: 35.652832
+    longitude: 139.839478
     weight: 10
 
   # Asia/Taipei - 50000 Mbit/s
