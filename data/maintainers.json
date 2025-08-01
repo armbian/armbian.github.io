@@ -1,5 +1,17 @@
 [
   {
+    "First_Name": "Adam",
+    "Github": "https://github.com/TheLinuxBug",
+    "Team": [],
+    "Maintaining": "CDN infrastructure",
+    "Your_core_competences": [
+      "Devops and servers",
+      "Professional support",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/106682345?v=4"
+  },
+  {
     "First_Name": "Maximilian",
     "Github": "https://github.com/EvilOlaf",
     "Team": [
