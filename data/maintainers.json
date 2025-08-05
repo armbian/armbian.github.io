@@ -1,5 +1,17 @@
 [
   {
+    "First_Name": "Patrick",
+    "Github": "https://github.com/pyavitz",
+    "Team": [
+      "Amlogic"
+    ],
+    "Maintaining": "bananapicm4io, bananapim2s, bananapim4zero, gateway-gz80x, bananapif3, nanopi-r3s-lts, kickpik2b",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/43829819?v=4"
+  },
+  {
     "First_Name": "Adam",
     "Github": "https://github.com/TheLinuxBug",
     "Team": [],
@@ -156,18 +168,6 @@
       "Business development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
-  },
-  {
-    "First_Name": "Patrick",
-    "Github": "https://github.com/pyavitz",
-    "Team": [
-      "Amlogic"
-    ],
-    "Maintaining": "bananapicm4io, bananapim2s, bananapim4zero, gateway-gz80x, bananapif3, nanopi-r3s-lts",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/43829819?v=4"
   },
   {
     "First_Name": "Jack",
