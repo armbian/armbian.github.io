@@ -1,5 +1,22 @@
 [
   {
+    "First_Name": "Rolf",
+    "Github": "https://github.com/leggewie",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "bananapim2plus",
+    "Your_core_competences": [
+      "OS and desktop development",
+      "Forum moderating",
+      "Project management",
+      "Devops and servers",
+      "CI & automated testing",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
+  },
+  {
     "First_Name": "Patrick",
     "Github": "https://github.com/pyavitz",
     "Team": [
@@ -188,22 +205,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/17957399?v=4"
-  },
-  {
-    "First_Name": "Rolf",
-    "Github": "https://github.com/leggewie",
-    "Team": [
-      "Support"
-    ],
-    "Maintaining": "bananapim2plus",
-    "Your_core_competences": [
-      "OS and desktop development",
-      "Project management",
-      "Devops and servers",
-      "CI & automated testing",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
   },
   {
     "First_Name": "Nathan",
