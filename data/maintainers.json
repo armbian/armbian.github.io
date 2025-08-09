@@ -1,5 +1,18 @@
 [
   {
+    "First_Name": "John",
+    "Github": "https://github.com/JohnTheCoolingFan",
+    "Team": [
+      "Allwinner",
+      "Rockchip"
+    ],
+    "Maintaining": "bigtreetech-cb1, bigtreetech-cb2",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/43478602?v=4"
+  },
+  {
     "First_Name": "Rolf",
     "Github": "https://github.com/leggewie",
     "Team": [
