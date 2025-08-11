@@ -1,5 +1,15 @@
 [
   {
+    "First_Name": "Jan",
+    "Github": "https://github.com/janprunk",
+    "Team": [],
+    "Maintaining": "bananapi",
+    "Your_core_competences": [
+      "Devops and servers"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/1745544?v=4"
+  },
+  {
     "First_Name": "John",
     "Github": "https://github.com/JohnTheCoolingFan",
     "Team": [
@@ -617,16 +627,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/20248976?v=4"
-  },
-  {
-    "First_Name": "Jan",
-    "Github": "https://github.com/janprunk",
-    "Team": [],
-    "Maintaining": "bananapi",
-    "Your_core_competences": [
-      "Devops and servers"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/1745544?v=4"
   },
   {
     "First_Name": "Chris",
