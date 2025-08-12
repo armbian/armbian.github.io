@@ -266,7 +266,7 @@ jobs:
           if_key_exists: replace
 
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: test
           pattern: test-*
