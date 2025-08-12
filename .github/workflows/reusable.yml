@@ -31,7 +31,7 @@ jobs:
       DEPLOYMENT_MATRIX: "${{ steps.files.outputs.DEPLOYMENT_MATRIX }}"
     steps:
       - name: Download ${{ matrix.name }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: parts
           pattern: part*
@@ -58,7 +58,7 @@ jobs:
     steps:
 
       - name: Download ${{ matrix.name }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: parts
           pattern: servers.json
