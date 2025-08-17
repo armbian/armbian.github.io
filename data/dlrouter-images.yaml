@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 06fd7809d7338477ef8444a31d16fcd1
+reloadKey: a96dc71c72af3ae1ff9aaed452f10948
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -30,6 +30,12 @@ servers:
   - server: armbian.chi.auroradev.org/dl/
     latitude: 41.881832
     longitude: -87.623177
+    weight: 10
+
+  # Europe/Paris - 1000 Mbit/s
+  - server: armbian.nardol.ovh/dl/
+    latitude: 48.8582
+    longitude: 2.3387
     weight: 10
 
   # Europe/Vienna - 1000 Mbit/s
@@ -86,6 +92,12 @@ servers:
           - UA
     latitude: 59.9417
     longitude: 30.3096
+    weight: 10
+
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/dl/
+    latitude: 48.5144
+    longitude: -2.768
     weight: 10
 
   # Europe/London - 1000 Mbit/s
