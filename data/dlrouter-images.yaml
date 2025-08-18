@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 851734187eca8d30f9e4a2ee3083a297
+reloadKey: ff12882893335a0ef11aff2d3ea2200f
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -26,40 +26,10 @@ specialExtensions:
 
 servers:
 
-  # Europe/Paris - 1000 Mbit/s
-  - server: armbian.nardol.ovh/dl/
-    latitude: 48.8582
-    longitude: 2.3387
-    weight: 10
-
-  # Europe/Vienna - 1000 Mbit/s
-  - server: armbian.systemonachip.net/dl/
-    latitude: 48.3003
-    longitude: 16.3441
-    weight: 10
-
-  # Europe/Madrid - 1000 Mbit/s
-  - server: es.sbcmirror.org/dl/
-    latitude: 40.4163
-    longitude: -3.6934
-    weight: 10
-
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirror.iscas.ac.cn/armbian-releases/
     latitude: 39.9075
     longitude: 116.3971
-    weight: 10
-
-  # Europe/Copenhagen - 20000 Mbit/s
-  - server: mirrors.dotsrc.org/armbian-dl/
-    latitude: 55.6802
-    longitude: 12.5892
-    weight: 10
-
-  # America/New_York - 10000 Mbit/s
-  - server: mirrors.jevincanders.net/armbian/dl/
-    latitude: 42.8868
-    longitude: -78.8787
     weight: 10
 
   # Europe/Moscow - 10000 Mbit/s
@@ -82,38 +52,11 @@ servers:
     longitude: 30.3096
     weight: 10
 
-  # Europe/Paris - 500 Mbit/s
-  - server: xogium.performanceservers.nl/dl/
-    latitude: 48.5144
-    longitude: -2.768
-    weight: 10
-
-  # Europe/London - 1000 Mbit/s
-  - server: mirror.vinehost.net/armbian/dl/
-    latitude: 54.1448
-    longitude: -0.1555
-    weight: 10
-
-  # Europe/Kiev - 1000 Mbit/s
-  - server: distrohub.kyiv.ua/armbian-dl/
-    rules:
-      - field: location.country.iso_code
-        not_in:
-          - RU
-    latitude: 50.458
-    longitude: 30.5303
-    weight: 10
-
   # Europe/Tallinn - 10000 Mbit/s
   - server: k-space.ee.armbian.com/dl/
     latitude: 59.397987
     longitude: 24.661898
     weight: 10
-
-  # Asia/Taipei - 50000 Mbit/s
-  - server: mirror.twds.com.tw/armbian-dl/
-    latitude: 25.0382
-    longitude: 121.5636
 
   # Europe/Kiev - 20000 Mbit/s
   - server: mirror.hostiko.network/armbian-dl/
@@ -135,16 +78,4 @@ servers:
   - server: netcup-03.armbian.com/dl/
     latitude: 49.4478
     longitude: 11.0683
-    weight: 10
-
-  # Europe/Copenhagen - 1000 Mbit/s
-  - server: mirrors.c0urier.net/linux/armbian/dl/
-    latitude: 56.0656
-    longitude: 12.2851
-    weight: 10
-
-  # Europe/Amsterdam - 1000 Mbit/s
-  - server: armbian.hosthatch.com/dl/
-    latitude: 52.3759
-    longitude: 4.8975
     weight: 10
