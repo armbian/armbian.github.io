@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: bf9334f1f11d061f87a01433a2b3b493
+reloadKey: 392c4bde5fc44bdbe32a827704583cc2
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -37,6 +37,12 @@ servers:
     longitude: 2.3387
     weight: 10
 
+  # Europe/Madrid - 1000 Mbit/s
+  - server: es.sbcmirror.org/apt/
+    latitude: 40.4163
+    longitude: -3.6934
+    weight: 10
+
   # Europe/Berlin - 1000 Mbit/s
   - server: fi.mirror.armbian.de/apt/
     latitude: 51.2993
@@ -51,6 +57,30 @@ servers:
   - server: mirror.iscas.ac.cn/armbian/
     latitude: 39.9075
     longitude: 116.3971
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.bfsu.edu.cn/armbian/
+    latitude: 39.911
+    longitude: 116.395
+    weight: 10
+
+  # Europe/Copenhagen - 20000 Mbit/s
+  - server: mirrors.dotsrc.org/armbian-apt/
+    latitude: 55.6802
+    longitude: 12.5892
+    weight: 10
+
+  # America/New_York - 10000 Mbit/s
+  - server: mirrors.jevincanders.net/armbian/apt/
+    latitude: 42.8868
+    longitude: -78.8787
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.sustech.edu.cn/armbian/
+    latitude: 22.2767
+    longitude: 113.5788
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -69,6 +99,12 @@ servers:
     longitude: 30.3096
     weight: 10
 
+  # Europe/London - 1000 Mbit/s
+  - server: mirror.vinehost.net/armbian/apt/
+    latitude: 54.1448
+    longitude: -0.1555
+    weight: 10
+
   # Europe/Kiev - 1000 Mbit/s
   - server: distrohub.kyiv.ua/armbian/
     rules:
@@ -77,12 +113,6 @@ servers:
           - RU
     latitude: 50.458
     longitude: 30.5303
-    weight: 10
-
-  # Europe/Tallinn - 10000 Mbit/s
-  - server: k-space.ee.armbian.com/apt/
-    latitude: 59.397987
-    longitude: 24.661898
     weight: 10
 
   # Asia/Tokyo - 10000 Mbit/s
@@ -128,4 +158,10 @@ servers:
   - server: netcup-03.armbian.com/apt/
     latitude: 49.4478
     longitude: 11.0683
+    weight: 10
+
+  # Europe/Copenhagen - 1000 Mbit/s
+  - server: mirrors.c0urier.net/linux/armbian/apt/
+    latitude: 56.0656
+    longitude: 12.2851
     weight: 10
