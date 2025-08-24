@@ -1,0 +1,212 @@
+name: "Generate release summary"
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Comma-separated repos (owner/repo) OR 'org:armbian'"
+        required: false
+        default: "org:armbian"
+      tz:
+        description: "Timezone (IANA)"
+        required: false
+        default: "Europe/Ljubljana"
+      period:
+        description: "Digest period (weekly by default). Choose 'monthly' or 'quarterly' for larger windows."
+        required: false
+        default: "weekly"
+      publish_release:
+        description: "Publish a GitHub release (true/false)."
+        required: false
+        default: "true"
+
+  schedule:
+    - cron: "5 6 * * MON"   # weekly, Mondays 06:05 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  pr-digest:
+    name: "Get PR's"
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SCOPE: ${{ inputs.scope || 'armbian/build,armbian/configng' }}
+      TZ: ${{ inputs.tz || 'Europe/Ljubljana' }}
+      PERIOD: ${{ inputs.period || 'weekly' }}
+      RELEASE_ENABLED: ${{ inputs.publish_release || 'true' }}
+
+    steps:
+      - name: Ensure dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Compute time window (UTC) from period
+        id: when
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PERIOD="${PERIOD:-weekly}"
+          UNTIL_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if [[ "$PERIOD" == "monthly" ]]; then
+            SINCE_UTC="$(date -u -d '1 month ago' +%Y-%m-%dT%H:%M:%SZ)"
+            LABEL="Monthly Digest"
+          elif [[ "$PERIOD" == "quarterly" ]]; then
+            SINCE_UTC="$(date -u -d '3 months ago' +%Y-%m-%dT%H:%M:%SZ)"
+            LABEL="Quarterly Digest"
+          else
+            SINCE_UTC="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)"
+            LABEL="Weekly Digest"
+          fi
+          echo "UNTIL_UTC=$UNTIL_UTC" >> "$GITHUB_ENV"
+          echo "SINCE_UTC=$SINCE_UTC" >> "$GITHUB_ENV"
+          echo "LABEL=$LABEL" >> "$GITHUB_ENV"
+
+      - name: Prepare workspace
+        run: mkdir -p out
+
+      - name: Write helper script
+        shell: bash
+        run: |
+          cat > pr_fetch.sh <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          scope="${1:?}"     # "org:armbian" or "owner/repo,owner/repo2"
+          since="${2:?}"     # ISO UTC
+          until="${3:?}"     # ISO UTC
+          outfile="${4:?}"   # path
+
+          collect() {
+            local q="$1"
+            gh api -X GET search/issues \
+              -f q="$q" \
+              -f sort="updated" -f order="desc" \
+              -f per_page=100 --paginate \
+              -q '.items[] | {number: .number, repo: (.repository_url | sub("^.*/repos/";""))}'
+          }
+
+          tmp="$(mktemp)"
+          if [[ "$scope" == org:* ]]; then
+            org="${scope#org:}"
+            q="org:${org} is:pr is:merged merged:${since}..${until} archived:false"
+            collect "$q" > "$tmp"
+          else
+            IFS=',' read -r -a repos <<< "$scope"
+            : > "$tmp"
+            for r in "${repos[@]}"; do
+              r_trim="$(echo "$r" | xargs)"
+              q="repo:${r_trim} is:pr is:merged merged:${since}..${until}"
+              collect "$q" >> "$tmp"
+            done
+          fi
+
+          # De-dup and enrich, then output TSV sorted alphabetically by title (case-insensitive)
+          jq -s 'unique_by(.repo + "|" + (.number|tostring))' "$tmp" | jq -c '.[]' | \
+          while read -r row; do
+            repo=$(echo "$row" | jq -r .repo)
+            num=$(echo "$row"  | jq -r .number)
+            pr=$(gh api "repos/${repo}/pulls/${num}")
+
+            title=$(jq -r .title <<<"$pr")
+            author=$(jq -r .user.login <<<"$pr")
+            pr_url=$(jq -r .html_url <<<"$pr")
+
+            # Skip bots and worker accounts
+            if [[ "$author" == "github-actions[bot]" || "$author" == "dependabot[bot]" || "$author" == "armbianworker" || "$author" == "armbianworker[bot]" ]]; then
+              continue
+            fi
+
+            # Output tab-separated: title, author, repo, pr_number, pr_url
+            printf "%s\t%s\t%s\t%s\t%s\n" "$title" "$author" "$repo" "$num" "$pr_url"
+          done | LC_ALL=C sort -f -t $'\t' -k1,1 > "$outfile"
+          EOF
+          chmod +x pr_fetch.sh
+
+      - name: Fetch merged PRs for selected period
+        run: ./pr_fetch.sh "$SCOPE" "$SINCE_UTC" "$UNTIL_UTC" out/pr-digest.tsv
+
+      - name: Write Markdown digest to summary & body.html
+        shell: bash
+        run: |
+
+           echo "
+              <h1>Armbian rolling releases</h1>
+              <p>
+              <a href='https://www.armbian.com/download/'><img alt='Armbian Linux stable' src='https://img.shields.io/badge/dynamic/json?label=Armbian%20Linux%20current&query=CURRENT&color=f71000&cacheSeconds=600&style=for-the-badge&url=https%3A%2F%2Fgithub.com%2Farmbian%2Fscripts%2Freleases%2Fdownload%2Fstatus%2Frunners_capacity.json'></a>
+              <a href='https://www.armbian.com/download/'><img alt='Armbian Linux rolling' src='https://img.shields.io/badge/dynamic/json?label=Armbian%20Linux%20edge&query=EDGE&color=34be5b&cacheSeconds=600&style=for-the-badge&url=https%3A%2F%2Fgithub.com%2Farmbian%2Fscripts%2Freleases%2Fdownload%2Fstatus%2Frunners_capacity.json'></a>
+              </p>
+              <br>
+
+              - rolling releases are available at the bottom of <a href='https://www.armbian.com/download/' target=_blanks>official download pages</a>
+              - <a href='https://github.com/armbian/os/wiki/Enable-build-configuration'>How to change type of images that are provided by Armbian</a>?
+              - How to switch between <a href='https://docs.armbian.com/User-Guide_Armbian-Config/System/#rolling' target=_blank>stable and rolling release</a>?
+
+              Please note that <b>Armbian Rolling Releases</b> are not recommended for production environments, as these builds are not thoroughly tested. However, in most cases, they should work well. 
+              </p>
+                " > body.html           
+              # Start fresh body file
+              echo "<h1>${LABEL}</h1>" >> body.html
+              echo "<ul>" >> body.html
+              echo "## ${LABEL}" >> "$GITHUB_STEP_SUMMARY"
+
+            if [[ ! -s out/pr-digest.tsv ]]; then
+              echo "_No merged PRs in this period._" >> "$GITHUB_STEP_SUMMARY"
+              echo "<p><em>No merged PRs in this period.</em></p>" >> body.html
+            else
+              while IFS=$'\t' read -r title author repo num pr_url; do
+                echo "* ${title}.  by @${author} in [${repo}#${num}](${pr_url})" >> "$GITHUB_STEP_SUMMARY"
+                echo "<li>${title}. by @${author} in <a href='${pr_url}'>${repo}#${num}</a></li>" >> body.html
+            done < out/pr-digest.tsv
+            fi
+            echo "</ul>" >> body.html
+
+      - name: Upload raw data (artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-digest
+          path: out/
+          if-no-files-found: warn
+
+      - name: "Checkout OS repository to get version"
+        if: ${{ env.RELEASE_ENABLED == 'true' }}
+        uses: actions/checkout@v5
+        with:
+          repository: armbian/os
+          fetch-depth: 0
+          clean: false
+          path: os
+
+      - name: "Read version from nightly or stable based on period"
+        if: ${{ env.RELEASE_ENABLED == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${PERIOD:-weekly}" == "monthly" || "${PERIOD:-weekly}" == "quarterly" ]]; then
+            FILE="os/stable.json"
+          else
+            FILE="os/nightly.json"
+          fi
+          if [[ ! -f "$FILE" ]]; then
+            echo "::error file=$FILE::Version file not found"
+            exit 1
+          fi
+          VERSION=$(jq -r '.version' "$FILE")
+          echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
+
+      - uses: ncipollo/release-action@v1
+        if: ${{ env.RELEASE_ENABLED == 'true' }}
+        with:
+          owner: 'armbian'
+          repo: 'build'
+          tag: "v${{ env.VERSION_OVERRIDE }}"
+          name: "v${{ env.VERSION_OVERRIDE }}"
+          generateReleaseNotes: "false"
+          prerelease: "false"
+          makeLatest: "true"
+          bodyFile: "body.html"
+          allowUpdates: "true"
+          skipIfReleaseExists: "true"
+          token: ${{ secrets.RELEASE_TOKEN }}
