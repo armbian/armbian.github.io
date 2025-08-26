@@ -11,7 +11,7 @@ env:
   GEODB: "/scripts/redirect-config/GeoLite2-City.mmdb"
   ASNDB: "/scripts/redirect-config/GeoLite2-ASN.mmdb"
   DL_MAP: "/scripts/redirect-config/all-images.json"
-  SOURCE_OF_TRUTH: "https://rsync.armbian.com"
+  SOURCE_OF_TRUTH: "https://fi.mirror.armbian.de"
 
 concurrency:
   group: redirector
