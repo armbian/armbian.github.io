@@ -20,7 +20,7 @@ jobs:
           FOLDER: data # directory to generate index
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: 'data'      # upload generated folder
 
