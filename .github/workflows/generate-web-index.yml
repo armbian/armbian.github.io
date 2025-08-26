@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SOURCE_OF_TRUTH: "https://fi.mirror.armbian.de"
+  SOURCE_OF_TRUTH: "rsync://fi.mirror.armbian.de"
 
 jobs:
 
