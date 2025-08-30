@@ -1,5 +1,32 @@
 [
   {
+    "First_Name": "Hiren",
+    "Github": null,
+    "Team": [],
+    "Maintaining": null,
+    "Your_core_competences": [
+      "Devops and servers"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
+  },
+  {
+    "First_Name": "Rolf",
+    "Github": "https://github.com/leggewie",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "bananapim2plus, khadas-vim4",
+    "Your_core_competences": [
+      "OS and desktop development",
+      "Forum moderating",
+      "Project management",
+      "Devops and servers",
+      "CI & automated testing",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
+  },
+  {
     "First_Name": null,
     "Github": "https://github.com/Qvy-png",
     "Team": [
@@ -31,23 +58,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/43478602?v=4"
-  },
-  {
-    "First_Name": "Rolf",
-    "Github": "https://github.com/leggewie",
-    "Team": [
-      "Support"
-    ],
-    "Maintaining": "bananapim2plus",
-    "Your_core_competences": [
-      "OS and desktop development",
-      "Forum moderating",
-      "Project management",
-      "Devops and servers",
-      "CI & automated testing",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
   },
   {
     "First_Name": "Patrick",
