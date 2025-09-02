@@ -54,7 +54,7 @@ jobs:
           echo "<table>" >> $GITHUB_STEP_SUMMARY
           echo "<tr><td>Name</td><td alignt=right>CPU cores</td><td alignt=right>Memory GB</td><td alignt=right>Storage GB</td><td alignt=right>Runners</td></tr>" >> $GITHUB_STEP_SUMMARY
           SERVERS=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&role=userlevel-runner&status=active" \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=userlevel-runner&status=active" \
           | jq -r '.results[] | .id')
 
           for s in ${SERVERS}; do
