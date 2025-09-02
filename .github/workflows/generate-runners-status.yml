@@ -86,8 +86,8 @@ jobs:
             > "$nb_json"
 
           # Render to stdout and to HTML file
-          echo "<table border=1>"
-          echo "<tr><th align=left>Server</th><th align=left>Runner label</th><th align=right>CPU cores</th><th align=right>Memory GB</th><th align=right>Storage GB</th><th align=right>Runners</th></tr>"
+          echo "<table border=1>"  >> $GITHUB_STEP_SUMMARY
+          echo "<tr><th align=left>Server</th><th align=left>Runner label</th><th align=right>CPU cores</th><th align=right>Memory GB</th><th align=right>Storage GB</th><th align=right>Runners</th></tr>"  >> $GITHUB_STEP_SUMMARY
 
           # init totals
           total_cpu=0
@@ -135,4 +135,4 @@ jobs:
           printf "<tr><th colspan=2 align=right>Totals:</th><th align=right>%d</th><th align=right>%d</th><th align=right>%d</th><th align=right>%d</th></tr>\n" \
             "$total_cpu" "$total_mem_gb" "$total_storage_gb" "$total_runners"
 
-          echo "</table>"
+          echo "</table>" >> $GITHUB_STEP_SUMMARY
