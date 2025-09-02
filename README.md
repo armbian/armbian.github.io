@@ -75,6 +75,11 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/invite-contributors.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/invite-contributors.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
   Automatically invites external contributors to join the [Armbian GitHub organization](https://github.com/orgs/armbian/people).
 
+- **Generate Self Hosted Runners Status page**  
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-runners-status.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-runners-status.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+  Generates a table of Self Hosted runners with CPU, memory, storage, runner status, and totals.
+
+
 ### Documentation
 
 - **Generate Documentation**  
