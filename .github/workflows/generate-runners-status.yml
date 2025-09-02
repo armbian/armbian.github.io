@@ -2,8 +2,8 @@ name: "Generate runners status"
 
 on:
   push:
-#  schedule:
-#    - cron: '0 * * * *'   # Run every hour
+  schedule:
+    - cron: '0 * * * *'   # Run every hour
   workflow_dispatch:   # Manually triggered via GitHub Actions UI
 
 #concurrency:
@@ -86,7 +86,7 @@ jobs:
             > "$nb_json"
 
           # Render to stdout and to HTML file
-          echo "<table border=1>"  >> $GITHUB_STEP_SUMMARY
+          echo "<table border=0>"  >> $GITHUB_STEP_SUMMARY
           echo "<tr><th align=left>Server</th><th align=left>Runner label</th><th align=right>CPU cores</th><th align=right>Memory GB</th><th align=right>Storage GB</th><th align=right>Runners</th></tr>"  >> $GITHUB_STEP_SUMMARY
 
           # init totals
