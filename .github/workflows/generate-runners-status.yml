@@ -42,32 +42,97 @@ jobs:
           GH_TOKEN: ${{ secrets.RUNNERS }}
         run: |
 
-          # get list of self hosted runners
-          for i in `seq 0 1 10`; do
-          curl -s -L \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.RUNNERS }}" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/orgs/armbian/actions/runners?page=${i} >> runners.json
-          done
+          GH_TOKEN=${{ secrets.RUNNERS }}
+          NETBOX_TOKEN=${{ secrets.NETBOX_TOKEN }}
+          NETBOX_API=${{ secrets.NETBOX_API }}
 
-          echo "<table>" >> $GITHUB_STEP_SUMMARY
-          echo "<tr><td>Name</td><td alignt=right>CPU cores</td><td alignt=right>Memory GB</td><td alignt=right>Storage GB</td><td alignt=right>Runners</td></tr>" >> $GITHUB_STEP_SUMMARY
-          SERVERS=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=userlevel-runner&status=active" \
-          | jq -r '.results[] | .id')
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
 
-          for s in ${SERVERS}; do
-              IFS=' ' read -r NAME CPU MEM DISK RUNNERS ID<<< "$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-              "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?id=$s" | jq -r '.results[] | .name,.vcpus,.memory,.disk,.custom_fields["runners"],.id' | xargs -n6 -d'\n')"
-              CALC_MEM=$(echo $MEM | awk '{$1/=1024;printf "%.0f\n",$1}')
-              printf "<tr><td>%s</td><td align=right>%3d</td><td align=right>%d</td><td align=right>%d</td><td align=right>%d</td></tr>\n" $NAME ${CPU/.*/} $CALC_MEM $DISK $RUNNERS >> $GITHUB_STEP_SUMMARY
-              unset IFS
-              echo -e "<tr><td colspan=5>" >> $GITHUB_STEP_SUMMARY
-              for runner in $(seq -f "%02g" 1 $RUNNERS | sed -e "s/.*/$NAME-&/"); do
-                  INFO=$(cat runners.json | jq -r '.runners[] | select(.name | startswith("'$runner'"))' | jq -r '.name,.status,.busy' | xargs -n3 -d'\n' | sort | uniq)
-                  [[ -n $INFO || ${NAME} == github ]] && echo ":+1:" >> $GITHUB_STEP_SUMMARY || echo ":exclamation: <small>($runner)</small>" >> $GITHUB_STEP_SUMMARY
+          runners_nd="$tmp/runners.ndjson"
+          out_html="$tmp/runners_summary.html"
+          : > "$runners_nd"
+
+          # Fetch ALL GitHub org runners (prefer gh; fallback to curl)
+          if command -v gh >/dev/null 2>&1; then
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              --paginate /orgs/armbian/actions/runners \
+              -q '.runners[]' > "$runners_nd"
+          else
+            curl -fsSL \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/orgs/armbian/actions/runners?per_page=100" \
+              | jq -c '.runners[]' > "$runners_nd"
+          fi
+
+          # Build lookup maps
+          declare -A RUNNER_STATUS RUNNER_BUSY
+          while IFS=$'\t' read -r name status busy; do
+            RUNNER_STATUS["$name"]="$status"
+            RUNNER_BUSY["$name"]="$busy"
+          done < <(jq -r '[.name, .status, (.busy|tostring)] | @tsv' "$runners_nd")
+
+          # Fetch NetBox VMs
+          nb_json="$tmp/netbox.json"
+
+          curl -s \
+            -H "Authorization: Token ${NETBOX_TOKEN}" \
+            -H "Accept: application/json; indent=4" \
+            "${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=github-runner&status=active" \
+            > "$nb_json"
+
+          # Render to stdout and to HTML file
+          echo "<table border=1>"
+          echo "<tr><th align=left>Server</th><th align=left>Runner label</th><th align=right>CPU cores</th><th align=right>Memory GB</th><th align=right>Storage GB</th><th align=right>Runners</th></tr>"
+
+          # init totals
+          total_cpu=0
+          total_mem_gb=0
+          total_storage_gb=0
+          total_runners=0
+
+          while IFS=$'\t' read -r NAME CPU MEM_MB DISK_GB RUNNERS LABELS ID; do
+            CALC_MEM=$(( (MEM_MB + 512) / 1024 ))
+            printf "<tr><td>%s</td><td>%s</td><td align=right>%d</td><td align=right>%d</td><td align=right>%d</td><td align=right>%d</td></tr>\n" \
+              "$NAME" "$LABELS" "$CPU" "$CALC_MEM" "$DISK_GB" "$RUNNERS"
+
+            echo "<tr><td colspan=6>"
+            if [[ "$RUNNERS" -gt 0 ]]; then
+              for i in $(seq -f "%02g" 1 "$RUNNERS"); do
+                rn="${LABELS}-${i}"
+                if [[ -n "${RUNNER_STATUS[$rn]:-}" || "$LABELS" == "github" ]]; then
+                  printf "🟢"
+                else
+                  printf "🔴 <small>(%s)</small> " "$i"
+                fi
               done
-          echo -e "</td></tr>" >> $GITHUB_STEP_SUMMARY
-          done
-          echo "</table>" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "</td></tr>"
+
+            # accumulate totals (note: no $ needed for CPU/RUNNERS inside arithmetic)
+            total_cpu=$(( total_cpu + CPU ))
+            total_mem_gb=$(( total_mem_gb + CALC_MEM ))
+            total_storage_gb=$(( total_storage_gb + DISK_GB ))
+            total_runners=$(( total_runners + RUNNERS ))
+          done < <(jq -r '
+            .results[] |
+            [
+              .name,
+              ((.vcpus // 0) | floor),
+              ((.memory // 0) | floor),
+              ((.disk // 0) | floor),
+              (.custom_fields["runners"] // 0),
+              (.custom_fields["labels"] // "null"),
+              .id
+            ] | @tsv
+          ' "$nb_json")
+
+          # summary row
+          printf "<tr><th colspan=2 align=right>Totals:</th><th align=right>%d</th><th align=right>%d</th><th align=right>%d</th><th align=right>%d</th></tr>\n" \
+            "$total_cpu" "$total_mem_gb" "$total_storage_gb" "$total_runners"
+
+          echo "</table>"
