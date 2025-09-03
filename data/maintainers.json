@@ -1,5 +1,17 @@
 [
   {
+    "First_Name": "Jannis",
+    "Github": "https://github.com/Heisath",
+    "Team": [
+      "Marvell"
+    ],
+    "Maintaining": "clearfogpro",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/52237708?v=4"
+  },
+  {
     "First_Name": "Rolf",
     "Github": "https://github.com/leggewie",
     "Team": [
@@ -527,18 +539,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/5022901?v=4"
-  },
-  {
-    "First_Name": "Jannis",
-    "Github": "https://github.com/Heisath",
-    "Team": [
-      "Marvell"
-    ],
-    "Maintaining": "helios4, clearfogpro",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/52237708?v=4"
   },
   {
     "First_Name": "Kat",
