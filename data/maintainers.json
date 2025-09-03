@@ -1,21 +1,11 @@
 [
   {
-    "First_Name": "Hiren",
-    "Github": null,
-    "Team": [],
-    "Maintaining": null,
-    "Your_core_competences": [
-      "Devops and servers"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
-  },
-  {
     "First_Name": "Rolf",
     "Github": "https://github.com/leggewie",
     "Team": [
       "Support"
     ],
-    "Maintaining": "bananapim2plus, khadas-vim4",
+    "Maintaining": "bananapim2plus, khadas-vim4, helios4",
     "Your_core_competences": [
       "OS and desktop development",
       "Forum moderating",
@@ -25,6 +15,16 @@
       "Business development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/2387015?v=4"
+  },
+  {
+    "First_Name": "Hiren",
+    "Github": null,
+    "Team": [],
+    "Maintaining": null,
+    "Your_core_competences": [
+      "Devops and servers"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/166389577?v=4"
   },
   {
     "First_Name": null,
