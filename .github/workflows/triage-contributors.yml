@@ -34,7 +34,7 @@ jobs:
             let triageRole = null;
             try {
               const { data } = await github.request('GET /orgs/{org}/organization-roles', { org });
-              triageRole = data.roles.find(r =>
+              triageRole = (data.roles || []).find(r =>
                 (r.name && r.name.toLowerCase() === 'all-repository triage') ||
                 (r.slug && r.slug.toLowerCase() === 'all-repository-triage') ||
                 /all.*triage/i.test(r.name || '')
@@ -91,31 +91,26 @@ jobs:
                   }
                 }
 
-                const currentIds = new Set(
-                  currentRoles.map(r => r.id || r.role_id).filter(Boolean)
-                );
-
-                if (currentIds.has(triageRole.id)) {
+                const hasTriage = currentRoles.some(r => (r.id || r.role_id) === triageRole.id);
+                if (hasTriage) {
                   table += `| ${username} | ➖ already has All-repo triage |\n`;
                   continue;
                 }
-
-                currentIds.add(triageRole.id);
-                const role_ids = Array.from(currentIds);
 
                 if (dryRun) {
                   table += `| ${username} | 🛑 dry-run: would assign All-repo triage |\n`;
                   continue;
                 }
 
+                // ✅ Correct endpoint
                 await github.request(
-                  'PUT /orgs/{org}/organization-roles/users/{username}',
-                  { org, username, role_ids }
+                  'PUT /orgs/{org}/organization-roles/users/{username}/{role_id}',
+                  { org, username, role_id: triageRole.id }
                 );
 
                 table += `| ${username} | ✅ assigned All-repo triage |\n`;
               } catch (e) {
-                table += `| ${username} | ❌ assignment failed: ${e.message} |\n`;
+                table += `| ${username} | ❌ assignment failed: ${e.status || ''} ${e.message} |\n`;
               }
             }
 
