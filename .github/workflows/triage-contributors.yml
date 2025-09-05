@@ -1,0 +1,131 @@
+name: Ensure All Members Have All-Repo Triage
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # Weekly, 03:00 UTC on Mondays
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Simulate without changing roles'
+        required: false
+        default: 'false'
+      exclude:
+        description: 'Comma-separated usernames to exclude'
+        required: false
+        default: ''
+
+jobs:
+  enforce-triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure triage role for all members
+        uses: actions/github-script@v7
+        with:
+          # Fine-grained token with org admin perms:
+          # Organization administration (Read & write)
+          github-token: ${{ secrets.ORG_INVITE }}
+          script: |
+            const org = 'armbian';
+            const dryRun = '${{ github.event.inputs["dry-run"] }}' === 'true';
+            const excludeCsv = '${{ github.event.inputs["exclude"] }}'.trim();
+            const EXCLUDE = new Set(excludeCsv ? excludeCsv.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : []);
+
+            // 1) Find the "All-repository triage" role
+            let triageRole = null;
+            try {
+              const { data: roles } = await github.request('GET /orgs/{org}/organization-roles', { org });
+              triageRole = roles.find(r =>
+                (r.name && r.name.toLowerCase() === 'all-repository triage') ||
+                (r.slug && r.slug.toLowerCase() === 'all-repository-triage') ||
+                /all.*triage/i.test(r.name || '')
+              );
+              if (!triageRole) throw new Error('Org role not found: All-repository triage');
+              core.info(`Found role: ${triageRole.name} (id=${triageRole.id})`);
+            } catch (e) {
+              core.setFailed(`Unable to list/find org roles: ${e.message}`);
+              return;
+            }
+
+            // 2) Get all members (role=member). Owners are handled separately.
+            const members = await github.paginate(github.rest.orgs.listMembers, {
+              org,
+              per_page: 100,
+              role: 'member'
+            });
+
+            // Optional: also include owners if you want (set includeOwners=true)
+            const includeOwners = false;
+            let owners = [];
+            if (includeOwners) {
+              owners = await github.paginate(github.rest.orgs.listMembers, {
+                org,
+                per_page: 100,
+                role: 'admin'
+              });
+            }
+
+            // Build final target list
+            const targets = [...members, ...owners]
+              .map(u => u.login.toLowerCase())
+              .filter(u => !EXCLUDE.has(u));
+
+            if (targets.length === 0) {
+              core.info('No eligible members to process.');
+              return;
+            }
+
+            let table = '\n| User | Action |\n|---|---|\n';
+
+            for (const username of targets) {
+              try {
+                // 3) Get current role assignments for the user so we don't overwrite them
+                let currentRoles = [];
+                try {
+                  const { data } = await github.request('GET /orgs/{org}/organization-roles/users/{username}', {
+                    org, username
+                  });
+                  currentRoles = Array.isArray(data) ? data : (data.roles || data || []);
+                } catch (e) {
+                  // Some orgs return 404 if no roles yet; that's okay.
+                  if (e.status !== 404) {
+                    table += `| ${username} | ⚠️ read roles failed: ${e.message} |\n`;
+                    continue;
+                  }
+                }
+
+                const currentIds = new Set(
+                  currentRoles
+                    .map(r => r.id || r.role_id) // accept either shape
+                    .filter(Boolean)
+                );
+
+                const alreadyHas = currentIds.has(triageRole.id);
+                if (alreadyHas) {
+                  table += `| ${username} | ➖ already has All-repo triage |\n`;
+                  continue;
+                }
+
+                // Merge: keep existing roles + add triage
+                currentIds.add(triageRole.id);
+                const role_ids = Array.from(currentIds);
+
+                if (dryRun) {
+                  table += `| ${username} | 🛑 dry-run: would assign All-repo triage |\n`;
+                  continue;
+                }
+
+                // 4) Update assignment (merge set)
+                await github.request('PUT /orgs/{org}/organization-roles/users/{username}', {
+                  org, username, role_ids
+                });
+
+                table += `| ${username} | ✅ assigned All-repo triage (merged) |\n`;
+              } catch (e) {
+                table += `| ${username} | ❌ assignment failed: ${e.message} |\n`;
+              }
+            }
+
+            await core.summary
+              .addHeading('All-repository triage enforcement')
+              .addRaw(table, true)
+              .write();
