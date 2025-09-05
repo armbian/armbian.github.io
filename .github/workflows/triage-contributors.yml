@@ -9,20 +9,15 @@ jobs:
           github-token: ${{ secrets.ORG_INVITE }}
           script: |
             const org = 'armbian';
-            // Show who we are
             const me = await github.request('GET /user');
             core.info(`Token user: ${me.data.login}`);
-            // Confirm ownership level (owner vs member)
-            try {
-              const m = await github.request('GET /user/memberships/orgs/{org}', { org });
-              core.info(`Org role: ${m.data.role}`); // should be 'admin' for owners
-            } catch (e) {
-              core.warning(`Membership check failed: ${e.message}`);
+
+            const { data } = await github.request('GET /orgs/{org}/organization-roles', { org });
+            if (!data.roles) {
+              core.info('No roles array in response: ' + JSON.stringify(data, null, 2));
+              return;
             }
-            // List roles
-            try {
-              const { data: roles } = await github.request('GET /orgs/{org}/organization-roles', { org });
-              core.info('Roles: ' + roles.map(r => `${r.id}:${r.name}`).join(' | '));
-            } catch (e) {
-              core.setFailed(`Listing roles failed: ${e.message}`);
+
+            for (const r of data.roles) {
+              core.info(`${r.id}: ${r.name}`);
             }
