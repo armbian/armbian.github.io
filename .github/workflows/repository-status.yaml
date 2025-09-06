@@ -61,16 +61,18 @@ jobs:
         run: |
 
           cd armbian.github.io
+          git fetch origin data || true
           git checkout data
           mkdir -p data/
           mv ${{ github.workspace }}/current.svg data/
           mv ${{ github.workspace }}/edge.svg data/
+          mv ${{ github.workspace }}/kernel-versions.json data/
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add data/.
           git diff --cached --quiet || git commit -m "Update repository data"
           git push
- 
+
       - name: "Run Bigin update action"
         uses: peter-evans/repository-dispatch@v3
         with:
