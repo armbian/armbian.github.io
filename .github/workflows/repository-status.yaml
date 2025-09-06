@@ -1,0 +1,75 @@
+name: "Fetch Armbian kernel package versions"
+on:
+  push:
+  repository_dispatch:
+    types: ["Repository status"]
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+  jira:
+    runs-on: ubuntu-24.04
+    name: "Get from Armbian Repository"
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          path: armbian.github.io
+          ref: repostatus
+
+      - name: Get info from Armbian repository
+        run: |
+
+          set -euo pipefail
+
+          KEYRING="/usr/share/keyrings/armbian.gpg"
+          LIST="/etc/apt/sources.list.d/armbian.list"
+
+          # Import Armbian APT key
+          curl -fsSL https://apt.armbian.com/armbian.key | sudo gpg --dearmor -o "$KEYRING"
+          sudo chmod go+r "$KEYRING"
+
+          # Detect release codename (Ubuntu/Debian)
+          . /etc/os-release
+          RELEASE="${UBUNTU_CODENAME:-${VERSION_CODENAME}}"
+
+          # Add Armbian repo
+          ARCH="$(dpkg --print-architecture)"
+          echo "deb [arch=$ARCH signed-by=$KEYRING] https://beta.armbian.com $RELEASE main ${RELEASE}-utils ${RELEASE}-desktop" \
+            | sudo tee "$LIST" > /dev/null
+
+          sudo apt-get update -qq
+
+          CURRENT=$(apt search --names-only 'linux-image-current-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
+          EDGE=$(apt search --names-only 'linux-image-edge-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
+
+          # Generate badges
+          sed "s/{{VERSION}}/$CURRENT/g" armbian.github.io/templates/armbian-badge-current.svg > current.svg
+          sed "s/{{VERSION}}/$EDGE/g"   armbian.github.io/templates/armbian-badge-edge.svg    > edge.svg
+
+          # Write JSON for other usage
+          printf '{\n  "CURRENT": "%s",\n  "EDGE": "%s"\n}\n' "${CURRENT:-}" "${EDGE:-}" > kernel-versions.json
+
+      - name: Commit changes if any
+        run: |
+
+          cd armbian.github.io
+          git checkout data
+          mkdir -p data/
+          mv ${{ github.workspace }}/current.svg data/
+          mv ${{ github.workspace }}/edge.svg data/
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/.
+          git diff --cached --quiet || git commit -m "Update repository data"
+          git push
+ 
+      - name: "Run Bigin update action"
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "MOTD update"
