@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="56" viewBox="0 0 560 56" role="img" aria-label="Armbian Linux CURRENT {VERSION}">
-  <title>Armbian Linux EDGE 25.11.0-trunk.135</title>
+  <title>Armbian Linux EDGE 25.11.0-trunk.136</title>
   <!-- left label -->
   <rect x="0" y="0" width="420" height="56" fill="#4d4d4d"/>
   <!-- right value -->
@@ -17,6 +17,6 @@
 
   <!-- value text -->
   <text x="490" y="36" text-anchor="middle" fill="#ffffff" font-family="DejaVu Sans,Verdana,Arial,sans-serif" font-size="22" font-weight="700">
-    25.11.0-trunk.135
+    25.11.0-trunk.136
   </text>
 </svg>
