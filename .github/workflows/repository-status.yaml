@@ -44,9 +44,12 @@ jobs:
 
           sudo apt-get update -qq
 
-          CURRENT=$(apt search --names-only 'linux-image-current-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
-          EDGE=$(apt search --names-only 'linux-image-edge-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
-
+          CURRENT=$(apt-cache madison linux-image-current-x86 | awk -F'|' '{gsub(/ /,""); print $2}' | sort -V | tail -1)
+          EDGE=$(apt-cache madison linux-image-edge-x86     | awk -F'|' '{gsub(/ /,""); print $2}' | sort -V | tail -1)
+          if [[ -z "${CURRENT}" || -z "${EDGE}" ]]; then
+            echo "Failed to determine CURRENT/EDGE versions" >&2
+            exit 1
+          fi
           # Generate badges
           sed "s/{{VERSION}}/$CURRENT/g" armbian.github.io/templates/armbian-badge-current.svg > current.svg
           sed "s/{{VERSION}}/$EDGE/g"   armbian.github.io/templates/armbian-badge-edge.svg    > edge.svg
