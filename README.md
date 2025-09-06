@@ -65,6 +65,10 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-jira-excerpt.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-jira-excerpt.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
   Extracts metadata and summaries from public Jira issues.
 
+- **Fetch Armbian Kernel Package Versions**  
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/repository-status.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/repository-status.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+  Fetches latest CURRENT and EDGE kernel package versions from Armbian's beta repository and generates SVG badges and JSON output.  
+
 ### Infrastructure & Community
 
 - **Mirror GitHub Artifacts to CDN**  
