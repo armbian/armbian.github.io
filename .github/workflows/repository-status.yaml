@@ -19,7 +19,6 @@ jobs:
         with:
           fetch-depth: 0
           path: armbian.github.io
-          ref: repostatus
 
       - name: Get info from Armbian repository
         run: |
