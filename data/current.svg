@@ -16,7 +16,7 @@
   </text>
 
   <!-- value text -->
-  <text x="490" y="36" text-anchor="middle" fill="#ffffff" font-family="DejaVu Sans,Verdana,Arial,sans-serif" font-size="22" font-weight="700">
+  <text x="540" y="36" text-anchor="end" fill="#ffffff" font-family="DejaVu Sans,Verdana,Arial,sans-serif" font-size="22" font-weight="700">
     6.12.45
   </text>
 </svg>
