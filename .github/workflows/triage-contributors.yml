@@ -1,5 +1,4 @@
-name: Ensure All Members Have All-Repo Triage
-
+name: Grant All-repository triage role
 on:
   schedule:
     - cron: '0 3 * * 1'   # Weekly, Monday 03:00 UTC
@@ -14,9 +13,16 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   enforce-triage:
+    name: "Enforce Triage"
     runs-on: ubuntu-latest
+    concurrency:
+      group: org-triage-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Ensure all members have All-repo triage
         uses: actions/github-script@v7
