@@ -12,7 +12,7 @@
 
   <!-- label text -->
   <text x="56" y="36" fill="#ffffff" font-family="DejaVu Sans,Verdana,Arial,sans-serif" font-size="20" font-weight="600" letter-spacing="2">
-    ARMBIAN LINUX EDGE
+    Armbian Linux EDGE
   </text>
 
   <!-- value text -->
