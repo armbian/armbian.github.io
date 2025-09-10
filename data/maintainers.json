@@ -1,5 +1,29 @@
 [
   {
+    "First_Name": "Igor",
+    "Github": "https://github.com/igorpecovnik",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, bananapim2pro, bananapim5, inovato-quadra",
+    "Your_core_competences": [
+      "Project management",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
+  },
+  {
+    "First_Name": "Bert",
+    "Github": "https://github.com/biot",
+    "Team": [],
+    "Maintaining": "odroidhc4",
+    "Your_core_competences": [
+      "Kernel development",
+      "Devops and servers"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/604039?v=4"
+  },
+  {
     "First_Name": null,
     "Github": "https://github.com/SuperKali",
     "Team": [
@@ -259,19 +283,6 @@
       "Forum moderating"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/46458369?v=4"
-  },
-  {
-    "First_Name": "Igor",
-    "Github": "https://github.com/igorpecovnik",
-    "Team": [
-      "Support"
-    ],
-    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, odroidhc4, bananapim2pro, bananapim5, inovato-quadra",
-    "Your_core_competences": [
-      "Project management",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
   },
   {
     "First_Name": "Jack",
