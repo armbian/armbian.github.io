@@ -38,23 +38,24 @@ jobs:
 
           # Add Armbian repo
           ARCH="$(dpkg --print-architecture)"
-          echo "deb [arch=$ARCH signed-by=$KEYRING] https://beta.armbian.com $RELEASE main ${RELEASE}-utils ${RELEASE}-desktop" \
+          echo "deb [arch=$ARCH signed-by=$KEYRING] https://apt.armbian.com $RELEASE main ${RELEASE}-utils ${RELEASE}-desktop" \
             | sudo tee "$LIST" > /dev/null
 
-          sudo apt-get update -qq
+          sudo apt-get update
+          apt search --names-only 'linux-image-current-x86'
 
-          CURRENT=$(apt search --names-only 'linux-image-current-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
-          EDGE=$(apt search --names-only 'linux-image-edge-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
-          if [[ -z "${CURRENT}" || -z "${EDGE}" ]]; then
-            echo "Failed to determine CURRENT/EDGE versions" >&2
-            exit 1
-          fi
+          #CURRENT=$(apt search --names-only 'linux-image-current-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
+          #EDGE=$(apt search --names-only 'linux-image-edge-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
+          #if [[ -z "${CURRENT}" || -z "${EDGE}" ]]; then
+          #  echo "Failed to determine CURRENT/EDGE versions" >&2
+          #  exit 1
+          #fi
           # Generate badges
-          sed "s/{{VERSION}}/$CURRENT/g" armbian.github.io/templates/armbian-badge-current.svg > current.svg
-          sed "s/{{VERSION}}/$EDGE/g"   armbian.github.io/templates/armbian-badge-edge.svg    > edge.svg
+          #sed "s/{{VERSION}}/$CURRENT/g" armbian.github.io/templates/armbian-badge-current.svg > current.svg
+          #sed "s/{{VERSION}}/$EDGE/g"   armbian.github.io/templates/armbian-badge-edge.svg    > edge.svg
 
           # Write JSON for other usage
-          printf '{\n  "CURRENT": "%s",\n  "EDGE": "%s"\n}\n' "${CURRENT:-}" "${EDGE:-}" > kernel-versions.json
+          #printf '{\n  "CURRENT": "%s",\n  "EDGE": "%s"\n}\n' "${CURRENT:-}" "${EDGE:-}" > kernel-versions.json
 
       - name: Commit changes if any
         run: |
