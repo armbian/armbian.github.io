@@ -1,5 +1,32 @@
 [
   {
+    "First_Name": "Kat",
+    "Github": "https://github.com/schwar3kat",
+    "Team": [
+      "Allwinner"
+    ],
+    "Maintaining": "orangepizeroplus, rock-5c, radxa-e52c",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/61094841?v=4"
+  },
+  {
+    "First_Name": "Gunjan",
+    "Github": "https://github.com/viraniac",
+    "Team": [
+      "Framework",
+      "Allwinner"
+    ],
+    "Maintaining": null,
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "CI & automated testing"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/6690664?v=4"
+  },
+  {
     "First_Name": "Wei",
     "Github": "https://github.com/wei633",
     "Team": [],
@@ -576,18 +603,6 @@
     "Avatar": "https://avatars.githubusercontent.com/u/5022901?v=4"
   },
   {
-    "First_Name": "Kat",
-    "Github": "https://github.com/schwar3kat",
-    "Team": [
-      "Allwinner"
-    ],
-    "Maintaining": "orangepizeroplus, rock-5c",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/61094841?v=4"
-  },
-  {
     "First_Name": "mattx433",
     "Github": "https://github.com/mattx433",
     "Team": [
@@ -599,21 +614,6 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/10520670?v=4"
-  },
-  {
-    "First_Name": "Gunjan",
-    "Github": "https://github.com/viraniac",
-    "Team": [
-      "Framework",
-      "Allwinner"
-    ],
-    "Maintaining": "khadas-vim1s, khadas-vim4",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development",
-      "CI & automated testing"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/6690664?v=4"
   },
   {
     "First_Name": "IsMrX",
