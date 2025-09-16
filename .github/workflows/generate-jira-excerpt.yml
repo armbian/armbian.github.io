@@ -1,7 +1,6 @@
 name: "Pull from Armbian Jira"
 
 on:
-  push:
   repository_dispatch:
     types: ["Jira update"]
 
