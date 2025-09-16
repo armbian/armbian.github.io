@@ -113,9 +113,9 @@ jobs:
           # EXACT same top-matter as before (markdown-ish in .html)
           def write_current():
             with open("jira-current.html", "w", encoding="utf-8") as f:
-              f.write("\n\n# Should be completed in " + current_fix + "\n\nSorted by priority\n\n\n")
-              f.write('<p>\n##### <a href="https://github.com/armbian/community/issues?q=is%3Aopen+is%3Aissue+label%3A%22Ready+for+merge%22">Check if you can review code that already waits at Pull reqests</a>\n</p>\n')
-              f.write("<p>\n")
+              f.write('\n\n<div style="color: #ccc;"><h1 style="color: #ccc;"> Should be completed in ' + current_fix + '</h1>Sorted by priority</div>\n')
+              f.write('\n<div style="color: #ccc;"><h5 style="color: #ccc;"><a href="https://github.com/armbian/build/pulls?q=is%3Apr+is%3Aopen+label%3A%22Needs+review%22">Check if you can review code that already waits at Pull reqests</a></h5></div>\n')
+              f.write('<div class="icon-menu">\n')
               issues = fetch_all(f'project=AR and fixVersion="{current_fix}" and status!="Done" and status!="Closed" order by Priority')
               for it in issues:
                 key = it.get("key")
@@ -123,15 +123,14 @@ jobs:
                 itype = ((fields.get("issuetype") or {}).get("name")) or ""
                 summary = fields.get("summary") or ""
                 assignee = (fields.get("assignee") or {}).get("displayName") or "Unassigned"
-                f.write(f'\n<a href="{BASE}/browse/{html.escape(key)}">{html.escape(key)} {icons(itype)} {html.escape(itype)}: {html.escape(summary)}, Assigned to: {html.escape(assignee)}</a>')
-                f.write("\n<br>\n")
-              f.write("\n</p>\n")
+                f.write(f'\n<a class="icon-menu__link" href="{BASE}/browse/{html.escape(key)}">{html.escape(key)} {icons(itype)} {html.escape(itype)}: {html.escape(summary)}, <i>Assigned to: {html.escape(assignee)}</i></a>')
+                f.write("\n")
+              f.write('</div>\n')
 
           def write_next():
             with open("jira-next.html", "w", encoding="utf-8") as f:
-              f.write('\n<h2>\n')
-              f.write("# Planned for " + next_fix + " and further \n\nSorted by priority\n\n")
-              f.write('</h2>\n\n')
+              f.write('\n\n<div style="color: #ccc;"><h1 style="color: #ccc;"> Planned for ' + next_fix + '</h1>Sorted by priority</div>\n')
+              f.write('<div class="icon-menu">\n')
               issues = fetch_all(f'project=AR and fixVersion="{next_fix}" and status!="Done" and status!="Closed" order by priority desc')
               for it in issues:
                 key = it.get("key")
@@ -139,8 +138,9 @@ jobs:
                 itype = ((fields.get("issuetype") or {}).get("name")) or ""
                 summary = fields.get("summary") or ""
                 assignee = (fields.get("assignee") or {}).get("displayName") or "Unassigned"
-                f.write(f'\n<a href="{BASE}/browse/{html.escape(key)}">{html.escape(key)} {icons(itype)} {html.escape(itype)}: {html.escape(summary)}, Assigned to: {html.escape(assignee)}</a>')
-                f.write("\n<br>\n")
+                f.write(f'\n<a class="icon-menu__link" href="{BASE}/browse/{html.escape(key)}">{html.escape(key)} {icons(itype)} {html.escape(itype)}: {html.escape(summary)}, <i>Assigned to: {html.escape(assignee)}</i></a>')
+                f.write("\n")
+              f.write('</div>\n')
 
           write_current()
           write_next()
