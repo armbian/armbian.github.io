@@ -1,5 +1,42 @@
 [
   {
+    "First_Name": "Andrei",
+    "Github": "https://github.com/Grippy98",
+    "Team": [],
+    "Maintaining": "beaglebone-ai64, beagleplay, pocketbeagle2, beagley-ai, sk-am62p",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "Forum moderating",
+      "Project management"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/7153954?v=4"
+  },
+  {
+    "First_Name": "Jianfeng",
+    "Github": "https://github.com/amazingfate/",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "Rockchip legacy kernel, rock-5b, rock-5a, rock-3a, xiaomi-elish, armsom-sige1, bananapim7, radxa-e52c, rock-5-itx, armsom-sige3, oneplus-kebab, armsom-forge1",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/5022901?v=4"
+  },
+  {
+    "First_Name": "Muhammed Efe",
+    "Github": "https://github.com/efectn",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "nanopi-r6s, khadas-edge2, nanopi-m6, orangepi5, bananapim5pro",
+    "Your_core_competences": [
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/45270788?v=4"
+  },
+  {
     "First_Name": "Kat",
     "Github": "https://github.com/schwar3kat",
     "Team": [
@@ -430,19 +467,6 @@
     "Avatar": "https://avatars.githubusercontent.com/u/83122123?v=4"
   },
   {
-    "First_Name": "Andrei",
-    "Github": "https://github.com/Grippy98",
-    "Team": [],
-    "Maintaining": "beaglebone-ai64, beagleplay, pocketbeagle2, beagley-ai",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development",
-      "Forum moderating",
-      "Project management"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/7153954?v=4"
-  },
-  {
     "First_Name": "Nicolas",
     "Github": "https://github.com/hqnicolas",
     "Team": [],
@@ -555,18 +579,6 @@
     "Avatar": "https://avatars.githubusercontent.com/u/2780577?v=4"
   },
   {
-    "First_Name": "Muhammed Efe",
-    "Github": "https://github.com/efectn",
-    "Team": [
-      "Rockchip"
-    ],
-    "Maintaining": "nanopi-r6s, khadas-edge2, nanopi-m6, orangepi5",
-    "Your_core_competences": [
-      "OS and desktop development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/45270788?v=4"
-  },
-  {
     "First_Name": "Colorful",
     "Github": "https://github.com/ColorfulRhino",
     "Team": [
@@ -589,18 +601,6 @@
       "Professional support"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/55603444?v=4"
-  },
-  {
-    "First_Name": "Jianfeng",
-    "Github": "https://github.com/amazingfate/",
-    "Team": [
-      "Rockchip"
-    ],
-    "Maintaining": "Rockchip legacy kernel, rock-5b, rock-5a, rock-3a, xiaomi-elish, armsom-sige1, bananapim7, radxa-e52c, rock-5-itx, armsom-sige3, oneplus-kebab",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/5022901?v=4"
   },
   {
     "First_Name": "mattx433",
