@@ -1,5 +1,7 @@
 name: "Pull from Armbian Jira"
+
 on:
+  push:
   repository_dispatch:
     types: ["Jira update"]
 
@@ -11,36 +13,132 @@ jobs:
   jira:
     runs-on: ubuntu-24.04
     name: "Get from Armbian Jira"
-    steps:
+    permissions:
+      contents: write   # needed for git push
+    env:
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
 
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           path: armbian.github.io
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.8 #install the python needed
+          python-version: "3.10"
 
-      - name: "Run script"
+      - name: Pull from Jira (inline)
+        shell: bash
         run: |
-          pip install jira
-          ./armbian.github.io/scripts/pull-from-jira.py
+          python - <<'PY'
+          import os, sys, html, requests
+          from datetime import datetime
+
+          BASE = "https://armbian.atlassian.net"
+          SEARCH_URL = f"{BASE}/rest/api/3/search/jql"
+          EMAIL = os.environ.get("JIRA_EMAIL")
+          TOKEN = os.environ.get("JIRA_TOKEN")
+
+          if not EMAIL or not TOKEN:
+            print("Missing JIRA_EMAIL or JIRA_TOKEN", file=sys.stderr)
+            sys.exit(1)
+
+          AUTH = (EMAIL, TOKEN)
+          HEADERS = {"Accept": "application/json"}
+          FIELDS = ["summary","issuetype","assignee","priority","status"]
+
+          # Release buckets: 02,05,08,11
+          now = datetime.now()
+          y = now.year
+          m = now.month
+          if m <= 2:
+            cy, cm, ny, nm = y, "02", y, "05"
+          elif m <= 5:
+            cy, cm, ny, nm = y, "05", y, "08"
+          elif m <= 8:
+            cy, cm, ny, nm = y, "08", y, "11"
+          elif m <= 11:
+            cy, cm, ny, nm = y, "11", y+1, "02"
+          else:
+            cy, cm, ny, nm = y+1, "02", y+1, "05"
+
+          current_fix = f"{str(cy)[2:]}.{cm}"
+          next_fix    = f"{str(ny)[2:]}.{nm}"
+
+          def fetch_all(jql, page=100):
+            start = 0
+            out = []
+            while True:
+              params = {
+                "jql": jql,
+                "fields": ",".join(FIELDS),
+                "startAt": start,
+                "maxResults": page,
+              }
+              r = requests.get(SEARCH_URL, params=params, headers=HEADERS, auth=AUTH, timeout=30)
+              if r.status_code >= 400:
+                print(f"Jira API error {r.status_code}: {r.text}", file=sys.stderr)
+                sys.exit(1)
+              data = r.json()
+              chunk = data.get("issues", [])
+              out.extend(chunk)
+              total = data.get("total", len(out))
+              if not chunk or start + len(chunk) >= total:
+                break
+              start += len(chunk)
+            return out
+
+          def icon(itype):
+            return {"Bug":"🐞","Task":"📋","Story":"📖","Epic":"🧩"}.get(str(itype),"")
+
+          def render(title, jql, path, hint):
+            issues = fetch_all(jql)
+            with open(path, "w", encoding="utf-8") as f:
+              f.write(f"<h2>{html.escape(title)}</h2>\n")
+              f.write(f"<p><em>Sorted by {html.escape(hint)}</em></p>\n<ul>\n")
+              for it in issues:
+                key = it.get("key")
+                fields = it.get("fields") or {}
+                itype = ((fields.get("issuetype") or {}).get("name")) or ""
+                summary = fields.get("summary") or ""
+                assignee = (fields.get("assignee") or {}).get("displayName") or "Unassigned"
+                f.write(
+                  f'<li><a href="{BASE}/browse/{key}">{html.escape(key)}</a> '
+                  f'{html.escape(icon(itype))} {html.escape(itype)}: '
+                  f'{html.escape(summary)} — Assigned to: {html.escape(assignee)}</li>\n'
+                )
+              f.write("</ul>\n")
+
+          render(
+            title=f"Should be completed in {current_fix}",
+            jql=f'project = AR AND fixVersion = "{current_fix}" AND status NOT IN ("Done","Closed") ORDER BY priority',
+            path="jira-current.html",
+            hint="priority",
+          )
+          render(
+            title=f"Planned for {next_fix} and further",
+            jql=f'project = AR AND fixVersion = "{next_fix}" AND status NOT IN ("Done","Closed") ORDER BY priority DESC',
+            path="jira-next.html",
+            hint="priority (desc)",
+          )
+          PY
 
       - name: Commit changes if any
+        shell: bash
         run: |
-
           cd armbian.github.io
           git checkout data
           mkdir -p data/
           mv ${{ github.workspace }}/jira-current.html data/
           mv ${{ github.workspace }}/jira-next.html data/
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add data/.
-          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git diff --cached --quiet || git commit -m "Update WEB index files"
           git push
 
       - name: "Run pull from Repository action"
