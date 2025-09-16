@@ -1,5 +1,17 @@
 [
   {
+    "First_Name": "Patrick",
+    "Github": "https://github.com/pyavitz",
+    "Team": [
+      "Amlogic"
+    ],
+    "Maintaining": "bananapicm4io, bananapim2s, bananapim4zero, gateway-gz80x, bananapif3, nanopi-r3s-lts, kickpik2b, khadas-vim4",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/43829819?v=4"
+  },
+  {
     "First_Name": "Andrei",
     "Github": "https://github.com/Grippy98",
     "Team": [],
@@ -190,18 +202,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/43478602?v=4"
-  },
-  {
-    "First_Name": "Patrick",
-    "Github": "https://github.com/pyavitz",
-    "Team": [
-      "Amlogic"
-    ],
-    "Maintaining": "bananapicm4io, bananapim2s, bananapim4zero, gateway-gz80x, bananapif3, nanopi-r3s-lts, kickpik2b",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/43829819?v=4"
   },
   {
     "First_Name": "Adam",
