@@ -1,4 +1,5 @@
 name: "Pull from Armbian Jira"
+
 on:
   repository_dispatch:
     types: ["Jira update"]
@@ -11,36 +12,152 @@ jobs:
   jira:
     runs-on: ubuntu-24.04
     name: "Get from Armbian Jira"
-    steps:
+    permissions:
+      contents: write
+    env:
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
 
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           path: armbian.github.io
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.8 #install the python needed
+          python-version: "3.10"
 
-      - name: "Run script"
+      - name: Install Python deps
         run: |
-          pip install jira
-          ./armbian.github.io/scripts/pull-from-jira.py
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Pull from Jira (inline; same HTML as before)
+        shell: bash
+        run: |
+          python - <<'PY'
+          # Emits identical structure to the previous pull-from-jira.py
+          import os, sys, html, requests
+          from datetime import datetime
+
+          BASE = "https://armbian.atlassian.net"
+          SEARCH_URL = f"{BASE}/rest/api/3/search/jql"
+          EMAIL = os.environ.get("JIRA_EMAIL")
+          TOKEN = os.environ.get("JIRA_TOKEN")
+          if not EMAIL or not TOKEN:
+            print("Missing JIRA_EMAIL or JIRA_TOKEN", file=sys.stderr)
+            sys.exit(1)
+
+          AUTH = (EMAIL, TOKEN)
+          HEADERS = {"Accept": "application/json"}
+
+          # Icons exactly like before
+          def icons(arg: str) -> str:
+            s = str(arg)
+            if s == "Bug":
+              return '<img src="https://armbian.atlassian.net/images/icons/issuetypes/bug.svg">'
+            if s == "Task":
+              return '<img src="https://armbian.atlassian.net/images/icons/issuetypes/task.svg">'
+            if s == "Story":
+              return '<img src="https://armbian.atlassian.net/images/icons/issuetypes/story.svg">'
+            if s == "Epic":
+              return '<img src="https://armbian.atlassian.net/images/icons/issuetypes/epic.svg">'
+            return ""
+
+          # Release buckets: 02,05,08,11 (match old logic)
+          now = datetime.now()
+          y = now.year
+          m = int(now.strftime("%m"))
+          if m <= 2:
+            current_year, current_month = y, "02"
+            next_year, next_month = y, "05"
+          elif m <= 5:
+            current_year, current_month = y, "05"
+            next_year, next_month = y, "08"
+          elif m <= 8:
+            current_year, current_month = y, "08"
+            next_year, next_month = y, "11"
+          elif m <= 11:
+            current_year, current_month = y, "11"
+            next_year, next_month = y+1, "02"
+          else:
+            current_year, current_month = y+1, "02"
+            next_year, next_month = y+1, "05"
+
+          current_fix = f"{str(current_year)[2:]}.{current_month}"
+          next_fix    = f"{str(next_year)[2:]}.{next_month}"
+
+          FIELDS = "summary,issuetype,assignee,priority,status"
+
+          def fetch_all(jql: str, page=100):
+            start = 0
+            out = []
+            while True:
+              params = {"jql": jql, "fields": FIELDS, "startAt": start, "maxResults": page}
+              r = requests.get(SEARCH_URL, params=params, headers=HEADERS, auth=AUTH, timeout=30)
+              if r.status_code >= 400:
+                print(f"Jira API error {r.status_code}: {r.text}", file=sys.stderr)
+                sys.exit(1)
+              data = r.json()
+              chunk = data.get("issues", [])
+              out.extend(chunk)
+              total = data.get("total", len(out))
+              if not chunk or start + len(chunk) >= total:
+                break
+              start += len(chunk)
+            return out
+
+          # EXACT same top-matter as before (markdown-ish in .html)
+          def write_current():
+            with open("jira-current.html", "w", encoding="utf-8") as f:
+              f.write('\n\n<div style="color: #ccc;"><h1 style="color: #ccc;"> Should be completed in ' + current_fix + '</h1>Sorted by priority</div>\n')
+              f.write('\n<div style="color: #ccc;"><h5 style="color: #ccc;"><a href="https://github.com/armbian/build/pulls?q=is%3Apr+is%3Aopen+label%3A%22Needs+review%22">Check if you can review code that already waits at Pull reqests</a></h5></div>\n')
+              f.write('<div class="icon-menu">\n')
+              issues = fetch_all(f'project=AR and fixVersion="{current_fix}" and status!="Done" and status!="Closed" order by Priority')
+              for it in issues:
+                key = it.get("key")
+                fields = it.get("fields") or {}
+                itype = ((fields.get("issuetype") or {}).get("name")) or ""
+                summary = fields.get("summary") or ""
+                assignee = (fields.get("assignee") or {}).get("displayName") or "Unassigned"
+                f.write(f'\n<a class="icon-menu__link" href="{BASE}/browse/{html.escape(key)}">{html.escape(key)} {icons(itype)} {html.escape(itype)}: {html.escape(summary)}, <i>Assigned to: {html.escape(assignee)}</i></a>')
+                f.write("\n")
+              f.write('</div>\n')
+
+          def write_next():
+            with open("jira-next.html", "w", encoding="utf-8") as f:
+              f.write('\n\n<div style="color: #ccc;"><h1 style="color: #ccc;"> Planned for ' + next_fix + '</h1>Sorted by priority</div>\n')
+              f.write('<div class="icon-menu">\n')
+              issues = fetch_all(f'project=AR and fixVersion="{next_fix}" and status!="Done" and status!="Closed" order by priority desc')
+              for it in issues:
+                key = it.get("key")
+                fields = it.get("fields") or {}
+                itype = ((fields.get("issuetype") or {}).get("name")) or ""
+                summary = fields.get("summary") or ""
+                assignee = (fields.get("assignee") or {}).get("displayName") or "Unassigned"
+                f.write(f'\n<a class="icon-menu__link" href="{BASE}/browse/{html.escape(key)}">{html.escape(key)} {icons(itype)} {html.escape(itype)}: {html.escape(summary)}, <i>Assigned to: {html.escape(assignee)}</i></a>')
+                f.write("\n")
+              f.write('</div>\n')
+
+          write_current()
+          write_next()
+          PY
 
       - name: Commit changes if any
+        shell: bash
         run: |
-
           cd armbian.github.io
           git checkout data
           mkdir -p data/
           mv ${{ github.workspace }}/jira-current.html data/
           mv ${{ github.workspace }}/jira-next.html data/
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add data/.
-          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git diff --cached --quiet || git commit -m "Update WEB index files"
           git push
 
       - name: "Run pull from Repository action"
@@ -48,3 +165,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: "Repository status"
+
