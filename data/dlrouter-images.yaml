@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: 4f07b6de52d223f4f44de5c768ef9646
+reloadKey: 9521694c4f2cccac41e87ed9cd16fe29
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -110,6 +110,12 @@ servers:
           - UA
     latitude: 59.9417
     longitude: 30.3096
+    weight: 10
+
+  # Europe/Paris - 500 Mbit/s
+  - server: xogium.performanceservers.nl/dl/
+    latitude: 48.5144
+    longitude: -2.768
     weight: 10
 
   # Europe/London - 1000 Mbit/s
