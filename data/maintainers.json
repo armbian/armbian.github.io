@@ -1,5 +1,18 @@
 [
   {
+    "First_Name": null,
+    "Github": "https://github.com/SuperKali",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "youyeetoo-r1-v3, nanopct6, nanopct6-lts, nanopi-r76s, nanopi-m5",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/19473898?v=4"
+  },
+  {
     "First_Name": "Patrick",
     "Github": "https://github.com/pyavitz",
     "Team": [
@@ -109,19 +122,6 @@
       "Devops and servers"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/604039?v=4"
-  },
-  {
-    "First_Name": null,
-    "Github": "https://github.com/SuperKali",
-    "Team": [
-      "Rockchip"
-    ],
-    "Maintaining": "youyeetoo-r1-v3, nanopct6, nanopct6-lts, nanopi-r76s",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/19473898?v=4"
   },
   {
     "First_Name": "Mecid",
