@@ -1,4 +1,10 @@
 {
+  "Account_Name": "Texas Instruments Inc",
+  "Logo": null,
+  "Website": "https://www.ti.com/",
+  "Description": null
+}
+{
   "Account_Name": "Alfred Smart Systems, S.L.",
   "Logo": null,
   "Website": "https://alfredsmart.com/",
@@ -8,11 +14,5 @@
   "Account_Name": "Futo",
   "Logo": null,
   "Website": "https://futo.org",
-  "Description": null
-}
-{
-  "Account_Name": "Texas Instruments Inc",
-  "Logo": null,
-  "Website": "https://www.ti.com/",
   "Description": null
 }
