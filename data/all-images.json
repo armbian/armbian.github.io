@@ -19226,7 +19226,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -19241,7 +19241,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.asc"
     },
@@ -19256,7 +19256,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.sha"
     },
@@ -19271,7 +19271,7 @@
       "kernel_branch": "vendor",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz.torrent"
     },
