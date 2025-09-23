@@ -32,12 +32,22 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.AI_MODELS }}
       SCOPE: ${{ inputs.scope || 'armbian/build,armbian/configng' }}
       TZ: ${{ inputs.tz || 'Europe/Ljubljana' }}
       PERIOD: ${{ inputs.period || 'weekly' }}
       RELEASE_ENABLED: ${{ inputs.publish_release || 'true' }}
 
     steps:
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install OpenAI SDK
+        run: pip install 'openai>=1.0.0'
+
       - name: Ensure dependencies
         run: |
           sudo apt-get update
@@ -52,13 +62,13 @@ jobs:
           UNTIL_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           if [[ "$PERIOD" == "monthly" ]]; then
             SINCE_UTC="$(date -u -d '1 month ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Monthly Digest"
+            LABEL="Monthly digest"
           elif [[ "$PERIOD" == "quarterly" ]]; then
             SINCE_UTC="$(date -u -d '3 months ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Quarterly Digest"
+            LABEL="Quarterly digest"
           else
             SINCE_UTC="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Weekly Digest"
+            LABEL="Weekly digest"
           fi
           echo "UNTIL_UTC=$UNTIL_UTC" >> "$GITHUB_ENV"
           echo "SINCE_UTC=$SINCE_UTC" >> "$GITHUB_ENV"
@@ -128,40 +138,23 @@ jobs:
       - name: Fetch merged PRs for selected period
         run: ./pr_fetch.sh "$SCOPE" "$SINCE_UTC" "$UNTIL_UTC" out/pr-digest.tsv
 
-      - name: Write Markdown digest to summary & body.html
+      - name: "Write Markdown digest"
         shell: bash
         run: |
 
-           echo "
-              <h1>Armbian rolling releases</h1>
-              <p>
-              <a href='https://www.armbian.com/download/'><img alt='Armbian Linux stable' src='https://img.shields.io/badge/dynamic/json?label=Armbian%20Linux%20current&query=CURRENT&color=f71000&cacheSeconds=600&style=for-the-badge&url=https%3A%2F%2Fgithub.com%2Farmbian%2Fscripts%2Freleases%2Fdownload%2Fstatus%2Frunners_capacity.json'></a>
-              <a href='https://www.armbian.com/download/'><img alt='Armbian Linux rolling' src='https://img.shields.io/badge/dynamic/json?label=Armbian%20Linux%20edge&query=EDGE&color=34be5b&cacheSeconds=600&style=for-the-badge&url=https%3A%2F%2Fgithub.com%2Farmbian%2Fscripts%2Freleases%2Fdownload%2Fstatus%2Frunners_capacity.json'></a>
-              </p>
-              <br>
-
-              - rolling releases are available at the bottom of <a href='https://www.armbian.com/download/' target=_blanks>official download pages</a>
-              - <a href='https://github.com/armbian/os/wiki/Enable-build-configuration'>How to change type of images that are provided by Armbian</a>?
-              - How to switch between <a href='https://docs.armbian.com/User-Guide_Armbian-Config/System/#rolling' target=_blank>stable and rolling release</a>?
-
-              Please note that <b>Armbian Rolling Releases</b> are not recommended for production environments, as these builds are not thoroughly tested. However, in most cases, they should work well. 
-              </p>
-                " > body.html           
-              # Start fresh body file
-              echo "<h1>${LABEL}</h1>" >> body.html
-              echo "<ul>" >> body.html
-              echo "## ${LABEL}" >> "$GITHUB_STEP_SUMMARY"
-
+            echo "" >> summary.md
+            echo "## " >> summary.md
             if [[ ! -s out/pr-digest.tsv ]]; then
-              echo "_No merged PRs in this period._" >> "$GITHUB_STEP_SUMMARY"
-              echo "<p><em>No merged PRs in this period.</em></p>" >> body.html
+              echo "_No merged PRs in this period._" >> summary.md
             else
               while IFS=$'\t' read -r title author repo num pr_url; do
-                echo "* ${title}.  by @${author} in [${repo}#${num}](${pr_url})" >> "$GITHUB_STEP_SUMMARY"
-                echo "<li>${title}. by @${author} in <a href='${pr_url}'>${repo}#${num}</a></li>" >> body.html
-            done < out/pr-digest.tsv
+                echo "* ${title}.  by @${author} in [${repo}#${num}](${pr_url})" >> summary.md
+              done < out/pr-digest.tsv
             fi
-            echo "</ul>" >> body.html
+            echo "# " >> summary.md
+            echo "<a href='https://blog.armbian.com/#/portal/signup' target='_blank'>
+                  <img src='https://img.shields.io/badge/Subscribe-blog.armbian.com-red?style=for-the-badge&logo=rss' alt='Subscribe to Blog'/></a>" >> summary.md
+            echo "<p><br>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox." >> summary.md
 
       - name: Upload raw data (artifacts)
         uses: actions/upload-artifact@v4
@@ -171,7 +164,6 @@ jobs:
           if-no-files-found: warn
 
       - name: "Checkout OS repository to get version"
-        if: ${{ env.RELEASE_ENABLED == 'true' }}
         uses: actions/checkout@v5
         with:
           repository: armbian/os
@@ -180,7 +172,6 @@ jobs:
           path: os
 
       - name: "Read version from nightly or stable based on period"
-        if: ${{ env.RELEASE_ENABLED == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -196,17 +187,59 @@ jobs:
           VERSION=$(jq -r '.version' "$FILE")
           echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
 
+      - name: "Write a short journalistic intro with AI"
+        if: ${{ env.PERIOD == 'weekly' }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import os
+          from openai import OpenAI
+
+          token = os.environ["GITHUB_TOKEN"]
+          label = os.environ["LABEL"]
+
+          with open("summary.md", "r", encoding="utf-8") as f:
+              content = f.read().strip()
+
+          client = OpenAI(base_url="https://models.github.ai/inference", api_key=token)
+
+          prompt = (
+              "Read the following Markdown changelog and write a short journalistic intro paragraph (5–7 sentences) "
+              "that summarizes the main activity. Be concise, professional, and factual. Output only the intro.\n\n"
+              f"{content}"
+          )
+
+          resp = client.chat.completions.create(
+              model="openai/gpt-4.1",
+              messages=[
+                  {"role": "system", "content": "You are a " + label + "digest editor."},
+                  {"role": "user", "content": prompt},
+              ],
+              temperature=0.3,
+              top_p=1.0,
+          )
+
+          intro = resp.choices[0].message.content.strip()
+
+          with open("summary.md", "w", encoding="utf-8") as f:
+              f.write(intro + "\n\n" + content)
+
+          print("Prepended AI intro:")
+          print(intro)
+          PY
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
         with:
           owner: 'armbian'
           repo: 'build'
           tag: "v${{ env.VERSION_OVERRIDE }}"
-          name: "v${{ env.VERSION_OVERRIDE }}"
+          name: "${{ env.LABEL }}"
           generateReleaseNotes: "false"
           prerelease: "false"
           makeLatest: "true"
-          bodyFile: "body.html"
+          bodyFile: "summary.md"
           allowUpdates: "true"
           skipIfReleaseExists: "true"
           token: ${{ secrets.RELEASE_TOKEN }}
