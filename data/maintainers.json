@@ -1,5 +1,17 @@
 [
   {
+    "First_Name": "Paolo",
+    "Github": "https://github.com/paolosabatino",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "tinkerboard, orangepi4-lts, orangepi4, rk3318-box, rockpi-e, dusun-dsom-010r",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/15271078?v=4"
+  },
+  {
     "First_Name": "Mecid",
     "Github": "https://github.com/HeyMeco",
     "Team": [],
@@ -730,18 +742,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/21049986?v=4"
-  },
-  {
-    "First_Name": "Paolo",
-    "Github": "https://github.com/paolosabatino",
-    "Team": [
-      "Rockchip"
-    ],
-    "Maintaining": "tinkerboard, orangepi4-lts, orangepi4, rk3318-box, rockpi-e",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/15271078?v=4"
   },
   {
     "First_Name": "krachlatte",
