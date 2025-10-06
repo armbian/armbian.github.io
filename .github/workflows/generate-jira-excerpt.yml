@@ -161,7 +161,7 @@ jobs:
           git push
 
       - name: "Run pull from Repository action"
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           event-type: "Repository status"
