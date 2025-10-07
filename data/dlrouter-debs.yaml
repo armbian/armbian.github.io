@@ -6,7 +6,7 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 
 # Reload authorization key
-reloadKey: d6c4d840c0e0ac498c9c0b3b6b121ef7
+reloadKey: 7ca0a3271dc624a0461ba29d8dbc355a
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -24,18 +24,6 @@ specialExtensions:
   - hyperv.zip: -hyperv
 
 servers:
-
-  # America/Los_Angeles - 10000 Mbit/s
-  - server: armbian.lv.auroradev.org/apt/
-    latitude: 36.18811
-    longitude: -115.176468
-    weight: 10
-
-  # Europe/Paris - 1000 Mbit/s
-  - server: armbian.nardol.ovh/apt/
-    latitude: 48.8582
-    longitude: 2.3387
-    weight: 10
 
   # Europe/Vienna - 1000 Mbit/s
   - server: armbian.systemonachip.net/apt/
@@ -61,10 +49,6 @@ servers:
     longitude: 121.0
     weight: 10
 
-  # Asia/Kolkata - 1000 Mbit/s
-  - server: mirror.albony.in/armbian/
-    weight: 5
-
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirror.iscas.ac.cn/armbian/
     latitude: 39.9075
@@ -87,6 +71,12 @@ servers:
   - server: mirrors.dotsrc.org/armbian-apt/
     latitude: 55.6802
     longitude: 12.5892
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.nju.edu.cn/armbian/
+    latitude: 34.7732
+    longitude: 113.722
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -128,12 +118,6 @@ servers:
     latitude: 25.0382
     longitude: 121.5636
 
-  # Europe/Rome - 2500 Mbit/s
-  - server: armbian.atomonetworks.com/apt/
-    latitude: 38.157745
-    longitude: 13.195175
-    weight: 10
-
   # Europe/Kiev - 20000 Mbit/s
   - server: mirror.hostiko.network/armbian/
     rules:
@@ -145,19 +129,7 @@ servers:
     weight: 10
 
   # Europe/Berlin - 2500 Mbit/s
-  - server: netcup-01.armbian.com/apt/
-    latitude: 49.4478
-    longitude: 11.0683
-    weight: 10
-
-  # Europe/Berlin - 2500 Mbit/s
   - server: netcup-02.armbian.com/apt/
-    latitude: 49.4478
-    longitude: 11.0683
-    weight: 10
-
-  # Europe/Berlin - 2500 Mbit/s
-  - server: netcup-03.armbian.com/apt/
     latitude: 49.4478
     longitude: 11.0683
     weight: 10
