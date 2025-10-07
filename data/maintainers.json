@@ -1,5 +1,18 @@
 [
   {
+    "First_Name": "Igor",
+    "Github": "https://github.com/igorpecovnik",
+    "Team": [
+      "Support"
+    ],
+    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, bananapim2pro, bananapim5, inovato-quadra, mekotronics-r58hd",
+    "Your_core_competences": [
+      "Project management",
+      "Business development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
+  },
+  {
     "First_Name": "Paolo",
     "Github": "https://github.com/paolosabatino",
     "Team": [
@@ -118,19 +131,6 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/216989996?v=4"
-  },
-  {
-    "First_Name": "Igor",
-    "Github": "https://github.com/igorpecovnik",
-    "Team": [
-      "Support"
-    ],
-    "Maintaining": "Armbian project, khadas-vim1, khadas-vim2, nanopim4v2, odroidc4, bananapim2pro, bananapim5, inovato-quadra",
-    "Your_core_competences": [
-      "Project management",
-      "Business development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/6281704?v=4"
   },
   {
     "First_Name": "Bert",
