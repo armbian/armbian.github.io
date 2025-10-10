@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: dcb3ca7af595b7e7b18a92cae1afac7a
+reloadKey: 0f58901eb4770cf8edc84aa166768c3a
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -44,6 +44,12 @@ servers:
     longitude: 2.3387
     weight: 10
 
+  # Europe/Vienna - 1000 Mbit/s
+  - server: armbian.systemonachip.net/dl/
+    latitude: 48.3003
+    longitude: 16.3441
+    weight: 10
+
   # Europe/Madrid - 1000 Mbit/s
   - server: es.sbcmirror.org/dl/
     latitude: 40.4163
@@ -68,6 +74,16 @@ servers:
     longitude: 12.5892
     weight: 10
 
+  # Europe/Moscow - 10000 Mbit/s
+  - server: mirror.yandex.ru/mirrors/armbian/dl/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - UA
+    latitude: 55.7483
+    longitude: 37.6171
+    weight: 10
+
   # Europe/Moscow - 2000 Mbit/s
   - server: stpete-mirror.armbian.com/dl/
     rules:
@@ -82,6 +98,12 @@ servers:
   - server: xogium.performanceservers.nl/dl/
     latitude: 48.5144
     longitude: -2.768
+    weight: 10
+
+  # Europe/London - 1000 Mbit/s
+  - server: mirror.vinehost.net/armbian/dl/
+    latitude: 54.1448
+    longitude: -0.1555
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
@@ -122,6 +144,10 @@ servers:
   - server: mirrors.c0urier.net/linux/armbian/dl/
     latitude: 56.0656
     longitude: 12.2851
+    weight: 10
+
+  # Australia/Sydney - 100000 Mbit/s
+  - server: mirror.aarnet.edu.au/pub/armbian/dl/
     weight: 10
 
   # Europe/Amsterdam - 1000 Mbit/s
