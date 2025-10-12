@@ -4,10 +4,11 @@
 geodb: /scripts/redirect-config/GeoLite2-City.mmdb
 asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
+certDataPath: /scripts/redirect-config/certdata.txt
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: e2f8dc4f896df148287c629a9c29014f
+reloadKey: 1103668138d9b291b908fae247b0ac87
 
 # LRU Cache Size (in items)
 cacheSize: 2048
