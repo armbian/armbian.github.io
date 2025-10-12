@@ -11,6 +11,7 @@ env:
   GEODB: "/scripts/redirect-config/GeoLite2-City.mmdb"
   ASNDB: "/scripts/redirect-config/GeoLite2-ASN.mmdb"
   DL_MAP: "/scripts/redirect-config/all-images.json"
+  CERTPATH: "/scripts/redirect-config/certdata.txt"
   SOURCE_OF_TRUTH: "https://k-space.ee.armbian.com"
 
 concurrency:
@@ -426,6 +427,7 @@ jobs:
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"        
         dl_map: "${{ env.DL_MAP }}"
+        certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
 
@@ -456,6 +458,7 @@ jobs:
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"
         dl_map: "${{ env.DL_MAP }}"
+        certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
 
@@ -488,6 +491,7 @@ jobs:
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"
         dl_map: "${{ env.DL_MAP }}"
+        certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
 
@@ -520,6 +524,7 @@ jobs:
         geodb: "${{ env.GEODB }}"
         asndb: "${{ env.ASNDB }}"
         dl_map: "${{ env.DL_MAP }}"
+        certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
 
@@ -538,6 +543,12 @@ jobs:
       with:
         repository: "P3TERX/GeoLite.mmdb"
         fileName: "*.mmdb"
+        latest: true
+
+    - uses: robinraju/release-downloader@v1.12
+      with:
+        repository: "mozilla/gecko-dev"
+        fileName: "security/nss/lib/ckfw/builtins/certdata.txt"
         latest: true
 
     - name: Download All Artifacts
