@@ -544,13 +544,7 @@ jobs:
         repository: "P3TERX/GeoLite.mmdb"
         fileName: "*.mmdb"
         latest: true
-
-    - uses: robinraju/release-downloader@v1.12
-      with:
-        repository: "mozilla/gecko-dev"
-        fileName: "security/nss/lib/ckfw/builtins/certdata.txt"
-        latest: true
-
+        
     - name: Download All Artifacts
       uses: actions/download-artifact@v5
       with:
