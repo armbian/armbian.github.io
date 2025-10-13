@@ -4,6 +4,7 @@
 geodb: /scripts/redirect-config/GeoLite2-City.mmdb
 asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
+certDataPath: /scripts/redirect-config/certdata.txt
 bind: ':8100'
 
 # Reload authorization key
