@@ -15821,7 +15821,7 @@
       "kernel_branch": "current",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
@@ -15851,7 +15851,7 @@
       "kernel_branch": "current",
       "image_variant": "minimal",
       "preinstalled_application": "",
-      "promoted": "true",
+      "promoted": "false",
       "download_repository": "archive",
       "file_extension": "img.xz"
     },
