@@ -8,7 +8,7 @@ certDataPath: /scripts/redirect-config/certdata.txt
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: 9be506c0cd290ba0e950bd11183ae650
+reloadKey: 1d6493671376ca3e490575531b452e09
 
 # LRU Cache Size (in items)
 cacheSize: 2048
