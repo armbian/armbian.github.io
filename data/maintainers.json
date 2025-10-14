@@ -1,6 +1,19 @@
 [
   {
     "First_Name": null,
+    "Github": "https://github.com/SuperKali",
+    "Team": [
+      "Rockchip"
+    ],
+    "Maintaining": "youyeetoo-r1-v3, nanopct6, nanopct6-lts, nanopi-r76s, nanopi-m5",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/19473898?v=4"
+  },
+  {
+    "First_Name": null,
     "Github": "https://github.com/retro98boy",
     "Team": [],
     "Maintaining": "cainiao-cniot-core, smart-am40",
@@ -39,19 +52,6 @@
     "Maintaining": "rock-5b-plus, rock-5t, radxa-nio-12l, radxa-rock-4d, radxa-dragon-q6a",
     "Your_core_competences": [],
     "Avatar": "https://avatars.githubusercontent.com/u/25419385?v=4"
-  },
-  {
-    "First_Name": null,
-    "Github": "https://github.com/SuperKali",
-    "Team": [
-      "Rockchip"
-    ],
-    "Maintaining": "youyeetoo-r1-v3, nanopct6, nanopct6-lts, nanopi-r76s, nanopi-m5",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/19473898?v=4"
   },
   {
     "First_Name": "Patrick",
