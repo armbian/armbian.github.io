@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 certDataPath: /scripts/redirect-config/certdata.txt
 
 # Reload authorization key
-reloadKey: aafdfa99faa83f93a8ef9a8bbfd8824d
+reloadKey: 707ab7c10ea20c3dbb6b5b690c6e6bd3
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -30,6 +30,12 @@ servers:
   - server: armbian.chi.auroradev.org/apt/
     latitude: 41.881832
     longitude: -87.623177
+    weight: 10
+
+  # America/Los_Angeles - 10000 Mbit/s
+  - server: armbian.lv.auroradev.org/apt/
+    latitude: 36.18811
+    longitude: -115.176468
     weight: 10
 
   # Europe/Paris - 1000 Mbit/s
@@ -56,20 +62,10 @@ servers:
     longitude: 121.0
     weight: 10
 
-  # Asia/Kolkata - 1000 Mbit/s
-  - server: mirror.albony.in/armbian/
-    weight: 5
-
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirror.iscas.ac.cn/armbian/
     latitude: 39.9075
     longitude: 116.3971
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.aliyun.com/armbian/
-    latitude: 34.7732
-    longitude: 113.722
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -82,12 +78,6 @@ servers:
   - server: mirrors.dotsrc.org/armbian-apt/
     latitude: 55.6802
     longitude: 12.5892
-    weight: 10
-
-  # Asia/Shanghai - 10000 Mbit/s
-  - server: mirrors.nju.edu.cn/armbian/
-    latitude: 34.7732
-    longitude: 113.722
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -116,6 +106,16 @@ servers:
   - server: mirror.vinehost.net/armbian/apt/
     latitude: 54.1448
     longitude: -0.1555
+    weight: 10
+
+  # Europe/Kiev - 1000 Mbit/s
+  - server: distrohub.kyiv.ua/armbian/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - RU
+    latitude: 50.458
+    longitude: 30.5303
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
@@ -147,6 +147,12 @@ servers:
 
   # Europe/Berlin - 2500 Mbit/s
   - server: netcup-01.armbian.com/apt/
+    latitude: 49.4478
+    longitude: 11.0683
+    weight: 10
+
+  # Europe/Berlin - 2500 Mbit/s
+  - server: netcup-02.armbian.com/apt/
     latitude: 49.4478
     longitude: 11.0683
     weight: 10
