@@ -8,7 +8,7 @@ certDataPath: /scripts/redirect-config/certdata.txt
 bind: ':8081'
 
 # Reload authorization key
-reloadKey: d0b22dc755d3004cc3094f558c87a083
+reloadKey: 5c650df062d5e2bf85ae4019ed72e08a
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -91,6 +91,16 @@ servers:
     longitude: 37.6171
     weight: 10
 
+  # Europe/Moscow - 2000 Mbit/s
+  - server: stpete-mirror.armbian.com/dl/
+    rules:
+      - field: location.country.iso_code
+        not_in:
+          - UA
+    latitude: 59.9417
+    longitude: 30.3096
+    weight: 10
+
   # Europe/Paris - 500 Mbit/s
   - server: xogium.performanceservers.nl/dl/
     latitude: 48.5144
@@ -111,12 +121,6 @@ servers:
           - RU
     latitude: 50.458
     longitude: 30.5303
-    weight: 10
-
-  # Europe/Tallinn - 10000 Mbit/s
-  - server: k-space.ee.armbian.com/dl/
-    latitude: 59.397987
-    longitude: 24.661898
     weight: 10
 
   # Asia/Taipei - 50000 Mbit/s
