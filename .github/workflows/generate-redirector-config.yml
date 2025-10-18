@@ -12,7 +12,7 @@ env:
   ASNDB: "/scripts/redirect-config/GeoLite2-ASN.mmdb"
   DL_MAP: "/scripts/redirect-config/all-images.json"
   CERTPATH: "/scripts/redirect-config/certdata.txt"
-  SOURCE_OF_TRUTH: "https://fi.mirror.armbian.de/"
+  SOURCE_OF_TRUTH: "https://armbian.atomonetworks.com/dl/"
 
 concurrency:
   group: redirector
