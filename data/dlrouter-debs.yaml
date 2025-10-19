@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 certDataPath: /scripts/redirect-config/certdata.txt
 
 # Reload authorization key
-reloadKey: 3a2160a5f30a8bfbc98433777eac147e
+reloadKey: b7868e56c76f5d1852604db27d78d6cc
 
 # LRU Cache Size (in items)
 cacheSize: 2048
