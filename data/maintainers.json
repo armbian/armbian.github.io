@@ -1,5 +1,18 @@
 [
   {
+    "First_Name": "Povarov Oleg",
+    "Github": "https://github.com/150balbes",
+    "Team": [
+      "Rockchip",
+      "Amlogic"
+    ],
+    "Maintaining": "station-m1, mekotronics-r58-4x4",
+    "Your_core_competences": [
+      "Kernel development"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/11454430?v=4"
+  },
+  {
     "First_Name": null,
     "Github": "https://github.com/SuperKali",
     "Team": [
@@ -833,19 +846,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/140865?v=4"
-  },
-  {
-    "First_Name": "Povarov Oleg",
-    "Github": "https://github.com/150balbes",
-    "Team": [
-      "Rockchip",
-      "Amlogic"
-    ],
-    "Maintaining": "station-m1",
-    "Your_core_competences": [
-      "Kernel development"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/11454430?v=4"
   },
   {
     "First_Name": "Joshua",
