@@ -6,9 +6,10 @@ asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
 dl_map: /scripts/redirect-config/all-images.json
 certDataPath: /scripts/redirect-config/certdata.txt
 bind: ':8081'
+enableProfiler: true
 
 # Reload authorization key
-reloadKey: 2dfaed9d1f255fa11be3cc3d0db510ef
+reloadKey: 14380a430dd4027f13bd2509391e8070
 
 # LRU Cache Size (in items)
 cacheSize: 2048
