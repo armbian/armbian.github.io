@@ -8,7 +8,7 @@ certDataPath: /scripts/redirect-config/certdata.txt
 bind: ':8082'
 
 # Reload authorization key
-reloadKey: 9e15dad83b8a96c321cc0ce48d6c1245
+reloadKey: a4437e01c0e2304bab2c126d4387f9d4
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -31,16 +31,6 @@ servers:
   - server: armbian.lv.auroradev.org/archive/
     latitude: 36.18811
     longitude: -115.176468
-    weight: 10
-
-  # Europe/Moscow - 10000 Mbit/s
-  - server: mirror.yandex.ru/mirrors/armbian/archive/
-    rules:
-      - field: location.country.iso_code
-        not_in:
-          - UA
-    latitude: 55.7483
-    longitude: 37.6171
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
