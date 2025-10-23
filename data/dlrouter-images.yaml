@@ -9,7 +9,7 @@ bind: ':8081'
 enableProfiler: true
 
 # Reload authorization key
-reloadKey: 2f3f4839ff4b68b89d0cafc92909831f
+reloadKey: b022bf16d43271deb3b9d9140282e43b
 
 # LRU Cache Size (in items)
 cacheSize: 2048
