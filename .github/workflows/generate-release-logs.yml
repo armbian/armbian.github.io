@@ -157,7 +157,7 @@ jobs:
             echo "<p><br>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox." >> summary.md
 
       - name: Upload raw data (artifacts)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pr-digest
           path: out/

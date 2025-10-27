@@ -66,7 +66,7 @@ jobs:
           fi
 
       - name: "Upload ${{ matrix.platform }} index"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.platform }}
           path: destination
@@ -202,7 +202,7 @@ jobs:
           fi
 
       - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: debs-beta-${{ env.SERVER_ID }}
           path: status
@@ -261,7 +261,7 @@ jobs:
           fi
 
       - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: debs-${{ env.SERVER_ID }}
           path: status
@@ -321,7 +321,7 @@ jobs:
           fi
 
       - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dl-${{ env.SERVER_ID }}
           path: status
@@ -381,7 +381,7 @@ jobs:
           fi
 
       - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: archive-${{ env.SERVER_ID }}
           path: status

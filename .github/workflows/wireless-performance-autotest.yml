@@ -232,7 +232,7 @@ jobs:
 
        - name: "Upload test summary"
          timeout-minutes: 3
-         uses: actions/upload-artifact@v4
+         uses: actions/upload-artifact@v5
          with:
            name: test-${{ env.DEVICE }}
            path: test
