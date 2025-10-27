@@ -9,7 +9,7 @@ bind: ':8081'
 enableProfiler: true
 
 # Reload authorization key
-reloadKey: 81212d49a96f923b31bc624936460fe6
+reloadKey: 2973770f40d9ba9f8e7e1d39508664fa
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -50,6 +50,12 @@ servers:
   - server: mirror.iscas.ac.cn/armbian-releases/
     latitude: 39.9075
     longitude: 116.3971
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.aliyun.com/armbian-releases/
+    latitude: 34.7732
+    longitude: 113.722
     weight: 10
 
   # Asia/Shanghai - 10000 Mbit/s
@@ -106,16 +112,6 @@ servers:
   - server: mirror.vinehost.net/armbian/dl/
     latitude: 54.1448
     longitude: -0.1555
-    weight: 10
-
-  # Europe/Kiev - 1000 Mbit/s
-  - server: distrohub.kyiv.ua/armbian-dl/
-    rules:
-      - field: location.country.iso_code
-        not_in:
-          - RU
-    latitude: 50.458
-    longitude: 30.5303
     weight: 10
 
   # Europe/Tallinn - 10000 Mbit/s
