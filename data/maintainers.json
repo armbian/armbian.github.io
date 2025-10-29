@@ -1,5 +1,25 @@
 [
   {
+    "First_Name": "Jonas",
+    "Github": "https://github.com/jonaswood01",
+    "Team": [],
+    "Maintaining": "sk-am62b, sk-am62p, sk-am64b",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "CI & automated testing"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/47963908?v=4"
+  },
+  {
+    "First_Name": "Coia",
+    "Github": "https://github.com/rbqvq",
+    "Team": [],
+    "Maintaining": "ninetripod-x3568-v4",
+    "Your_core_competences": [],
+    "Avatar": "https://avatars.githubusercontent.com/u/186451317?v=4"
+  },
+  {
     "First_Name": "retro98boy",
     "Github": "https://github.com/retro98boy",
     "Team": [],
