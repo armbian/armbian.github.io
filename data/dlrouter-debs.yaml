@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 certDataPath: /scripts/redirect-config/certdata.txt
 
 # Reload authorization key
-reloadKey: 345d14c0fe0bfa57a71eb4d9b00afa33
+reloadKey: df7f5ff23bfaff4482dfadf10adf6613
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -55,6 +55,10 @@ servers:
     latitude: 24.0
     longitude: 121.0
     weight: 10
+
+  # Asia/Kolkata - 1000 Mbit/s
+  - server: mirror.albony.in/armbian/
+    weight: 5
 
   # Asia/Shanghai - 10000 Mbit/s
   - server: mirror.iscas.ac.cn/armbian/
