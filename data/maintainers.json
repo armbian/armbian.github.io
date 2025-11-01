@@ -1,5 +1,30 @@
 [
   {
+    "First_Name": "Andrei",
+    "Github": "https://github.com/Grippy98",
+    "Team": [],
+    "Maintaining": "beaglebone-ai64, beagleplay, pocketbeagle2, beagley-ai",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "Forum moderating",
+      "Project management"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/7153954?v=4"
+  },
+  {
+    "First_Name": "Andrew",
+    "Github": "https://github.com/glneo",
+    "Team": [],
+    "Maintaining": "sk-tda4vm, sk-am68, sk-am69",
+    "Your_core_competences": [
+      "Kernel development",
+      "OS and desktop development",
+      "Devops and servers"
+    ],
+    "Avatar": "https://avatars.githubusercontent.com/u/1456044?v=4"
+  },
+  {
     "First_Name": "Adam",
     "Github": "github.com/tabrisnet",
     "Team": [],
@@ -123,19 +148,6 @@
       "Kernel development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/43829819?v=4"
-  },
-  {
-    "First_Name": "Andrei",
-    "Github": "https://github.com/Grippy98",
-    "Team": [],
-    "Maintaining": "beaglebone-ai64, beagleplay, pocketbeagle2, beagley-ai, sk-am62p",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development",
-      "Forum moderating",
-      "Project management"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/7153954?v=4"
   },
   {
     "First_Name": "Jianfeng",
@@ -488,18 +500,6 @@
       "OS and desktop development"
     ],
     "Avatar": "https://avatars.githubusercontent.com/u/3342690?v=4"
-  },
-  {
-    "First_Name": "Andrew",
-    "Github": "https://github.com/glneo",
-    "Team": [],
-    "Maintaining": "sk-am64b, sk-am62b, sk-tda4vm, sk-am68, sk-am69",
-    "Your_core_competences": [
-      "Kernel development",
-      "OS and desktop development",
-      "Devops and servers"
-    ],
-    "Avatar": "https://avatars.githubusercontent.com/u/1456044?v=4"
   },
   {
     "First_Name": "Elias",
