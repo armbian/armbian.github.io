@@ -42,7 +42,7 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add data/.
-          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git diff --cached --quiet || git commit -m "Update WEB index files"
           git push
 
       - name: "Run Bigin update action"
