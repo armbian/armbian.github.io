@@ -1,5 +1,6 @@
 name: "Generate list of latest keyrings for Debian & Ubuntu"
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: ["Keyrings update"]
 
@@ -21,17 +22,17 @@ jobs:
 
       - name: "Generate keyring files"
         run: |
-          NEWEST_SUITE=$(curl --max-time=30 --compressed -fLs https://changelogs.ubuntu.com/meta-release | grep '^Dist:'| tail -n 1 | awk '{print $NF}')
+          NEWEST_SUITE=$(curl --max-time 30 --compressed -fLs https://changelogs.ubuntu.com/meta-release | grep '^Dist:'| tail -n 1 | awk '{print $NF}')
           # NOTE: this service on PUC returns a long list of ISO-3166-2 country code prefixed archive.ubuntu.com mirrors [among others]
           # We remove that prefix as it's better to use the rotation. the number in the regex is b/c nz has nz and nz2
           # example URL returned: http://nz2.archive.ubuntu.com/ubuntu/pool/main/u/ubuntu-keyring/ubuntu-keyring_2023.11.28.1_all.deb
-          PKG_URL=$(curl --max-time=30 --compressed -fLs "https://packages.ubuntu.com/${NEWEST_SUITE}/all/ubuntu-keyring/download" | \
+          PKG_URL=$(curl --max-time 30 --compressed -fLs "https://packages.ubuntu.com/${NEWEST_SUITE}/all/ubuntu-keyring/download" | \
             grep -oP 'https?://\S+archive.ubuntu.com/ubuntu/pool/main/u/\S+\.deb' | tail -n 1 | sed -E 's#://[a-z][a-z][0-9]?\.#://#')
           [[ -z "${PKG_URL}" ]] && (echo "fetch_newest_keyring failed - unable to find newest ubuntu-keyring package"; exit 1)
           echo $PKG_URL > latest-ubuntu-keyring.txt
 
           for p in debian-archive-keyring debian-ports-archive-keyring; do
-            PKG_URL=$(curl --max-time=30 --compressed -fLs "https://packages.debian.org/sid/all/${p}/download" | \
+            PKG_URL=$(curl --max-time 30 --compressed -fLs "https://packages.debian.org/sid/all/${p}/download" | \
               grep -oP "https?://(deb|ftp)\.debian\.org/debian/pool/main/d/${p}/${p}_\S+\.deb")
             [[ -z "${PKG_URL}" ]] && (echo "fetch_newest_keyring failed - unable to find newest $p package"; exit 1)
             echo $PKG_URL > latest-$p.txt
