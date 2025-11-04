@@ -1,7 +1,7 @@
 name: "Generate list of latest keyrings for Debian & Ubuntu"
 on:
-  schedule: [ { cron: '0 0 * * 0' } ]
-  workflow_dispatch:
+  repository_dispatch:
+    types: ["Keyrings update"]
 
 concurrency:
   group: redirector
@@ -47,6 +47,7 @@ jobs:
           git add data/.
           git diff --cached --quiet || git commit -m "Update keyring data files"
           git push
+
       - name: "Run Bigin update action"
         uses: peter-evans/repository-dispatch@v4
         with:
