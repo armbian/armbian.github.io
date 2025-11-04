@@ -47,19 +47,19 @@ jobs:
 
           # --- Ubuntu: collect possible keyring packages (ports is optional) ---
           declare -a UB_PKGS=(ubuntu-keyring ubuntu-keyring-ports)
-          declare -A UB_URLS=()
+          declare -A PKG_URLS=()      # pkg -> url
+          declare -A PKG_FILES=()     # pkg -> filename we downloaded
 
           for p in "${UB_PKGS[@]}"; do
             UB_PAGE_URL="https://packages.ubuntu.com/${NEWEST_SUITE}/all/${p}/download"
-            # Try to parse an archive.ubuntu.com link and drop cc/ccN prefix (use rotation)
             if page="$(retry_curl "$UB_PAGE_URL" 2>/dev/null || true)"; then
               url="$(printf '%s' "$page" \
                 | grep -oP 'https?://\S+archive\.ubuntu\.com/ubuntu/pool/main/u/\S+\.deb' \
                 | tail -n 1 \
                 | sed -E 's#://[a-z][a-z][0-9]?\.#://#' || true)"
               if [[ -n "${url:-}" ]]; then
-                UB_URLS["$p"]="$url"
-                echo "Ubuntu $p URL: ${UB_URLS[$p]}"
+                PKG_URLS["$p"]="$url"
+                echo "Ubuntu $p URL: ${PKG_URLS[$p]}"
               else
                 echo "Ubuntu package not found on page for $p (may not exist in ${NEWEST_SUITE}), skipping."
               fi
@@ -69,51 +69,34 @@ jobs:
           done
 
           # Ensure we found at least ubuntu-keyring
-          [[ -n "${UB_URLS[ubuntu-keyring]:-}" ]] || { echo "ERROR: ubuntu-keyring URL not found"; exit 1; }
+          [[ -n "${PKG_URLS[ubuntu-keyring]:-}" ]] || { echo "ERROR: ubuntu-keyring URL not found"; exit 1; }
 
           # --- Debian keyrings (sid pages list the latest available versions) ---
           declare -a DEB_PKGS=(debian-archive-keyring debian-ports-archive-keyring)
-          declare -A DEB_URLS=()
-
           for p in "${DEB_PKGS[@]}"; do
             DEB_PAGE_URL="https://packages.debian.org/sid/all/${p}/download"
-            # Prefer deb.debian.org or ftp.debian.org
-            if ! page=$(retry_curl "$DEB_PAGE_URL" 2>/dev/null); then
-              echo "ERROR: Unable to fetch Debian page for ${p}" >&2
-              exit 1
-            fi
-            url=$(printf '%s' "$page" \
+            page="$(retry_curl "$DEB_PAGE_URL")"
+            url="$(printf '%s' "$page" \
               | grep -oP 'https?://(deb|ftp)\.debian\.org/debian/pool/main/d/[^/]+/[^"]+\.deb' \
-              | head -n 1 || true)
+              | head -n 1 || true)"
             [[ -z "${url:-}" ]] && { echo "ERROR: Unable to find ${p} package URL from $DEB_PAGE_URL" >&2; exit 1; }
-            DEB_URLS["$p"]="$url"
-            echo "Debian $p URL: ${DEB_URLS[$p]}"
+            PKG_URLS["$p"]="$url"
+            echo "Debian $p URL: ${PKG_URLS[$p]}"
           done
 
-          # --- Download all files to the temp workdir ---
-          declare -a DOWNLOADED=()
-
-          # Ubuntu downloads
-          for p in "${UB_PKGS[@]}"; do
-            url="${UB_URLS[$p]:-}"
-            [[ -z "${url:-}" ]] && continue
+          # --- Download all files to the temp workdir (track filenames per package) ---
+          for p in "${!PKG_URLS[@]}"; do
+            url="${PKG_URLS[$p]}"
             f="$(basename "$url")"
             retry_curl "$url" "$workdir/$f"
-            DOWNLOADED+=("$workdir/$f")
-          done
-
-          # Debian downloads
-          for p in "${DEB_PKGS[@]}"; do
-            url="${DEB_URLS[$p]}"
-            f="$(basename "$url")"
-            retry_curl "$url" "$workdir/$f"
-            DOWNLOADED+=("$workdir/$f")
+            PKG_FILES["$p"]="$f"
+            echo "Downloaded $p -> $f"
           done
 
           # --- Stage into repo folder armbian.github.io/data/keyrings ---
           pushd armbian.github.io >/dev/null
 
-          # Make sure we are on the 'data' branch (fetch if not present locally)
+          # Ensure we're on the 'data' branch
           if ! git rev-parse --verify data >/dev/null 2>&1; then
             git fetch origin data || true
           fi
@@ -122,34 +105,31 @@ jobs:
           mkdir -p data/keyrings
 
           # Move files in (overwrite existing versions)
-          for f in "${DOWNLOADED[@]}"; do
-            base="$(basename "$f")"
-            mv -f "$f" "data/keyrings/$base"
+          for p in "${!PKG_FILES[@]}"; do
+            f="${PKG_FILES[$p]}"
+            mv -f "$workdir/$f" "data/keyrings/$f"
           done
 
-          # --- Create/update per-variant symlinks only ---
-          # Helper: ensure symlink target exists in data/keyrings before linking
-          make_link() {
+          # --- Create/update per-variant symlinks using the just-downloaded filenames ---
+          link_if_present() {
             local pkg="$1"
-            local pattern="$2" # e.g. 'ubuntu-keyring_*.deb'
-            local linkname="$3" # e.g. 'latest-ubuntu-keyring.deb'
-            local cand
-            cand="$(ls -1 data/keyrings/${pattern} 2>/dev/null | sort | tail -n 1 || true)"
-            if [[ -n "$cand" ]]; then
-              ln -sfn "$(basename "$cand")" "data/keyrings/${linkname}"
-              echo "Linked ${linkname} -> $(basename "$cand")"
+            local linkname="$2"
+            local f="${PKG_FILES[$pkg]:-}"
+            if [[ -n "$f" ]]; then
+              ln -sfn "$f" "data/keyrings/$linkname"
+              echo "Linked ${linkname} -> ${f}"
             else
-              echo "No match for ${pattern}; not creating ${linkname}"
+              echo "No fresh download for ${pkg}; skipping ${linkname}"
             fi
           }
 
-          # Ubuntu: main + ports (ports only if present)
-          make_link "ubuntu-keyring"        "ubuntu-keyring_*.deb"        "latest-ubuntu-keyring.deb"
-          make_link "ubuntu-keyring-ports"  "ubuntu-keyring-ports_*.deb"  "latest-ubuntu-keyring-ports.deb"
+          # Ubuntu: main + ports (ports only if fetched)
+          link_if_present "ubuntu-keyring"        "latest-ubuntu-keyring.deb"
+          link_if_present "ubuntu-keyring-ports"  "latest-ubuntu-keyring-ports.deb"
 
           # Debian: archive + ports
-          make_link "debian-archive-keyring"        "debian-archive-keyring_*.deb"        "latest-debian-archive-keyring.deb"
-          make_link "debian-ports-archive-keyring"  "debian-ports-archive-keyring_*.deb"  "latest-debian-ports-archive-keyring.deb"
+          link_if_present "debian-archive-keyring"       "latest-debian-archive-keyring.deb"
+          link_if_present "debian-ports-archive-keyring" "latest-debian-ports-archive-keyring.deb"
 
           popd >/dev/null
 
@@ -165,7 +145,7 @@ jobs:
           git add data/keyrings/
 
           if ! git diff --cached --quiet; then
-            git commit -m "Update keyrings: latest per-variant and downloads under data/keyrings/"
+            git commit -m "Update keyrings: downloaded and linked per-variant under data/keyrings/"
             git push
           else
             echo "No changes to commit."
