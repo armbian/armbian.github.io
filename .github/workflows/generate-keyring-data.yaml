@@ -1,4 +1,5 @@
-name: "Generate list of latest keyrings for Debian & Ubuntu"
+name: "Download latest keyrings for Debian & Ubuntu"
+
 on:
   workflow_dispatch:
   repository_dispatch:
@@ -11,43 +12,160 @@ concurrency:
 jobs:
   generate-keyring-data:
     runs-on: ubuntu-24.04
-    name: "Generate Keyring Data"
+    name: "Download Keyring Data"
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
           path: armbian.github.io
 
-      - name: "Generate keyring files"
+      - name: "Find and download latest keyrings"
+        shell: bash
         run: |
-          NEWEST_SUITE=$(curl --max-time 30 --compressed -fLs https://changelogs.ubuntu.com/meta-release | grep '^Dist:'| tail -n 1 | awk '{print $NF}')
-          # NOTE: this service on PUC returns a long list of ISO-3166-2 country code prefixed archive.ubuntu.com mirrors [among others]
-          # We remove that prefix as it's better to use the rotation. the number in the regex is b/c nz has nz and nz2
-          # example URL returned: http://nz2.archive.ubuntu.com/ubuntu/pool/main/u/ubuntu-keyring/ubuntu-keyring_2023.11.28.1_all.deb
-          PKG_URL=$(curl --max-time 30 --compressed -fLs "https://packages.ubuntu.com/${NEWEST_SUITE}/all/ubuntu-keyring/download" | \
-            grep -oP 'https?://\S+archive.ubuntu.com/ubuntu/pool/main/u/\S+\.deb' | tail -n 1 | sed -E 's#://[a-z][a-z][0-9]?\.#://#')
-          [[ -z "${PKG_URL}" ]] && (echo "fetch_newest_keyring failed - unable to find newest ubuntu-keyring package"; exit 1)
-          echo $PKG_URL > latest-ubuntu-keyring.txt
+          set -euo pipefail
 
-          for p in debian-archive-keyring debian-ports-archive-keyring; do
-            PKG_URL=$(curl --max-time 30 --compressed -fLs "https://packages.debian.org/sid/all/${p}/download" | \
-              grep -oP "https?://(deb|ftp)\.debian\.org/debian/pool/main/d/${p}/${p}_\S+\.deb")
-            [[ -z "${PKG_URL}" ]] && (echo "fetch_newest_keyring failed - unable to find newest $p package"; exit 1)
-            echo $PKG_URL > latest-$p.txt
+          retry_curl() {
+            # Usage: retry_curl <url> [output]
+            local url="$1"
+            local out="${2:-}"
+            if [[ -n "$out" ]]; then
+              curl --max-time 60 --retry 3 --retry-all-errors --compressed -fL "$url" -o "$out"
+            else
+              curl --max-time 60 --retry 3 --retry-all-errors --compressed -fL "$url"
+            fi
+          }
+
+          workdir="$(mktemp -d)"
+          echo "Workdir: $workdir"
+
+          # --- Ubuntu: detect newest suite ---
+          NEWEST_SUITE=$(retry_curl "https://changelogs.ubuntu.com/meta-release" \
+            | grep '^Dist:' | awk '{print $NF}' | tail -n 1)
+          [[ -z "${NEWEST_SUITE:-}" ]] && { echo "ERROR: Unable to detect Ubuntu newest suite" >&2; exit 1; }
+          echo "Newest Ubuntu suite: $NEWEST_SUITE"
+
+          # --- Ubuntu: collect possible keyring packages (ports is optional) ---
+          declare -a UB_PKGS=(ubuntu-keyring ubuntu-keyring-ports)
+          declare -A UB_URLS=()
+
+          for p in "${UB_PKGS[@]}"; do
+            UB_PAGE_URL="https://packages.ubuntu.com/${NEWEST_SUITE}/all/${p}/download"
+            # Try to parse an archive.ubuntu.com link and drop cc/ccN prefix (use rotation)
+            if page="$(retry_curl "$UB_PAGE_URL" 2>/dev/null || true)"; then
+              url="$(printf '%s' "$page" \
+                | grep -oP 'https?://\S+archive\.ubuntu\.com/ubuntu/pool/main/u/\S+\.deb' \
+                | tail -n 1 \
+                | sed -E 's#://[a-z][a-z][0-9]?\.#://#' || true)"
+              if [[ -n "${url:-}" ]]; then
+                UB_URLS["$p"]="$url"
+                echo "Ubuntu $p URL: ${UB_URLS[$p]}"
+              else
+                echo "Ubuntu package not found on page for $p (may not exist in ${NEWEST_SUITE}), skipping."
+              fi
+            else
+              echo "Ubuntu page missing for $p (may not exist), skipping."
+            fi
           done
+
+          # Ensure we found at least ubuntu-keyring
+          [[ -n "${UB_URLS[ubuntu-keyring]:-}" ]] || { echo "ERROR: ubuntu-keyring URL not found"; exit 1; }
+
+          # --- Debian keyrings (sid pages list the latest available versions) ---
+          declare -a DEB_PKGS=(debian-archive-keyring debian-ports-archive-keyring)
+          declare -A DEB_URLS=()
+
+          for p in "${DEB_PKGS[@]}"; do
+            DEB_PAGE_URL="https://packages.debian.org/sid/all/${p}/download"
+            # Prefer deb.debian.org or ftp.debian.org
+            url=$(retry_curl "$DEB_PAGE_URL" \
+              | grep -oP 'https?://(deb|ftp)\.debian\.org/debian/pool/main/d/[^/]+/[^"]+\.deb' \
+              | head -n 1 || true)
+            [[ -z "${url:-}" ]] && { echo "ERROR: Unable to find ${p} package URL from $DEB_PAGE_URL" >&2; exit 1; }
+            DEB_URLS["$p"]="$url"
+            echo "Debian $p URL: ${DEB_URLS[$p]}"
+          done
+
+          # --- Download all files to the temp workdir ---
+          declare -a DOWNLOADED=()
+
+          # Ubuntu downloads
+          for p in "${UB_PKGS[@]}"; do
+            url="${UB_URLS[$p]:-}"
+            [[ -z "${url:-}" ]] && continue
+            f="$(basename "$url")"
+            retry_curl "$url" "$workdir/$f"
+            DOWNLOADED+=("$workdir/$f")
+          done
+
+          # Debian downloads
+          for p in "${DEB_PKGS[@]}"; do
+            url="${DEB_URLS[$p]}"
+            f="$(basename "$url")"
+            retry_curl "$url" "$workdir/$f"
+            DOWNLOADED+=("$workdir/$f")
+          done
+
+          # --- Stage into repo folder armbian.github.io/data/keyrings ---
+          pushd armbian.github.io >/dev/null
+
+          # Make sure we are on the 'data' branch (fetch if not present locally)
+          if ! git rev-parse --verify data >/dev/null 2>&1; then
+            git fetch origin data || true
+          fi
+          git checkout data
+
+          mkdir -p data/keyrings
+
+          # Move files in (overwrite existing versions)
+          for f in "${DOWNLOADED[@]}"; do
+            base="$(basename "$f")"
+            mv -f "$f" "data/keyrings/$base"
+          done
+
+          # --- Create/update per-variant symlinks only ---
+          # Helper: ensure symlink target exists in data/keyrings before linking
+          make_link() {
+            local pkg="$1"
+            local pattern="$2" # e.g. 'ubuntu-keyring_*.deb'
+            local linkname="$3" # e.g. 'latest-ubuntu-keyring.deb'
+            local cand
+            cand="$(ls -1 data/keyrings/${pattern} 2>/dev/null | sort | tail -n 1 || true)"
+            if [[ -n "$cand" ]]; then
+              ln -sfn "$(basename "$cand")" "data/keyrings/${linkname}"
+              echo "Linked ${linkname} -> $(basename "$cand")"
+            else
+              echo "No match for ${pattern}; not creating ${linkname}"
+            fi
+          }
+
+          # Ubuntu: main + ports (ports only if present)
+          make_link "ubuntu-keyring"        "ubuntu-keyring_*.deb"        "latest-ubuntu-keyring.deb"
+          make_link "ubuntu-keyring-ports"  "ubuntu-keyring-ports_*.deb"  "latest-ubuntu-keyring-ports.deb"
+
+          # Debian: archive + ports
+          make_link "debian-archive-keyring"        "debian-archive-keyring_*.deb"        "latest-debian-archive-keyring.deb"
+          make_link "debian-ports-archive-keyring"  "debian-ports-archive-keyring_*.deb"  "latest-debian-ports-archive-keyring.deb"
+
+          popd >/dev/null
+
       - name: Commit changes if any
+        shell: bash
         run: |
+          set -euo pipefail
           cd armbian.github.io
           git checkout data
-          mkdir -p data/
-          mv ${{ github.workspace }}/latest-*keyring*.txt data/
+
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add data/.
-          git diff --cached --quiet || git commit -m "Update keyring data files"
-          git push
+          git add data/keyrings/
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Update keyrings: latest per-variant and downloads under data/keyrings/"
+            git push
+          else
+            echo "No changes to commit."
+          fi
 
       - name: "Run Bigin update action"
         uses: peter-evans/repository-dispatch@v4
