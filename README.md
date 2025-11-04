@@ -44,6 +44,10 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-base-files-info-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-base-files-info-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
   Embeds build metadata into Armbian’s `base-files` packages.
 
+- **Cache latest keyrings for Debian & Ubuntu**  
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-keyring-data.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-keyring-data.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+  Improve reliability of build process.
+
 - **Generate weekly release for entire organisation**  
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-release-logs.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-release-logs.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
   Compiles a Markdown digest of merged pull requests across one or more repos or an entire org.
