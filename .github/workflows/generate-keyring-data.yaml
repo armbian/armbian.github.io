@@ -78,7 +78,11 @@ jobs:
           for p in "${DEB_PKGS[@]}"; do
             DEB_PAGE_URL="https://packages.debian.org/sid/all/${p}/download"
             # Prefer deb.debian.org or ftp.debian.org
-            url=$(retry_curl "$DEB_PAGE_URL" \
+            if ! page=$(retry_curl "$DEB_PAGE_URL" 2>/dev/null); then
+              echo "ERROR: Unable to fetch Debian page for ${p}" >&2
+              exit 1
+            fi
+            url=$(printf '%s' "$page" \
               | grep -oP 'https?://(deb|ftp)\.debian\.org/debian/pool/main/d/[^/]+/[^"]+\.deb' \
               | head -n 1 || true)
             [[ -z "${url:-}" ]] && { echo "ERROR: Unable to find ${p} package URL from $DEB_PAGE_URL" >&2; exit 1; }
