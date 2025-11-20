@@ -32,7 +32,7 @@ jobs:
         run: |
           curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
           -H "Accept: application/json; indent=4" \
-          "https://stuff.armbian.com/netbox/api/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" | \
+          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" | \
           jq '.results[] | select(.tags.[].name == "cache") | {name, custom_fields}' > servers.json
       - name: "Get release artefacts"
         run: |
