@@ -430,6 +430,7 @@ jobs:
         certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
+        netboxapi: ${{ secrets.NETBOX_API }}
 
     - name: Download All Artifacts
       uses: actions/download-artifact@v6
@@ -461,6 +462,7 @@ jobs:
         certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
+        netboxapi: ${{ secrets.NETBOX_API }}
 
     - name: Download All Artifacts
       uses: actions/download-artifact@v6
@@ -494,6 +496,7 @@ jobs:
         certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
+        netboxapi: ${{ secrets.NETBOX_API }}
 
     - name: Download All Artifacts
       uses: actions/download-artifact@v6
@@ -527,6 +530,7 @@ jobs:
         certDataPath: "${{ env.CERTPATH }}"
         reloadKey: ${{ env.reloadKey }}
         netbox: ${{ secrets.NETBOX_TOKEN }}
+        netboxapi: ${{ secrets.NETBOX_API }}
 
   Close:
     needs: [ download ]
