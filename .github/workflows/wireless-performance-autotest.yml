@@ -26,7 +26,7 @@ jobs:
           delimiter="$(openssl rand -hex 8)"
           echo "DEPLOYMENT_MATRIX<<${delimiter}" >> "${GITHUB_OUTPUT}"
           curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-          "${{ secrets.NETBOX_TOKEN }}/api/dcim/devices/?limit=500&name__empty=false&status=active" | \
+          "${{ secrets.NETBOX_API }}/dcim/devices/?limit=500&name__empty=false&status=active" | \
           jq '.results[] | select(.device_role.slug == "wifi-dut") | {
                 name: .name,
                 serial: .serial,
@@ -77,7 +77,7 @@ jobs:
            # Fetch JSON from NetBox
            DATA=$(curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
              -H "Accept: application/json; indent=4" \
-             "${{ secrets.NETBOX_TOKEN }}/api/dcim/sites/?limit=500&name__empty=false&id=${SITE_ID}")
+             "${{ secrets.NETBOX_API }}/dcim/sites/?limit=500&name__empty=false&id=${SITE_ID}")
 
            count=$(echo "$DATA" | jq '.results | length')
            if [[ "$count" -eq 0 ]]; then
@@ -305,7 +305,7 @@ jobs:
 
           #### $DEVICE_NAME
 
-          <img src=${{ secrets.NETBOX_TOKEN }}/media/devicetype-images/$DEVICE_TYPE.png>
+          <img src=${{ secrets.NETBOX_API }}/media/devicetype-images/$DEVICE_TYPE.png>
           <span style="font-size: 0.5rem;">OS: Armbian v${VERSION}, ${KERNEL}</span>
 
           | Chipset | Class | Average forward speed | Average reverse speed |
@@ -341,7 +341,7 @@ jobs:
           
           curl -s -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
                -H "Accept: application/json; indent=4" \
-               "${{ secrets.NETBOX_TOKEN }}/api/dcim/devices/?limit=500&name__empty=false&status=failed" | \
+               "${{ secrets.NETBOX_API }}/dcim/devices/?limit=500&name__empty=false&status=failed" | \
           jq -r '.results[] | select(.device_role.slug == "wifi-dut") |
                 [.name, .device_type.model, .custom_fields.class] |
                 @tsv' | \
