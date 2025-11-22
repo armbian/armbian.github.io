@@ -3,8 +3,6 @@ name: "Update redirector YAML config"
 on:
   repository_dispatch:
     types: ["Redirector update"]
-#  schedule:
-#    - cron: '0 * * * *'   # Run every hour
   workflow_dispatch:   # Manually triggered via GitHub Actions UI
 
 env:
@@ -34,7 +32,7 @@ jobs:
           TEAM: "Release manager"
 
   build:
-    name: "Get source of truth"
+    name: "Source of truth"
     runs-on: ubuntu-24.04
     needs: Check
     strategy:
@@ -56,13 +54,26 @@ jobs:
       - name: "Download from  ${{ env.SOURCE_OF_TRUTH }}${{ matrix.platform }}"
         run: |
 
+          set -euo pipefail
+
           mkdir -p source destination
-          if [[ "${{ matrix.platform }}" =~ ^(dl|archive) ]]; then
-              cd source ; lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" ${{ env.SOURCE_OF_TRUTH }}/${{ matrix.platform }}
-              cd ..
-              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} destination/ \;
+
+          platform="${{ matrix.platform }}"
+          source_of_truth="${{ env.SOURCE_OF_TRUTH }}"
+
+          if [[ "$platform" =~ ^(dl|archive)$ ]]; then
+              # Mirror only *.torrent files from */archive/ into ./source
+              pushd source >/dev/null
+              lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; quit" "${source_of_truth}/${platform}"
+              popd >/dev/null
+
+              # Move top-level archive subdirs from source to destination
+              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- "{}" destination/ \;
           else
-              cd destination; lftp -e "mirror --parallel=64; exit" ${{ env.SOURCE_OF_TRUTH }}/${{ matrix.platform }}/dists
+              # Mirror dists directly into ./destination
+              pushd destination >/dev/null
+              lftp -e "mirror --parallel=64; quit" "${source_of_truth}/${platform}/dists"
+              popd >/dev/null
           fi
 
       - name: "Upload ${{ matrix.platform }} index"
