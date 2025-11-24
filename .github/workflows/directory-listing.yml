@@ -16,7 +16,7 @@ jobs:
     name: "Directory Listings Index"
     steps:
       - name: Checkout data branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: data
           fetch-depth: 0
