@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 
 #NOTE: most of this code written with qwen3-coder:30b
 
