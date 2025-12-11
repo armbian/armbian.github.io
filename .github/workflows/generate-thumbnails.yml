@@ -1,0 +1,244 @@
+name: "Generate board images"
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  # Where board configs live in the armbian/build repo
+  BOARDS_PATH: "build/config/boards"
+  # Thumbnail sizes to generate (W)
+  THUMB_WIDTHS: "100 150 272 300 360 480 768 960 1024 1920"
+  # Number of shards to split boards across (avoid 256 matrix limit)
+  SHARDS: 4
+
+concurrency:
+  group: board-images
+  cancel-in-progress: false
+
+jobs:
+
+  Check:
+    name: "Check permissions"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "Check permissions"
+        uses: armbian/actions/team-check@main
+        with:
+          ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAM: "Release manager"
+
+  Boards-index:
+    name: "Build boards matrix"
+    runs-on: ubuntu-24.04
+    needs: Check
+    outputs:
+      matrix: ${{ steps.boards.outputs.JSON_CONTENT }}
+    steps:
+
+      - name: "Checkout armbian/build"
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          path: build
+
+      - name: "Generate boards JSON matrix"
+        id: boards
+        run: |
+          set -euo pipefail
+
+          cd "${BOARDS_PATH}"
+
+          # Find *.conf, *.csc, *.wip, *.tvb, strip extension, sort, and turn into JSON array
+          boards=$(find . -maxdepth 1 -type f \
+                    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+                    -printf '%f\n' \
+                  | sed -E 's/\.(conf|csc|wip|tvb)$//' \
+                  | sort)
+
+          echo "Boards found:"
+          printf '%s\n' "${boards}"
+
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards}" | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+  Generate-images:
+    name: "Generate board images"
+    runs-on: ubuntu-24.04
+    needs: Boards-index
+    strategy:
+      fail-fast: false
+      matrix:
+        # Small matrix over shards, not over boards (avoids 256-config limit)
+        shard: [0, 1, 2, 3]
+
+    env:
+      BOARDS_JSON: ${{ needs.Boards-index.outputs.matrix }}
+
+    steps:
+
+      - name: "Checkout armbian.github.io"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: "${{ secrets.KEY_UPLOAD }}"
+          known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
+          if_key_exists: replace
+
+      - name: "Install ImageMagick (robust)"
+        run: |
+          set -euo pipefail
+          echo "Installing ImageMagick..."
+          sudo apt-get update -y
+          sudo apt-get install -y imagemagick pngquant
+
+          # Some distros rename convert → magick
+          if ! command -v convert >/dev/null 2>&1; then
+            if command -v magick >/dev/null 2>&1; then
+              echo "convert not found, mapping 'magick convert' wrapper…"
+              echo -e '#!/bin/bash\nexec magick convert "$@"' | sudo tee /usr/local/bin/convert >/dev/null
+              sudo chmod +x /usr/local/bin/convert
+            else
+              echo "::error ::ImageMagick installation failed — 'convert' or 'magick' not found!"
+              exit 1
+            fi
+          fi
+
+          echo "ImageMagick installed successfully."
+
+      - name: "Process boards in shard ${{ matrix.shard }}"
+        run: |
+          set -euo pipefail
+
+          SHARD="${{ matrix.shard }}"
+          SHARDS="${SHARDS}"
+          WIDTHS="${THUMB_WIDTHS}"
+
+          echo "Shard: ${SHARD}/${SHARDS}"
+          echo "Widths: ${WIDTHS}"
+
+          # Parse boards JSON into a simple newline list
+          echo "${BOARDS_JSON}" | jq -r '.[]' > all-boards.txt
+
+          idx=0
+
+          while IFS= read -r BOARD; do
+            # Sharding: only process boards where idx % SHARDS == SHARD
+            if (( idx % SHARDS != SHARD )); then
+              idx=$((idx + 1))
+              continue
+            fi
+
+            echo "==== [${idx}] Processing board: ${BOARD} on shard ${SHARD} ===="
+
+            # Find original board image (first match of <board>.png anywhere in repo)
+            mapfile -t matches < <(find . -type f -iname "${BOARD}.png" | sort || true)
+
+            if [[ "${#matches[@]}" -eq 0 ]]; then
+              echo "No image found for board: ${BOARD}"
+
+              {
+                echo "- \`${BOARD}\`"
+              } >> missing.md
+
+              idx=$((idx + 1))
+              continue
+            fi
+
+            ORIGINAL="${matches[0]}"
+            echo "Using original image: ${ORIGINAL}"
+
+            # ORIGINAL size folder: images/original/<board>.png
+            mkdir -p "output/images/original"
+            cp --update=none -- "${ORIGINAL}" "output/images/original/${BOARD}.png"
+
+            echo "ImageMagick version:"
+            convert -version || true
+
+            echo "Probing original image:"
+            identify "${ORIGINAL}" || echo "identify failed for ${ORIGINAL}" >&2
+
+            # THUMBNAILS: images/<WIDTH>/<BOARD>.png
+            for width in ${WIDTHS}; do
+                mkdir -p "output/images/${width}"
+                OUT="output/images/${width}/${BOARD}.png"
+                echo "Generating ${OUT}"
+
+                # 1) Resize + strip metadata (do not let convert kill the job)
+                if ! convert "${ORIGINAL}" \
+                        -resize "${width}>" \
+                        -strip \
+                        -quality 90 \
+                        "${OUT}"; then
+                    echo "WARN: convert failed for ${BOARD} at width ${width}, skipping this size" >&2
+                    # go to next width, but keep processing this board
+                    continue
+                fi
+
+                # 2) Optional: extra compression via pngquant (also non-fatal)
+                if command -v pngquant >/dev/null 2>&1; then
+                    if ! pngquant --quality=65-85 --speed 1 --force --output "${OUT}" "${OUT}"; then
+                        echo "WARN: pngquant failed for ${BOARD} at width ${width}, keeping uncompressed PNG" >&2
+                    fi
+                fi
+
+            done
+
+            {
+              echo "- \`${BOARD}\` → original + thumbnails generated"
+            } >> processed.md
+
+            idx=$((idx + 1))
+          done < all-boards.txt
+
+            {
+              #echo "## Processed board image"
+              #echo ""
+              #[ -f processed.md ] && cat processed.md || echo "None"
+              #echo ""
+              echo "## Missing board image"
+              echo ""
+              [ -f missing.md ] && cat missing.md || echo "None"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Upload images to cache servers"
+        run: |
+          set -euo pipefail
+
+          # get cache servers and upload files under /images
+          curl -sS \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json; indent=4" \
+            "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" \
+          | jq '.results[] 
+                 | select([.tags[].name] | index("cache")) 
+                 | {id, name, custom_fields}' > servers.json
+
+          if [[ ! -s servers.json ]]; then
+            echo "No cache servers returned from NetBox query, nothing to upload."
+            exit 0
+          fi
+
+          for row in $(jq -r '@base64' servers.json); do
+            _jq() {
+              echo "${row}" | base64 --decode | jq -r "${1}"
+            }
+
+            id=$(_jq '.id')
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            username=$(_jq '.custom_fields.username')
+
+            echo "Uploading images to ${username}@${name}:${path}/cache/images (VM ID: ${id})"
+
+            rsync -e "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+                  -rvP output/images/ "${username}@${name}:${path}/cache/images"
+          done
