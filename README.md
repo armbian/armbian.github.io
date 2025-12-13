@@ -40,6 +40,11 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 
 ### Metadata & Content Generation
 
+- **Generate Board Images & Thumbnails**  
+<a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-board-images.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-board-images.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+Enforces consistent board image naming, automatically generates optimized thumbnails from `board-images/`, and publishes them to Armbian cache mirrors under `https://cache.armbian.com/images/<SIZE>/<BOARDCONFIG>.png`.
+
+
 - **Extract Base-Files Metadata**  
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-base-files-info-json.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-base-files-info-json.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
   Embeds build metadata into Armbian’s `base-files` packages.
