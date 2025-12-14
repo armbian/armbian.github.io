@@ -1,0 +1,338 @@
+name: "Generate board images"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "board-images/**"
+      - "board-vendor-logos/**"
+  workflow_dispatch:
+
+env:
+  BOARDS_PATH: "build/config/boards"
+  THUMB_WIDTHS: "100 150 272 300 360 480 768 960 1024 1920"
+  SHARDS: 4
+
+  # Source directories in this repo
+  BOARD_IMAGES_DIR: "board-images"
+  VENDOR_LOGOS_DIR: "board-vendor-logos"
+
+concurrency:
+  group: board-images
+  cancel-in-progress: false
+
+jobs:
+
+  Check:
+    name: "Check permissions"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: "Check permissions"
+        uses: armbian/actions/team-check@main
+        with:
+          ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAM: "Release manager"
+
+  Boards-index:
+    name: "Build boards matrix"
+    runs-on: ubuntu-24.04
+    needs: Check
+    outputs:
+      matrix: ${{ steps.boards.outputs.JSON_CONTENT }}
+    steps:
+      - name: "Checkout armbian/build"
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          path: build
+
+      - name: "Generate boards JSON matrix"
+        id: boards
+        run: |
+          set -euo pipefail
+          cd "${BOARDS_PATH}"
+
+          boards=$(find . -maxdepth 1 -type f \
+                    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+                    -printf '%f\n' \
+                  | sed -E 's/\.(conf|csc|wip|tvb)$//' \
+                  | sort)
+
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards}" | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+  Vendors-index:
+    name: "Build vendors matrix"
+    runs-on: ubuntu-24.04
+    needs: Check
+    outputs:
+      matrix: ${{ steps.vendors.outputs.JSON_CONTENT }}
+    steps:
+      - name: "Checkout armbian/build"
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          path: build
+
+      - name: "Generate vendors JSON matrix"
+        id: vendors
+        run: |
+
+          set -euo pipefail
+          cd "${BOARDS_PATH}"
+
+          vendors=$(
+          find . -maxdepth 1 -type f \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+              -exec grep -hE '^[[:space:]]*BOARD_VENDOR=' {} + 2>/dev/null \
+          | sed -E 's/^[[:space:]]*BOARD_VENDOR=//; s/^"//; s/"$//' \
+          | tr '[:upper:]' '[:lower:]' \
+          | tr '_' '-' \
+          | awk 'NF' \
+          | sort -u || true
+          )
+
+          echo "Vendors found:"
+          printf '%s\n' "${vendors}"
+
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${vendors}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+  Generate-images:
+    name: "Generate board + vendor images"
+    runs-on: ubuntu-24.04
+    needs: [Boards-index, Vendors-index]
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+
+    env:
+      BOARDS_JSON: ${{ needs.Boards-index.outputs.matrix }}
+      VENDORS_JSON: ${{ needs.Vendors-index.outputs.matrix }}
+
+    steps:
+      - name: "Checkout armbian.github.io"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: "${{ secrets.KEY_UPLOAD }}"
+          known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
+          if_key_exists: replace
+
+      - name: "Install ImageMagick (robust)"
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y imagemagick pngquant
+
+          if ! command -v convert >/dev/null 2>&1; then
+            if command -v magick >/dev/null 2>&1; then
+              echo -e '#!/bin/bash\nexec magick convert "$@"' | sudo tee /usr/local/bin/convert >/dev/null
+              sudo chmod +x /usr/local/bin/convert
+            else
+              echo "::error ::ImageMagick installation failed — 'convert' or 'magick' not found!"
+              exit 1
+            fi
+          fi
+
+      - name: "Process boards & vendors in shard ${{ matrix.shard }}"
+        run: |
+          set -euo pipefail
+
+          SHARD="${{ matrix.shard }}"
+          SHARDS="${SHARDS}"
+          WIDTHS="${THUMB_WIDTHS}"
+
+          BOARD_DIR="${BOARD_IMAGES_DIR}"
+          VENDOR_DIR="${VENDOR_LOGOS_DIR}"
+
+          echo "Shard: ${SHARD}/${SHARDS}"
+          echo "Widths: ${WIDTHS}"
+          echo "Board images dir: ${BOARD_DIR}"
+          echo "Vendor logos dir: ${VENDOR_DIR}"
+
+          [[ -d "${BOARD_DIR}" ]] || echo "::warning ::Missing ${BOARD_DIR} directory"
+          [[ -d "${VENDOR_DIR}" ]] || echo "::warning ::Missing ${VENDOR_DIR} directory"
+
+          # -------------------------
+          # BOARDS
+          # -------------------------
+          echo "${BOARDS_JSON}" | jq -r '.[]' > all-boards.txt
+          idx=0
+
+          while IFS= read -r BOARD; do
+            if (( idx % SHARDS != SHARD )); then
+              idx=$((idx + 1))
+              continue
+            fi
+
+            echo "==== [${idx}] Board: ${BOARD} ===="
+
+            mapfile -t matches < <(find "${BOARD_DIR}" -type f -iname "${BOARD}.png" | sort || true)
+
+            if [[ "${#matches[@]}" -eq 0 ]]; then
+              echo "- \`${BOARD}\`" >> missing-boards.md
+              idx=$((idx + 1))
+              continue
+            fi
+
+            ORIGINAL="${matches[0]}"
+
+            mkdir -p "output/images/original"
+            cp --update=none -- "${ORIGINAL}" "output/images/original/${BOARD}.png"
+
+            for width in ${WIDTHS}; do
+              mkdir -p "output/images/${width}"
+              OUT="output/images/${width}/${BOARD}.png"
+              echo "Generating ${OUT}"
+
+              if ! convert "${ORIGINAL}" \
+                    -resize "${width}>" \
+                    -strip \
+                    -quality 90 \
+                    "${OUT}"; then
+                echo "WARN: convert failed for ${BOARD} width ${width}" >&2
+                continue
+              fi
+
+              if command -v pngquant >/dev/null 2>&1; then
+                pngquant --quality=65-85 --speed 1 --force --output "${OUT}" "${OUT}" || \
+                  echo "WARN: pngquant failed for ${BOARD} width ${width}" >&2
+              fi
+            done
+
+            idx=$((idx + 1))
+          done < all-boards.txt
+
+          # -------------------------
+          # VENDORS
+          # -------------------------
+          if [[ -d "${VENDOR_DIR}" ]]; then
+            echo "${VENDORS_JSON}" | jq -r '.[]' > all-vendors.txt
+            vidx=0
+
+            while IFS= read -r VENDOR; do
+              if (( vidx % SHARDS != SHARD )); then
+                vidx=$((vidx + 1))
+                continue
+              fi
+
+              echo "==== [${vidx}] Vendor: ${VENDOR} ===="
+
+              # Find source logo:
+              # - starts with vendor
+              # - contains "logo"
+              # - skips -AxB.<ext>
+              mapfile -t vmatches < <(
+                find "${VENDOR_DIR}" -type f \
+                  \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.svg" \) \
+                | awk -v v="${VENDOR}" 'BEGIN{IGNORECASE=1}{
+                    b=$0; sub(/^.*\//,"",b);
+                    if (b ~ "^" v "[-_.]" && b ~ /logo/ && b !~ /-[0-9]+x[0-9]+\.[^.]+$/) print $0
+                  }' \
+                | sort
+              )
+
+              if [[ "${#vmatches[@]}" -eq 0 ]]; then
+                echo "- \`${VENDOR}\`" >> missing-vendors.md
+                vidx=$((vidx + 1))
+                continue
+              fi
+
+              VORIG="${vmatches[0]}"
+              out_name="$(echo "${VENDOR}.png" | tr '[:upper:]' '[:lower:]' | tr '_' '-')"
+
+              mkdir -p "output/images/vendors/original"
+
+              # Normalize original to PNG (SVG rendered with transparency)
+              if [[ "${VORIG,,}" == *.svg ]]; then
+                if ! convert -background none -density 300 "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
+                  echo "WARN: failed to render SVG for ${VENDOR}" >&2
+                  vidx=$((vidx + 1))
+                  continue
+                fi
+              else
+                if ! convert "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
+                  echo "WARN: failed to normalize logo for ${VENDOR}" >&2
+                  vidx=$((vidx + 1))
+                  continue
+                fi
+              fi
+
+              for width in ${WIDTHS}; do
+                mkdir -p "output/images/vendors/${width}"
+                OUT="output/images/vendors/${width}/${out_name}"
+                echo "Generating ${OUT}"
+
+                if ! convert "output/images/vendors/original/${out_name}" \
+                      -alpha set \
+                      -background none \
+                      -resize "${width}>" \
+                      -strip \
+                      -define png:compression-level=9 \
+                      "${OUT}"; then
+                  echo "WARN: convert failed for vendor ${VENDOR} width ${width}" >&2
+                  continue
+                fi
+
+                if command -v pngquant >/dev/null 2>&1; then
+                  pngquant --quality=65-85 --speed 1 --force --output "${OUT}" "${OUT}" || \
+                    echo "WARN: pngquant failed for vendor ${VENDOR} width ${width}" >&2
+                fi
+              done
+
+              vidx=$((vidx + 1))
+            done < all-vendors.txt
+          fi
+
+          {
+            echo "## Missing board image"
+            echo ""
+            [ -f missing-boards.md ] && cat missing-boards.md || echo "None"
+            echo ""
+            echo "## Missing vendor logo"
+            echo ""
+            [ -f missing-vendors.md ] && cat missing-vendors.md || echo "None"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Upload images to cache servers"
+        run: |
+          set -euo pipefail
+
+          curl -sS \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json; indent=4" \
+            "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" \
+          | jq '.results[]
+                 | select([.tags[].name] | index("cache"))
+                 | {id, name, custom_fields}' > servers.json
+
+          if [[ ! -s servers.json ]]; then
+            echo "No cache servers returned from NetBox query, nothing to upload."
+            exit 0
+          fi
+
+          for row in $(jq -r '@base64' servers.json); do
+            _jq() { echo "${row}" | base64 --decode | jq -r "${1}"; }
+
+            id=$(_jq '.id')
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            username=$(_jq '.custom_fields.username')
+
+            echo "Uploading images to ${username}@${name}:${path}/cache/images (VM ID: ${id})"
+
+            rsync -e "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+              -rvP output/images/ "${username}@${name}:${path}/cache/images"
+          done
