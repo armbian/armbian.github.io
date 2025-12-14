@@ -1,8 +1,11 @@
 name: "Generate directory listing"
 
 on:
-  repository_dispatch:
-    types: ["Generate directory"]
+  push:
+    branches:
+      - data
+#  repository_dispatch:
+#    types: ["Generate directory"]
   workflow_dispatch:
 
 permissions:
