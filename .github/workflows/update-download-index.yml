@@ -1,0 +1,105 @@
+name: Update download JSON index
+
+on:
+  push:
+  repository_dispatch:
+    types: ["Webindex update"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+env:
+  SOURCE_OF_TRUTH: "rsync://fi.mirror.armbian.de"
+
+jobs:
+  Webindex:
+    name: "Generate JSON Index"
+    runs-on: ubuntu-24.04
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout build framework repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          fetch-depth: 1
+          clean: false
+          path: build
+
+      - name: Checkout OS repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/os
+          fetch-depth: 1
+          clean: false
+          path: os
+
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/armbian.github.io
+          fetch-depth: 0
+          clean: false
+          path: armbian.github.io
+
+      - name: Checkout this repo (script)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+          clean: false
+          path: runner
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq jc rsync
+
+      - name: Generate armbian-images.json
+        working-directory: runner
+        run: |
+          set -euo pipefail
+          OUT="armbian-images.json" \
+          OS_DIR="${GITHUB_WORKSPACE}/os" \
+          BOARD_DIR="${GITHUB_WORKSPACE}/build/config/boards" \
+          SOURCE_OF_TRUTH="${SOURCE_OF_TRUTH}" \
+          ./scripts/generate-armbian-images-json.sh
+
+          # Copy into workspace root so later steps can reference easily
+          cp armbian-images.json "${GITHUB_WORKSPACE}/armbian-images.json"
+
+      - name: Commit changes if any
+        run: |
+
+          set -euo pipefail
+          cd armbian.github.io
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
+          git checkout data
+          git pull --rebase origin data
+
+          mkdir -p data
+          cp "${GITHUB_WORKSPACE}/armbian-images.json" data/
+
+          git add data/armbian-images.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update armbian-images.json"
+            # rebase once more right before push to reduce race window
+            git pull --rebase origin data
+            git push origin data
+          fi
+
+      - name: Run Jira update action
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Jira update"
