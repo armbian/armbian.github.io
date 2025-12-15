@@ -175,7 +175,7 @@ jobs:
         
     steps:
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: beta
           path: debs-beta
@@ -234,7 +234,7 @@ jobs:
         
     steps:
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: apt
           path: debs
@@ -293,7 +293,7 @@ jobs:
 
     steps:
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: dl
           path: dl
@@ -353,7 +353,7 @@ jobs:
 
     steps:
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: archive
           path: archive
@@ -404,7 +404,7 @@ jobs:
     steps:
 
     - name: Download All Artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         path: status
         pattern: debs-beta-*
@@ -444,7 +444,7 @@ jobs:
         netboxapi: ${{ secrets.NETBOX_API }}
 
     - name: Download All Artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         path: status
         pattern: debs*
@@ -476,7 +476,7 @@ jobs:
         netboxapi: ${{ secrets.NETBOX_API }}
 
     - name: Download All Artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         path: status
         pattern: dl*
@@ -510,7 +510,7 @@ jobs:
         netboxapi: ${{ secrets.NETBOX_API }}
 
     - name: Download All Artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         path: status
         pattern: archive*
@@ -561,7 +561,7 @@ jobs:
         latest: true
         
     - name: Download All Artifacts
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         path: status
         pattern: config-*
