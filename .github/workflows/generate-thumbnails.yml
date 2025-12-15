@@ -43,7 +43,7 @@ jobs:
       matrix: ${{ steps.boards.outputs.JSON_CONTENT }}
     steps:
       - name: "Checkout armbian/build"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: armbian/build
           path: build
@@ -72,7 +72,7 @@ jobs:
       matrix: ${{ steps.vendors.outputs.JSON_CONTENT }}
     steps:
       - name: "Checkout armbian/build"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: armbian/build
           path: build
@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: "Checkout armbian.github.io"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
