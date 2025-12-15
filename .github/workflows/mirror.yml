@@ -60,7 +60,7 @@ jobs:
           EOT
           python3 split.py
       - name: "Upload JSON parts"
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: parts
           path: |
