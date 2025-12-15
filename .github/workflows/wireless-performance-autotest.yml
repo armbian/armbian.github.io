@@ -364,7 +364,7 @@ jobs:
           printf "\n$NEW_CONTENT\n" | sed -i "/<!-- DUT-START -->/r /dev/stdin" "$FILE"
 
       - name: Create Pull Request to documentation
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           path: documentation
