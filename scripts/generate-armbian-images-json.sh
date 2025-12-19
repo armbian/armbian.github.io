@@ -98,6 +98,45 @@ get_download_repository() {
 }
 
 # -----------------------------------------------------------------------------
+# Load exposed patterns once (skip blanks/comments)
+# -----------------------------------------------------------------------------
+EXPOSED_MAP_FILE="${OS_DIR}/exposed.map"
+
+# Return 0 if given candidate matches any exposed pattern
+is_promoted_candidate() {
+  local candidate="$1"
+  # grep -E with -f treats each line as an ERE
+  grep -Eq -f "$EXPOSED_MAP_FILE" <<<"$candidate"
+}
+
+is_promoted() {
+  # args: image_name board_slug url
+  local image_name="$1" board_slug="$2" url="$3"
+
+  # Candidates to match: filename, board/archive/filename, and relative URL paths
+  local rel_dl="${url#https://dl.armbian.com/}"
+  local rel_cache="${url#https://cache.armbian.com/artifacts/}"
+  local rel_github="${url#https://github.com/armbian/}"
+
+  local c
+  for c in \
+    "$image_name" \
+    "${board_slug}/archive/${image_name}" \
+    "$rel_dl" \
+    "$rel_cache" \
+    "$rel_github"
+  do
+    # If stripping didn't change it, it won't hurt; if it did, it's useful.
+    [[ "$c" == "$url" ]] && continue
+    if is_promoted_candidate "$c"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# -----------------------------------------------------------------------------
 # Parse image filename
 # -----------------------------------------------------------------------------
 parse_image_name() {
@@ -207,7 +246,12 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       ASC="$URL.asc"; SHA="$URL.sha"; TOR="$URL.torrent"
     fi
 
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|false|${REPO}|${FILE_EXTENSION}"
+    PROMOTED=false
+    if is_promoted "$IMAGE_NAME" "$BOARD_SLUG" "$URL"; then
+      PROMOTED=true
+    fi
+
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
