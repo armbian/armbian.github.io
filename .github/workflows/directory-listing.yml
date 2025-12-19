@@ -24,11 +24,6 @@ jobs:
           ref: data
           fetch-depth: 0
 
-      - name: Generate Directory Listings
-        uses: jayanta525/github-pages-directory-listing@v4.0.0
-        with:
-          FOLDER: data
-
       # --- Rewrite data branch as a fresh single-commit state (drop history) ---
       - name: Force-rewrite data branch (orphan)
         shell: bash
@@ -59,6 +54,11 @@ jobs:
           git commit -m "Recreate data branch with generated directory listing (history dropped)"
           git branch -M data
           git push -f origin data
+
+      - name: Generate Directory Listings
+        uses: jayanta525/github-pages-directory-listing@v4.0.0
+        with:
+          FOLDER: data
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
