@@ -61,6 +61,7 @@ extract_cfg_var() {
 # -----------------------------------------------------------------------------
 declare -A BOARD_NAME_MAP=()
 declare -A BOARD_VENDOR_MAP=()
+declare -A BOARD_SUPPORT_MAP=()
 
 MISSING_META_FILE="$(mktemp)"
 trap 'rm -f "$MISSING_META_FILE"' EXIT
@@ -71,9 +72,12 @@ while IFS= read -r cfg; do
 
   name="$(extract_cfg_var "$cfg" BOARD_NAME)"
   vendor="$(extract_cfg_var "$cfg" BOARD_VENDOR)"
+  support="${cfg##*.}"; support="${support,,}"
+
 
   [[ -n "$name" ]]   && BOARD_NAME_MAP["$slug"]="$name"
   [[ -n "$vendor" ]] && BOARD_VENDOR_MAP["$slug"]="$vendor"
+  [[ -n "$support" ]] && BOARD_SUPPORT_MAP["$slug"]="$support"
 
   if [[ -z "$name" || -z "$vendor" ]]; then
     printf '%s\n' "$slug" >>"$MISSING_META_FILE"
@@ -414,7 +418,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"company_name"|"company_website"|"company_logo"|"platinum_support"|"platinum_support_until"|"platinum_support_expired"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"platinum"|"platinum_expired"|"platinum_until"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -450,6 +454,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     else
       ASC="$URL.asc"; SHA="$URL.sha"; TOR="$URL.torrent"
     fi
+    FILE_URL="${CACHE:-$URL}"
 
     PROMOTED=false
     if is_promoted "$IMAGE_NAME" "$BOARD_SLUG" "$URL"; then
@@ -457,6 +462,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     fi
 
     BOARD_VENDOR="${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}"
+    BOARD_SUPPORT="${BOARD_SUPPORT_MAP[$BOARD_SLUG]:-}"
     COMPANY_KEY="${BOARD_VENDOR,,}"
 
     C_NAME="${COMPANY_NAME_BY_SLUG[$COMPANY_KEY]:-}"
@@ -480,7 +486,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         PLAT_EXPIRED="false"
       fi
     fi
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${C_NAME}|${C_WEB}|${C_LOGO}|${PLAT}|${PLAT_UNTIL}|${PLAT_EXPIRED}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
