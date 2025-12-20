@@ -86,9 +86,12 @@ jobs:
 
           vendors=$(
           find . -maxdepth 1 -type f \
-              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
-              -exec grep -hE '^[[:space:]]*BOARD_VENDOR=' {} + 2>/dev/null \
-          | sed -E 's/^[[:space:]]*BOARD_VENDOR=//; s/^"//; s/"$//' \
+            \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+            -exec grep -h 'BOARD_VENDOR=' {} + 2>/dev/null \
+          | sed -E '
+            s/.*BOARD_VENDOR=//;
+            s/^["'\'']//; s/["'\'']$//;
+          ' \
           | tr '[:upper:]' '[:lower:]' \
           | tr '_' '-' \
           | awk 'NF' \
