@@ -1,0 +1,210 @@
+name: Generate Bigin JSONs (dry run)
+
+on:
+  push:
+  repository_dispatch:    
+    types: ["Bigin update"]
+
+concurrency:
+  group: redirector
+  cancel-in-progress: false
+
+jobs:
+  fetch-bigin-data:
+    runs-on: ubuntu-latest
+    name: "Fetch data (preview only)"
+    steps:
+      - name: Checkout armbian.github.io repository (data branch)
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/armbian.github.io
+          ref: data
+          fetch-depth: 0
+          clean: false
+          path: armbian.github.io
+
+      - name: Fetch and generate company + active projects JSON (no push)
+        env:
+          CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          need() { command -v "$1" >/dev/null || { echo "Missing '$1'"; exit 1; }; }
+          need curl jq sed tr head ls grep
+
+          # ------------------------------------------------------------
+          # Access token
+          # ------------------------------------------------------------
+          ACCESS_TOKEN="$(
+            curl -sH "Content-type: multipart/form-data" \
+              -F refresh_token="$REFRESH_TOKEN" \
+              -F client_id="$CLIENT_ID" \
+              -F client_secret="$CLIENT_SECRET" \
+              -F grant_type=refresh_token \
+              -X POST "https://accounts.zoho.eu/oauth/v2/token" \
+            | jq -r '.access_token'
+          )"
+
+          [[ -n "${ACCESS_TOKEN}" && "${ACCESS_TOKEN}" != "null" ]] || {
+            echo "Failed to obtain access token"; exit 1;
+          }
+          echo "Access token obtained."
+
+          OUTDIR="armbian.github.io/data/bigin/companies"
+          mkdir -p "${OUTDIR}"
+
+          # ------------------------------------------------------------
+          # Fetch companies (Accounts)
+          # ------------------------------------------------------------
+          echo "Fetching companies..."
+          curl -s \
+            -H "Authorization: Zoho-oauthtoken ${ACCESS_TOKEN}" \
+            "https://www.zohoapis.eu/bigin/v2/Accounts?fields=Account_Name,Company_slug,Phone,Website,Description&per_page=200&page=1" \
+            > /tmp/companies.json
+
+          echo "DEBUG: companies.json info:"
+          jq '.info // {}' /tmp/companies.json || true
+
+          # Build a map: company_id -> company object
+          jq -c '
+            (.data // [])
+            | map({
+                key: .id,
+                value: {
+                  company_id: .id,
+                  company_slug: (.Company_slug // "" | tostring),
+                  company_name: (.Account_Name // "" | tostring),
+                  phone: (.Phone // "" | tostring),
+                  website: (.Website // "" | tostring),
+                  description: (.Description // "" | tostring)
+                }
+              })
+            | from_entries
+          ' /tmp/companies.json > /tmp/company_map.json
+
+          # ------------------------------------------------------------
+          # Fetch active projects (Pipelines) + debug discovery
+          # ------------------------------------------------------------
+          echo "DEBUG: Fetching 1 pipeline record (no criteria) to discover field names..."
+          curl -s \
+            -H "Authorization: Zoho-oauthtoken ${ACCESS_TOKEN}" \
+            "https://www.zohoapis.eu/bigin/v2/Pipelines?per_page=1&page=1" \
+            > /tmp/pipelines_sample.json
+
+          echo "DEBUG: First pipeline record keys:"
+          jq -r '.data[0] | keys[]' /tmp/pipelines_sample.json || true
+
+          echo "DEBUG: First pipeline record (trimmed):"
+          jq '.data[0] | {id, Name, Stage, Closing_Date, Account_Name, Company_Name, Company, Closing_Date}' /tmp/pipelines_sample.json || true
+
+          echo "Fetching active projects from Pipelines..."
+          curl -s \
+            -H "Authorization: Zoho-oauthtoken ${ACCESS_TOKEN}" \
+            "https://www.zohoapis.eu/bigin/v2/Pipelines/search?fields=Name,Stage,Closing_Date,Account_Name,Company_Name,Company&criteria=((Stage:not_equal:Completed))&per_page=200&page=1" \
+            > /tmp/projects.json
+
+          echo "DEBUG: projects.json info:"
+          jq '.info // {}' /tmp/projects.json || true
+
+          echo "DEBUG: first 3 project rows (raw, trimmed):"
+          jq '.data[0:3] // [] | map({Name, Stage, Closing_Date, Account_Name, Company_Name, Company})' /tmp/projects.json || true
+
+          # Group projects by company_id (try multiple possible lookup names)
+          jq -c '
+            (.data // [])
+            | map(
+                . as $r
+                | {
+                    company_id: (
+                      $r.Account_Name.id
+                      // $r.Company_Name.id
+                      // $r.Company.id
+                      // "UNKNOWN"
+                    ),
+                    active_project: {
+                      name: ($r.Name // "" | tostring),
+                      stage: ($r.Stage // "" | tostring),
+                      closing_date: ($r.Closing_Date // null)
+                    }
+                  }
+              )
+            | group_by(.company_id)
+            | map({
+                company_id: .[0].company_id,
+                active_projects: map(.active_project)
+              })
+          ' /tmp/projects.json > /tmp/projects_by_company.json
+
+          # ------------------------------------------------------------
+          # Merge companies + projects into index.json (safe merge)
+          # ------------------------------------------------------------
+          echo "Merging to index.json..."
+          jq -c -n '
+            (input) as $cmap
+            | (input) as $proj
+
+            | ($cmap | to_entries | map(.value)) as $all_companies
+            | ($proj | map(.company_id) | unique) as $companies_with_projects
+
+            | ($proj
+                | map(
+                    . + ($cmap[.company_id] // {
+                      company_id: .company_id,
+                      company_slug: "",
+                      company_name: "",
+                      phone: "",
+                      website: "",
+                      description: ""
+                    })
+                  )
+              ) as $companies_joined
+
+            | ($all_companies
+                | map(select(.company_id as $id | ($companies_with_projects | index($id)) == null))
+                | map(. + {active_projects: []})
+              ) as $companies_without_projects
+
+            | ($companies_joined + $companies_without_projects)
+            | map({
+                company_id: (.company_id // ""),
+                company_slug: (.company_slug // ""),
+                company_name: (.company_name // ""),
+                phone: (.phone // ""),
+                website: (.website // ""),
+                description: (.description // ""),
+                active_projects: (.active_projects // [])
+              })
+            | sort_by(.company_slug, .company_name)
+          ' /tmp/company_map.json /tmp/projects_by_company.json \
+          > "${OUTDIR}/index.json"
+
+          # ------------------------------------------------------------
+          # Per-company JSON: <slug>.json
+          # ------------------------------------------------------------
+          echo "Writing per-company JSON files..."
+          jq -c '.[]' "${OUTDIR}/index.json" | while read -r row; do
+            slug="$(jq -r '.company_slug' <<<"$row")"
+            name="$(jq -r '.company_name' <<<"$row")"
+
+            # Fallback slug if missing
+            if [[ -z "${slug}" || "${slug}" == "null" ]]; then
+              slug="$(echo "$name" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')"
+            fi
+            [[ -n "${slug}" ]] || slug="unknown"
+
+            echo "${row}" | jq '.' > "${OUTDIR}/${slug}.json"
+          done
+
+          # ------------------------------------------------------------
+          # SHOW RESULT
+          # ------------------------------------------------------------
+          echo
+          echo "================ index.json ================"
+          jq '.' "${OUTDIR}/index.json"
+
+          echo
+          echo "=========== sample company JSON ============"
+          first_file="$(ls "${OUTDIR}"/*.json | grep -v index.json | head -n1)"
+          jq '.' "$first_file"
