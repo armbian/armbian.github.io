@@ -10,25 +10,34 @@ OS_DIR="${OS_DIR:-./os}"
 BOARD_DIR="${BOARD_DIR:-./build/config/boards}"
 OUT="${OUT:-armbian-images.json}"
 
-# Bigin / Zoho enrichment (optional)
+# -----------------------------------------------------------------------------
+# Zoho Bigin configuration (optional enrichment)
+# -----------------------------------------------------------------------------
 BIGIN_ENABLE="${BIGIN_ENABLE:-true}"
 BIGIN_API_BASE="${BIGIN_API_BASE:-https://www.zohoapis.eu/bigin/v2}"
 ZOHO_OAUTH_TOKEN_URL="${ZOHO_OAUTH_TOKEN_URL:-https://accounts.zoho.eu/oauth/v2/token}"
 
-# Custom field API name in Bigin Accounts holding the Company slug (matches board_vendor)
+# Accounts: custom field that contains company slug (must match board_vendor)
 BIGIN_COMPANY_SLUG_FIELD="${BIGIN_COMPANY_SLUG_FIELD:-Company_slug}"
+BIGIN_ACCOUNT_FIELDS="Account_Name,Website,Description,${BIGIN_COMPANY_SLUG_FIELD}"
 
-# Fields we fetch from Bigin Accounts (Logo is NOT fetched; logo is computed from board_vendor)
-BIGIN_FIELDS="Account_Name,Website,Description,${BIGIN_COMPANY_SLUG_FIELD}"
+# Pipelines (confirmed keys): Boards, Closing_Date, Stage
+BIGIN_PLATINUM_MODULE="${BIGIN_PLATINUM_MODULE:-Pipelines}"
+BIGIN_PLATINUM_BOARDS_FIELD="${BIGIN_PLATINUM_BOARDS_FIELD:-Boards}"
+BIGIN_PLATINUM_UNTIL_FIELD="${BIGIN_PLATINUM_UNTIL_FIELD:-Closing_Date}"
+BIGIN_PLATINUM_STATUS_FIELD="${BIGIN_PLATINUM_STATUS_FIELD:-Stage}"
+BIGIN_PLATINUM_FIELDS="${BIGIN_PLATINUM_STATUS_FIELD},${BIGIN_PLATINUM_UNTIL_FIELD},${BIGIN_PLATINUM_BOARDS_FIELD}"
 
 # -----------------------------------------------------------------------------
 # Requirements
 # -----------------------------------------------------------------------------
 need() { command -v "$1" >/dev/null || { echo "ERROR: missing '$1'" >&2; exit 1; }; }
-need rsync gh jq jc find grep sed cut awk sort mktemp curl
+need rsync gh jq jc find grep sed cut awk sort mktemp curl date
 
 [[ -f "${OS_DIR}/exposed.map" ]] || { echo "ERROR: ${OS_DIR}/exposed.map not found" >&2; exit 1; }
 [[ -d "${BOARD_DIR}" ]] || { echo "ERROR: board directory not found: ${BOARD_DIR}" >&2; exit 1; }
+
+TODAY_UTC="$(date -u +%F)"
 
 # -----------------------------------------------------------------------------
 # Extract variable from board config
@@ -82,6 +91,9 @@ declare -A COMPANY_NAME_BY_SLUG=()
 declare -A COMPANY_WEBSITE_BY_SLUG=()
 declare -A COMPANY_DESC_BY_SLUG=()
 
+# Platinum support: store latest until-date per board_slug
+declare -A PLATINUM_UNTIL_BY_BOARD=()
+
 get_zoho_access_token() {
   local client_id="${ZOHO_CLIENT_ID:-}"
   local client_secret="${ZOHO_CLIENT_SECRET:-}"
@@ -101,12 +113,27 @@ get_zoho_access_token() {
   | jq -r '.access_token // empty'
 }
 
+# Keep the latest ISO date/timestamp string lexicographically
+max_date() {
+  local a="$1" b="$2"
+  [[ -z "$a" ]] && { echo "$b"; return; }
+  [[ -z "$b" ]] && { echo "$a"; return; }
+  [[ "$a" < "$b" ]] && echo "$b" || echo "$a"
+}
+
+# Convert "2025-06-25" or "2025-06-25T..." -> "2025-06-25"
+date_only() {
+  local s="$1"
+  s="${s%%T*}"
+  echo "$s"
+}
+
 load_bigin_companies() {
   local token="$1"
   [[ -n "$token" ]] || return 0
 
   echo "▶ Fetching Bigin company data…" >&2
-  echo "  - fields: ${BIGIN_FIELDS}" >&2
+  echo "  - fields: ${BIGIN_ACCOUNT_FIELDS}" >&2
   echo "  - company slug field: ${BIGIN_COMPANY_SLUG_FIELD}" >&2
   echo "  - join key: board_vendor == company_slug" >&2
 
@@ -118,11 +145,11 @@ load_bigin_companies() {
 
     curl -s \
       -H "Authorization: Zoho-oauthtoken ${token}" \
-      "${BIGIN_API_BASE}/Accounts?fields=${BIGIN_FIELDS}&per_page=${per_page}&page=${page}" \
+      "${BIGIN_API_BASE}/Accounts?fields=${BIGIN_ACCOUNT_FIELDS}&per_page=${per_page}&page=${page}" \
       > "$resp"
 
     if ! jq -e '.data' "$resp" >/dev/null 2>&1; then
-      echo "WARNING: Bigin Accounts response missing .data (page=${page}); skipping enrichment." >&2
+      echo "WARNING: Bigin Accounts response missing .data (page=${page}); skipping company enrichment." >&2
       jq '.' "$resp" >&2 || true
       return 0
     fi
@@ -151,16 +178,97 @@ load_bigin_companies() {
 
     more="$(jq -r '.info.more_records // false' "$resp")"
     page=$((page + 1))
-    [[ "$page" -le 50 ]] || { echo "WARNING: Bigin pagination safety cap hit; stopping." >&2; break; }
+    [[ "$page" -le 50 ]] || { echo "WARNING: Bigin Accounts pagination safety cap hit; stopping." >&2; break; }
   done
 
   echo "  - Bigin company slugs loaded: ${#COMPANY_NAME_BY_SLUG[@]} (rows processed: ${loaded})" >&2
+}
+
+load_bigin_platinum_support() {
+  local token="$1"
+  [[ -n "$token" ]] || return 0
+
+  echo "▶ Fetching Bigin platinum support from ${BIGIN_PLATINUM_MODULE}…" >&2
+  echo "  - fields: ${BIGIN_PLATINUM_FIELDS}" >&2
+  echo "  - rule: map Boards tokens -> board_slug; ignore Stage=Cancelled/Canceled; latest Closing_Date wins" >&2
+
+  local per_page=200
+  local page_token=""
+  local pages=0
+  local rows=0
+  local nonnull=0
+
+  while :; do
+    pages=$((pages + 1))
+    [[ "$pages" -le 200 ]] || { echo "WARNING: pagination safety cap hit; stopping." >&2; break; }
+
+    local resp="/tmp/bigin-platinum-${pages}.json"
+    local url="${BIGIN_API_BASE}/${BIGIN_PLATINUM_MODULE}?fields=${BIGIN_PLATINUM_FIELDS}&per_page=${per_page}"
+    [[ -n "$page_token" ]] && url="${url}&page_token=${page_token}"
+
+    curl -s -H "Authorization: Zoho-oauthtoken ${token}" "$url" > "$resp"
+
+    if ! jq -e '.data' "$resp" >/dev/null 2>&1; then
+      echo "WARNING: Bigin ${BIGIN_PLATINUM_MODULE} response missing .data; skipping platinum extraction." >&2
+      jq '.' "$resp" >&2 || true
+      return 0
+    fi
+
+    # Count non-null Boards on this page (just for your debug summary)
+    local page_nonnull
+    page_nonnull="$(jq -r --arg bf "$BIGIN_PLATINUM_BOARDS_FIELD" '
+      [(.data // [])[] | .[$bf] // empty | tostring | select(. != "" and . != "null")] | length
+    ' "$resp" 2>/dev/null || echo 0)"
+    nonnull=$((nonnull + page_nonnull))
+
+    # IMPORTANT: no pipe into while; use process substitution to keep map updates
+    while IFS=$'\t' read -r b until; do
+      b="${b,,}"
+      b="$(sed -E 's/^[[:space:]]+|[[:space:]]+$//g' <<<"$b")"
+      [[ -z "$b" ]] && continue
+
+      until="$(date_only "$until")"
+      [[ -z "$until" || "$until" == "null" ]] && continue
+
+      local cur="${PLATINUM_UNTIL_BY_BOARD[$b]:-}"
+      PLATINUM_UNTIL_BY_BOARD["$b"]="$(max_date "$cur" "$until")"
+      rows=$((rows + 1))
+    done < <(
+      jq -r \
+        --arg bf "$BIGIN_PLATINUM_BOARDS_FIELD" \
+        --arg uf "$BIGIN_PLATINUM_UNTIL_FIELD" \
+        --arg sf "$BIGIN_PLATINUM_STATUS_FIELD" '
+        (.data // [])
+        | map(select(((.[ $sf ] // "") | tostring | ascii_downcase) | IN("cancelled","canceled") | not))
+        | .[]
+        | (.[ $uf ] // "" | tostring) as $until
+        | (.[ $bf ] // "" | tostring) as $boards
+        | select($boards != "" and $boards != "null")
+        | ($boards
+            | gsub("[\r\n\t]"; " ")
+            | gsub("[;]+"; ",")
+            | split(",")
+            | map(gsub("^\\s+|\\s+$"; ""))
+            | map(select(length>0))
+          )[]
+        | [., $until] | @tsv
+      ' "$resp"
+    )
+
+    page_token="$(jq -r '.info.next_page_token // empty' "$resp")"
+    [[ -n "$page_token" ]] || break
+  done
+
+  echo "  - pages read: ${pages}" >&2
+  echo "  - records with non-empty Boards seen: ${nonnull}" >&2
+  echo "  - platinum boards mapped: ${#PLATINUM_UNTIL_BY_BOARD[@]} (rows processed: ${rows})" >&2
 }
 
 if [[ "${BIGIN_ENABLE}" == "true" ]]; then
   ZOHO_TOKEN="$(get_zoho_access_token || true)"
   if [[ -n "${ZOHO_TOKEN}" ]]; then
     load_bigin_companies "${ZOHO_TOKEN}" || true
+    load_bigin_platinum_support "${ZOHO_TOKEN}" || true
   else
     echo "ℹ️  Bigin enrichment disabled (missing Zoho secrets or token could not be obtained)." >&2
   fi
@@ -194,6 +302,8 @@ get_download_repository() {
     awk -F/ '{print $5}' <<<"$url"
   elif [[ "$url" == https://dl.armbian.com/* ]]; then
     awk -F/ '{print $5}' <<<"$url"
+  elif [[ "$url" == https://dl.armbian.com/* ]]; then
+    awk -F/ '{print $5}' <<<"$url"
   else
     echo ""
   fi
@@ -204,17 +314,14 @@ get_download_repository() {
 # -----------------------------------------------------------------------------
 EXPOSED_MAP_FILE="${OS_DIR}/exposed.map"
 
-# Return 0 if given candidate matches any exposed pattern
 is_promoted_candidate() {
   local candidate="$1"
   grep -Eq -f "$EXPOSED_MAP_FILE" <<<"$candidate"
 }
 
 is_promoted() {
-  # args: image_name board_slug url
   local image_name="$1" board_slug="$2" url="$3"
 
-  # Candidates to match: filename, board/archive/filename, and relative URL paths
   local rel_dl="${url#https://dl.armbian.com/}"
   local rel_cache="${url#https://cache.armbian.com/artifacts/}"
   local rel_github="${url#https://github.com/armbian/}"
@@ -309,7 +416,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"company_name"|"company_website"|"company_logo"|"company_description"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"company_name"|"company_website"|"company_logo"|"company_description"|"platinum_support"|"platinum_support_until"|"platinum_support_expired"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -351,7 +458,6 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       PROMOTED=true
     fi
 
-    # Join key: board_vendor == Bigin company_slug
     BOARD_VENDOR="${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}"
     COMPANY_KEY="${BOARD_VENDOR,,}"
 
@@ -359,13 +465,26 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     C_WEB="${COMPANY_WEBSITE_BY_SLUG[$COMPANY_KEY]:-}"
     C_DESC="${COMPANY_DESC_BY_SLUG[$COMPANY_KEY]:-}"
 
-    # company_logo is computed (not fetched from Bigin)
     C_LOGO=""
     if [[ -n "$BOARD_VENDOR" ]]; then
       C_LOGO="https://cache.armbian.com/images/vendors/150/${BOARD_VENDOR}.png"
     fi
 
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${C_NAME}|${C_WEB}|${C_LOGO}|${C_DESC}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
+    PLAT_UNTIL="${PLATINUM_UNTIL_BY_BOARD[$BOARD_SLUG]:-}"
+
+    PLAT="false"
+    PLAT_EXPIRED="false"
+    if [[ -n "$PLAT_UNTIL" ]]; then
+      if [[ "$PLAT_UNTIL" < "$TODAY_UTC" ]]; then
+        PLAT="false"
+        PLAT_EXPIRED="true"
+      else
+        PLAT="true"
+        PLAT_EXPIRED="false"
+      fi
+    fi
+
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${C_NAME}|${C_WEB}|${C_LOGO}|${C_DESC}|${PLAT}|${PLAT_UNTIL}|${PLAT_EXPIRED}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
