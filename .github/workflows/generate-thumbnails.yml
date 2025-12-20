@@ -95,7 +95,7 @@ jobs:
           | tr '[:upper:]' '[:lower:]' \
           | tr '_' '-' \
           | awk 'NF' \
-          | sort -u
+          | sort -u || true
           )
 
           echo "Vendors found:"
