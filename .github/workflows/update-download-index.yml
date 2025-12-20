@@ -1,7 +1,6 @@
 name: Update download JSON index v2
 
 on:
-  push:
   repository_dispatch:
     types: ["Webindex update"]
   workflow_dispatch:
@@ -68,10 +67,6 @@ jobs:
           ZOHO_CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
           ZOHO_CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
           ZOHO_REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
-
-          # Optional overrides if your Bigin schema differs:
-          # BIGIN_BOARD_SLUG_FIELD: "Board_Slug"
-
           # You can also disable enrichment if needed:
           # BIGIN_ENABLE: "false"
         run: |
