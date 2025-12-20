@@ -59,10 +59,21 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq jc rsync
+          sudo apt-get install -y jq jc rsync curl
 
-      - name: Generate armbian-images.json
+      - name: Generate armbian-images.json (with Bigin company enrichment)
         working-directory: runner
+        env:
+          # Zoho OAuth credentials for Bigin enrichment
+          ZOHO_CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
+          ZOHO_CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
+          ZOHO_REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
+
+          # Optional overrides if your Bigin schema differs:
+          # BIGIN_BOARD_SLUG_FIELD: "Board_Slug"
+
+          # You can also disable enrichment if needed:
+          # BIGIN_ENABLE: "false"
         run: |
           set -euo pipefail
           OUT="armbian-images.json" \
@@ -76,7 +87,6 @@ jobs:
 
       - name: Commit changes if any
         run: |
-
           set -euo pipefail
           cd armbian.github.io
 

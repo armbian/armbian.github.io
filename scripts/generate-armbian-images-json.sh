@@ -10,11 +10,22 @@ OS_DIR="${OS_DIR:-./os}"
 BOARD_DIR="${BOARD_DIR:-./build/config/boards}"
 OUT="${OUT:-armbian-images.json}"
 
+# Bigin / Zoho enrichment (optional)
+BIGIN_ENABLE="${BIGIN_ENABLE:-true}"
+BIGIN_API_BASE="${BIGIN_API_BASE:-https://www.zohoapis.eu/bigin/v2}"
+ZOHO_OAUTH_TOKEN_URL="${ZOHO_OAUTH_TOKEN_URL:-https://accounts.zoho.eu/oauth/v2/token}"
+
+# Custom field API name in Bigin Accounts holding the Company slug (matches board_vendor)
+BIGIN_COMPANY_SLUG_FIELD="${BIGIN_COMPANY_SLUG_FIELD:-Company_slug}"
+
+# Fields we fetch from Bigin Accounts (Logo is NOT fetched; logo is computed from board_vendor)
+BIGIN_FIELDS="Account_Name,Website,Description,${BIGIN_COMPANY_SLUG_FIELD}"
+
 # -----------------------------------------------------------------------------
 # Requirements
 # -----------------------------------------------------------------------------
 need() { command -v "$1" >/dev/null || { echo "ERROR: missing '$1'" >&2; exit 1; }; }
-need rsync gh jq jc find grep sed cut awk sort mktemp
+need rsync gh jq jc find grep sed cut awk sort mktemp curl
 
 [[ -f "${OS_DIR}/exposed.map" ]] || { echo "ERROR: ${OS_DIR}/exposed.map not found" >&2; exit 1; }
 [[ -d "${BOARD_DIR}" ]] || { echo "ERROR: board directory not found: ${BOARD_DIR}" >&2; exit 1; }
@@ -39,8 +50,8 @@ extract_cfg_var() {
 # -----------------------------------------------------------------------------
 # Load board metadata + track incomplete metadata (file-based, set -u safe)
 # -----------------------------------------------------------------------------
-declare -A BOARD_NAME_MAP
-declare -A BOARD_VENDOR_MAP
+declare -A BOARD_NAME_MAP=()
+declare -A BOARD_VENDOR_MAP=()
 
 MISSING_META_FILE="$(mktemp)"
 trap 'rm -f "$MISSING_META_FILE"' EXIT
@@ -63,6 +74,97 @@ done < <(
     \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
   | sort
 )
+
+# -----------------------------------------------------------------------------
+# Optional: Load company data from Bigin keyed by company_slug (matches board_vendor)
+# -----------------------------------------------------------------------------
+declare -A COMPANY_NAME_BY_SLUG=()
+declare -A COMPANY_WEBSITE_BY_SLUG=()
+declare -A COMPANY_DESC_BY_SLUG=()
+
+get_zoho_access_token() {
+  local client_id="${ZOHO_CLIENT_ID:-}"
+  local client_secret="${ZOHO_CLIENT_SECRET:-}"
+  local refresh_token="${ZOHO_REFRESH_TOKEN:-}"
+
+  if [[ -z "$client_id" || -z "$client_secret" || -z "$refresh_token" ]]; then
+    echo ""
+    return 0
+  fi
+
+  curl -sH "Content-type: multipart/form-data" \
+    -F refresh_token="$refresh_token" \
+    -F client_id="$client_id" \
+    -F client_secret="$client_secret" \
+    -F grant_type=refresh_token \
+    -X POST "$ZOHO_OAUTH_TOKEN_URL" \
+  | jq -r '.access_token // empty'
+}
+
+load_bigin_companies() {
+  local token="$1"
+  [[ -n "$token" ]] || return 0
+
+  echo "▶ Fetching Bigin company data…" >&2
+  echo "  - fields: ${BIGIN_FIELDS}" >&2
+  echo "  - company slug field: ${BIGIN_COMPANY_SLUG_FIELD}" >&2
+  echo "  - join key: board_vendor == company_slug" >&2
+
+  local page=1 per_page=200 more="true"
+  local loaded=0
+
+  while [[ "$more" == "true" ]]; do
+    local resp="/tmp/bigin-accounts-${page}.json"
+
+    curl -s \
+      -H "Authorization: Zoho-oauthtoken ${token}" \
+      "${BIGIN_API_BASE}/Accounts?fields=${BIGIN_FIELDS}&per_page=${per_page}&page=${page}" \
+      > "$resp"
+
+    if ! jq -e '.data' "$resp" >/dev/null 2>&1; then
+      echo "WARNING: Bigin Accounts response missing .data (page=${page}); skipping enrichment." >&2
+      jq '.' "$resp" >&2 || true
+      return 0
+    fi
+
+    while IFS=$'\t' read -r slug name website desc; do
+      slug="${slug,,}"
+      [[ -z "$slug" ]] && continue
+      COMPANY_NAME_BY_SLUG["$slug"]="$name"
+      COMPANY_WEBSITE_BY_SLUG["$slug"]="$website"
+      COMPANY_DESC_BY_SLUG["$slug"]="$desc"
+      ((loaded++)) || true
+    done < <(
+      jq -r --arg f "$BIGIN_COMPANY_SLUG_FIELD" '
+        (.data // [])
+        | map({
+            slug: (.[ $f ] // "" | tostring),
+            name: (.Account_Name // "" | tostring),
+            website: (.Website // "" | tostring),
+            desc: (.Description // "" | tostring)
+          })
+        | .[]
+        | select(.slug != "")
+        | [.slug,.name,.website,.desc] | @tsv
+      ' "$resp"
+    )
+
+    more="$(jq -r '.info.more_records // false' "$resp")"
+    page=$((page + 1))
+    [[ "$page" -le 50 ]] || { echo "WARNING: Bigin pagination safety cap hit; stopping." >&2; break; }
+  done
+
+  echo "  - Bigin company slugs loaded: ${#COMPANY_NAME_BY_SLUG[@]} (rows processed: ${loaded})" >&2
+}
+
+if [[ "${BIGIN_ENABLE}" == "true" ]]; then
+  ZOHO_TOKEN="$(get_zoho_access_token || true)"
+  if [[ -n "${ZOHO_TOKEN}" ]]; then
+    load_bigin_companies "${ZOHO_TOKEN}" || true
+  else
+    echo "ℹ️  Bigin enrichment disabled (missing Zoho secrets or token could not be obtained)." >&2
+  fi
+fi
 
 # -----------------------------------------------------------------------------
 # Helpers
@@ -105,7 +207,6 @@ EXPOSED_MAP_FILE="${OS_DIR}/exposed.map"
 # Return 0 if given candidate matches any exposed pattern
 is_promoted_candidate() {
   local candidate="$1"
-  # grep -E with -f treats each line as an ERE
   grep -Eq -f "$EXPOSED_MAP_FILE" <<<"$candidate"
 }
 
@@ -126,7 +227,6 @@ is_promoted() {
     "$rel_cache" \
     "$rel_github"
   do
-    # If stripping didn't change it, it won't hurt; if it did, it's useful.
     [[ "$c" == "$url" ]] && continue
     if is_promoted_candidate "$c"; then
       return 0
@@ -209,7 +309,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"company_name"|"company_website"|"company_logo"|"company_description"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -251,7 +351,21 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       PROMOTED=true
     fi
 
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
+    # Join key: board_vendor == Bigin company_slug
+    BOARD_VENDOR="${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}"
+    COMPANY_KEY="${BOARD_VENDOR,,}"
+
+    C_NAME="${COMPANY_NAME_BY_SLUG[$COMPANY_KEY]:-}"
+    C_WEB="${COMPANY_WEBSITE_BY_SLUG[$COMPANY_KEY]:-}"
+    C_DESC="${COMPANY_DESC_BY_SLUG[$COMPANY_KEY]:-}"
+
+    # company_logo is computed (not fetched from Bigin)
+    C_LOGO=""
+    if [[ -n "$BOARD_VENDOR" ]]; then
+      C_LOGO="https://cache.armbian.com/images/vendors/150/${BOARD_VENDOR}.png"
+    fi
+
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${C_NAME}|${C_WEB}|${C_LOGO}|${C_DESC}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
