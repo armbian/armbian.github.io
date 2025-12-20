@@ -19,7 +19,7 @@ ZOHO_OAUTH_TOKEN_URL="${ZOHO_OAUTH_TOKEN_URL:-https://accounts.zoho.eu/oauth/v2/
 
 # Accounts: custom field that contains company slug (must match board_vendor)
 BIGIN_COMPANY_SLUG_FIELD="${BIGIN_COMPANY_SLUG_FIELD:-Company_slug}"
-BIGIN_ACCOUNT_FIELDS="Account_Name,Website,Description,${BIGIN_COMPANY_SLUG_FIELD}"
+BIGIN_ACCOUNT_FIELDS="Account_Name,Website,${BIGIN_COMPANY_SLUG_FIELD}"
 
 # Pipelines (confirmed keys): Boards, Closing_Date, Stage
 BIGIN_PLATINUM_MODULE="${BIGIN_PLATINUM_MODULE:-Pipelines}"
@@ -89,7 +89,6 @@ done < <(
 # -----------------------------------------------------------------------------
 declare -A COMPANY_NAME_BY_SLUG=()
 declare -A COMPANY_WEBSITE_BY_SLUG=()
-declare -A COMPANY_DESC_BY_SLUG=()
 
 # Platinum support: store latest until-date per board_slug
 declare -A PLATINUM_UNTIL_BY_BOARD=()
@@ -159,7 +158,6 @@ load_bigin_companies() {
       [[ -z "$slug" ]] && continue
       COMPANY_NAME_BY_SLUG["$slug"]="$name"
       COMPANY_WEBSITE_BY_SLUG["$slug"]="$website"
-      COMPANY_DESC_BY_SLUG["$slug"]="$desc"
       ((loaded++)) || true
     done < <(
       jq -r --arg f "$BIGIN_COMPANY_SLUG_FIELD" '
@@ -168,7 +166,6 @@ load_bigin_companies() {
             slug: (.[ $f ] // "" | tostring),
             name: (.Account_Name // "" | tostring),
             website: (.Website // "" | tostring),
-            desc: (.Description // "" | tostring)
           })
         | .[]
         | select(.slug != "")
@@ -263,6 +260,7 @@ load_bigin_platinum_support() {
   echo "  - records with non-empty Boards seen: ${nonnull}" >&2
   echo "  - platinum boards mapped: ${#PLATINUM_UNTIL_BY_BOARD[@]} (rows processed: ${rows})" >&2
 }
+
 
 if [[ "${BIGIN_ENABLE}" == "true" ]]; then
   ZOHO_TOKEN="$(get_zoho_access_token || true)"
@@ -416,7 +414,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"company_name"|"company_website"|"company_logo"|"company_description"|"platinum_support"|"platinum_support_until"|"platinum_support_expired"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"company_name"|"company_website"|"company_logo"|"platinum_support"|"platinum_support_until"|"platinum_support_expired"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_updated"|"file_size"|"distro_release"|"kernel_branch"|"image_variant"|"preinstalled_application"|"promoted"|"download_repository"|"file_extension"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -463,7 +461,6 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 
     C_NAME="${COMPANY_NAME_BY_SLUG[$COMPANY_KEY]:-}"
     C_WEB="${COMPANY_WEBSITE_BY_SLUG[$COMPANY_KEY]:-}"
-    C_DESC="${COMPANY_DESC_BY_SLUG[$COMPANY_KEY]:-}"
 
     C_LOGO=""
     if [[ -n "$BOARD_VENDOR" ]]; then
@@ -483,8 +480,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         PLAT_EXPIRED="false"
       fi
     fi
-
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${C_NAME}|${C_WEB}|${C_LOGO}|${C_DESC}|${PLAT}|${PLAT_UNTIL}|${PLAT_EXPIRED}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${C_NAME}|${C_WEB}|${C_LOGO}|${PLAT}|${PLAT_UNTIL}|${PLAT_EXPIRED}|${VER}|${URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${DATE}|${IMAGE_SIZE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}"
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
