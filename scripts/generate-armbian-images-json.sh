@@ -425,8 +425,8 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     IMAGE_NAME="${URL##*/}"
 
     mapfile -t p < <(parse_image_name "$IMAGE_NAME")
-    VER="${p[0]}"; BOARD="${p[1]}"; DISTRO="${p[2]}"; BRANCH="${p[3]}"
-    VARIANT="${p[4]}"; APP="${p[5]}"; STORAGE="${p[6]}"
+    VER="${p[0]:-}"; BOARD="${p[1]:-}"; DISTRO="${p[2]:-}"; BRANCH="${p[3]:-}"
+    VARIANT="${p[4]:-server}"; APP="${p[5]:-}"; STORAGE="${p[6]:-}"
 
     [[ -z "$BOARD" ]] && continue
     BOARD_SLUG="${BOARD,,}"
@@ -448,14 +448,19 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     APP_SUFFIX=""; [[ -n "$APP" ]] && APP_SUFFIX="-${APP}"
     REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${BRANCH}_${VARIANT}${APP_SUFFIX}"
 
+    # file_url must remain the original URL (GitHub Releases for community/os/distribution)
+    FILE_URL="$URL"
+
     if [[ "$URL" == https://github.com/armbian/* ]]; then
       CACHE="https://cache.armbian.com/artifacts/${BOARD_SLUG}/archive/${IMAGE_NAME}"
-      ASC="$CACHE.asc"; SHA="$CACHE.sha"; TOR="$CACHE.torrent"
+      ASC="${CACHE}.asc"
+      SHA="${CACHE}.sha"
+      TOR="${CACHE}.torrent"
     else
-      ASC="$URL.asc"; SHA="$URL.sha"; TOR="$URL.torrent"
+      ASC="${URL}.asc"
+      SHA="${URL}.sha"
+      TOR="${URL}.torrent"
     fi
-    FILE_URL="${CACHE:-$URL}"
-
     PROMOTED=false
     if is_promoted "$IMAGE_NAME" "$BOARD_SLUG" "$URL"; then
       PROMOTED=true
@@ -464,9 +469,12 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     BOARD_VENDOR="${BOARD_VENDOR_MAP[$BOARD_SLUG]:-}"
     BOARD_SUPPORT="${BOARD_SUPPORT_MAP[$BOARD_SLUG]:-}"
     COMPANY_KEY="${BOARD_VENDOR,,}"
-
-    C_NAME="${COMPANY_NAME_BY_SLUG[$COMPANY_KEY]:-}"
-    C_WEB="${COMPANY_WEBSITE_BY_SLUG[$COMPANY_KEY]:-}"
+    C_NAME=""
+    C_WEB=""
+    if [[ -n "$COMPANY_KEY" ]]; then
+      C_NAME="${COMPANY_NAME_BY_SLUG[$COMPANY_KEY]:-}"
+      C_WEB="${COMPANY_WEBSITE_BY_SLUG[$COMPANY_KEY]:-}"
+    fi
 
     C_LOGO=""
     if [[ -n "$BOARD_VENDOR" ]]; then
