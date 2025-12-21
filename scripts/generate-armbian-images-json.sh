@@ -292,6 +292,12 @@ strip_img_ext() {
 extract_file_extension() {
   local n="$1"
 
+  # U-Boot artifacts
+  if [[ "$n" == *".u-boot.bin."* ]]; then
+    echo "u-boot.bin.${n##*.u-boot.bin.}"   # e.g. u-boot.bin.xz
+    return
+  fi
+
   # rootfs images
   if [[ "$n" == *".rootfs.img."* ]]; then
     echo "rootfs.img.${n##*.rootfs.img.}"
@@ -501,12 +507,19 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       ""|img|oowow) BOOT_SUFFIX="";;
     esac
 
+    # U-Boot artifacts should show up as "-boot" in REDI_URL
+    UBOOT_SUFFIX=""
+    if [[ "$FILE_EXTENSION" == u-boot.bin* ]]; then
+      UBOOT_SUFFIX="boot"
+    fi
+
     if [[ "$FILE_EXTENSION" == img.qcow2* ]]; then
       REDI_BRANCH="cloud"
       REDI_VARIANT="${VARIANT}-qcow2"
     else
       # Append boot flavor for non-cloud images
       [[ -n "$BOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${BOOT_SUFFIX}"
+      [[ -n "$UBOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${UBOOT_SUFFIX}"
     fi
 
     REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${REDI_BRANCH}_${REDI_VARIANT}"
