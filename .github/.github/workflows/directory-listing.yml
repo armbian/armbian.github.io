@@ -1,0 +1,80 @@
+name: "Generate directory listing"
+
+on:
+  push:
+    branches:
+      - data
+
+permissions:
+  contents: write   # needed to force-push to data
+  pages: write      # deploy to Pages
+  id-token: write   # verify deployment source
+
+jobs:
+  pages-directory-listing:
+    runs-on: ubuntu-24.04
+    name: "Directory Listings Index"
+    steps:
+      - name: Checkout data branch
+        uses: actions/checkout@v6
+        with:
+          ref: data
+          fetch-depth: 0
+
+      # --- Rewrite data branch as a fresh single-commit state (drop history) ---
+      - name: Force-rewrite data branch (orphan)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Keep a copy of /data (generated listing included)
+          tmpdir="$(mktemp -d)"
+          rsync -a --delete .github/ "$tmpdir/.github/"
+          rsync -a --delete data/ "$tmpdir/data/"
+
+          # Create an orphan branch and replace contents with only /data
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # If we are already on data, switch to a temporary orphan first
+          git checkout --orphan tmp-data-rewrite
+          # Remove all tracked files from index & workspace
+          git reset --hard
+          git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx
+
+          # Restore just the data/ directory
+          mkdir -p data .github
+          rsync -a --delete "$tmpdir/data" "data/"
+          rsync -a --delete "$tmpdir/.github" ".github/"
+
+          # Commit and replace the branch
+          git add data
+          git add .github
+          git commit -m "Recreate data branch with generated directory listing (history dropped)"
+          git branch -M data
+          git push -f origin data
+
+      - name: Generate Directory Listings
+        uses: jayanta525/github-pages-directory-listing@v4.0.0
+        with:
+          FOLDER: data
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: 'data'  # upload generated folder
+
+  deploy:
+    needs: pages-directory-listing
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
