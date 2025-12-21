@@ -1,75 +1,99 @@
-name: "Generate directory listing"
+name: "Generate https://armbian.github.io"
 
 on:
   push:
-    branches:
-      - data
-#  repository_dispatch:
-#    types: ["Generate directory"]
+    branches: [data]
   workflow_dispatch:
 
 permissions:
-  contents: write   # needed to force-push to data
-  pages: write      # deploy to Pages
-  id-token: write   # verify deployment source
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-data
+  cancel-in-progress: true
 
 jobs:
-  pages-directory-listing:
+  build:
+    name: "Rebuild data branch + upload artifact"
     runs-on: ubuntu-24.04
-    name: "Directory Listings Index"
+
+    # Loop guard: don't rerun on our own generated commit
+    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, 'Rebuild data branch (generated)') }}
+
     steps:
       - name: Checkout data branch
         uses: actions/checkout@v6
         with:
           ref: data
           fetch-depth: 0
+          path: data_wd
 
-      # --- Rewrite data branch as a fresh single-commit state (drop history) ---
-      - name: Force-rewrite data branch (orphan)
-        shell: bash
-        run: |
-          set -euo pipefail
+      - name: Checkout main branch (workflow source)
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          path: main_wd
 
-          # Keep a copy of /data (generated listing included)
-          tmpdir="$(mktemp -d)"
-          rsync -a --delete data/ "$tmpdir/"
-
-          # Create an orphan branch and replace contents with only /data
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          # If we are already on data, switch to a temporary orphan first
-          git checkout --orphan tmp-data-rewrite
-          # Remove all tracked files from index & workspace
-          git reset --hard
-          git rm -rf . >/dev/null 2>&1 || true
-          git clean -fdx
-
-          # Restore just the data/ directory
-          mkdir -p data
-          rsync -a --delete "$tmpdir/" "data/"
-
-          # Commit and replace the branch
-          git add data
-          git commit -m "Recreate data branch with generated directory listing (history dropped)"
-          git branch -M data
-          git push -f origin data
-
+      # Generate directory listing into data_wd/data
       - name: Generate Directory Listings
         uses: jayanta525/github-pages-directory-listing@v4.0.0
         with:
-          FOLDER: data
+          FOLDER: data_wd/data
 
-      - name: Upload artifact
+      - name: Stage generated data + updated workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmpdir="$(mktemp -d)"
+
+          # Keep generated content
+          rsync -a data_wd/data/ "$tmpdir/data/"
+
+          # Keep the workflow file on data so pushes keep triggering,
+          # and update it from main (because you edit only main).
+          mkdir -p "$tmpdir/.github/workflows"
+          rsync -a \
+            main_wd/.github/workflows/directory-listing.yml \
+            "$tmpdir/.github/workflows/directory-listing.yml"
+
+          echo "TMPDIR=$tmpdir" >> "$GITHUB_ENV"
+
+      - name: Rewrite data branch from scratch (single commit)
+        shell: bash
+        working-directory: data_wd
+        run: |
+          set -euo pipefail
+
+          git config user.name  "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git checkout --orphan __data_rebuild__
+          git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx
+
+          mkdir -p data .github/workflows
+          rsync -a --delete "$TMPDIR/data/" data/
+          rsync -a --delete "$TMPDIR/.github/workflows/" .github/workflows/
+
+          git add data .github/workflows/directory-listing.yml
+          git commit -m "Rebuild data branch (generated)"
+          git branch -M data
+          git push -f origin data
+
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: 'data'  # upload generated folder
+          path: "data_wd/data"
 
   deploy:
-    needs: pages-directory-listing
+    name: "Deploy to armbian.github.io"
+    needs: build
     permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
