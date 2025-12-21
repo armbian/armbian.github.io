@@ -37,12 +37,6 @@ jobs:
           fetch-depth: 0
           path: main_wd
 
-      # Generate directory listing into data_wd/data
-      - name: Generate Directory Listings
-        uses: jayanta525/github-pages-directory-listing@v4.0.0
-        with:
-          FOLDER: data_wd/data
-
       - name: Stage generated data + updated workflow
         shell: bash
         run: |
@@ -82,6 +76,11 @@ jobs:
           git commit -m "Rebuild data branch (generated)"
           git branch -M data
           git push -f origin data
+
+      - name: Generate Directory Listings
+        uses: jayanta525/github-pages-directory-listing@v4.0.0
+        with:
+          FOLDER: "data_wd/data"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
