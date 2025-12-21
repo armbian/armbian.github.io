@@ -58,7 +58,7 @@ Automatically generates thumbnails from `board-images/`, and `board-vendor-logos
   Compiles a Markdown digest of merged pull requests across one or more repos or an entire org.
 
 - **Update Download JSON Index**  
-  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-web-index.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-web-index.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/update-download-index.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/update-download-index.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Regenerates image download indexes across all supported devices.
 
 - **Mirror Comparison & Redirector Config**  
