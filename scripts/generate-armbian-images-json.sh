@@ -291,12 +291,52 @@ strip_img_ext() {
 
 extract_file_extension() {
   local n="$1"
-  [[ "$n" == *.img.xz ]] && echo "img.xz" && return
-  [[ "$n" == *.img.zst ]] && echo "img.zst" && return
-  [[ "$n" == *.img.gz ]] && echo "img.gz" && return
-  [[ "$n" == *.img ]] && echo "img" && return
+
+  # rootfs images
+  if [[ "$n" == *".rootfs.img."* ]]; then
+    echo "rootfs.img.${n##*.rootfs.img.}"
+    return
+  fi
+
+  # oowow images
+  if [[ "$n" == *".oowow.img."* ]]; then
+    echo "oowow.img.${n##*.oowow.img.}"
+    return
+  fi
+
+  # boot payload images:
+  #   ...desktop.boot_sm8250-xiaomi-elish-boe.img.xz  -> boe.img.xz
+  #   ...desktop.boot_recovery.img.xz                 -> recovery.img.xz
+  if [[ "$n" == *".boot_"*".img."* ]]; then
+    local after_boot="${n#*.boot_}"       # everything after the first ".boot_"
+    local boot_stem="${after_boot%%.img.*}"  # up to before ".img."
+    local flavor="$boot_stem"
+
+    # if it's boot_sm8250-...-boe, take last '-' token
+    if [[ "$boot_stem" == *-* ]]; then
+      flavor="${boot_stem##*-}"
+    fi
+
+    echo "${flavor}.img.${n##*.img.}"
+    return
+  fi
+
+  # qcow2 (or other img.*) -> canonical img.<rest>
+  if [[ "$n" == *".img."* ]]; then
+    echo "img.${n##*.img.}"
+    return
+  fi
+
+  # plain .img
+  if [[ "$n" == *.img ]]; then
+    echo "img"
+    return
+  fi
+
+  # fallback
   echo "${n##*.}"
 }
+
 
 get_download_repository() {
   local url="$1"
@@ -437,16 +477,39 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     PREFIX=""; [[ "$REPO" == "os" ]] && PREFIX="nightly/"
 
     BASE_EXT="$(extract_file_extension "$IMAGE_NAME")"
-    if [[ "$IMAGE_NAME" == *.oowow.img.xz ]]; then
-      FILE_EXTENSION="oowow.img.xz"
-    elif [[ -n "$STORAGE" ]]; then
+    if [[ -n "$STORAGE" ]]; then
       FILE_EXTENSION="${STORAGE}.${BASE_EXT}"
     else
       FILE_EXTENSION="$BASE_EXT"
     fi
 
     APP_SUFFIX=""; [[ -n "$APP" ]] && APP_SUFFIX="-${APP}"
-    REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${BRANCH}_${VARIANT}${APP_SUFFIX}"
+
+    # REDI URL "branch segment" is derived from artifact type (qcow2 => cloud)
+    REDI_BRANCH="$BRANCH"
+    REDI_VARIANT="$VARIANT${APP_SUFFIX}"
+
+    # Boot "flavor" suffix comes from FILE_EXTENSION like "boe.img.xz"
+    BOOT_SUFFIX=""
+    case "$FILE_EXTENSION" in
+      *.img.*)
+        BOOT_SUFFIX="${FILE_EXTENSION%%.img.*}"   # e.g. "boe" from "boe.img.xz"
+        ;;
+    esac
+    # ignore non-boot pseudo prefixes
+    case "$BOOT_SUFFIX" in
+      ""|img|oowow) BOOT_SUFFIX="";;
+    esac
+
+    if [[ "$FILE_EXTENSION" == img.qcow2* ]]; then
+      REDI_BRANCH="cloud"
+      REDI_VARIANT="${VARIANT}-qcow2"
+    else
+      # Append boot flavor for non-cloud images
+      [[ -n "$BOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${BOOT_SUFFIX}"
+    fi
+
+    REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${REDI_BRANCH}_${REDI_VARIANT}"
 
     if [[ "$URL" == https://github.com/armbian/* ]]; then
       CACHE="https://cache.armbian.com/artifacts/${BOARD_SLUG}/archive/${IMAGE_NAME}"
