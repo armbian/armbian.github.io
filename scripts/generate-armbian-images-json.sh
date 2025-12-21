@@ -292,9 +292,27 @@ strip_img_ext() {
 extract_file_extension() {
   local n="$1"
 
-  # U-Boot artifacts
-  if [[ "$n" == *".u-boot.bin."* ]]; then
-    echo "u-boot.bin.${n##*.u-boot.bin.}"   # e.g. u-boot.bin.xz
+  # U-Boot ROM artifacts
+  #   ...minimal.u-boot.rom.xz  -> u-boot.rom.xz
+  #   ...minimal.u-boot.rom     -> u-boot.rom
+  if [[ "$n" == *".u-boot.rom" ]] || [[ "$n" == *".u-boot.rom."* ]]; then
+    if [[ "$n" == *".u-boot.rom."* ]]; then
+      echo "u-boot.rom.${n##*.u-boot.rom.}"
+    else
+      echo "u-boot.rom"
+    fi
+    return
+  fi
+
+  # U-Boot BIN artifacts
+  #   ...minimal.u-boot.bin.xz  -> u-boot.bin.xz
+  #   ...minimal.u-boot.bin     -> u-boot.bin
+  if [[ "$n" == *".u-boot.bin" ]] || [[ "$n" == *".u-boot.bin."* ]]; then
+    if [[ "$n" == *".u-boot.bin."* ]]; then
+      echo "u-boot.bin.${n##*.u-boot.bin.}"
+    else
+      echo "u-boot.bin"
+    fi
     return
   fi
 
@@ -314,14 +332,12 @@ extract_file_extension() {
   #   ...desktop.boot_sm8250-xiaomi-elish-boe.img.xz  -> boe.img.xz
   #   ...desktop.boot_recovery.img.xz                 -> recovery.img.xz
   if [[ "$n" == *".boot_"*".img."* ]]; then
-    local after_boot="${n#*.boot_}"       # everything after the first ".boot_"
-    local boot_stem="${after_boot%%.img.*}"  # up to before ".img."
+    local after_boot="${n#*.boot_}"          # after ".boot_"
+    local boot_stem="${after_boot%%.img.*}"  # before ".img."
     local flavor="$boot_stem"
 
     # if it's boot_sm8250-...-boe, take last '-' token
-    if [[ "$boot_stem" == *-* ]]; then
-      flavor="${boot_stem##*-}"
-    fi
+    [[ "$boot_stem" == *-* ]] && flavor="${boot_stem##*-}"
 
     echo "${flavor}.img.${n##*.img.}"
     return
@@ -342,7 +358,6 @@ extract_file_extension() {
   # fallback
   echo "${n##*.}"
 }
-
 
 get_download_repository() {
   local url="$1"
@@ -507,6 +522,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       ""|img|oowow) BOOT_SUFFIX="";;
     esac
 
+    # U-Boot ROM suffix
+    UBOOT_ROM_SUFFIX=""
+    [[ "$FILE_EXTENSION" == u-boot.rom* ]] && UBOOT_ROM_SUFFIX="u-boot-rom"
+
     # U-Boot artifacts should show up as "-boot" in REDI_URL
     UBOOT_SUFFIX=""
     if [[ "$FILE_EXTENSION" == u-boot.bin* ]]; then
@@ -514,12 +533,12 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     fi
 
     if [[ "$FILE_EXTENSION" == img.qcow2* ]]; then
-      REDI_BRANCH="cloud"
       REDI_VARIANT="${VARIANT}-qcow2"
     else
       # Append boot flavor for non-cloud images
       [[ -n "$BOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${BOOT_SUFFIX}"
       [[ -n "$UBOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${UBOOT_SUFFIX}"
+      [[ -n "$UBOOT_ROM_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${UBOOT_ROM_SUFFIX}"
     fi
 
     REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${REDI_BRANCH}_${REDI_VARIANT}"
