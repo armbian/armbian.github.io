@@ -267,6 +267,8 @@ if __name__ == "__main__":
     # Don't do this yet b/c jammy goes EOS Apr 2027, we don't know if we'll be ready.
     # also resolute isn't in changelog as of 2025Dec03
     releases += [ 'ubuntu/jammy', 'ubuntu/noble', 'ubuntu/plucky', 'ubuntu/questing', 'ubuntu/resolute' ]
+    # Add -updates repos for LTS releases to get latest security updates
+    releases += [ 'ubuntu/jammy-updates', 'ubuntu/noble-updates' ]
     release_hash = {}
     for release in releases:
         distro, release = release.split('/')
