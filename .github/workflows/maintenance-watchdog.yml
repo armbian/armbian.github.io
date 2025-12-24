@@ -25,9 +25,9 @@ jobs:
 
         # list scripts you want to watch and execute failed jobs x-times
         script:
-          - generate-redirector-config
-          - generate-base-files-info-json
-          - mirror
+          - infrastructure-update-redirector-config
+          - data-update-base-files-info
+          - infrastructure-mirror-repository-artifacts
 
     name: "R"
     runs-on: ubuntu-24.04
