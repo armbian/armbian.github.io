@@ -74,7 +74,7 @@ jobs:
           rsync -a --delete "$TMPDIR/data/" data/
           rsync -a --delete "$TMPDIR/.github/workflows/" .github/workflows/
 
-          git add data .github/workflows/directory-listing.yml
+          git add data .github/workflows/web-directory-listing.yml
           git commit -m "Rebuild data branch (generated)"
           git branch -M data
           git push -f origin data
