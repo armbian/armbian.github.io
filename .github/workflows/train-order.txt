@@ -1,8 +1,8 @@
 # Build train order
 
-- generate-redirector-config.yml
-- generate-web-index.yml
-- generate-jira-excerpt.yml
-- generate-partners-json.yml
-- generate-base-files-info-json.yml
-- directory-listing.yml
+- infrastructure-update-redirector-config.yml
+- data-update-download-index.yml
+- data-update-jira-excerpt.yml
+- data-update-partners-data.yml
+- data-update-base-files-info.yml
+- web-directory-listing.yml
