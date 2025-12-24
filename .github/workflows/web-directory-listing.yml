@@ -52,8 +52,8 @@ jobs:
           # and update it from main (because you edit only main).
           mkdir -p "$tmpdir/.github/workflows"
           rsync -a \
-            main_wd/.github/workflows/directory-listing.yml \
-            "$tmpdir/.github/workflows/directory-listing.yml"
+            main_wd/.github/workflows/web-directory-listing.yml \
+            "$tmpdir/.github/workflows/web-directory-listing.yml"
 
           echo "TMPDIR=$tmpdir" >> "$GITHUB_ENV"
 
