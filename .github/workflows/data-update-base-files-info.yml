@@ -1,4 +1,4 @@
-name: "Update base-files package info"
+name: "Data: Update base-files info"
 # Trigger this in a train (from generate-jira-excerpt.yml)
 on:
   workflow_dispatch:

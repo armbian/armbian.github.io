@@ -1,5 +1,5 @@
-# .github/workflows/mirror.yml
-name: "Mirror repository artifacts"
+# .github/workflows/infrastructure-mirror-repository-artifacts.yml
+name: "Infrastructure: Mirror artifacts"
 on:
   workflow_dispatch:
   repository_dispatch:

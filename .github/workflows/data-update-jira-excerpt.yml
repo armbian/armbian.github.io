@@ -1,4 +1,4 @@
-name: "Pull from Armbian Jira"
+name: "Data: Update Jira excerpt"
 
 on:
   repository_dispatch:

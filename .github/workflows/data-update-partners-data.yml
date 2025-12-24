@@ -1,4 +1,4 @@
-name: Generate Bigin JSONs
+name: "Data: Update partners data"
 
 on:
   repository_dispatch:

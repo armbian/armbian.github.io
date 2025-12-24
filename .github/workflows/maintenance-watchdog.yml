@@ -1,7 +1,7 @@
 #
 # This action restarts actions that failed - 3x
 #
-name: Watchdog (cronjob)
+name: "Maintenance: Watchdog (cronjob)"
 on:
   push:
   schedule:

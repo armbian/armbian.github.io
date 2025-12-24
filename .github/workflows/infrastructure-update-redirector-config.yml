@@ -1,4 +1,4 @@
-name: "Update redirector YAML config"
+name: "Infrastructure: Update redirector"
 # Trigger this workflow on a manual dispatch or a scheduled time
 on:
   repository_dispatch:
