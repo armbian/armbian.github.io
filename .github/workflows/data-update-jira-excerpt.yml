@@ -2,7 +2,7 @@ name: "Data: Update Jira excerpt"
 
 on:
   repository_dispatch:
-    types: ["Jira update"]
+    types: ["Data: Update Jira excerpt"]
 
 concurrency:
   group: redirector
