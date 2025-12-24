@@ -11,26 +11,26 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 
 ### Build & Packaging Automation
 
-- **Build Artifacts Assembly**  
-  <a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+- **Build Artifacts Assembly**
+  <a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Assembles packages and stores them in the [ORAS cache](https://github.com/orgs/armbian/packages).
 
-- **Linux Kernel Shallow Bundles**  
+- **Linux Kernel Shallow Bundles**
   <a href=https://github.com/armbian/shallow/actions/workflows/git-trees-oras.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/shallow/git-trees-oras.yml?logo=linux&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  <br>Packages minimal (shallow) kernel source trees for fast and efficient CI use, reducing clone depth and speeding up build workflows.
-  
-- **Build Armbian Docker Image**  
-  <a href=https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/docker-armbian-build/update_docker.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+  Packages minimal (shallow) kernel source trees for fast and efficient CI use, reducing clone depth and speeding up build workflows.
+
+- **Build Armbian Docker Image**
+  <a href=https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/docker-armbian-build/update_docker.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Builds and publishes Docker images for the [Armbian Build Framework](https://github.com/armbian/build) to the [GitHub Container Registry](https://github.com/orgs/armbian/packages).
 
-- **Generate APT Repository**  
-  <a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+- **Generate APT Repository**
+  <a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Publishes packages from the [ORAS cache](https://github.com/orgs/armbian/packages) and [external sources](https://github.com/armbian/os/tree/main/external) to APT repositories.
 
 ### Testing & Validation
 
-- **Applications Install Testing**  
-  <a href=https://github.com/armbian/configng/actions/workflows/unit-tests.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/configng/unit-tests.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+- **Applications Install Testing**
+  <a href=https://github.com/armbian/configng/actions/workflows/unit-tests.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/configng/unit-tests.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Runs unit tests on `armbian-config` modules to validate install, upgrade, and configuration logic.
 
 - **Wireless Performance Testing**
@@ -41,16 +41,15 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 ### Metadata & Content Generation
 
 - **Generate Board Images & Thumbnails**
-<a href=https://github.com/armbian/armbian.github.io/actions/workflows/assets-generate-board-thumbnails.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/assets-generate-board-thumbnails.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-Automatically generates thumbnails from `board-images/`, and `board-vendor-logos/` and publishes them to Armbian cache mirrors under `https://cache.armbian.com/images/<SIZE>/<BOARDCONFIG>.png` and `https://cache.armbian.com/images/vendors/<SIZE>/<VENDORLOGO>.png`.
-
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/assets-generate-board-thumbnails.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/assets-generate-board-thumbnails.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+  Automatically generates thumbnails from `board-images/`, and `board-vendor-logos/` and publishes them to Armbian cache mirrors under `https://cache.armbian.com/images/<SIZE>/<BOARDCONFIG>.png` and `https://cache.armbian.com/images/vendors/<SIZE>/<VENDORLOGO>.png`.
 
 - **Extract Base-Files Metadata**
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/data-update-base-files-info.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/data-update-base-files-info.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Embeds build metadata into Armbian's `base-files` packages.
 
-- **Cache latest keyrings for Debian & Ubuntu**  
-  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-keyring-data.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-keyring-data.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
+- **Cache latest keyrings for Debian & Ubuntu**
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/generate-keyring-data.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/generate-keyring-data.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Improve reliability of build process.
 
 - **Generate weekly release for entire organisation**
@@ -74,9 +73,9 @@ Automatically generates thumbnails from `board-images/`, and `board-vendor-logos
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/data-update-jira-excerpt.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/data-update-jira-excerpt.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Extracts metadata and summaries from public Jira issues.
 
-- **Fetch Armbian Kernel Package Versions**  
-  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/repository-status.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/repository-status.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
-  Fetches the latest CURRENT and EDGE kernel package versions from Armbian's beta repository and generates SVG badges and a JSON file.  
+- **Fetch Armbian Kernel Package Versions**
+  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/repository-status.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/repository-status.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+  Fetches the latest CURRENT and EDGE kernel package versions from Armbian's beta repository and generates SVG badges and a JSON file.
 
 ### Infrastructure & Community
 
@@ -96,10 +95,9 @@ Automatically generates thumbnails from `board-images/`, and `board-vendor-logos
   <a href=https://github.com/armbian/armbian.github.io/actions/workflows/monitoring-runners-status.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/monitoring-runners-status.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
   Generates a table of Self Hosted runners with CPU, memory, storage, runner status, and totals.
 
-
 ### Documentation
 
-- **Generate Documentation**  
-  <a href=https://github.com/armbian/documentation/actions/workflows/release.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/documentation/release.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>  
-  Builds and deploys docs from Markdown sources using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/).  
+- **Generate Documentation**
+  <a href=https://github.com/armbian/documentation/actions/workflows/release.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/documentation/release.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
+  Builds and deploys docs from Markdown sources using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/).
   Published to: [docs.armbian.com](https://docs.armbian.com)
