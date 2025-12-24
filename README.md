@@ -9,7 +9,6 @@ This repository acts as a central **automation and orchestration hub** for the A
 
 It also produces [data exchange files](https://github.armbian.com/) used for automation, reporting, and content delivery across the Armbian infrastructure.
 
----
 
 ## Build & Packaging Automation
 
@@ -20,7 +19,6 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 | [Build Armbian Docker Image](https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml) | <a href=https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/docker-armbian-build/update_docker.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Builds and publishes Docker images for the [Armbian Build Framework](https://github.com/armbian/build) to the [GitHub Container Registry](https://github.com/orgs/armbian/packages) |
 | [Generate APT Repository](https://github.com/armbian/os/actions/workflows/repository-update.yml) | <a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Publishes packages from the [ORAS cache](https://github.com/orgs/armbian/packages) and [external sources](https://github.com/armbian/os/tree/main/external) to APT repositories |
 
----
 
 ## Testing & Validation
 
@@ -29,7 +27,6 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 | [Applications Install Testing](https://github.com/armbian/configng/actions/workflows/unit-tests.yml) | <a href=https://github.com/armbian/configng/actions/workflows/unit-tests.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/configng/unit-tests.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Runs unit tests on `armbian-config` modules to validate install, upgrade, and configuration logic |
 | [Wireless Performance Testing](https://github.com/armbian/armbian.github.io/actions/workflows/testing-wireless-performance-test.yml) | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/testing-wireless-performance-test.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/testing-wireless-performance-test.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Executes Wi-Fi benchmarks on supported devices to identify performance regressions ([Docs →](https://docs.armbian.com/WifiPerformance/)) |
 
----
 
 ## Data & Content Generation
 
@@ -45,7 +42,6 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 | [Update Jira Excerpts](https://github.com/armbian/armbian.github.io/actions/workflows/data-update-jira-excerpt.yml) | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/data-update-jira-excerpt.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/data-update-jira-excerpt.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Extracts metadata and summaries from public Jira issues |
 | [Fetch Kernel Versions](https://github.com/armbian/armbian.github.io/actions/workflows/repository-status.yaml) | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/repository-status.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/repository-status.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Fetches the latest CURRENT and EDGE kernel package versions and generates badges |
 
----
 
 ## Infrastructure & Community
 
@@ -56,7 +52,6 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 | [Enforce Triage Role](https://github.com/armbian/armbian.github.io/actions/workflows/community-enforce-triage-role.yml) | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/community-enforce-triage-role.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/community-enforce-triage-role.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Automatically grants the All-repository triage role to all organization members |
 | [Runners Status](https://github.com/armbian/armbian.github.io/actions/workflows/monitoring-runners-status.yml) | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/monitoring-runners-status.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/monitoring-runners-status.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Generates a status table of self-hosted runners with CPU, memory, storage, and runner status |
 
----
 
 ## Documentation
 
