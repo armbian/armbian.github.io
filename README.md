@@ -13,34 +13,21 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 
 ## Build & Packaging Automation
 
-- **[Build Artifacts Assembly](https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml)**
-  <a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Assembles packages and stores them in the [ORAS cache](https://github.com/orgs/armbian/packages).
-
-- **[Linux Kernel Shallow Bundles](https://github.com/armbian/shallow/actions/workflows/git-trees-oras.yml)**
-  <a href=https://github.com/armbian/shallow/actions/workflows/git-trees-oras.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/shallow/git-trees-oras.yml?logo=linux&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Packages minimal (shallow) kernel source trees for fast and efficient CI use, reducing clone depth and speeding up build workflows.
-
-- **[Build Armbian Docker Image](https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml)**
-  <a href=https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/docker-armbian-build/update_docker.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Builds and publishes Docker images for the [Armbian Build Framework](https://github.com/armbian/build) to the [GitHub Container Registry](https://github.com/orgs/armbian/packages).
-
-- **[Generate APT Repository](https://github.com/armbian/os/actions/workflows/repository-update.yml)**
-  <a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Publishes packages from the [ORAS cache](https://github.com/orgs/armbian/packages) and [external sources](https://github.com/armbian/os/tree/main/external) to APT repositories.
+| Workflow | Status | Description |
+|----------|--------|-------------|
+| [Build Artifacts Assembly](https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml) | <a href=https://github.com/armbian/os/actions/workflows/complete-artifact-matrix-all.yml><img alt="Artifacts generation" src="https://img.shields.io/github/actions/workflow/status/armbian/os/complete-artifact-matrix-all.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Assembles packages and stores them in the [ORAS cache](https://github.com/orgs/armbian/packages) |
+| [Linux Kernel Shallow Bundles](https://github.com/armbian/shallow/actions/workflows/git-trees-oras.yml) | <a href=https://github.com/armbian/shallow/actions/workflows/git-trees-oras.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/shallow/git-trees-oras.yml?logo=linux&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Packages minimal (shallow) kernel source trees for fast and efficient CI use, reducing clone depth and speeding up build workflows |
+| [Build Armbian Docker Image](https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml) | <a href=https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/docker-armbian-build/update_docker.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Builds and publishes Docker images for the [Armbian Build Framework](https://github.com/armbian/build) to the [GitHub Container Registry](https://github.com/orgs/armbian/packages) |
+| [Generate APT Repository](https://github.com/armbian/os/actions/workflows/repository-update.yml) | <a href=https://github.com/armbian/os/actions/workflows/repository-update.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/os/repository-update.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Publishes packages from the [ORAS cache](https://github.com/orgs/armbian/packages) and [external sources](https://github.com/armbian/os/tree/main/external) to APT repositories |
 
 ---
 
 ## Testing & Validation
 
-- **[Applications Install Testing](https://github.com/armbian/configng/actions/workflows/unit-tests.yml)**
-  <a href=https://github.com/armbian/configng/actions/workflows/unit-tests.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/configng/unit-tests.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Runs unit tests on `armbian-config` modules to validate install, upgrade, and configuration logic.
-
-- **[Wireless Performance Testing](https://github.com/armbian/armbian.github.io/actions/workflows/testing-wireless-performance-test.yml)**
-  <a href=https://github.com/armbian/armbian.github.io/actions/workflows/testing-wireless-performance-test.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/testing-wireless-performance-test.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Executes Wi-Fi benchmarks on supported devices to identify performance regressions.
-  [Docs →](https://docs.armbian.com/WifiPerformance/)
+| Workflow | Status | Description |
+|----------|--------|-------------|
+| [Applications Install Testing](https://github.com/armbian/configng/actions/workflows/unit-tests.yml) | <a href=https://github.com/armbian/configng/actions/workflows/unit-tests.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/configng/unit-tests.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Runs unit tests on `armbian-config` modules to validate install, upgrade, and configuration logic |
+| [Wireless Performance Testing](https://github.com/armbian/armbian.github.io/actions/workflows/testing-wireless-performance-test.yml) | <a href=https://github.com/armbian/armbian.github.io/actions/workflows/testing-wireless-performance-test.yml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/armbian.github.io/testing-wireless-performance-test.yml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Executes Wi-Fi benchmarks on supported devices to identify performance regressions ([Docs →](https://docs.armbian.com/WifiPerformance/)) |
 
 ---
 
@@ -73,7 +60,6 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 
 ## Documentation
 
-- **[Generate Documentation](https://github.com/armbian/documentation/actions/workflows/release.yaml)**
-  <a href=https://github.com/armbian/documentation/actions/workflows/release.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/documentation/release.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a>
-  Builds and deploys docs from Markdown sources using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/).
-  Published to: [docs.armbian.com](https://docs.armbian.com)
+| Workflow | Status | Description |
+|----------|--------|-------------|
+| [Generate Documentation](https://github.com/armbian/documentation/actions/workflows/release.yaml) | <a href=https://github.com/armbian/documentation/actions/workflows/release.yaml><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/armbian/documentation/release.yaml?logo=githubactions&label=Status&style=for-the-badge&branch=main&logoColor=white"></a> | Builds and deploys docs from Markdown sources using [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) - Published to: [docs.armbian.com](https://docs.armbian.com) |
