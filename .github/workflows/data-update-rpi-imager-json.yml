@@ -1,4 +1,4 @@
-name: Update Rpi imager download JSON index
+name: "Data: Update RPI imager JSON"
 on:
 #  repository_dispatch:
 #    types: ["Webindex update"]

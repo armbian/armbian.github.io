@@ -1,4 +1,4 @@
-name: "Generate release summary"
+name: "Reporting: Release summary"
 
 on:
   workflow_dispatch:

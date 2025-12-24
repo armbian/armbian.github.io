@@ -1,4 +1,4 @@
-name: Update download JSON index v2
+name: "Data: Update download index"
 
 on:
   repository_dispatch:

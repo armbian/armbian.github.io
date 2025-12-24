@@ -1,4 +1,4 @@
-name: "Generate runners status"
+name: "Monitoring: Runners status"
 
 on:
   push:
