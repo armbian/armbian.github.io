@@ -80,6 +80,25 @@ jobs:
           # Copy into workspace root so later steps can reference easily
           cp armbian-images.json "${GITHUB_WORKSPACE}/armbian-images.json"
 
+      - name: Download and compress torrent files
+        run: |
+          set -euo pipefail
+
+          SOURCE=$(mktemp -d)
+          DESTINATION=$(mktemp -d)
+
+          rsync -zqvr \
+            --include="*/archive/*.torrent" \
+            --exclude="/*/*/*" \
+            --exclude="_*/" \
+            --exclude="control" \
+            --exclude="quotes.txt" \
+            --exclude="*/all-torrents.zip" \
+            "${SOURCE_OF_TRUTH}/dl/" "${SOURCE}"
+
+          find ${SOURCE}/. -mindepth 3 -exec mv -i -- {} ${DESTINATION}/ \;
+          zip -qj "${GITHUB_WORKSPACE}/all-torrents.zip" ${DESTINATION}/*.torrent
+
       - name: Commit changes if any
         run: |
           set -euo pipefail
@@ -94,10 +113,11 @@ jobs:
 
           mkdir -p data
           cp "${GITHUB_WORKSPACE}/armbian-images.json" data/
+          cp "${GITHUB_WORKSPACE}/all-torrents.zip" data/
 
-          git add data/armbian-images.json
+          git add data/armbian-images.json data/all-torrents.zip
           if ! git diff --cached --quiet; then
-            git commit -m "Update armbian-images.json"
+            git commit -m "Update armbian-images.json and all-torrents.zip"
             # rebase once more right before push to reduce race window
             git pull --rebase origin data
             git push origin data
