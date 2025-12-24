@@ -2,7 +2,7 @@ name: "Data: Update download index"
 
 on:
   repository_dispatch:
-    types: ["Webindex update"]
+    types: ["Data: Update download index"]
   workflow_dispatch:
 
 permissions:
@@ -107,4 +107,4 @@ jobs:
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Jira update"
+          event-type: "Data: Update Jira excerpt"

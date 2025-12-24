@@ -2,7 +2,7 @@ name: "Data: Update partners data"
 
 on:
   repository_dispatch:
-    types: ["Bigin update"]
+    types: ["Data: Update partners data"]
 
 concurrency:
   group: redirector
@@ -118,4 +118,4 @@ jobs:
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Base files"
+          event-type: "Data: Update base-files info"

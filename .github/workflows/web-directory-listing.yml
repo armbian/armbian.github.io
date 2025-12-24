@@ -4,6 +4,8 @@ on:
   push:
     branches: [data]
   workflow_dispatch:
+  repository_dispatch:
+    types: ["Web: Directory listing"]
 
 permissions:
   contents: write

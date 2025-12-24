@@ -1,7 +1,7 @@
 name: "Data: Update RPI imager JSON"
 on:
-#  repository_dispatch:
-#    types: ["Webindex update"]
+  repository_dispatch:
+    types: ["Data: Update RPI imager JSON"]
   workflow_dispatch:   # Manually triggered via GitHub Actions UI    
 
 concurrency:
