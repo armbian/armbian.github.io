@@ -146,8 +146,12 @@ jobs:
 
             echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}" >&2
 
-            # Expand architectures (colon-separated)
-            archs=($(echo "$ARCH" | tr ':' ' '))
+            # Expand architectures (comma-separated, also support colon as fallback)
+            if [[ "$ARCH" == *","* ]]; then
+              archs=($(echo "$ARCH" | tr ',' ' '))
+            else
+              archs=($(echo "$ARCH" | tr ':' ' '))
+            fi
 
             # Expand releases
             if [[ "${RELEASE}" == "all" ]]; then
@@ -227,7 +231,11 @@ jobs:
             . "os/external/${conf_file}.conf"
 
             # Expand architectures and releases for display
-            archs=($(echo "$ARCH" | tr ':' ' '))
+            if [[ "$ARCH" == *","* ]]; then
+              archs=($(echo "$ARCH" | tr ',' ' '))
+            else
+              archs=($(echo "$ARCH" | tr ':' ' '))
+            fi
             if [[ "${RELEASE}" == "all" ]]; then
               releases=("bookworm" "jammy" "noble")
             elif [[ "${RELEASE}" == *":"* ]]; then
