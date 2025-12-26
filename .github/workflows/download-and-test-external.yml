@@ -196,11 +196,11 @@ jobs:
                   '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, docker_image: $docker_image, needs_qemu: $needs_qemu}'
               done
             done
-          done | jq -s '.'
+          done | jq -s '{"include": .}'
           )
 
           # Check if matrix is valid
-          MATRIX_COUNT=$(echo "${MATRIX_JSON}" | jq 'length')
+          MATRIX_COUNT=$(echo "${MATRIX_JSON}" | jq '.include | length')
           echo "::notice::Generated ${MATRIX_COUNT} matrix entries" >&2
 
           # Compact the JSON for GitHub Actions
@@ -251,7 +251,8 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 18
-      matrix: ${{fromJson(needs.start.outputs.matrix)}}
+      matrix:
+        include: ${{fromJson(needs.start.outputs.matrix)}}
 
     name: "${{ matrix.name }} (arch: ${{ matrix.arch }}, release: ${{ matrix.release }})"
     runs-on: ${{ inputs.BUILD_RUNNER }}
