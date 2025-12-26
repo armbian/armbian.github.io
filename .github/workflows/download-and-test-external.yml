@@ -203,8 +203,18 @@ jobs:
           MATRIX_COUNT=$(echo "${MATRIX_JSON}" | jq '.include | length')
           echo "::notice::Generated ${MATRIX_COUNT} matrix entries" >&2
 
-          # Compact the JSON for GitHub Actions
-          MATRIX_JSON_COMPACTED=$(echo "${MATRIX_JSON}" | jq -c)
+          # Handle empty matrix - add a dummy entry that will be skipped
+          if [[ "${MATRIX_COUNT}" -eq 0 ]]; then
+            echo "::warning::No matrix entries generated, adding placeholder" >&2
+            MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+          else
+            # Debug: Show raw matrix JSON
+            echo "::debug::Raw matrix JSON: ${MATRIX_JSON}" >&2
+
+            # Compact the JSON for GitHub Actions
+            MATRIX_JSON_COMPACTED=$(echo "${MATRIX_JSON}" | jq -c)
+            echo "::debug::Compacted matrix JSON: ${MATRIX_JSON_COMPACTED}" >&2
+          fi
 
           echo "matrix=${MATRIX_JSON_COMPACTED}" >> $GITHUB_OUTPUT
 
@@ -255,7 +265,8 @@ jobs:
         include: ${{fromJson(needs.start.outputs.matrix)}}
 
     name: "${{ matrix.name }} (arch: ${{ matrix.arch }}, release: ${{ matrix.release }})"
-    runs-on: ${{ inputs.BUILD_RUNNER }}
+    #runs-on: ${{ inputs.BUILD_RUNNER }}
+    runs-on: ubuntu-latest
     container:
       image: ${{ matrix.docker_image }}
       options: --user root
