@@ -251,7 +251,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "## Generated JSON Matrix" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
-          echo "${MATRIX_JSON}" >> $GITHUB_STEP_SUMMARY
+          echo "${MATRIX_JSON}" | jq . >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
   download:
