@@ -133,7 +133,7 @@ jobs:
 
           echo "::debug::MATRIX content: ${MATRIX_LIST[*]}" >&2
 
-          # Build detailed matrix with ARCH, RELEASE, Docker image and QEMU support
+          # Build detailed matrix - expand each arch and release combination
           echo "matrix=$(
           for conf_file in "${MATRIX_LIST[@]}"; do
             echo "::debug::Processing conf file: ${conf_file}" >&2
@@ -144,74 +144,56 @@ jobs:
 
             echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}" >&2
 
-            # Determine primary architecture for this job (first one in list)
-            primary_arch=$(echo "$ARCH" | cut -d: -f1)
+            # Expand architectures (colon-separated)
+            archs=($(echo "$ARCH" | tr ':' ' '))
 
-            # Determine if we need QEMU (non-amd64)
-            needs_qemu="false"
-            [[ "$primary_arch" != "amd64" ]] && needs_qemu="true"
-
-            # Determine Docker image based on RELEASE
-            # Map release names to Docker images
-            case "${RELEASE}" in
-              bookworm|bullseye|buster)
-                docker_image="debian:${RELEASE}"
-                docker_release="${RELEASE}"
-                ;;
-              trixie|sid)
-                docker_image="debian:${RELEASE}"
-                docker_release="${RELEASE}"
-                ;;
-              jammy|focal|bionic)
-                docker_image="ubuntu:${RELEASE}"
-                docker_release="${RELEASE}"
-                ;;
-              noble|mantic|lunar)
-                docker_image="ubuntu:${RELEASE}"
-                docker_release="${RELEASE}"
-                ;;
-              all)
-                # For 'all', use the first available Debian stable
-                docker_image="debian:bookworm"
-                docker_release="bookworm"
-                ;;
-              *)
-                # Default to bookworm if unknown
-                docker_image="debian:bookworm"
-                docker_release="${RELEASE}"
-                ;;
-            esac
-
-            # Handle colon-separated releases - pick first one for Docker image
-            if [[ "${RELEASE}" == *":"* ]]; then
-              first_release=$(echo "$RELEASE" | cut -d: -f1)
-              case "${first_release}" in
-                bookworm|bullseye|buster|trixie|sid)
-                  docker_image="debian:${first_release}"
-                  docker_release="${first_release}"
-                  ;;
-                *)
-                  docker_image="ubuntu:${first_release}"
-                  docker_release="${first_release}"
-                  ;;
-              esac
+            # Expand releases
+            if [[ "${RELEASE}" == "all" ]]; then
+              # Default releases for "all"
+              releases=("bookworm" "jammy" "noble")
+            elif [[ "${RELEASE}" == *":"* ]]; then
+              # Colon-separated releases
+              IFS=':' read -ra releases <<< "$RELEASE"
+            else
+              # Single release
+              releases=("$RELEASE")
             fi
 
-            echo "::debug::${conf_file} - primary_arch: ${primary_arch}, docker_image: ${docker_image}, needs_qemu: ${needs_qemu}" >&2
+            # Generate matrix entry for each arch x release combination
+            for arch in "${archs[@]}"; do
+              for release in "${releases[@]}"; do
+                # Determine if we need QEMU (non-amd64)
+                needs_qemu="false"
+                [[ "$arch" != "amd64" ]] && needs_qemu="true"
 
-            # Output JSON object with all relevant fields
-            jq -n \
-              --arg name "${conf_file}" \
-              --arg arch "${ARCH:-unknown}" \
-              --arg release "${RELEASE:-unknown}" \
-              --arg target "${TARGET:-main}" \
-              --arg method "${METHOD:-aptly}" \
-              --arg install "${INSTALL:-}" \
-              --arg primary_arch "${primary_arch}" \
-              --arg docker_image "${docker_image}" \
-              --arg docker_release "${docker_release}" \
-              --arg needs_qemu "${needs_qemu}" \
-              '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, primary_arch: $primary_arch, docker_image: $docker_image, docker_release: $docker_release, needs_qemu: $needs_qemu}'
+                # Determine Docker image based on release
+                case "${release}" in
+                  bookworm|bullseye|buster|trixie|sid)
+                    docker_image="debian:${release}"
+                    ;;
+                  jammy|focal|bionic|noble|mantic|lunar)
+                    docker_image="ubuntu:${release}"
+                    ;;
+                  *)
+                    docker_image="debian:bookworm"
+                    ;;
+                esac
+
+                echo "::debug::Generating entry: package=${conf_file}, arch=${arch}, release=${release}" >&2
+
+                # Output JSON object for this combination
+                jq -n \
+                  --arg name "${conf_file}" \
+                  --arg arch "${arch}" \
+                  --arg release "${release}" \
+                  --arg target "${TARGET:-main}" \
+                  --arg method "${METHOD:-aptly}" \
+                  --arg install "${INSTALL:-}" \
+                  --arg docker_image "${docker_image}" \
+                  --arg needs_qemu "${needs_qemu}" \
+                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, docker_image: $docker_image, needs_qemu: $needs_qemu}'
+              done
+            done
           done | jq -s '{"include": .}' | jq -c
           )" >> $GITHUB_OUTPUT
 
@@ -222,8 +204,23 @@ jobs:
           for conf_file in "${MATRIX_LIST[@]}"; do
             [[ -f "os/external/${conf_file}.conf" ]] || continue
             . "os/external/${conf_file}.conf"
-            primary_arch=$(echo "$ARCH" | cut -d: -f1)
-            echo "- ${conf_file}: ARCH=${ARCH}, RELEASE=${RELEASE}, primary_arch=${primary_arch}" >> $GITHUB_STEP_SUMMARY
+
+            # Expand architectures and releases for display
+            archs=($(echo "$ARCH" | tr ':' ' '))
+            if [[ "${RELEASE}" == "all" ]]; then
+              releases=("bookworm" "jammy" "noble")
+            elif [[ "${RELEASE}" == *":"* ]]; then
+              IFS=':' read -ra releases <<< "$RELEASE"
+            else
+              releases=("$RELEASE")
+            fi
+
+            # Display each combination
+            for arch in "${archs[@]}"; do
+              for release in "${releases[@]}"; do
+                echo "package=${conf_file}, ARCH=${arch}, RELEASE=${release}" >> $GITHUB_STEP_SUMMARY
+              done
+            done
           done
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "## Generated JSON Matrix" >> $GITHUB_STEP_SUMMARY
@@ -241,7 +238,7 @@ jobs:
       matrix:
         include: ${{fromJson(needs.start.outputs.matrix)}}
 
-    name: "${{ matrix.name }} (arch: ${{ matrix.primary_arch }}, release: ${{ matrix.docker_release }})"
+    name: "${{ matrix.name }} (arch: ${{ matrix.arch }}, release: ${{ matrix.release }})"
     runs-on: ${{ inputs.BUILD_RUNNER }}
     container:
       image: ${{ matrix.docker_image }}
@@ -308,9 +305,7 @@ jobs:
           echo "::debug::  name: ${{ matrix.name }}"
           echo "::debug::  arch: ${{ matrix.arch }}"
           echo "::debug::  release: ${{ matrix.release }}"
-          echo "::debug::  primary_arch: ${{ matrix.primary_arch }}"
           echo "::debug::  docker_image: ${{ matrix.docker_image }}"
-          echo "::debug::  docker_release: ${{ matrix.docker_release }}"
           echo "::debug::  needs_qemu: ${{ matrix.needs_qemu }}"
           echo "::debug::  target: ${{ matrix.target }}"
           echo "::debug::  method: ${{ matrix.method }}"
@@ -349,7 +344,7 @@ jobs:
 
           # Add foreign architecture if using QEMU
           if [[ "${{ matrix.needs_qemu }}" == "true" ]]; then
-              case "${{ matrix.primary_arch }}" in
+              case "${{ matrix.arch }}" in
                   arm64)
                       dpkg --add-architecture arm64
                       ;;
@@ -377,10 +372,10 @@ jobs:
               COMPONENT="main"
               [[ $KEY == "./" || $KEY == "stable" || $KEY == "public" || $KEY == "stable non-free" ]] && COMPONENT=""
               [[ $GLOB != *Name* && $GLOB != *Version* ]] && ADDITIONAL_FILTER="-filter-with-deps"
-              aptly -ignore-signatures -filter="$GLOB" ${ADDITIONAL_FILTER} -architectures="$(echo $ARCH | sed "s|:|,|g")" mirror create ${{ matrix.name }}-${RELEASE} $(echo ${URL}) $(echo ${KEY}) $(echo ${COMPONENT})
-              aptly -max-tries=20 -ignore-signatures ${APTLY_CONF} mirror update ${{ matrix.name }}-${RELEASE}
-              aptly snapshot create ${{ matrix.name }}-${RELEASE} from mirror ${{ matrix.name }}-${RELEASE}
-              aptly publish -architectures="armhf,arm64,amd64,riscv64" -batch=true -passphrase=${{ secrets.GPG_PASSPHRASE1 }} snapshot ${{ matrix.name }}-${RELEASE}
+              aptly -ignore-signatures -filter="$GLOB" ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create ${{ matrix.name }}-${{ matrix.release }} $(echo ${URL}) $(echo ${KEY}) $(echo ${COMPONENT})
+              aptly -max-tries=20 -ignore-signatures ${APTLY_CONF} mirror update ${{ matrix.name }}-${{ matrix.release }}
+              aptly snapshot create ${{ matrix.name }}-${{ matrix.release }} from mirror ${{ matrix.name }}-${{ matrix.release }}
+              aptly publish -architectures="${{ matrix.arch }}" -batch=true -passphrase=${{ secrets.GPG_PASSPHRASE1 }} snapshot ${{ matrix.name }}-${{ matrix.release }}
           fi
 
           # Cleaning exceptions
