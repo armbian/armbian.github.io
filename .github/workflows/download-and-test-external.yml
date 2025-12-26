@@ -146,12 +146,8 @@ jobs:
 
             echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}" >&2
 
-            # Expand architectures (comma-separated, also support colon as fallback)
-            if [[ "$ARCH" == *","* ]]; then
-              archs=($(echo "$ARCH" | tr ',' ' '))
-            else
-              archs=($(echo "$ARCH" | tr ':' ' '))
-            fi
+            # Expand architectures (colon-separated)
+            archs=($(echo "$ARCH" | tr ':' ' '))
 
             # Expand releases
             if [[ "${RELEASE}" == "all" ]]; then
@@ -196,7 +192,7 @@ jobs:
                   --arg method "${METHOD:-aptly}" \
                   --arg install "${INSTALL:-}" \
                   --arg docker_image "${docker_image}" \
-                  --arg needs_qemu "${needs_qemu}" \
+                  --argjson needs_qemu "${needs_qemu}" \
                   '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, docker_image: $docker_image, needs_qemu: $needs_qemu}'
               done
             done
@@ -269,8 +265,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 18
-      matrix:
-        include: ${{fromJson(needs.start.outputs.matrix)}}
+      matrix: ${{fromJson(needs.start.outputs.matrix)}}
 
     name: "${{ matrix.name }} (arch: ${{ matrix.arch }}, release: ${{ matrix.release }})"
     #runs-on: ${{ inputs.BUILD_RUNNER }}
