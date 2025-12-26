@@ -134,7 +134,7 @@ jobs:
           echo "::debug::MATRIX content: ${MATRIX_LIST[*]}" >&2
 
           # Build detailed matrix - expand each arch and release combination
-          echo "matrix=$(
+          MATRIX_JSON=$(
           for conf_file in "${MATRIX_LIST[@]}"; do
             echo "::debug::Processing conf file: ${conf_file}" >&2
             [[ -f "os/external/${conf_file}.conf" ]] || continue
@@ -212,7 +212,9 @@ jobs:
               done
             done
           done | jq -s '{"include": .}' | jq -c
-          )" >> $GITHUB_OUTPUT
+          )
+
+          echo "matrix=${MATRIX_JSON}" >> $GITHUB_OUTPUT
 
           # Debug: Output matrix to summary
           echo "::notice::Matrix generation complete" >&2
@@ -249,7 +251,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "## Generated JSON Matrix" >> $GITHUB_STEP_SUMMARY
           echo '```json' >> $GITHUB_STEP_SUMMARY
-          echo "${{ matrix }}" >> $GITHUB_STEP_SUMMARY
+          echo "${MATRIX_JSON}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
   download:
