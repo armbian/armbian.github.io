@@ -10,9 +10,9 @@ on:
         description: "Add https://repo.armbian.com/partial/ to stable repo"
         default: false
 
-concurrency:
-  group: pipeline
-  cancel-in-progress: false
+#concurrency:
+#  group: pipeline
+#  cancel-in-progress: false
 
 jobs:
 
