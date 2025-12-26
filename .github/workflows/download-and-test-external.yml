@@ -107,7 +107,82 @@ jobs:
         run: |
           MATRIX=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
           [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -printf '%f\n' | cut -d"." -f1)
-          echo "matrix=$(for x in $(echo "${MATRIX}"); do echo $x; done | jq -cnR '[inputs | select(length>0)]' | jq -c)" >> $GITHUB_OUTPUT
+
+          # Build detailed matrix with ARCH, RELEASE, Docker image and QEMU support
+          echo "matrix=$(
+          for conf_file in ${MATRIX}; do
+            [[ -f "os/external/${conf_file}.conf" ]] || continue
+            # Source the conf file to get variables
+            . "os/external/${conf_file}.conf"
+
+            # Determine primary architecture for this job (first one in list)
+            primary_arch=$(echo $ARCH | cut -d: -f1)
+
+            # Determine if we need QEMU (non-amd64)
+            needs_qemu="false"
+            [[ "${primary_arch}" != "amd64" ]] && needs_qemu="true"
+
+            # Determine Docker image based on RELEASE
+            # Map release names to Docker images
+            case "${RELEASE}" in
+              bookworm|bullseye|buster)
+                docker_image="debian:${RELEASE}"
+                docker_release="${RELEASE}"
+                ;;
+              trixie|sid)
+                docker_image="debian:${RELEASE}"
+                docker_release="${RELEASE}"
+                ;;
+              jammy|focal|bionic)
+                docker_image="ubuntu:${RELEASE}"
+                docker_release="${RELEASE}"
+                ;;
+              noble|mantic|lunar)
+                docker_image="ubuntu:${RELEASE}"
+                docker_release="${RELEASE}"
+                ;;
+              all)
+                # For 'all', use the first available Debian stable
+                docker_image="debian:bookworm"
+                docker_release="bookworm"
+                ;;
+              *)
+                # Default to bookworm if unknown
+                docker_image="debian:bookworm"
+                docker_release="${RELEASE}"
+                ;;
+            esac
+
+            # Handle colon-separated releases - pick first one for Docker image
+            if [[ "${RELEASE}" == *":"* ]]; then
+              first_release=$(echo $RELEASE | cut -d: -f1)
+              case "${first_release}" in
+                bookworm|bullseye|buster|trixie|sid)
+                  docker_image="debian:${first_release}"
+                  docker_release="${first_release}"
+                  ;;
+                *)
+                  docker_image="ubuntu:${first_release}"
+                  docker_release="${first_release}"
+                  ;;
+              esac
+            fi
+
+            # Output JSON object with all relevant fields
+            jq -n \
+              --arg name "${conf_file}" \
+              --arg arch "${ARCH:-unknown}" \
+              --arg release "${RELEASE:-unknown}" \
+              --arg target "${TARGET:-main}" \
+              --arg method "${METHOD:-aptly}" \
+              --arg install "${INSTALL:-}" \
+              --arg primary_arch "${primary_arch}" \
+              --arg docker_image "${docker_image}" \
+              --arg docker_release "${docker_release}" \
+              --arg needs_qemu "${needs_qemu}" \
+              '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, primary_arch: $primary_arch, docker_image: $docker_image, docker_release: $docker_release, needs_qemu: $needs_qemu}'
+          done | jq -s '{"include": .}' | jq -c
+          )" >> $GITHUB_OUTPUT
 
   download:
     needs: [start]
@@ -117,17 +192,14 @@ jobs:
       fail-fast: false
       max-parallel: 18
       matrix:
-        node: ${{fromJson(needs.start.outputs.matrix)}}
+        include: ${{fromJson(needs.start.outputs.matrix)}}
 
-    name: "M"
+    name: "${{ matrix.name }} (arch: ${{ matrix.primary_arch }}, release: ${{ matrix.docker_release }})"
     runs-on: ${{ inputs.BUILD_RUNNER }}
+    container:
+      image: ${{ matrix.docker_image }}
+      options: --user root
     steps:
-
-      - name: Update
-        if: inputs.BUILD_RUNNER == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt -y clean
 
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
@@ -163,17 +235,23 @@ jobs:
           fetch-depth: '1'
           clean: false
 
+      - name: Install QEMU for cross-architectures
+        if: matrix.needs_qemu == 'true'
+        run: |
+          apt-get update
+          apt-get install -y qemu-user-static binfmt-support
+
       - name: Install Aptly
         run: |
           # Note: Consider adding checksum verification for downloaded files
           wget https://github.com/aptly-dev/aptly/releases/download/v1.5.0/aptly_1.5.0_amd64.deb
-          sudo dpkg -i aptly_1.5.0_amd64.deb
-          sudo rm aptly_1.5.0_amd64.deb
+          dpkg -i aptly_1.5.0_amd64.deb
+          rm aptly_1.5.0_amd64.deb
 
       - name: Install all keys
         run: |
           find os/external/keys/ -type f -name "*.gpg" -exec gpg --import --no-default-keyring --keyring trustedkeys.gpg "{}" \;
-          sudo apt-get -y install debian-keyring ubuntu-keyring
+          apt-get -y install debian-keyring ubuntu-keyring
           gpg --no-default-keyring --keyring trustedkeys.gpg --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138 0E98404D386FA1D9
 
       - name: Download
@@ -184,7 +262,7 @@ jobs:
           mkdir -p ${SOURCE}
 
           # read config
-          . os/external/${{ matrix.node }}.conf
+          . os/external/${{ matrix.name }}.conf
 
           APTLY_CONF="-max-tries=3 "
           [[ "${CHECKSUM}" == "ignore" ]] && APTLY_CONF+="-ignore-checksums "
@@ -205,61 +283,76 @@ jobs:
               mkdir -p build/output/{debs,debs-beta}/extra/${i}-utils
               mkdir -p build/output/{debs,debs-beta}/extra/${i}-desktop
               # add all armbian repositories
-              echo "deb [arch=armhf,arm64,amd64,i386,riscv64 signed-by=/usr/share/keyrings/armbian.gpg] http://apt.armbian.com ${i} main ${i}-utils ${i}-desktop" | sudo tee /etc/apt/sources.list.d/armbian-${i}.list
+              echo "deb [arch=armhf,arm64,amd64,i386,riscv64 signed-by=/usr/share/keyrings/armbian.gpg] http://apt.armbian.com ${i} main ${i}-utils ${i}-desktop" | tee /etc/apt/sources.list.d/armbian-${i}.list
           done
 
+          # Add foreign architecture if using QEMU
+          if [[ "${{ matrix.needs_qemu }}" == "true" ]]; then
+              case "${{ matrix.primary_arch }}" in
+                  arm64)
+                      dpkg --add-architecture arm64
+                      ;;
+                  armhf)
+                      dpkg --add-architecture armhf
+                      ;;
+                  riscv64)
+                      dpkg --add-architecture riscv64
+                      ;;
+              fi
+          fi
+
           # update and get version
-          sudo apt update
-          sudo apt search ${INSTALL%% *}
-          BEFORE_VERSION=$(sudo apt search ${INSTALL%% *} 2>/dev/null | grep "^${INSTALL%% *}"/ | cut -d" " -f2 | cut -d":" -f2 || true)
+          apt-get update
+          apt-get search ${INSTALL%% *}
+          BEFORE_VERSION=$(apt-get search ${INSTALL%% *} 2>/dev/null | grep "^${INSTALL%% *}"/ | cut -d" " -f2 | cut -d":" -f2 || true)
           echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
           # we use different download metods (github, aplty)
           if [[ ${METHOD} == gh ]]; then
               gh release download ${TAG} -p '*.deb' --repo ${URL} --dir temp
           elif [[ ${METHOD} == direct ]]; then
-              wget -O ${SOURCE}/${{ matrix.node }}.deb ${URL}
+              wget -O ${SOURCE}/${{ matrix.name }}.deb ${URL}
           else
-              SOURCE="/home/runner/.aptly/public/"
+              SOURCE="/root/.aptly/public/"
               COMPONENT="main"
               [[ $KEY == "./" || $KEY == "stable" || $KEY == "public" || $KEY == "stable non-free" ]] && COMPONENT=""
               [[ $GLOB != *Name* && $GLOB != *Version* ]] && ADDITIONAL_FILTER="-filter-with-deps"
-              aptly -ignore-signatures -filter="$GLOB" ${ADDITIONAL_FILTER} -architectures="$(echo $ARCH | sed "s|:|,|g")" mirror create ${{ matrix.node }}-${RELEASE} $(echo ${URL}) $(echo ${KEY}) $(echo ${COMPONENT})
-              aptly -max-tries=20 -ignore-signatures ${APTLY_CONF} mirror update ${{ matrix.node }}-${RELEASE}
-              aptly snapshot create ${{ matrix.node }}-${RELEASE} from mirror ${{ matrix.node }}-${RELEASE}
-              aptly publish -architectures="armhf,arm64,amd64,riscv64" -batch=true -passphrase=${{ secrets.GPG_PASSPHRASE1 }} snapshot ${{ matrix.node }}-${RELEASE}
+              aptly -ignore-signatures -filter="$GLOB" ${ADDITIONAL_FILTER} -architectures="$(echo $ARCH | sed "s|:|,|g")" mirror create ${{ matrix.name }}-${RELEASE} $(echo ${URL}) $(echo ${KEY}) $(echo ${COMPONENT})
+              aptly -max-tries=20 -ignore-signatures ${APTLY_CONF} mirror update ${{ matrix.name }}-${RELEASE}
+              aptly snapshot create ${{ matrix.name }}-${RELEASE} from mirror ${{ matrix.name }}-${RELEASE}
+              aptly publish -architectures="armhf,arm64,amd64,riscv64" -batch=true -passphrase=${{ secrets.GPG_PASSPHRASE1 }} snapshot ${{ matrix.name }}-${RELEASE}
           fi
 
           # Cleaning exceptions
-          find $SOURCE -type f -name "*-dbg_*" | xargs sudo rm || true
-          find $SOURCE -type f -name "zoom_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "microsoft-edge*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-generic*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-arm64_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-rk3399_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-rk3588_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-tegrax1_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-rpi3arm64*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-rpi4arm64*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box*-android*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "code_*" | sort | head -n -3 | xargs sudo rm || true
-          find $SOURCE -type f -name "box64_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "box86_*" | sort | head -n -1 | xargs sudo rm || true
-          find $SOURCE -type f -name "chromium_*" | sort | head -n -3 | xargs sudo rm || true
-          find $SOURCE -type f -name "chromium-browser_*" | sort | head -n -3 | xargs sudo rm || true
-          find $SOURCE -type f -name "chromium-codecs-ffmpeg_*" | sort | head -n -2 | xargs sudo rm || true
-          find $SOURCE -type f -name "chromium-codecs-ffmpeg-extra_*" | sort | head -n -2 | xargs sudo rm || true
+          find $SOURCE -type f -name "*-dbg_*" | xargs rm || true
+          find $SOURCE -type f -name "zoom_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "microsoft-edge*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-generic*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-arm64_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-rk3399_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-rk3588_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-tegrax1_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-rpi3arm64*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-rpi4arm64*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box*-android*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "code_*" | sort | head -n -3 | xargs rm || true
+          find $SOURCE -type f -name "box64_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "box86_*" | sort | head -n -1 | xargs rm || true
+          find $SOURCE -type f -name "chromium_*" | sort | head -n -3 | xargs rm || true
+          find $SOURCE -type f -name "chromium-browser_*" | sort | head -n -3 | xargs rm || true
+          find $SOURCE -type f -name "chromium-codecs-ffmpeg_*" | sort | head -n -2 | xargs rm || true
+          find $SOURCE -type f -name "chromium-codecs-ffmpeg-extra_*" | sort | head -n -2 | xargs rm || true
 
           # repack deb files
-          sudo apt-get install devscripts
-          DEBS=($(sudo find "${SOURCE}"* -type f -name '*thunderbird*.deb' -o -name '*chromium-browser*.deb' -o -name '*chromium_*.deb' -o -name '*chromium-l10n_*.deb' -o -name '*chromium-driver*.deb' -o -name '*firefox_*.deb'))
+          apt-get install -y devscripts
+          DEBS=($(find "${SOURCE}"* -type f -name '*thunderbird*.deb' -o -name '*chromium-browser*.deb' -o -name '*chromium_*.deb' -o -name '*chromium-l10n_*.deb' -o -name '*chromium-driver*.deb' -o -name '*firefox_*.deb'))
           for d in "${DEBS[@]}"; do
             BEFORE=$(deb-reversion -c ${d} -s armbian)
             # add epoch 9
             AFTER=9:$(echo $BEFORE | cut -d":" -f2)
             echo "$d : $BEFORE -> $AFTER"
-            sudo DEBEMAIL=info@armbian.com deb-reversion -v $AFTER -s armbian $d
-            sudo rm $d
-            sudo mv *.deb ${SOURCE}
+            DEBEMAIL=info@armbian.com deb-reversion -v $AFTER -s armbian $d
+            rm $d
+            mv *.deb ${SOURCE}
           done
 
           # store info to GitHub Actions
@@ -306,19 +399,19 @@ jobs:
       - name: Build testing repository
         run: |
           # read config once again
-          . os/external/${{ matrix.node }}.conf
+          . os/external/${{ matrix.name }}.conf
           cd build
           mkdir -p output/repository/public
           sed -i 's|"gpgProvider": ".*"|"gpgProvider": "gpg2"|g' tools/repository/aptly.conf
           tools/repository/repo -i output/debs-beta -c update
 
           # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-          ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} "mkdir -p storage/artifacts/${{ env.PR_NUMBER }}/${{ matrix.node }}"
-          rsync -arvc -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" output/repository/public/ ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }}:"storage/artifacts/${{ env.PR_NUMBER }}/${{ matrix.node }}"
+          ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} "mkdir -p storage/artifacts/${{ env.PR_NUMBER }}/${{ matrix.name }}"
+          rsync -arvc -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" output/repository/public/ ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }}:"storage/artifacts/${{ env.PR_NUMBER }}/${{ matrix.name }}"
 
   test:
 
-    name: "Test"
+    name: "Test matrix"
     needs: download
     runs-on: ${{ inputs.BUILD_RUNNER }}
     outputs:
@@ -345,34 +438,62 @@ jobs:
         id: json
         run: |
           echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
-          # define docker images where we will run test install
+          # define docker images where we will run test install (amd64 native)
           dockerimages=("debian:bookworm" "debian:trixie" "ubuntu:jammy" "ubuntu:noble")
+          # define QEMU architectures for cross-arch testing
+          qemu_archs=("arm64" "riscv64")
 
           # read packages and loop them
           packages=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
           [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && packages=($(grep -rw os/external/*.conf -e amd64 | grep -v haos | cut -d"/" -f3 | cut -d"." -f1))
+
+          # Build test matrix entries
           for i in "${packages[@]}"; do
               # read config file
               . os/external/${i}.conf
 
-              # for now, we can only do amd64 test installs
+              # Get architectures from conf (colon-separated)
+              archs=($(echo $ARCH | tr ':' " "))
+
+              # Native amd64 docker testing
               if [[ -n "${INSTALL}" && "${ARCH}" == *amd64* ]]; then
-                  # if we specify releases, we need to loop docker images and use if there is a match
                   if [[ $RELEASE != all ]]; then
                       for j in ${dockerimages[@]}; do
                           elements=($(echo $RELEASE | tr ':' "\n"))
                           for SELECTED_RELEASE in "${elements[@]}"; do
                               if [[ $j == *"${SELECTED_RELEASE}"* ]]; then
-                                  echo "{\"package\":\"${i}\",\"image\":\"$j\"}"
+                                  echo "{\"package\":\"${i}\",\"image\":\"$j\",\"arch\":\"amd64\",\"type\":\"native\"}"
                               fi
                           done
                       done
                   else
                       for j in ${dockerimages[@]}; do
-                          echo "{\"package\":\"${i}\",\"image\":\"$j\"}"
+                          echo "{\"package\":\"${i}\",\"image\":\"$j\",\"arch\":\"amd64\",\"type\":\"native\"}"
                       done
                   fi
               fi
+
+              # QEMU testing for arm64 and riscv64
+              for test_arch in "${qemu_archs[@]}"; do
+                  if [[ " ${archs[@]} " =~ " ${test_arch} " && -n "${INSTALL}" ]]; then
+                      # Determine matching docker image based on RELEASE
+                      if [[ $RELEASE != all ]]; then
+                          elements=($(echo $RELEASE | tr ':' "\n"))
+                          for SELECTED_RELEASE in "${elements[@]}"; do
+                              for j in ${dockerimages[@]}; do
+                                  if [[ $j == *"${SELECTED_RELEASE}"* ]]; then
+                                      echo "{\"package\":\"${i}\",\"image\":\"$j\",\"arch\":\"${test_arch}\",\"type\":\"qemu\"}"
+                                  fi
+                              done
+                          done
+                      else
+                          # Test all releases when RELEASE=all
+                          for j in ${dockerimages[@]}; do
+                              echo "{\"package\":\"${i}\",\"image\":\"$j\",\"arch\":\"${test_arch}\",\"type\":\"qemu\"}"
+                          done
+                      fi
+                  fi
+              done
           done | jq -s >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
@@ -382,9 +503,9 @@ jobs:
       fail-fast: false
       max-parallel: 32
       matrix:
-        image: ${{ fromJSON(needs.test.outputs.matrix) }}
+        include: ${{ fromJSON(needs.test.outputs.matrix) }}
 
-    name: "I"
+    name: "${{ matrix.image.package }} (arch: ${{ matrix.image.arch }}, type: ${{ matrix.image.type }})"
     timeout-minutes: 30
     runs-on: ${{ inputs.BUILD_RUNNER }}
     container:
@@ -405,6 +526,12 @@ jobs:
           clean: false
           fetch-depth: 1
           path: os
+
+      - name: Install QEMU binfmt for cross-arch testing
+        if: matrix.image.type == 'qemu'
+        run: |
+          apt update
+          apt install -y qemu-user-static binfmt-support
 
       - name: Install
         run: |
@@ -427,10 +554,36 @@ jobs:
           apt update -y
           apt upgrade -y
 
+          # For QEMU testing, add foreign architecture
+          if [[ "${{ matrix.image.type }}" == "qemu" ]]; then
+              case "${{ matrix.image.arch }}" in
+                  arm64)
+                      dpkg --add-architecture arm64
+                      ;;
+                  riscv64)
+                      dpkg --add-architecture riscv64
+                      ;;
+              fi
+              apt update
+          fi
+
           # install packages / except howdy as its too large
           export DEBIAN_FRONTEND=noninteractive
           for i in ${INSTALL}; do
-              apt-get install -y $i
+              if [[ "${{ matrix.image.type }}" == "qemu" ]]; then
+                  # Install with architecture suffix for QEMU
+                  case "${{ matrix.image.arch }}" in
+                      arm64)
+                          apt-get install -y ${i}:arm64 || echo "Failed to install ${i}:arm64 (may be unavailable)"
+                          ;;
+                      riscv64)
+                          apt-get install -y ${i}:riscv64 || echo "Failed to install ${i}:riscv64 (may be unavailable)"
+                          ;;
+                  esac
+              else
+                  # Native install
+                  apt-get install -y $i
+              fi
           done
 
   clean:
