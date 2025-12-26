@@ -162,9 +162,25 @@ jobs:
             # Generate matrix entry for each arch x release combination
             for arch in "${archs[@]}"; do
               for release in "${releases[@]}"; do
-                # Determine if we need QEMU (non-amd64)
-                needs_qemu="false"
-                [[ "$arch" != "amd64" ]] && needs_qemu="true"
+                # Determine runner based on architecture
+                case "${arch}" in
+                  amd64)
+                    runner="ubuntu-latest"
+                    needs_qemu="false"
+                    ;;
+                  arm64)
+                    runner="ubuntu-24-arm64"
+                    needs_qemu="false"
+                    ;;
+                  riscv64)
+                    runner="ubuntu-latest"
+                    needs_qemu="true"
+                    ;;
+                  *)
+                    runner="ubuntu-latest"
+                    needs_qemu="false"
+                    ;;
+                esac
 
                 # Determine Docker image based on release
                 case "${release}" in
@@ -179,7 +195,7 @@ jobs:
                     ;;
                 esac
 
-                echo "::debug::Generating entry: package=${conf_file}, arch=${arch}, release=${release}" >&2
+                echo "::debug::Generating entry: package=${conf_file}, arch=${arch}, release=${release}, runner=${runner}, needs_qemu=${needs_qemu}" >&2
 
                 # Output JSON object for this combination
                 jq -n \
@@ -191,7 +207,8 @@ jobs:
                   --arg install "${INSTALL:-}" \
                   --arg docker_image "${docker_image}" \
                   --arg needs_qemu "${needs_qemu}" \
-                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, docker_image: $docker_image, needs_qemu: $needs_qemu}'
+                  --arg runner "${runner}" \
+                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, docker_image: $docker_image, needs_qemu: $needs_qemu, runner: $runner}'
               done
             done
           done | jq -s '{"include": .}' | jq -c
@@ -218,7 +235,14 @@ jobs:
             # Display each combination
             for arch in "${archs[@]}"; do
               for release in "${releases[@]}"; do
-                echo "package=${conf_file}, ARCH=${arch}, RELEASE=${release}" >> $GITHUB_STEP_SUMMARY
+                # Determine runner for display
+                case "${arch}" in
+                  amd64) runner="ubuntu-latest" ;;
+                  arm64) runner="ubuntu-24-arm64" ;;
+                  riscv64) runner="ubuntu-latest (QEMU)" ;;
+                  *) runner="ubuntu-latest" ;;
+                esac
+                echo "package=${conf_file}, ARCH=${arch}, RELEASE=${release}, runner=${runner}" >> $GITHUB_STEP_SUMMARY
               done
             done
           done
@@ -239,7 +263,7 @@ jobs:
         include: ${{fromJson(needs.start.outputs.matrix)}}
 
     name: "${{ matrix.name }} (arch: ${{ matrix.arch }}, release: ${{ matrix.release }})"
-    runs-on: ${{ inputs.BUILD_RUNNER }}
+    runs-on: ${{ matrix.runner }}
     container:
       image: ${{ matrix.docker_image }}
       options: --user root
@@ -305,6 +329,7 @@ jobs:
           echo "::debug::  name: ${{ matrix.name }}"
           echo "::debug::  arch: ${{ matrix.arch }}"
           echo "::debug::  release: ${{ matrix.release }}"
+          echo "::debug::  runner: ${{ matrix.runner }}"
           echo "::debug::  docker_image: ${{ matrix.docker_image }}"
           echo "::debug::  needs_qemu: ${{ matrix.needs_qemu }}"
           echo "::debug::  target: ${{ matrix.target }}"
