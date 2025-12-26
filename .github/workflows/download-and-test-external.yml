@@ -111,47 +111,64 @@ jobs:
           echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}" >&2
           echo "::debug::REFERENCE input: ${{ inputs.REFERENCE }}" >&2
 
-          MATRIX=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
-          [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -exec basename {} .conf \;)
+          # Build list of conf files
+          if [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]]; then
+            # Get all conf files
+            MATRIX_LIST=()
+            while IFS= read -r -d '' conf_file; do
+              conf_name=$(basename "$conf_file" .conf)
+              MATRIX_LIST+=("$conf_name")
+            done < <(find os/external/*.conf -print0 | sort -z)
+          else
+            # Get only changed conf files
+            MATRIX_LIST=()
+            CHANGED="${{ steps.changed-files.outputs.all_changed_files }}"
+            if [[ -n "$CHANGED" ]]; then
+              while IFS= read -r conf_file; do
+                conf_name=$(echo "$conf_file" | cut -d"." -f1 | cut -d"/" -f2)
+                MATRIX_LIST+=("$conf_name")
+              done < <(echo "$CHANGED" | tr " " "\n")
+            fi
+          fi
 
-          echo "::debug::MATRIX content: ${MATRIX}" >&2
+          echo "::debug::MATRIX content: ${MATRIX_LIST[*]}" >&2
 
           # Build detailed matrix with ARCH, RELEASE, Docker image and QEMU support
-          # Redirect all debug output to stderr to avoid pipe issues
           echo "matrix=$(
-          for conf_file in ${MATRIX}; do
+          for conf_file in "${MATRIX_LIST[@]}"; do
             echo "::debug::Processing conf file: ${conf_file}" >&2
-            [[ -f \"os/external/${conf_file}.conf\" ]] || continue
+            [[ -f "os/external/${conf_file}.conf" ]] || continue
+
             # Source the conf file to get variables
             . "os/external/${conf_file}.conf"
 
-            echo "::debug::${conf_file} - ARCH: \${ARCH}, RELEASE: \${RELEASE}, TARGET: \${TARGET}" >&2
+            echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}" >&2
 
             # Determine primary architecture for this job (first one in list)
-            primary_arch=\$(echo \$ARCH | cut -d: -f1)
+            primary_arch=$(echo "$ARCH" | cut -d: -f1)
 
             # Determine if we need QEMU (non-amd64)
             needs_qemu="false"
-            [[ \"\${primary_arch}\" != "amd64" ]] && needs_qemu="true"
+            [[ "$primary_arch" != "amd64" ]] && needs_qemu="true"
 
             # Determine Docker image based on RELEASE
             # Map release names to Docker images
-            case "\${RELEASE}" in
+            case "${RELEASE}" in
               bookworm|bullseye|buster)
-                docker_image="debian:\${RELEASE}"
-                docker_release="\${RELEASE}"
+                docker_image="debian:${RELEASE}"
+                docker_release="${RELEASE}"
                 ;;
               trixie|sid)
-                docker_image="debian:\${RELEASE}"
-                docker_release="\${RELEASE}"
+                docker_image="debian:${RELEASE}"
+                docker_release="${RELEASE}"
                 ;;
               jammy|focal|bionic)
-                docker_image="ubuntu:\${RELEASE}"
-                docker_release="\${RELEASE}"
+                docker_image="ubuntu:${RELEASE}"
+                docker_release="${RELEASE}"
                 ;;
               noble|mantic|lunar)
-                docker_image="ubuntu:\${RELEASE}"
-                docker_release="\${RELEASE}"
+                docker_image="ubuntu:${RELEASE}"
+                docker_release="${RELEASE}"
                 ;;
               all)
                 # For 'all', use the first available Debian stable
@@ -161,39 +178,39 @@ jobs:
               *)
                 # Default to bookworm if unknown
                 docker_image="debian:bookworm"
-                docker_release="\${RELEASE}"
+                docker_release="${RELEASE}"
                 ;;
             esac
 
             # Handle colon-separated releases - pick first one for Docker image
-            if [[ \"\${RELEASE}\" == *\":\"* ]]; then
-              first_release=\$(echo \$RELEASE | cut -d: -f1)
-              case "\${first_release}" in
+            if [[ "${RELEASE}" == *":"* ]]; then
+              first_release=$(echo "$RELEASE" | cut -d: -f1)
+              case "${first_release}" in
                 bookworm|bullseye|buster|trixie|sid)
-                  docker_image="debian:\${first_release}"
-                  docker_release="\${first_release}"
+                  docker_image="debian:${first_release}"
+                  docker_release="${first_release}"
                   ;;
                 *)
-                  docker_image="ubuntu:\${first_release}"
-                  docker_release="\${first_release}"
+                  docker_image="ubuntu:${first_release}"
+                  docker_release="${first_release}"
                   ;;
               esac
             fi
 
-            echo "::debug::${conf_file} - primary_arch: \${primary_arch}, docker_image: \${docker_image}, needs_qemu: \${needs_qemu}" >&2
+            echo "::debug::${conf_file} - primary_arch: ${primary_arch}, docker_image: ${docker_image}, needs_qemu: ${needs_qemu}" >&2
 
             # Output JSON object with all relevant fields
             jq -n \
               --arg name "${conf_file}" \
-              --arg arch "\${ARCH:-unknown}" \
-              --arg release "\${RELEASE:-unknown}" \
-              --arg target "\${TARGET:-main}" \
-              --arg method "\${METHOD:-aptly}" \
-              --arg install "\${INSTALL:-}" \
-              --arg primary_arch "\${primary_arch}" \
-              --arg docker_image "\${docker_image}" \
-              --arg docker_release "\${docker_release}" \
-              --arg needs_qemu "\${needs_qemu}" \
+              --arg arch "${ARCH:-unknown}" \
+              --arg release "${RELEASE:-unknown}" \
+              --arg target "${TARGET:-main}" \
+              --arg method "${METHOD:-aptly}" \
+              --arg install "${INSTALL:-}" \
+              --arg primary_arch "${primary_arch}" \
+              --arg docker_image "${docker_image}" \
+              --arg docker_release "${docker_release}" \
+              --arg needs_qemu "${needs_qemu}" \
               '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, primary_arch: $primary_arch, docker_image: $docker_image, docker_release: $docker_release, needs_qemu: $needs_qemu}'
           done | jq -s '{"include": .}' | jq -c
           )" >> $GITHUB_OUTPUT
@@ -201,10 +218,10 @@ jobs:
           echo "::notice::Matrix generation complete" >&2
           echo "## Matrix output" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          for conf_file in ${MATRIX}; do
+          for conf_file in "${MATRIX_LIST[@]}"; do
             [[ -f "os/external/${conf_file}.conf" ]] || continue
             . "os/external/${conf_file}.conf"
-            primary_arch=$(echo $ARCH | cut -d: -f1)
+            primary_arch=$(echo "$ARCH" | cut -d: -f1)
             echo "- ${conf_file}: ARCH=${ARCH}, RELEASE=${RELEASE}, primary_arch=${primary_arch}" >> $GITHUB_STEP_SUMMARY
           done
           echo '```' >> $GITHUB_STEP_SUMMARY
