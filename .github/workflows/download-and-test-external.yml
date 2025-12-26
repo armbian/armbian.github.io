@@ -105,8 +105,11 @@ jobs:
       - name: Build list
         id: lists
         run: |
+          # Install jq if not available
+          command -v jq >/dev/null 2>&1 || sudo apt-get install -y jq
+
           MATRIX=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
-          [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -printf '%f\n' | cut -d"." -f1)
+          [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -exec basename {} .conf \;)
 
           # Build detailed matrix with ARCH, RELEASE, Docker image and QEMU support
           echo "matrix=$(
