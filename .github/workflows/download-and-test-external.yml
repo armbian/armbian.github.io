@@ -108,49 +108,50 @@ jobs:
           # Install jq if not available
           command -v jq >/dev/null 2>&1 || sudo apt-get install -y jq
 
-          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
-          echo "::debug::REFERENCE input: ${{ inputs.REFERENCE }}"
+          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}" >&2
+          echo "::debug::REFERENCE input: ${{ inputs.REFERENCE }}" >&2
 
           MATRIX=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
           [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -exec basename {} .conf \;)
 
-          echo "::debug::MATRIX content: ${MATRIX}"
+          echo "::debug::MATRIX content: ${MATRIX}" >&2
 
           # Build detailed matrix with ARCH, RELEASE, Docker image and QEMU support
+          # Redirect all debug output to stderr to avoid pipe issues
           echo "matrix=$(
           for conf_file in ${MATRIX}; do
-            echo "::debug::Processing conf file: ${conf_file}"
-            [[ -f "os/external/${conf_file}.conf" ]] || continue
+            echo "::debug::Processing conf file: ${conf_file}" >&2
+            [[ -f \"os/external/${conf_file}.conf\" ]] || continue
             # Source the conf file to get variables
             . "os/external/${conf_file}.conf"
 
-            echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}"
+            echo "::debug::${conf_file} - ARCH: \${ARCH}, RELEASE: \${RELEASE}, TARGET: \${TARGET}" >&2
 
             # Determine primary architecture for this job (first one in list)
-            primary_arch=$(echo $ARCH | cut -d: -f1)
+            primary_arch=\$(echo \$ARCH | cut -d: -f1)
 
             # Determine if we need QEMU (non-amd64)
             needs_qemu="false"
-            [[ "${primary_arch}" != "amd64" ]] && needs_qemu="true"
+            [[ \"\${primary_arch}\" != "amd64" ]] && needs_qemu="true"
 
             # Determine Docker image based on RELEASE
             # Map release names to Docker images
-            case "${RELEASE}" in
+            case "\${RELEASE}" in
               bookworm|bullseye|buster)
-                docker_image="debian:${RELEASE}"
-                docker_release="${RELEASE}"
+                docker_image="debian:\${RELEASE}"
+                docker_release="\${RELEASE}"
                 ;;
               trixie|sid)
-                docker_image="debian:${RELEASE}"
-                docker_release="${RELEASE}"
+                docker_image="debian:\${RELEASE}"
+                docker_release="\${RELEASE}"
                 ;;
               jammy|focal|bionic)
-                docker_image="ubuntu:${RELEASE}"
-                docker_release="${RELEASE}"
+                docker_image="ubuntu:\${RELEASE}"
+                docker_release="\${RELEASE}"
                 ;;
               noble|mantic|lunar)
-                docker_image="ubuntu:${RELEASE}"
-                docker_release="${RELEASE}"
+                docker_image="ubuntu:\${RELEASE}"
+                docker_release="\${RELEASE}"
                 ;;
               all)
                 # For 'all', use the first available Debian stable
@@ -160,53 +161,53 @@ jobs:
               *)
                 # Default to bookworm if unknown
                 docker_image="debian:bookworm"
-                docker_release="${RELEASE}"
+                docker_release="\${RELEASE}"
                 ;;
             esac
 
             # Handle colon-separated releases - pick first one for Docker image
-            if [[ "${RELEASE}" == *":"* ]]; then
-              first_release=$(echo $RELEASE | cut -d: -f1)
-              case "${first_release}" in
+            if [[ \"\${RELEASE}\" == *\":\"* ]]; then
+              first_release=\$(echo \$RELEASE | cut -d: -f1)
+              case "\${first_release}" in
                 bookworm|bullseye|buster|trixie|sid)
-                  docker_image="debian:${first_release}"
-                  docker_release="${first_release}"
+                  docker_image="debian:\${first_release}"
+                  docker_release="\${first_release}"
                   ;;
                 *)
-                  docker_image="ubuntu:${first_release}"
-                  docker_release="${first_release}"
+                  docker_image="ubuntu:\${first_release}"
+                  docker_release="\${first_release}"
                   ;;
               esac
             fi
 
-            echo "::debug::${conf_file} - primary_arch: ${primary_arch}, docker_image: ${docker_image}, needs_qemu: ${needs_qemu}"
+            echo "::debug::${conf_file} - primary_arch: \${primary_arch}, docker_image: \${docker_image}, needs_qemu: \${needs_qemu}" >&2
 
             # Output JSON object with all relevant fields
             jq -n \
               --arg name "${conf_file}" \
-              --arg arch "${ARCH:-unknown}" \
-              --arg release "${RELEASE:-unknown}" \
-              --arg target "${TARGET:-main}" \
-              --arg method "${METHOD:-aptly}" \
-              --arg install "${INSTALL:-}" \
-              --arg primary_arch "${primary_arch}" \
-              --arg docker_image "${docker_image}" \
-              --arg docker_release "${docker_release}" \
-              --arg needs_qemu "${needs_qemu}" \
+              --arg arch "\${ARCH:-unknown}" \
+              --arg release "\${RELEASE:-unknown}" \
+              --arg target "\${TARGET:-main}" \
+              --arg method "\${METHOD:-aptly}" \
+              --arg install "\${INSTALL:-}" \
+              --arg primary_arch "\${primary_arch}" \
+              --arg docker_image "\${docker_image}" \
+              --arg docker_release "\${docker_release}" \
+              --arg needs_qemu "\${needs_qemu}" \
               '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, primary_arch: $primary_arch, docker_image: $docker_image, docker_release: $docker_release, needs_qemu: $needs_qemu}'
           done | jq -s '{"include": .}' | jq -c
           )" >> $GITHUB_OUTPUT
 
-          echo "::notice::Matrix generation complete"
-          echo "::notice::Matrix output:"
-          echo "$(
+          echo "::notice::Matrix generation complete" >&2
+          echo "## Matrix output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           for conf_file in ${MATRIX}; do
             [[ -f "os/external/${conf_file}.conf" ]] || continue
             . "os/external/${conf_file}.conf"
             primary_arch=$(echo $ARCH | cut -d: -f1)
-            echo "- ${conf_file}: ARCH=${ARCH}, RELEASE=${RELEASE}, primary_arch=${primary_arch}"
+            echo "- ${conf_file}: ARCH=${ARCH}, RELEASE=${RELEASE}, primary_arch=${primary_arch}" >> $GITHUB_STEP_SUMMARY
           done
-          )" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
   download:
     needs: [start]
@@ -481,18 +482,18 @@ jobs:
           # define QEMU architectures for cross-arch testing
           qemu_archs=("arm64" "riscv64")
 
-          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
-          echo "::debug::REFERENCE: ${{ inputs.REFERENCE }}"
+          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}" >&2
+          echo "::debug::REFERENCE: ${{ inputs.REFERENCE }}" >&2
 
           # read packages and loop them
           packages=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
           [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && packages=($(grep -rw os/external/*.conf -e amd64 | grep -v haos | cut -d"/" -f3 | cut -d"." -f1))
 
-          echo "::debug::Packages to test: ${packages}"
+          echo "::debug::Packages to test: ${packages}" >&2
 
           # Build test matrix entries
           for i in "${packages[@]}"; do
-              echo "::debug::Processing package: ${i}"
+              echo "::debug::Processing package: ${i}" >&2
               # read config file
               . os/external/${i}.conf
 
@@ -540,7 +541,7 @@ jobs:
               done
           done | jq -s >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
-          echo "::notice::Test matrix generation complete"
+          echo "::notice::Test matrix generation complete" >&2
 
   gradle:
     needs: test
