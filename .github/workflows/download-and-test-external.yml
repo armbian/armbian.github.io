@@ -108,15 +108,23 @@ jobs:
           # Install jq if not available
           command -v jq >/dev/null 2>&1 || sudo apt-get install -y jq
 
+          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "::debug::REFERENCE input: ${{ inputs.REFERENCE }}"
+
           MATRIX=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
           [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -exec basename {} .conf \;)
+
+          echo "::debug::MATRIX content: ${MATRIX}"
 
           # Build detailed matrix with ARCH, RELEASE, Docker image and QEMU support
           echo "matrix=$(
           for conf_file in ${MATRIX}; do
+            echo "::debug::Processing conf file: ${conf_file}"
             [[ -f "os/external/${conf_file}.conf" ]] || continue
             # Source the conf file to get variables
             . "os/external/${conf_file}.conf"
+
+            echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}"
 
             # Determine primary architecture for this job (first one in list)
             primary_arch=$(echo $ARCH | cut -d: -f1)
@@ -171,6 +179,8 @@ jobs:
               esac
             fi
 
+            echo "::debug::${conf_file} - primary_arch: ${primary_arch}, docker_image: ${docker_image}, needs_qemu: ${needs_qemu}"
+
             # Output JSON object with all relevant fields
             jq -n \
               --arg name "${conf_file}" \
@@ -186,6 +196,17 @@ jobs:
               '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, primary_arch: $primary_arch, docker_image: $docker_image, docker_release: $docker_release, needs_qemu: $needs_qemu}'
           done | jq -s '{"include": .}' | jq -c
           )" >> $GITHUB_OUTPUT
+
+          echo "::notice::Matrix generation complete"
+          echo "::notice::Matrix output:"
+          echo "$(
+          for conf_file in ${MATRIX}; do
+            [[ -f "os/external/${conf_file}.conf" ]] || continue
+            . "os/external/${conf_file}.conf"
+            primary_arch=$(echo $ARCH | cut -d: -f1)
+            echo "- ${conf_file}: ARCH=${ARCH}, RELEASE=${RELEASE}, primary_arch=${primary_arch}"
+          done
+          )" >> $GITHUB_STEP_SUMMARY
 
   download:
     needs: [start]
@@ -260,12 +281,26 @@ jobs:
       - name: Download
         id: calculate
         run: |
+          echo "::debug::Matrix variables:"
+          echo "::debug::  name: ${{ matrix.name }}"
+          echo "::debug::  arch: ${{ matrix.arch }}"
+          echo "::debug::  release: ${{ matrix.release }}"
+          echo "::debug::  primary_arch: ${{ matrix.primary_arch }}"
+          echo "::debug::  docker_image: ${{ matrix.docker_image }}"
+          echo "::debug::  docker_release: ${{ matrix.docker_release }}"
+          echo "::debug::  needs_qemu: ${{ matrix.needs_qemu }}"
+          echo "::debug::  target: ${{ matrix.target }}"
+          echo "::debug::  method: ${{ matrix.method }}"
+
           # default download folder
           SOURCE="temp/"
           mkdir -p ${SOURCE}
 
           # read config
+          echo "::debug::Sourcing config file: os/external/${{ matrix.name }}.conf"
           . os/external/${{ matrix.name }}.conf
+
+          echo "::debug::Config loaded - URL: ${URL}, KEY: ${KEY}, INSTALL: ${INSTALL}, ARCH: ${ARCH}, RELEASE: ${RELEASE}"
 
           APTLY_CONF="-max-tries=3 "
           [[ "${CHECKSUM}" == "ignore" ]] && APTLY_CONF+="-ignore-checksums "
@@ -446,12 +481,18 @@ jobs:
           # define QEMU architectures for cross-arch testing
           qemu_archs=("arm64" "riscv64")
 
+          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          echo "::debug::REFERENCE: ${{ inputs.REFERENCE }}"
+
           # read packages and loop them
           packages=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
           [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && packages=($(grep -rw os/external/*.conf -e amd64 | grep -v haos | cut -d"/" -f3 | cut -d"." -f1))
 
+          echo "::debug::Packages to test: ${packages}"
+
           # Build test matrix entries
           for i in "${packages[@]}"; do
+              echo "::debug::Processing package: ${i}"
               # read config file
               . os/external/${i}.conf
 
@@ -499,6 +540,7 @@ jobs:
               done
           done | jq -s >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
+          echo "::notice::Test matrix generation complete"
 
   gradle:
     needs: test
