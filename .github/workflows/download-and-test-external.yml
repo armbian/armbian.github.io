@@ -1,0 +1,447 @@
+name: Sync 3rd party packages
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ACCESS_NAME:
+        required: false
+        type: string
+        default: ${{ github.repository_owner }}
+      BUILD_BRANCH:
+        required: false
+        type: string
+        default: 'main'
+      BUILD_RUNNER:
+        required: false
+        type: string
+        default: "ubuntu-latest"
+      HOST_DEPLOY:
+        required: false
+        type: string
+        default: "repo.armbian.com"
+      HOST_USER:
+        required: false
+        type: string
+        default: "upload"
+      REFERENCE:
+        required: false
+        type: string
+        default: "main"
+    secrets:
+      GPG_KEY1:
+        required: true
+      GPG_KEY2:
+        required: true
+      ACCESS_TOKEN:
+        required: true
+      KEY_UPLOAD:
+        required: false
+      HOST_UPLOAD:
+        required: true
+      HOST_UPLOAD_USER:
+        required: true
+      HOST_UPLOAD_PORT:
+        required: true
+      KNOWN_HOSTS_ARMBIAN_UPLOAD:
+        required: true
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PR_NUMBER: ${{ github.event.number }}
+
+jobs:
+
+  start:
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    name: "Mirror"
+    outputs:
+      matrix: ${{steps.lists.outputs.matrix}}
+    steps:
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_UPLOAD }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+          if_key_exists: replace
+
+      - name: "Create a temporary artifact folder"
+        run: |
+
+          mkdir -p downloads
+          cd downloads
+          echo "${{ inputs.HOST_DEPLOY }}/" > url.txt
+          echo "artifacts/${{ env.PR_NUMBER }}/" > path.txt
+
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: assets-for-download
+          path: downloads
+          overwrite: true
+          retention-days: 5
+
+      - name: Remove temporary repositories
+        run: |
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} "rm -rf storage/artifacts/*"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          path: os
+          fetch-depth: '2'
+          clean: false
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v43
+        with:
+          path: os
+          files: |
+            external/*.conf
+
+      - name: Build list
+        id: lists
+        run: |
+          MATRIX=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
+          [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && MATRIX=$(find os/external/*.conf -printf '%f\n' | cut -d"." -f1)
+          echo "matrix=$(for x in $(echo "${MATRIX}"); do echo $x; done | jq -cnR '[inputs | select(length>0)]' | jq -c)" >> $GITHUB_OUTPUT
+
+  download:
+    needs: [start]
+    outputs:
+      project: ${{steps.make.outputs.project}}
+    strategy:
+      fail-fast: false
+      max-parallel: 18
+      matrix:
+        node: ${{fromJson(needs.start.outputs.matrix)}}
+
+    name: "M"
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    steps:
+
+      - name: Update
+        if: inputs.BUILD_RUNNER == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt -y clean
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_UPLOAD }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+          if_key_exists: replace
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY1 }}
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY2 }}
+
+      - name: Checkout Armbian OS scripts
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          path: os
+          ref: ${{ inputs.REFERENCE }}
+          fetch-depth: '1'
+          clean: false
+
+      - name: Checkout Armbian build script
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          path: build
+          fetch-depth: '1'
+          clean: false
+
+      - name: Install Aptly
+        run: |
+          # Note: Consider adding checksum verification for downloaded files
+          wget https://github.com/aptly-dev/aptly/releases/download/v1.5.0/aptly_1.5.0_amd64.deb
+          sudo dpkg -i aptly_1.5.0_amd64.deb
+          sudo rm aptly_1.5.0_amd64.deb
+
+      - name: Install all keys
+        run: |
+          find os/external/keys/ -type f -name "*.gpg" -exec gpg --import --no-default-keyring --keyring trustedkeys.gpg "{}" \;
+          sudo apt-get -y install debian-keyring ubuntu-keyring
+          gpg --no-default-keyring --keyring trustedkeys.gpg --keyserver keyserver.ubuntu.com --recv-keys 648ACFD622F3D138 0E98404D386FA1D9
+
+      - name: Download
+        id: calculate
+        run: |
+          # default download folder
+          SOURCE="temp/"
+          mkdir -p ${SOURCE}
+
+          # read config
+          . os/external/${{ matrix.node }}.conf
+
+          APTLY_CONF="-max-tries=3 "
+          [[ "${CHECKSUM}" == "ignore" ]] && APTLY_CONF+="-ignore-checksums "
+          [[ "${SIGNATURES}" == "ignore" ]] && APTLY_CONF+="-ignore-signatures "
+
+          # add armbian repository key
+          # Note: Consider adding GPG key verification
+          wget https://apt.armbian.com/armbian.key -O key
+          gpg --dearmor < key | tee /usr/share/keyrings/armbian.gpg > /dev/null
+          chmod go+r /usr/share/keyrings/armbian.gpg
+
+          # read existing releases
+          ALL_RELEASES=($(grep -rw build/config/distributions/*/support -ve 'eos' | cut -d"/" -f4 ))
+          #ALL_RELEASES=("bookworm" "noble")
+          # recreate folder structure as we are uploading to our system
+          for i in ${ALL_RELEASES[@]}; do
+              mkdir -p build/output/{debs,debs-beta}/${i}
+              mkdir -p build/output/{debs,debs-beta}/extra/${i}-utils
+              mkdir -p build/output/{debs,debs-beta}/extra/${i}-desktop
+              # add all armbian repositories
+              echo "deb [arch=armhf,arm64,amd64,i386,riscv64 signed-by=/usr/share/keyrings/armbian.gpg] http://apt.armbian.com ${i} main ${i}-utils ${i}-desktop" | sudo tee /etc/apt/sources.list.d/armbian-${i}.list
+          done
+
+          # update and get version
+          sudo apt update
+          sudo apt search ${INSTALL%% *}
+          BEFORE_VERSION=$(sudo apt search ${INSTALL%% *} 2>/dev/null | grep "^${INSTALL%% *}"/ | cut -d" " -f2 | cut -d":" -f2 || true)
+          echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
+          # we use different download metods (github, aplty)
+          if [[ ${METHOD} == gh ]]; then
+              gh release download ${TAG} -p '*.deb' --repo ${URL} --dir temp
+          elif [[ ${METHOD} == direct ]]; then
+              wget -O ${SOURCE}/${{ matrix.node }}.deb ${URL}
+          else
+              SOURCE="/home/runner/.aptly/public/"
+              COMPONENT="main"
+              [[ $KEY == "./" || $KEY == "stable" || $KEY == "public" || $KEY == "stable non-free" ]] && COMPONENT=""
+              [[ $GLOB != *Name* && $GLOB != *Version* ]] && ADDITIONAL_FILTER="-filter-with-deps"
+              aptly -ignore-signatures -filter="$GLOB" ${ADDITIONAL_FILTER} -architectures="$(echo $ARCH | sed "s|:|,|g")" mirror create ${{ matrix.node }}-${RELEASE} $(echo ${URL}) $(echo ${KEY}) $(echo ${COMPONENT})
+              aptly -max-tries=20 -ignore-signatures ${APTLY_CONF} mirror update ${{ matrix.node }}-${RELEASE}
+              aptly snapshot create ${{ matrix.node }}-${RELEASE} from mirror ${{ matrix.node }}-${RELEASE}
+              aptly publish -architectures="armhf,arm64,amd64,riscv64" -batch=true -passphrase=${{ secrets.GPG_PASSPHRASE1 }} snapshot ${{ matrix.node }}-${RELEASE}
+          fi
+
+          # Cleaning exceptions
+          find $SOURCE -type f -name "*-dbg_*" | xargs sudo rm || true
+          find $SOURCE -type f -name "zoom_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "microsoft-edge*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-generic*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-arm64_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-rk3399_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-rk3588_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-tegrax1_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-rpi3arm64*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-rpi4arm64*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box*-android*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "code_*" | sort | head -n -3 | xargs sudo rm || true
+          find $SOURCE -type f -name "box64_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "box86_*" | sort | head -n -1 | xargs sudo rm || true
+          find $SOURCE -type f -name "chromium_*" | sort | head -n -3 | xargs sudo rm || true
+          find $SOURCE -type f -name "chromium-browser_*" | sort | head -n -3 | xargs sudo rm || true
+          find $SOURCE -type f -name "chromium-codecs-ffmpeg_*" | sort | head -n -2 | xargs sudo rm || true
+          find $SOURCE -type f -name "chromium-codecs-ffmpeg-extra_*" | sort | head -n -2 | xargs sudo rm || true
+
+          # repack deb files
+          sudo apt-get install devscripts
+          DEBS=($(sudo find "${SOURCE}"* -type f -name '*thunderbird*.deb' -o -name '*chromium-browser*.deb' -o -name '*chromium_*.deb' -o -name '*chromium-l10n_*.deb' -o -name '*chromium-driver*.deb' -o -name '*firefox_*.deb'))
+          for d in "${DEBS[@]}"; do
+            BEFORE=$(deb-reversion -c ${d} -s armbian)
+            # add epoch 9
+            AFTER=9:$(echo $BEFORE | cut -d":" -f2)
+            echo "$d : $BEFORE -> $AFTER"
+            sudo DEBEMAIL=info@armbian.com deb-reversion -v $AFTER -s armbian $d
+            sudo rm $d
+            sudo mv *.deb ${SOURCE}
+          done
+
+          # store info to GitHub Actions
+          echo "<details><summary>Show packages</summary><p>" >> $GITHUB_STEP_SUMMARY
+          echo "Before: $BEFORE_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          AFTER_VERSION=$(find $SOURCE -type f -name "${INSTALL%% *}*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
+
+          echo "AFTER_VERSION=${AFTER_VERSION}" >> $GITHUB_OUTPUT
+
+          echo "After: $AFTER_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          find $SOURCE -type f -name "*.deb" | rev | cut -d"/" -f1 | rev | sed -e 's/^/- /;'>> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+
+          if [[ ${TARGET} == main ]]; then
+                  if grep -qE 'B' <<< "$REPOSITORY"; then find $SOURCE -type f -name "*.deb" -exec cp {} build/output/debs-beta/ \;; fi
+                  if grep -qE 'S' <<< "$REPOSITORY"; then find $SOURCE -type f -name "*.deb" -exec cp {} build/output/debs/ \;; fi
+          elif [[ ${RELEASE} == all ]]; then
+              for i in ${ALL_RELEASES[@]}; do
+                  if grep -qE 'B' <<< "$REPOSITORY"; then find $SOURCE -type f -name "*.deb" -exec cp {} build/output/debs-beta/extra/${i}-${TARGET} \;; fi
+                  if grep -qE 'S' <<< "$REPOSITORY"; then find $SOURCE -type f -name "*.deb" -exec cp {} build/output/debs/extra/${i}-${TARGET} \;; fi
+              done
+          else
+              elements=($(echo $RELEASE | tr ':' "\n"))
+              for SELECTED_RELEASE in "${elements[@]}"; do
+                 if grep -qE 'B' <<< "$REPOSITORY"; then find $SOURCE -type f -name "*.deb" -exec cp {} build/output/debs-beta/extra/${SELECTED_RELEASE}-${TARGET} \;; fi
+                 if grep -qE 'S' <<< "$REPOSITORY"; then find $SOURCE -type f -name "*.deb" -exec cp {} build/output/debs/extra/${SELECTED_RELEASE}-${TARGET} \;; fi
+              done
+          fi
+
+      - name: "Deploy to stable server. Old: ${{ steps.calculate.outputs.BEFORE_VERSION }} - New: ${{ steps.calculate.outputs.AFTER_VERSION }}"
+        if: ${{ steps.calculate.outputs.BEFORE_VERSION != steps.calculate.outputs.AFTER_VERSION }}
+        run: |
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" -arvc build/output/debs/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs
+
+      - name: "Deploy to beta server"
+        run: |
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
+
+      - name: Build testing repository
+        run: |
+          # read config once again
+          . os/external/${{ matrix.node }}.conf
+          cd build
+          mkdir -p output/repository/public
+          sed -i 's|"gpgProvider": ".*"|"gpgProvider": "gpg2"|g' tools/repository/aptly.conf
+          tools/repository/repo -i output/debs-beta -c update
+
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} "mkdir -p storage/artifacts/${{ env.PR_NUMBER }}/${{ matrix.node }}"
+          rsync -arvc -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" output/repository/public/ ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }}:"storage/artifacts/${{ env.PR_NUMBER }}/${{ matrix.node }}"
+
+  test:
+
+    name: "Test"
+    needs: download
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    outputs:
+      matrix: ${{ steps.json.outputs.JSON_CONTENT }}
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          path: os
+          fetch-depth: '2'
+          clean: false
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v43
+        with:
+          path: os
+          files: |
+            external/*.conf
+
+      - name: "Make JSON"
+        id: json
+        run: |
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          # define docker images where we will run test install
+          dockerimages=("debian:bookworm" "debian:trixie" "ubuntu:jammy" "ubuntu:noble")
+
+          # read packages and loop them
+          packages=$(echo ${{ steps.changed-files.outputs.all_changed_files }} | tr " " "\n" | cut -d"." -f1 | cut -d"/" -f2)
+          [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]] && packages=($(grep -rw os/external/*.conf -e amd64 | grep -v haos | cut -d"/" -f3 | cut -d"." -f1))
+          for i in "${packages[@]}"; do
+              # read config file
+              . os/external/${i}.conf
+
+              # for now, we can only do amd64 test installs
+              if [[ -n "${INSTALL}" && "${ARCH}" == *amd64* ]]; then
+                  # if we specify releases, we need to loop docker images and use if there is a match
+                  if [[ $RELEASE != all ]]; then
+                      for j in ${dockerimages[@]}; do
+                          elements=($(echo $RELEASE | tr ':' "\n"))
+                          for SELECTED_RELEASE in "${elements[@]}"; do
+                              if [[ $j == *"${SELECTED_RELEASE}"* ]]; then
+                                  echo "{\"package\":\"${i}\",\"image\":\"$j\"}"
+                              fi
+                          done
+                      done
+                  else
+                      for j in ${dockerimages[@]}; do
+                          echo "{\"package\":\"${i}\",\"image\":\"$j\"}"
+                      done
+                  fi
+              fi
+          done | jq -s >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  gradle:
+    needs: test
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix:
+        image: ${{ fromJSON(needs.test.outputs.matrix) }}
+
+    name: "I"
+    timeout-minutes: 30
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    container:
+        image: "${{ matrix.image.image }}"
+    steps:
+
+      - name: Download a single artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: assets-for-download
+          path: downloads
+
+      - name: Checkout Armbian OS Config
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          ref: ${{ inputs.REFERENCE }}
+          clean: false
+          fetch-depth: 1
+          path: os
+
+      - name: Install
+        run: |
+          # source vars
+          . "os/external/${{ matrix.image.package }}.conf"
+
+          URL=$(cat downloads/url.txt)$(cat downloads/path.txt)$(echo "${{ matrix.image.package }}" | cut -d":" -f1)
+
+          export DEBIAN_FRONTEND=noninteractive
+          RELEASE=$(echo "${{ matrix.image.image }}" | cut -d":" -f2)
+          apt update
+          apt -y install wget gpg
+
+          # add armbian repository
+          # Note: Consider adding GPG key verification
+          wget https://${URL}/armbian.key -O key
+          gpg --dearmor < key | tee /usr/share/keyrings/armbian.gpg > /dev/null
+          chmod go+r /usr/share/keyrings/armbian.gpg
+          echo "deb [signed-by=/usr/share/keyrings/armbian.gpg] http://${URL} $RELEASE main ${RELEASE}-utils ${RELEASE}-desktop" | tee /etc/apt/sources.list.d/armbian.list
+          apt update -y
+          apt upgrade -y
+
+          # install packages / except howdy as its too large
+          export DEBIAN_FRONTEND=noninteractive
+          for i in ${INSTALL}; do
+              apt-get install -y $i
+          done
+
+  clean:
+
+    name: "Clean"
+    needs: gradle
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    steps:
+
+      - name: "Lets clean artifacts that are useless"
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: assets-for-download
+          failOnError: false
