@@ -169,7 +169,7 @@ jobs:
                     needs_qemu="false"
                     ;;
                   arm64)
-                    runner="ubuntu-24-arm64"
+                    runner="ubuntu-24.04-arm"
                     needs_qemu="false"
                     ;;
                   riscv64)
@@ -240,7 +240,7 @@ jobs:
                 # Determine runner for display
                 case "${arch}" in
                   amd64) runner="ubuntu-latest" ;;
-                  arm64) runner="ubuntu-24-arm64" ;;
+                  arm64) runner="ubuntu-24.04-arm" ;;
                   riscv64) runner="ubuntu-latest (QEMU)" ;;
                   *) runner="ubuntu-latest" ;;
                 esac
