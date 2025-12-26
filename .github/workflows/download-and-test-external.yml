@@ -215,6 +215,7 @@ jobs:
           done | jq -s '{"include": .}' | jq -c
           )" >> $GITHUB_OUTPUT
 
+          # Debug: Output matrix to summary
           echo "::notice::Matrix generation complete" >&2
           echo "## Matrix output" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -224,6 +225,10 @@ jobs:
             primary_arch=$(echo "$ARCH" | cut -d: -f1)
             echo "- ${conf_file}: ARCH=${ARCH}, RELEASE=${RELEASE}, primary_arch=${primary_arch}" >> $GITHUB_STEP_SUMMARY
           done
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "## Generated JSON Matrix" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          echo "${{ matrix }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
   download:
