@@ -36,8 +36,8 @@ jobs:
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ACCESS_NAME: armbian
-      #BUILD_RUNNER: "ubuntu-latest"
-      BUILD_RUNNER: "X64"
+      BUILD_RUNNER: "ubuntu-latest"
+      #BUILD_RUNNER: "X64"
       HOST_DEPLOY: "repo.armbian.com"
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
