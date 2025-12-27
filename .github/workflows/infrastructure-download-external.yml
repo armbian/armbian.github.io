@@ -657,12 +657,15 @@ jobs:
             rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
               -arvc build/output/debs/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs
 
-            # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-            rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-              -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
           else
             echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ❌ |" >> $GITHUB_STEP_SUMMARY
           fi
+
+          # Always sync to debs-beta
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+            -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
+
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
