@@ -1,6 +1,5 @@
-name: Repository update
+name: "Infrastructure: Repository update"
 on:
-  push:
   repository_dispatch:
     types: ["Repository update"]
   workflow_dispatch:
@@ -16,9 +15,106 @@ concurrency:
 
 jobs:
 
+  json:
+    name: "JSON"
+    runs-on: ubuntu-latest
+    outputs:
+      matrix:  ${{steps.json.outputs.JSON_CONTENT}}
+    steps:
+      - name: "Checkout Armbian build Framework"
+        uses: actions/checkout@v5
+        with:
+          repository: armbian/build
+          ref: ${{ inputs.ref || inputs.branch || 'main' }}
+          clean: false
+          fetch-depth: 1
+          path: build
+
+      - name: "Make JSON"
+        id: json
+        run: |
+
+          pkg="code,codium,google-chrome-stable,anubis,armbian-config,box64,box64-android,gh,min,microsoft-edge-stable,zoom,armbian-firmware,armbian-firmware-full"
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          releases=($(grep "supported\|csc" build/config/distributions/*/support | cut -d"/" -f4))
+          for i in ${releases[@]}; do
+              packages=($(echo "$pkg" | tr ',' '\n'))
+                  for j in ${packages[@]}; do
+                      echo "{\"release\":\"${i}\",\"package\":\"$j\"}"
+                  done
+              done | jq -s >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  delete:
+    needs: json
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    name: "Delete ${{ matrix.package }} from ${{ matrix.release }}"
+    timeout-minutes: 60
+    runs-on: repository
+    steps:
+
+      - name: Checkout build repository
+        uses: actions/checkout@v5
+        with:
+          repository: armbian/build
+          fetch-depth: 1
+          clean: false
+
+      - name: Purge packages
+        run: |
+
+          # take ownership
+          sudo chown -R ${USER}:${USER} /outgoing/repository
+
+          PKG="${{ matrix.package }}"
+
+          LIST=$(
+            tools/repository/repo -i /incoming/debs -o /outgoing/repository -r ${{ matrix.release }} \
+              | sed 's/^[[:space:]]*//' \
+              | grep "^${PKG}_" || true
+          )
+
+          COUNT=$(printf "%s\n" "$LIST" | grep -c . || true)
+
+          if (( COUNT > 1 )); then
+              # Display & log header
+              echo "Found $COUNT packages for $PKG — deleting older versions" \
+                | tee -a "$GITHUB_STEP_SUMMARY" >/dev/null
+
+              # Determine newest version
+              LATEST=$(printf "%s\n" "$LIST" | sort -V | tail -n 1)
+
+              VERSION="${LATEST#${PKG}_}"   # strip pkg_
+              VERSION="${VERSION%_*}"       # strip _ARCH
+
+              echo "Newest version: $VERSION" \
+                | tee -a "$GITHUB_STEP_SUMMARY" >/dev/null
+
+              # Pretty print command in both outputs
+              {
+                echo '### 🧹 Delete package'
+                echo '```bash'
+                echo "tools/repository/repo -o /outgoing/repository -r ${{ matrix.release }} -c delete -l 'Name (= $PKG), \$Version (<< $VERSION)'"
+                echo '```'
+              } | tee -a "$GITHUB_STEP_SUMMARY" >/dev/null
+
+              # === RUN DELETE OPERATION ===
+              tools/repository/repo -i /incoming/debs -o /outgoing/repository -r ${{ matrix.release }} -c delete -l "Name (= $PKG), \$Version (<< $VERSION)"
+
+          else
+              echo "Only $COUNT package present — skipping delete" \
+                | tee -a "$GITHUB_STEP_SUMMARY" >/dev/null
+          fi
+
   Check:
 
     name: "Check membership" # Only release manager can execute this manually
+    needs: delete
     runs-on: ubuntu-latest
     steps:
 
@@ -34,7 +130,7 @@ jobs:
     needs: Check
 
     if: ${{ github.repository_owner == 'Armbian' }}
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@repoupdate
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
