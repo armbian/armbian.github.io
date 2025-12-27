@@ -9,9 +9,9 @@ on:
         description: "Add https://repo.armbian.com/partial/ to stable repo"
         default: false
 
-concurrency:
-  group: pipeline
-  cancel-in-progress: false
+#concurrency:
+#  group: pipeline
+#  cancel-in-progress: false
 
 jobs:
 
@@ -33,7 +33,7 @@ jobs:
     needs: Check
 
     if: ${{ github.repository_owner == 'Armbian' }}
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@fixes_repo
     with:
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
@@ -88,25 +88,6 @@ jobs:
           REPOSITORY="${{ matrix.repository }}"
           TARGET=${REPOSITORY/debs/repository}
           sudo chown -R ${USER}:${USER} /outgoing/${TARGET} /armbian/openssh-server/storage/${REPOSITORY}
-
-          # delete older packages
-          declare -A delete_packages
-          DELETE_AFTER="22.08"
-              delete_packages=(
-                    ["discord"]="% *"
-                    ["homeassistant-supervised"]="% *"
-                    ["fastfetch"]="% *"
-                    ["test_delete_pkg"]="% *"
-              )
-
-          # Loop over the array of packages
-          for key in "${!delete_packages[@]}"
-          do
-              tools/repository/repo \
-                -i /armbian/openssh-server/storage/${{ matrix.repository }} \
-                -o /outgoing/${TARGET} \
-                -c delete -l "Name (% $key*), \$Version (${delete_packages[$key]})"
-          done
 
           # include packages from manually made images
           if [[ "${{ github.event.inputs.partial }}" == "true" ]]; then
@@ -246,4 +227,4 @@ jobs:
         with:
           token: ${{ secrets.DISPATCH }}
           repository: armbian/armbian.github.io
-          event-type: "Redirector update"
+          event-type: "Infrastructure: Update redirector"
