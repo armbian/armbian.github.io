@@ -224,7 +224,7 @@ jobs:
       project: ${{steps.make.outputs.project}}
     strategy:
       fail-fast: false
-      max-parallel: 32
+      max-parallel: 64
       matrix: ${{fromJson(needs.start.outputs.matrix)}}
 
     name: "${{ matrix.name }}:${{ matrix.release }}:${{ matrix.arch }}"
