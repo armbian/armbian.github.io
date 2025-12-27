@@ -1,0 +1,680 @@
+name: Sync 3rd party packages
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ACCESS_NAME:
+        required: false
+        type: string
+        default: ${{ github.repository_owner }}
+      BUILD_BRANCH:
+        required: false
+        type: string
+        default: 'main'
+      BUILD_RUNNER:
+        required: false
+        type: string
+        default: "ubuntu-latest"
+      HOST_DEPLOY:
+        required: false
+        type: string
+        default: "repo.armbian.com"
+      HOST_USER:
+        required: false
+        type: string
+        default: "upload"
+      REFERENCE:
+        required: false
+        type: string
+        default: "main"
+    secrets:
+      GPG_KEY1:
+        required: true
+      GPG_KEY2:
+        required: true
+      ACCESS_TOKEN:
+        required: true
+      KEY_UPLOAD:
+        required: false
+      HOST_UPLOAD:
+        required: true
+      HOST_UPLOAD_USER:
+        required: true
+      HOST_UPLOAD_PORT:
+        required: true
+      KNOWN_HOSTS_ARMBIAN_UPLOAD:
+        required: true
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  PR_NUMBER: ${{ github.event.number }}
+
+jobs:
+
+  start:
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    name: "Mirror"
+    outputs:
+      matrix: ${{steps.lists.outputs.matrix}}
+    steps:
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_UPLOAD }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+          if_key_exists: replace
+
+      - name: Create a temporary artifact folder
+        run: |
+          mkdir -p downloads
+          cd downloads
+          echo "${{ inputs.HOST_DEPLOY }}/" > url.txt
+          echo "artifacts/${{ env.PR_NUMBER }}/" > path.txt
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: assets-for-download
+          path: downloads
+          overwrite: true
+          retention-days: 5
+
+      - name: Remove temporary repositories
+        run: |
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} \
+            ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} \
+            "rm -rf storage/artifacts/*"
+
+      - name: Checkout Armbian OS repository
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          path: os
+          fetch-depth: '2'
+          clean: false
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v43
+        with:
+          path: os
+          files: |
+            external/*.conf
+
+      - name: Build list
+        id: lists
+        run: |
+          # Install jq if not available
+          command -v jq >/dev/null 2>&1 || sudo apt-get install -y jq
+
+          echo "::debug::Changed files: ${{ steps.changed-files.outputs.all_changed_files }}" >&2
+          echo "::debug::REFERENCE input: ${{ inputs.REFERENCE }}" >&2
+
+          # Build list of conf files
+          if [[ "${{ inputs.REFERENCE }}" =~ ^(main|)$ ]]; then
+            # Get all conf files
+            MATRIX_LIST=()
+            while IFS= read -r -d '' conf_file; do
+              conf_name=$(basename "$conf_file" .conf)
+              MATRIX_LIST+=("$conf_name")
+            done < <(find os/external/*.conf -print0 | sort -z)
+          else
+            # Get only changed conf files
+            MATRIX_LIST=()
+            CHANGED="${{ steps.changed-files.outputs.all_changed_files }}"
+            if [[ -n "$CHANGED" ]]; then
+              while IFS= read -r conf_file; do
+                conf_name=$(echo "$conf_file" | cut -d"." -f1 | cut -d"/" -f2)
+                MATRIX_LIST+=("$conf_name")
+              done < <(echo "$CHANGED" | tr " " "\n")
+            fi
+          fi
+
+          echo "::debug::MATRIX content: ${MATRIX_LIST[*]}" >&2
+
+          # Build detailed matrix - expand each arch and release combination
+          echo "::notice::Building matrix..." >&2
+
+          MATRIX_JSON=$(
+          for conf_file in "${MATRIX_LIST[@]}"; do
+            echo "::debug::Processing conf file: ${conf_file}" >&2
+            [[ -f "os/external/${conf_file}.conf" ]] || continue
+
+            # Source the conf file to get variables
+            . "os/external/${conf_file}.conf"
+
+            echo "::debug::${conf_file} - ARCH: ${ARCH}, RELEASE: ${RELEASE}, TARGET: ${TARGET}" >&2
+
+            # Expand architectures (colon-separated)
+            archs=($(echo "$ARCH" | tr ':' ' '))
+
+            # Expand releases
+            if [[ "${RELEASE}" == "all" ]]; then
+              # Default releases for "all"
+              releases=("bookworm" "jammy" "noble")
+            elif [[ "${RELEASE}" == *":"* ]]; then
+              # Colon-separated releases
+              IFS=':' read -ra releases <<< "$RELEASE"
+            else
+              # Single release
+              releases=("$RELEASE")
+            fi
+
+            # Generate matrix entry for each arch x release combination
+            for arch in "${archs[@]}"; do
+              for release in "${releases[@]}"; do
+                # Determine if we need QEMU (non-amd64)
+                needs_qemu="false"
+                [[ "$arch" != "amd64" ]] && needs_qemu="true"
+
+                # Determine Docker image based on release
+                case "${release}" in
+                  bookworm|bullseye|buster|trixie|sid)
+                    docker_image="debian:${release}"
+                    ;;
+                  jammy|focal|bionic|noble|mantic|lunar)
+                    docker_image="ubuntu:${release}"
+                    ;;
+                  *)
+                    docker_image="debian:bookworm"
+                    ;;
+                esac
+
+                echo "::debug::Generating entry: package=${conf_file}, arch=${arch}, release=${release}, needs_qemu=${needs_qemu}" >&2
+
+                # Output JSON object for this combination
+                jq -n \
+                  --arg name "${conf_file}" \
+                  --arg arch "${arch}" \
+                  --arg release "${release}" \
+                  --arg target "${TARGET:-main}" \
+                  --arg method "${METHOD:-aptly}" \
+                  --arg install "${INSTALL:-}" \
+                  --arg docker_image "${docker_image}" \
+                  --argjson needs_qemu "${needs_qemu}" \
+                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, docker_image: $docker_image, needs_qemu: $needs_qemu}'
+              done
+            done
+          done | jq -s '{"include": .}'
+          )
+
+          # Check if matrix is valid
+          MATRIX_COUNT=$(echo "${MATRIX_JSON}" | jq '.include | length')
+
+          # Handle empty matrix - add a dummy entry that will be skipped
+          if [[ "${MATRIX_COUNT}" -eq 0 ]]; then
+            echo "::warning::No matrix entries generated, adding placeholder" >&2
+            MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+          else
+            # Debug: Show raw matrix JSON
+            echo "::debug::Raw matrix JSON: ${MATRIX_JSON}" >&2
+
+            # Compact the JSON for GitHub Actions
+            MATRIX_JSON_COMPACTED=$(echo "${MATRIX_JSON}" | jq -c)
+            echo "::debug::Compacted matrix JSON: ${MATRIX_JSON_COMPACTED}" >&2
+          fi
+
+          echo "matrix=${MATRIX_JSON_COMPACTED}" >> $GITHUB_OUTPUT
+
+  download:
+    needs: [start]
+    outputs:
+      project: ${{steps.make.outputs.project}}
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix: ${{fromJson(needs.start.outputs.matrix)}}
+
+    name: "${{ matrix.name }}:${{ matrix.release }}:${{ matrix.arch }}"
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    container:
+      image: ${{ matrix.docker_image }}
+      options: --user root
+    steps:
+
+      - name: Install system dependencies
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y unzip gnupg dirmngr wget gh ca-certificates rsync sudo openssh-client xz-utils bzip2
+
+      - name: Install Aptly
+        shell: bash
+        run: |
+          wget -O /tmp/aptly_1.6.2_linux_amd64.zip \
+            https://github.com/aptly-dev/aptly/releases/download/v1.6.2/aptly_1.6.2_linux_amd64.zip
+          unzip -o /tmp/aptly_1.6.2_linux_amd64.zip -d /tmp/aptly
+          install -m 0755 /tmp/aptly/aptly_1.6.2_linux_amd64/aptly /usr/local/bin/aptly
+          aptly version
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_UPLOAD }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+          if_key_exists: replace
+
+      - name: Import GPG key 1
+        uses: crazy-max/ghaction-import-gpg@v6
+        env:
+          HOME: /root
+          GNUPGHOME: /root/.gnupg
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY1 }}
+
+      - name: Import GPG key 2
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY2 }}
+
+      - name: Checkout Armbian OS scripts
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/os
+          path: os
+          ref: ${{ inputs.REFERENCE }}
+          fetch-depth: '1'
+          clean: false
+
+      - name: Checkout Armbian build script
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          path: build
+          fetch-depth: '1'
+          clean: false
+
+      - name: Install GPG keys
+        shell: bash
+        run: |
+          # Import all GPG keys from the repository
+          find os/external/keys/ -type f -name "*.gpg" -exec gpg --import --no-default-keyring --keyring trustedkeys.gpg "{}" \;
+
+          # Install appropriate keyring based on container type
+          if grep -q "debian" /etc/os-release; then
+            apt-get -y install debian-keyring
+          elif grep -q "ubuntu" /etc/os-release; then
+            apt-get -y install ubuntu-keyring
+          fi
+
+          # Import additional keys
+          gpg --no-default-keyring --keyring trustedkeys.gpg \
+            --keyserver keyserver.ubuntu.com \
+            --recv-keys 648ACFD622F3D138 0E98404D386FA1D9
+
+      - name: "Download method: ${{ matrix.method }}"
+        id: calculate
+        shell: bash
+        run: |
+          SOURCE="temp/"
+          mkdir -p ${SOURCE}
+
+          # Load configuration
+          echo "::debug::Sourcing config file: os/external/${{ matrix.name }}.conf"
+          . os/external/${{ matrix.name }}.conf
+
+          echo "::debug::Config loaded - URL: ${URL}, KEY: ${KEY}, INSTALL: ${INSTALL}, ARCH: ${ARCH}, RELEASE: ${RELEASE}"
+
+          APTLY_CONF="-max-tries=3 "
+          [[ "${CHECKSUM}" == "ignore" ]] && APTLY_CONF+="-ignore-checksums "
+          [[ "${SIGNATURES}" == "ignore" ]] && APTLY_CONF+="-ignore-signatures "
+
+          # Add Armbian repository key
+          wget https://apt.armbian.com/armbian.key -O key
+          gpg --dearmor < key | tee /usr/share/keyrings/armbian.gpg > /dev/null
+          chmod go+r /usr/share/keyrings/armbian.gpg
+
+          # Add Armbian repository
+          echo "deb [arch=${{ matrix.arch }} signed-by=/usr/share/keyrings/armbian.gpg] http://apt.armbian.com ${{ matrix.release }} main ${{ matrix.release }}-utils ${{ matrix.release }}-desktop" > /etc/apt/sources.list.d/armbian-${{ matrix.release }}.list
+
+          # Configure APT sources for AMD64 architecture
+          sudo awk '
+            # Leave comments/blank lines as-is
+            /^[[:space:]]*#/ || /^[[:space:]]*$/ { print; next }
+
+            # If already has [ ... ] after deb, keep it
+            /^[[:space:]]*deb[[:space:]]+\[/ { print; next }
+
+            # For deb lines without options, inject [arch=amd64]
+            /^[[:space:]]*deb[[:space:]]+/ {
+              sub(/^[[:space:]]*deb[[:space:]]+/, "deb [arch=amd64] ")
+              print
+              next
+            }
+
+            # Everything else unchanged
+            { print }
+          ' /etc/apt/sources.list > /tmp/sources.list && sudo mv /tmp/sources.list /etc/apt/sources.list
+
+          # Ensure main architecture in Ubuntu sources
+          FILE="/etc/apt/sources.list.d/ubuntu.sources"
+          if [[ -f "$FILE" ]]; then
+            awk '
+              BEGIN { has_arch=0 }
+
+              # New stanza starts after a blank line
+              /^[[:space:]]*$/ {
+                has_arch=0
+                print
+                next
+              }
+
+              # Detect Architectures in current stanza
+              /^Architectures:/ {
+                has_arch=1
+                print
+                next
+              }
+
+              # After Suites:, inject Architectures if missing
+              /^Suites:/ {
+                print
+                if (!has_arch) print "Architectures: amd64"
+                next
+              }
+
+              { print }
+            ' "$FILE" > "${FILE}.tmp" && mv "${FILE}.tmp" "$FILE"
+          fi
+
+          # Read existing releases and create folder structure
+          ALL_RELEASES=($(grep -rw build/config/distributions/*/support -ve 'eos' | cut -d"/" -f4 ))
+          for i in ${ALL_RELEASES[@]}; do
+            mkdir -p build/output/{debs,debs-beta}/${i}
+            mkdir -p build/output/{debs,debs-beta}/extra/${i}-utils
+            mkdir -p build/output/{debs,debs-beta}/extra/${i}-desktop
+          done
+
+          needs_qemu='${{ matrix.needs_qemu }}'
+          arch='${{ matrix.arch }}'
+          release='${{ matrix.release }}'
+
+          # Configure Ubuntu foreign architecture sources
+          if [[ -r /etc/os-release ]]; then
+            . /etc/os-release
+            if [[ "${ID:-}" == "ubuntu" ]]; then
+              # Only add foreign arch sources when needed
+              if [[ "$needs_qemu" == "true" && "$arch" != "amd64" ]]; then
+                # Enable foreign architecture
+                dpkg --add-architecture "$arch"
+
+                SRC="/etc/apt/sources.list.d/ubuntu-${arch}.sources"
+                KEYRING="/usr/share/keyrings/ubuntu-archive-keyring.gpg"
+
+                # Create source only if it does not exist
+                if [[ ! -f "$SRC" ]]; then
+                  printf '%s\n' \
+                    "Types: deb" \
+                    "URIs: http://ports.ubuntu.com/ubuntu-ports" \
+                    "Suites: ${release} ${release}-updates ${release}-backports" \
+                    "Components: main restricted universe multiverse" \
+                    "Architectures: ${arch}" \
+                    "Signed-By: ${KEYRING}" \
+                    > "$SRC"
+                fi
+              fi
+              [[ -f /etc/apt/sources.list.d/ubuntu.sources ]] && cat /etc/apt/sources.list.d/ubuntu.sources
+              echo "_-----------------------"
+              [[ -f /etc/apt/sources.list ]] && cat /etc/apt/sources.list
+            fi
+          fi
+
+          # Update package lists and get current version
+          apt-get update
+
+          # Check installed version if exists
+          PKG="${INSTALL%% *}"
+          BEFORE_VERSION="$(apt-cache policy "$PKG" 2>/dev/null | awk '/Candidate:/ {print $2; exit}' | cut -d: -f2-)"
+          echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
+
+          # Download packages based on method
+          if [[ ${METHOD} == gh ]]; then
+            # GitHub release download method
+            case "${{ matrix.arch }}" in
+              amd64)
+                PATTERNS+=('*amd64*.deb' '*x86_64*.deb' '*x64*.deb')
+                ;;
+              arm64)
+                PATTERNS+=('*arm64*.deb' '*aarch64*.deb')
+                ;;
+              armhf)
+                PATTERNS+=('*armhf*.deb' '*armv7*.deb' '*armv7l*.deb' '*armv6*.deb')
+                ;;
+              riscv64)
+                PATTERNS+=('*riscv64*.deb')
+                ;;
+              *)
+                echo "Unsupported arch: ${{ matrix.arch }}" >&2
+                exit 1
+                ;;
+            esac
+
+            # exception
+            if [[ "${{ matrix.name }}" == "haos-supervised-installer" ]]; then
+                PATTERNS+=('*.deb')
+            fi
+
+            echo "Downloading from GitHub release ${TAG}"
+            for p in "${PATTERNS[@]}"; do
+              echo "  gh release download ${TAG} -p '$p' --repo ${URL}"
+              gh release download "${TAG}" \
+                -p "$p" \
+                --repo "${URL}" \
+                --dir "${SOURCE}" || true
+            done
+            ls -l ${SOURCE}
+          elif [[ ${METHOD} == direct ]]; then
+            # Direct download method
+            wget -O ${SOURCE}/${{ matrix.name }}.deb ${URL}
+          else
+            # Aptly mirror method
+            # Pin aptly state (critical in GH Actions containers)
+            export HOME=/root
+            APTLY_ROOT="/root/.aptly"
+            APTLY_CFG="/root/.aptly.conf"
+            mkdir -p "$APTLY_ROOT"
+            printf '{ "rootDir": "%s" }\n' "$APTLY_ROOT" > "$APTLY_CFG"
+
+            SOURCE="/root/.aptly/public/"
+
+            # Configure filtering
+            ADDITIONAL_FILTER=""
+            FILTER_ARGS=()
+
+            # Add -filter-with-deps only when filter does NOT include Name/Version
+            if [[ "${GLOB:-}" != *Name* && "${GLOB:-}" != *Version* ]]; then
+              ADDITIONAL_FILTER="-filter-with-deps"
+            fi
+
+            # Add filter only if GLOB is set/non-empty
+            if [[ -n "${GLOB:-}" ]]; then
+              FILTER_ARGS=(-filter="$GLOB")
+            fi
+
+            # Make mirror name unique per arch to avoid collisions
+            MIRROR="${{ matrix.name }}-${{ matrix.release }}-${{ matrix.arch }}"
+
+            # KEY may be:
+            #   - "unstable contrib non-free"  (suite + components)
+            #   - "bookworm"                  (suite only)
+            #   - "./" / "public" / "stable"  (special/flat)
+            read -r DIST REST <<<"${KEY:-}"
+            COMPONENTS="$REST"
+
+            # Special/flat cases: do not pass components
+            case "${KEY:-}" in
+              "./"|"stable"|"public"|"stable non-free")
+                DIST="$KEY"
+                COMPONENTS=""
+                ;;
+            esac
+
+            # If KEY did not include components, default to "main"
+            if [[ -z "$COMPONENTS" && "$DIST" != "./" && "$DIST" != "stable" && "$DIST" != "public" && "$DIST" != "stable non-free" ]]; then
+              COMPONENTS="main"
+            fi
+
+            # Prefer https (helps with EOF/proxy weirdness)
+            URL="${URL:-}"
+            URL="${URL/http:\/\//https:\/\/}"
+
+            # Create mirror (distribution + optional components)
+            if [[ -n "$COMPONENTS" ]]; then
+              # shellcheck disable=SC2086
+              echo "aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS"
+              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS
+            else
+              echo "aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST""
+              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST"
+            fi
+
+            # Update mirror
+            echo "aptly -config="$APTLY_CFG" -max-tries=20 -ignore-signatures mirror update "$MIRROR""
+            aptly -config="$APTLY_CFG" -max-tries=20 -ignore-signatures mirror update "$MIRROR"
+
+            # Snapshot
+            echo "aptly -config="$APTLY_CFG" snapshot create "$MIRROR" from mirror "$MIRROR""
+            aptly -config="$APTLY_CFG" snapshot create "$MIRROR" from mirror "$MIRROR"
+
+            # Publish
+            echo "aptly -config="$APTLY_CFG" publish -architectures="${{ matrix.arch }}" -batch=true snapshot "$MIRROR""
+            aptly -config="$APTLY_CFG" publish -architectures="${{ matrix.arch }}" -batch=true snapshot "$MIRROR"
+
+            # Keep only latest version of each package
+            set -euo pipefail
+
+            ROOTS=($SOURCE)
+
+            best_for_pkg_in_dir() {
+              local dir="$1" pkg="$2"
+              local best_ver="" best_file="" f ver
+
+              while IFS= read -r -d '' f; do
+                f="$(basename "$f")"
+                ver="${f#${pkg}_}"; ver="${ver%%_*}"
+                if [[ -z "$best_ver" ]] || dpkg --compare-versions "$ver" gt "$best_ver"; then
+                  best_ver="$ver"
+                  best_file="$f"
+                fi
+              done < <(find "$dir" -maxdepth 1 -type f -name "${pkg}_*.deb" -print0)
+
+              [[ -n "$best_file" ]] && printf '%s\n' "$best_file"
+            }
+
+            for root in "${ROOTS[@]}"; do
+              [[ -d "$root" ]] || continue
+
+              # Process each directory that contains .deb files
+              while IFS= read -r -d '' dir; do
+                # List unique package names in this dir
+                mapfile -t pkgs < <(find "$dir" -maxdepth 1 -type f -name '*.deb' -printf '%f\n' \
+                  | sed -E 's/_.*//' | sort -u)
+
+                ( cd "$dir"
+                  for pkg in "${pkgs[@]}"; do
+                    best="$(best_for_pkg_in_dir "$dir" "$pkg")"
+                    [[ -n "$best" ]] || continue
+
+                    # Delete all other versions of that package in this dir
+                    while IFS= read -r -d '' f; do
+                      b="$(basename "$f")"
+                      [[ "$b" == "$best" ]] && continue
+                      rm -f -- "$b"
+                    done < <(find "$dir" -maxdepth 1 -type f -name "${pkg}_*.deb" -print0)
+
+                    echo "[$dir] kept: $best"
+                  done
+                )
+              done < <(find "$root" -type f -name '*.deb' -printf '%h\0' | sort -zu)
+            done
+          fi
+
+          # Repack deb files with Armbian version
+          apt-get install -y devscripts
+          DEBS=($(sudo find "${SOURCE}"* -type f -name '*firefox_*.deb'))
+          for d in "${DEBS[@]}"; do
+            BEFORE=$(deb-reversion -c ${d} -s armbian)
+            # Add epoch 9
+            AFTER=9:$(echo $BEFORE | cut -d":" -f2)
+            echo "$d : $BEFORE -> $AFTER"
+            DEBEMAIL=info@armbian.com deb-reversion -v $AFTER -s armbian $d
+            rm $d
+            mv *.deb ${SOURCE}
+          done
+
+          # Store info to GitHub Actions
+          AFTER_VERSION=$(find "$SOURCE" -type f -name "${INSTALL%% *}*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
+          if [[ -z $AFTER_VERSION ]]; then
+            AFTER_VERSION=$(find "$SOURCE" -type f -name "*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
+          fi
+          PKG_LINES="$(find "$SOURCE" -type f -name "*.deb" -printf "%f\n" 2>/dev/null | sort | sed 's/$/<br>/')"
+          echo "AFTER_VERSION=${AFTER_VERSION}" >> $GITHUB_OUTPUT
+
+          # Copy packages to appropriate output directories
+          if [[ ${TARGET} == main ]]; then
+            # Copy to main repository directories
+            if grep -qE 'B' <<< "$REPOSITORY"; then
+              find $SOURCE -type f -name "*${{ matrix.arch }}.deb" -exec cp {} build/output/debs-beta/ \;
+            fi
+            if grep -qE 'S' <<< "$REPOSITORY"; then
+              find $SOURCE -type f -name "*${{ matrix.arch }}.deb" -exec cp {} build/output/debs/ \;
+            fi
+          #elif [[ ${RELEASE} == all ]]; then
+          #  # Copy to all release directories
+          #  for i in ${ALL_RELEASES[@]}; do
+          #    if grep -qE 'B' <<< "$REPOSITORY"; then
+          #      find $SOURCE -type f -name "*${{ matrix.arch }}.deb" -exec cp {} build/output/debs-beta/extra/${i}-${TARGET} \;
+          #    fi
+          #    if grep -qE 'S' <<< "$REPOSITORY"; then
+          #      find $SOURCE -type f -name "*${{ matrix.arch }}.deb" -exec cp {} build/output/debs/extra/${i}-${TARGET} \;
+          #    fi
+          #  done
+          else
+            # Copy to specific release directories
+            elements=($(echo $RELEASE | tr ':' "\n"))
+            for SELECTED_RELEASE in "${elements[@]}"; do
+              if grep -qE 'B' <<< "$REPOSITORY"; then
+                find $SOURCE -type f -name "*${{ matrix.arch }}.deb" -exec cp {} build/output/debs-beta/extra/${SELECTED_RELEASE}-${TARGET} \;
+              fi
+              if grep -qE 'S' <<< "$REPOSITORY"; then
+                find $SOURCE -type f -name "*${{ matrix.arch }}.deb" -exec cp {} build/output/debs/extra/${SELECTED_RELEASE}-${TARGET} \;
+              fi
+            done
+          fi
+
+          # Generate summary table
+          echo '| name | method | arch | release | docker_image | needs_qemu | target | before | after | updating |' >> $GITHUB_STEP_SUMMARY
+          echo '|--------|-------|------|---------|--------------|------------|--------|--------|--------|----------|' >> $GITHUB_STEP_SUMMARY
+
+          # Upload to repository if version changed
+          if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+            echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ✅ |" >> $GITHUB_STEP_SUMMARY
+
+            # Upload packages
+            # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+            rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc build/output/debs/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs
+
+            # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+            rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
+          else
+            echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ❌ |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
+
+  clean:
+    name: "Clean"
+    needs: download
+    runs-on: ${{ inputs.BUILD_RUNNER }}
+    steps:
+
+      - name: Clean artifacts
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: assets-for-download
+          failOnError: false
