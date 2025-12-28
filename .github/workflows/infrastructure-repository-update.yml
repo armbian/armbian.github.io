@@ -8,6 +8,10 @@ on:
         type: boolean
         description: "Add https://repo.armbian.com/partial/ to stable repo"
         default: false
+      purge:
+        type: boolean
+        description: "Run repository cleanup to purge old package versions"
+        default: false
 
 concurrency:
   group: pipeline
@@ -39,6 +43,7 @@ jobs:
       BUILD_RUNNER: "ubuntu-latest"
       #BUILD_RUNNER: "X64"
       HOST_DEPLOY: "repo.armbian.com"
+      PURGE: ${{ github.event.inputs.purge }}
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
       GPG_KEY2: ${{ secrets.GPG_KEY4 }}
@@ -89,25 +94,6 @@ jobs:
           TARGET=${REPOSITORY/debs/repository}
           sudo chown -R ${USER}:${USER} /outgoing/${TARGET} /armbian/openssh-server/storage/${REPOSITORY}
 
-          # delete older packages
-          declare -A delete_packages
-          DELETE_AFTER="22.08"
-              delete_packages=(
-                    ["discord"]="% *"
-                    ["homeassistant-supervised"]="% *"
-                    ["fastfetch"]="% *"
-                    ["test_delete_pkg"]="% *"
-              )
-
-          # Loop over the array of packages
-          for key in "${!delete_packages[@]}"
-          do
-              tools/repository/repo \
-                -i /armbian/openssh-server/storage/${{ matrix.repository }} \
-                -o /outgoing/${TARGET} \
-                -c delete -l "Name (% $key*), \$Version (${delete_packages[$key]})"
-          done
-
           # include packages from manually made images
           if [[ "${{ github.event.inputs.partial }}" == "true" ]]; then
 
@@ -124,8 +110,17 @@ jobs:
                   sudo rm -rf /outgoing/repository-beta/*
               fi
 
-              # add from incoming
-              tools/repository/repo -i /armbian/openssh-server/storage/${{ matrix.repository }} -o /outgoing/${TARGET} -c update
+              # Count .deb files in incoming directory
+              DEB_COUNT=$(find /armbian/openssh-server/storage/${{ matrix.repository }} -type f -name "*.deb" 2>/dev/null | wc -l)
+              echo "Found ${DEB_COUNT} .deb files in storage/${{ matrix.repository }}"
+
+              # Only run repository update if there are .deb files to add
+              if [[ ${DEB_COUNT} -gt 0 ]]; then
+                  # add from incoming
+                  tools/repository/repo -i /armbian/openssh-server/storage/${{ matrix.repository }} -o /outgoing/${TARGET} -c update
+              else
+                  echo "No .deb files found in storage/${{ matrix.repository }}, skipping repository update"
+              fi
           fi
           # calculate size
           du -hc --max-depth=1 /outgoing/${TARGET}/public* | tail -1 | awk '{print $1}' > /outgoing/${TARGET}/public/size.txt
@@ -246,4 +241,4 @@ jobs:
         with:
           token: ${{ secrets.DISPATCH }}
           repository: armbian/armbian.github.io
-          event-type: "Redirector update"
+          event-type: "Infrastructure: Update redirector"
