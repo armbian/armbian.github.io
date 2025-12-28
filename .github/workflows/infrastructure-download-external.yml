@@ -689,13 +689,19 @@ jobs:
             fi
           fi
 
-          # Generate summary table
-          echo '| name | method | arch | release | docker_image | needs_qemu | target | before | after | updating |' >> $GITHUB_STEP_SUMMARY
-          echo '|--------|-------|------|---------|--------------|------------|--------|--------|--------|----------|' >> $GITHUB_STEP_SUMMARY
+          # Always sync to debs-beta (before potential early exit)
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+            -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
 
           # Upload to repository if version changed
           if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+            # Generate summary table for updates
+            echo '| name | method | arch | release | docker_image | needs_qemu | target | before | after | updating |' >> $GITHUB_STEP_SUMMARY
+            echo '|--------|-------|------|---------|--------------|------------|--------|--------|--------|----------|' >> $GITHUB_STEP_SUMMARY
             echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ✅ |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
 
             # Upload packages
             # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
@@ -703,25 +709,19 @@ jobs:
               -arvc build/output/debs/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs
 
           else
-            echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ❌ |" >> $GITHUB_STEP_SUMMARY
-
             # Exit early if HIDE_NO_UPDATE is enabled and no update needed
             if [[ "${{ inputs.HIDE_NO_UPDATE }}" == "true" ]]; then
               echo "::notice::No update needed for ${{ matrix.name }} on ${{ matrix.arch }}, exiting early"
               exit 0
             fi
+
+            # Generate summary table for non-updates (only when not hiding)
+            echo '| name | method | arch | release | docker_image | needs_qemu | target | before | after | updating |' >> $GITHUB_STEP_SUMMARY
+            echo '|--------|-------|------|---------|--------------|------------|--------|--------|--------|----------|' >> $GITHUB_STEP_SUMMARY
+            echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ❌ |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
           fi
-
-          # Always sync to debs-beta (unless HIDE_NO_UPDATE is enabled and no update needed)
-          if [[ "${{ inputs.HIDE_NO_UPDATE }}" != "true" ]] || dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
-            # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-            rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-              -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
-          fi
-
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
 
   clean:
     name: "Clean"
