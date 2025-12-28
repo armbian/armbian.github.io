@@ -27,6 +27,10 @@ on:
         required: false
         type: string
         default: "main"
+      HIDE_NO_UPDATE:
+        required: false
+        type: boolean
+        default: false
     secrets:
       GPG_KEY1:
         required: true
@@ -442,9 +446,19 @@ jobs:
           SOURCE="temp/"
           mkdir -p ${SOURCE}
 
-          # Check installed version if exists
+          # Check installed version if exists - with retries
           PKG="${INSTALL%% *}"
-          BEFORE_VERSION="$(apt-cache policy "$PKG" 2>/dev/null | awk '/Candidate:/ {print $2; exit}' | cut -d: -f2-)"
+          BEFORE_VERSION=""
+          for attempt in {1..3}; do
+            BEFORE_VERSION="$(apt-cache policy "$PKG" 2>/dev/null | awk '/Candidate:/ {print $2; exit}' | cut -d: -f2-)"
+            if [[ -n "$BEFORE_VERSION" ]]; then
+              echo "::notice::Got BEFORE_VERSION on attempt $attempt: $BEFORE_VERSION"
+              break
+            else
+              echo "::warning::Attempt $attempt: BEFORE_VERSION is empty for $PKG, retrying..."
+              apt-get update
+            fi
+          done
           echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
 
           # Download packages based on method
@@ -649,6 +663,13 @@ jobs:
           PKG_LINES="$(find "$SOURCE" -type f -name "*.deb" -printf "%f\n" 2>/dev/null | sort | sed 's/$/<br>/')"
           echo "AFTER_VERSION=${AFTER_VERSION}" >> $GITHUB_OUTPUT
 
+          # Determine if update is needed
+          UPDATE_NEEDED="false"
+          if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+            UPDATE_NEEDED="true"
+          fi
+          echo "UPDATE_NEEDED=${UPDATE_NEEDED}" >> $GITHUB_OUTPUT
+
           # Copy packages to appropriate output directories
           if [[ ${TARGET} == main ]]; then
             # Copy to main repository directories
@@ -683,12 +704,20 @@ jobs:
 
           else
             echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.docker_image }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ❌ |" >> $GITHUB_STEP_SUMMARY
+
+            # Exit early if HIDE_NO_UPDATE is enabled and no update needed
+            if [[ "${{ inputs.HIDE_NO_UPDATE }}" == "true" ]]; then
+              echo "::notice::No update needed for ${{ matrix.name }} on ${{ matrix.arch }}, exiting early"
+              exit 0
+            fi
           fi
 
-          # Always sync to debs-beta
-          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-          rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-            -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
+          # Always sync to debs-beta (unless HIDE_NO_UPDATE is enabled and no update needed)
+          if [[ "${{ inputs.HIDE_NO_UPDATE }}" != "true" ]] || dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+            # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+            rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
+          fi
 
 
           echo "" >> $GITHUB_STEP_SUMMARY
