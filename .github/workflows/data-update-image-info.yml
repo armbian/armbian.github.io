@@ -1,0 +1,72 @@
+name: "Data: Update image-info JSON"
+
+on:
+  schedule:
+    - cron: "0 0 * * MON"
+  workflow_dispatch:
+
+concurrency:
+  group: update-image-info
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-image-info:
+    name: Update image info data
+    runs-on: super
+    steps:
+
+      - name: Fix workspace permissions
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
+          sudo chmod -R u+rwX "$GITHUB_WORKSPACE" || true
+       
+      - name: Checkout armbian.github.io
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/armbian.github.io
+          fetch-depth: 0
+          path: armbian.github.io
+
+      - name: Checkout build
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          fetch-depth: 0
+          path: build
+
+      - name: "Produce inventory JSON"
+        run: |
+
+          cd build
+          ./compile.sh inventory-boards
+
+      - name: Commit changes if any
+        shell: bash
+        run: |
+
+          cd armbian.github.io
+          set -euo pipefail
+          git checkout data
+          mv ${{ github.workspace }}/build/output/info/image-info.json data/
+
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/image-info.json
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Update image-info.json from build repository"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+
+      - name: "Run Bigin update action"
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Bigin update"
+
