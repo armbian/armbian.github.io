@@ -71,6 +71,7 @@ jobs:
   preclean:
     name: "Purge"
     needs: perm
+    if: ${{ inputs.PURGE == true }}
     runs-on: ubuntu-latest
     outputs:
       matrix:  ${{steps.json.outputs.JSON_CONTENT}}
@@ -85,7 +86,6 @@ jobs:
           path: build
 
       - name: "Make JSON"
-        if: ${{ inputs.PURGE == true }}
         id: json
         run: |
 
@@ -102,6 +102,7 @@ jobs:
 
   postclean:
     needs: preclean
+    if: ${{ inputs.PURGE == true }}
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -852,6 +853,7 @@ jobs:
   clean:
     name: "Clean"
     needs: [download,postclean]
+    if: ${{ always() }}
     runs-on: ${{ inputs.BUILD_RUNNER }}
     steps:
 
