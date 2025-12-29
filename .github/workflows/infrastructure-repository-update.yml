@@ -8,10 +8,6 @@ on:
         type: boolean
         description: "Add https://repo.armbian.com/partial/ to stable repo"
         default: false
-      purge:
-        type: boolean
-        description: "Run repository cleanup to purge old package versions"
-        default: false
 
 concurrency:
   group: pipeline
@@ -43,7 +39,6 @@ jobs:
       BUILD_RUNNER: "ubuntu-latest"
       #BUILD_RUNNER: "X64"
       HOST_DEPLOY: "repo.armbian.com"
-      PURGE: "${{ github.event.inputs.purge }}"
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
       GPG_KEY2: ${{ secrets.GPG_KEY4 }}
