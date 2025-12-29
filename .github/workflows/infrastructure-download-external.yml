@@ -858,7 +858,7 @@ jobs:
     steps:
 
       - name: Clean artifacts
-        uses: geekyeggo/delete-artifact@v4
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: assets-for-download
           failOnError: false
