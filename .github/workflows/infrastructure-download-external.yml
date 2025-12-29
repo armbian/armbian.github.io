@@ -270,7 +270,7 @@ jobs:
             # Expand releases
             if [[ "${RELEASE}" == "all" ]]; then
               # Default releases for "all"
-              releases=("bookworm" "jammy" "noble")
+              releases=("bookworm" "trixie" "forky" "jammy" "noble")
             elif [[ "${RELEASE}" == *":"* ]]; then
               # Colon-separated releases
               IFS=':' read -ra releases <<< "$RELEASE"
