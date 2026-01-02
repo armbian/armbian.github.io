@@ -3,7 +3,7 @@ name: "Data: Update partners data"
 on:
   repository_dispatch:
     types: ["Data: Update partners data"]
-
+  workflow_dispatch:
 concurrency:
   group: redirector
   cancel-in-progress: false
