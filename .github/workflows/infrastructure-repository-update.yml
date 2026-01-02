@@ -1,13 +1,14 @@
 name: "Infrastructure: Repository update"
 on:
+  workflow_dispatch:
   repository_dispatch:
     types: ["Repository update"]
-  workflow_dispatch:
-    inputs:
-      partial:
-        type: boolean
-        description: "Add https://repo.armbian.com/partial/ to stable repo"
-        default: false
+
+env:
+  STORAGE_PATH: /armbian/openssh-server/storage
+  PUBLISHING_PATH: /publishing/repository
+  CLEANUP_INPUT: true
+  DRY_RUN_SYNC: false
 
 concurrency:
   group: pipeline
@@ -49,28 +50,160 @@ jobs:
       HOST_UPLOAD_PORT: ${{ secrets.HOST_UPLOAD_PORT }}
       KNOWN_HOSTS_ARMBIAN_UPLOAD: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
 
-  gradle:
-    needs: external
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix:
-        repository: ["debs-beta","debs"]
 
-    name: Make
+  fix-permissions:
+    name: "Fix permissions"
+    needs: external
+    runs-on: repository
+    strategy:
+      matrix:
+        repository:
+          - name: debs
+    steps:
+      - name: "Set group write permissions for ${{ matrix.repository.name }}"
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          REPO_PATH="${{ env.PUBLISHING_PATH }}-${{ matrix.repository.name }}"
+          SHARED_GROUP="${SHARED_GROUP:-runners}"
+
+          # Validate path to prevent accidental operations
+          case "$REPO_PATH" in
+            *"/publishing/repository"*)
+              # Path is valid
+              ;;
+            *)
+              echo "::error::Invalid repository path: $REPO_PATH"
+              echo "::error::Path must be under /publishing/repository"
+              exit 1
+              ;;
+          esac
+
+          echo "### Setting permissions for ${{ matrix.repository.name }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Repository path: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Shared group: $SHARED_GROUP" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          if [ -d "$REPO_PATH" ]; then
+            echo "Setting cooperative umask (002) for this job..." | tee -a "$GITHUB_STEP_SUMMARY"
+            umask 002
+
+            echo "Ensuring group ownership is $SHARED_GROUP (recursive)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            sudo chgrp -R "$SHARED_GROUP" "$REPO_PATH" || true
+
+            echo "Setting directories to group-writable and setgid (2775)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            sudo find "$REPO_PATH" -type d -print0 \
+              | xargs -0 -r -P 8 sudo chmod -- 2775 2>/dev/null || true
+
+            echo "Ensuring files are group-writable (g+w)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            sudo find "$REPO_PATH" -type f ! -perm -g+w -print0 \
+              | xargs -0 -r -P 8 sudo chmod -- g+w 2>/dev/null || true
+
+            echo "Setting default ACLs so new files/dirs keep group rwX (recommended)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            if command -v setfacl >/dev/null 2>&1; then
+              sudo setfacl -R  -m "g:${SHARED_GROUP}:rwX" "$REPO_PATH" || true
+              sudo setfacl -R -d -m "g:${SHARED_GROUP}:rwX" "$REPO_PATH" || true
+              echo "✓ ACLs applied" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "⚠ setfacl not available; skipping ACLs" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+
+            echo "Checking for sticky bit directories (can block deleting others' files)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            STICKY_DIRS="$(sudo find "$REPO_PATH" -type d -perm -1000 -print | head -n 20 || true)"
+            if [ -n "$STICKY_DIRS" ]; then
+              echo "⚠ Sticky-bit dirs found (sample):" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "$STICKY_DIRS" | sed 's/^/  - /' | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "  If you want shared deletion, remove sticky bit: sudo chmod -t <dir>" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "✓ No sticky-bit dirs detected" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+
+            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "✓ Permissions updated (dirs 2775, files g+w, setgid enabled, umask 002 set)" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Repository path does not exist yet: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  prepare-beta:
+    name: "Prepare beta repository"
+    needs: fix-permissions
     runs-on: repository
     steps:
-    
+      - name: "Remove and recreate beta repository"
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          BETA_REPO_PATH="${{ env.PUBLISHING_PATH }}-debs-beta"
+
+          # Validate path to prevent accidental deletion
+          # Ensure it's under the expected publishing path
+          case "$BETA_REPO_PATH" in
+            *"/publishing/repository"*)
+              # Path is valid - contains expected parent path
+              ;;
+            *)
+              echo "::error::Invalid beta repository path: $BETA_REPO_PATH"
+              echo "::error::Path must be under /publishing/repository"
+              exit 1
+              ;;
+          esac
+
+          echo "### Preparing beta repository" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Target path: $BETA_REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Remove existing beta repository to start fresh
+          if [ -d "$BETA_REPO_PATH" ]; then
+            echo "Removing existing beta repository: $BETA_REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+
+            # Additional safety check: ensure it's a symlink or directory, not a file
+            if [ -L "$BETA_REPO_PATH" ] || [ -d "$BETA_REPO_PATH" ]; then
+              # Use rm with one trailing slash to prevent accidental matches
+              # The trailing slash ensures we only delete if it's a directory/symlink to directory
+              sudo rm -rf "${BETA_REPO_PATH}/"
+            else
+              echo "::error::Path exists but is not a directory or symlink: $BETA_REPO_PATH"
+              exit 1
+            fi
+          else
+            echo "Beta repository does not exist yet: $BETA_REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Create fresh beta repository directory
+          echo "Creating fresh beta repository directory" | tee -a "$GITHUB_STEP_SUMMARY"
+          sudo mkdir -p "$BETA_REPO_PATH"
+
+          # Verify directory was created
+          if [ ! -d "$BETA_REPO_PATH" ]; then
+            echo "::error::Failed to create beta repository directory: $BETA_REPO_PATH"
+            exit 1
+          fi
+
+          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "✓ Beta repository prepared" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  main:
+    needs: prepare-beta
+    name: "Publish main"
+    runs-on: repository
+    strategy:
+      matrix:
+        repository:
+          - name: debs
+          - name: debs-beta
+    steps:
+
       # Cleaning self hosted runners
       - name: Runner clean
         uses: armbian/actions/runner-clean@main
-
-      - name: Checkout build repository
-        uses: actions/checkout@v6
-        with:
-          repository: armbian/build
-          fetch-depth: 1
-          clean: false
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v6
@@ -82,49 +215,373 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_KEY4 }}
 
-      - name: "Build repository ${{ matrix.repository }}"
+      - name: Checkout build repository for ${{ matrix.repository.name }}
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          fetch-depth: 1
+          clean: false
+
+      - name: "Build repository ${{ matrix.repository.name }}"
+        shell: bash
         run: |
+          set -e
+          set -o pipefail
 
-          REPOSITORY="${{ matrix.repository }}"
-          TARGET=${REPOSITORY/debs/repository}
-          sudo chown -R ${USER}:${USER} /outgoing/${TARGET} /armbian/openssh-server/storage/${REPOSITORY}
+          STORAGE_PATH="${{ env.STORAGE_PATH }}"
+          PUBLISH_PATH="${{ env.PUBLISHING_PATH }}"
+          REPO_NAME="${{ matrix.repository.name }}"
 
-          # include packages from manually made images
-          if [[ "${{ github.event.inputs.partial }}" == "true" ]]; then
+          # Validate paths to prevent accidental operations
+          case "$STORAGE_PATH" in
+            *"/armbian/openssh-server/storage"*)
+              # Path is valid
+              ;;
+            *)
+              echo "::error::Invalid storage path: $STORAGE_PATH"
+              echo "::error::Path must be under /armbian/openssh-server/storage"
+              exit 1
+              ;;
+          esac
 
-             if [[ "${{ matrix.repository }}" == "debs" ]]; then
-                 # add from partial
-                 sudo chown -R ${USER}:${USER} /armbian/openssh-server/storage/partial/
-                 tools/repository/repo -i /armbian/openssh-server/storage/partial/debs -o /outgoing/repository -c update
-             fi
+          case "$PUBLISH_PATH" in
+            *"/publishing/repository"*)
+              # Path is valid
+              ;;
+            *)
+              echo "::error::Invalid publishing path: $PUBLISH_PATH"
+              echo "::error::Path must be under /publishing/repository"
+              exit 1
+              ;;
+          esac
 
-          else
+          INPUT_DIR="${STORAGE_PATH}/${REPO_NAME}"
+          OUTPUT_DIR="${PUBLISH_PATH}-${REPO_NAME}"
 
-              # beta is always made from scratch
-              if [[ "${{ matrix.repository }}" == "debs-beta" ]]; then
-                  sudo rm -rf /outgoing/repository-beta/*
-              fi
+          echo "### Checking for .deb files in $REPO_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
 
-              # Count .deb files in incoming directory
-              DEB_COUNT=$(find /armbian/openssh-server/storage/${{ matrix.repository }} -type f -name "*.deb" 2>/dev/null | wc -l)
-              echo "Found ${DEB_COUNT} .deb files in storage/${{ matrix.repository }}"
-
-              # Only run repository update if there are .deb files to add
-              if [[ ${DEB_COUNT} -gt 0 ]]; then
-                  # add from incoming
-                  tools/repository/repo -i /armbian/openssh-server/storage/${{ matrix.repository }} -o /outgoing/${TARGET} -c update
-              else
-                  echo "No .deb files found in storage/${{ matrix.repository }}, skipping repository update"
-              fi
+          # Validate input directory exists
+          if [ ! -d "$INPUT_DIR" ]; then
+            echo "::notice::Input directory does not exist: $INPUT_DIR"
+            exit 0
           fi
-          # calculate size
-          du -hc --max-depth=1 /outgoing/${TARGET}/public* | tail -1 | awk '{print $1}' > /outgoing/${TARGET}/public/size.txt
-          # fix folder permissions
-          sudo chown -R ${{ secrets.HOST_UPLOAD_USER }}:${{ secrets.HOST_UPLOAD_USER }} /armbian/openssh-server/storage/${REPOSITORY}
+
+          # Count .deb files in incoming directory
+          DEB_COUNT=$(find "$INPUT_DIR" -type f -name "*.deb" 2>/dev/null | wc -l)
+          echo "Found ${DEB_COUNT} .deb files" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Only run repo.sh if there are files to process
+          if [ "${DEB_COUNT}" -gt 0 ]; then
+            echo "Running repository update..." | tee -a "$GITHUB_STEP_SUMMARY"
+            tools/repository/repo.sh \
+              -c update-main \
+              -k \
+              -i "$INPUT_DIR" \
+              -o "$OUTPUT_DIR"
+          else
+            echo "::notice::No .deb files found, skipping repository update"
+          fi
+
+  preclean:
+    needs: main
+    name: "Publish"
+    runs-on: repository
+    outputs:
+      matrix:  ${{steps.json.outputs.JSON_CONTENT}}
+    steps:
+      - name: "Checkout Armbian build Framework"
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          clean: false
+          fetch-depth: 1
+          path: build
+
+      - name: "Make JSON"
+        id: json
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          pkg="debs,debs-beta"
+
+          # Validate build config directory exists
+          if [[ ! -d "build/config/distributions" ]]; then
+            echo "::error::Build config directory not found"
+            exit 1
+          fi
+
+          # Get all supported releases from config files
+          releases=()
+          while IFS= read -r support_file; do
+            if [[ -f "$support_file" ]]; then
+              release=$(echo "$support_file" | cut -d"/" -f4)
+              if [[ -n "$release" ]]; then
+                releases+=("$release")
+              fi
+            fi
+          done < <(find build/config/distributions -name "support" -type f 2>/dev/null)
+
+          if [[ ${#releases[@]} -eq 0 ]]; then
+            echo "::error::No releases found in build/config/distributions"
+            exit 1
+          fi
+
+          echo "Found ${#releases[@]} releases: ${releases[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # Build JSON matrix
+          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+          for i in "${releases[@]}"; do
+            for j in debs debs-beta; do
+              echo "{\"release\":\"${i}\",\"package\":\"$j\"}"
+            done
+          done | jq -s >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+  postclean:
+    needs: preclean
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.preclean.outputs.matrix) }}
+
+    name: "${{ matrix.release }} (${{ matrix.package }})"
+    timeout-minutes: 60
+    runs-on: repository
+    steps:
+
+      # Cleaning self hosted runners
+      - name: Runner clean
+        uses: armbian/actions/runner-clean@main
+
+      - name: "Fix permissions for ${{ matrix.package }}"
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          REPO_PATH="${{ env.PUBLISHING_PATH }}-${{ matrix.package }}"
+          SHARED_GROUP="${SHARED_GROUP:-runners}"
+
+          # Validate path to prevent accidental operations
+          case "$REPO_PATH" in
+            *"/publishing/repository"*)
+              # Path is valid
+              ;;
+            *)
+              echo "::error::Invalid repository path: $REPO_PATH"
+              echo "::error::Path must be under /publishing/repository"
+              exit 1
+              ;;
+          esac
+
+          echo "### Setting permissions for ${{ matrix.package }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Repository path: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          if [ -d "$REPO_PATH" ]; then
+            echo "Setting umask 002" | tee -a "$GITHUB_STEP_SUMMARY"
+            umask 002
+
+            echo "Setting directories to group-writable and setgid (2775)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            sudo find "$REPO_PATH" -type d -print0 \
+              | xargs -0 -r -P 8 sudo chmod -- 2775 2>/dev/null || true
+
+            echo "Ensuring files are group-writable (g+w)..." | tee -a "$GITHUB_STEP_SUMMARY"
+            sudo find "$REPO_PATH" -type f ! -perm -g+w -print0 \
+              | xargs -0 -r -P 8 sudo chmod -- g+w 2>/dev/null || true
+
+            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "✓ Permissions fixed" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Repository path does not exist yet: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY3 }}
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY4 }}
+
+      - name: Checkout build repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          fetch-depth: 1
+          clean: false
+
+      - name: "Build repository ${{ matrix.release }}"
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          STORAGE_PATH="${{ env.STORAGE_PATH }}"
+          PUBLISH_PATH="${{ env.PUBLISHING_PATH }}"
+          PACKAGE="${{ matrix.package }}"
+          RELEASE="${{ matrix.release }}"
+
+          # Validate paths
+          case "$STORAGE_PATH" in
+            *"/armbian/openssh-server/storage"*)
+              ;;
+            *)
+              echo "::error::Invalid storage path: $STORAGE_PATH"
+              exit 1
+              ;;
+          esac
+
+          case "$PUBLISH_PATH" in
+            *"/publishing/repository"*)
+              ;;
+            *)
+              echo "::error::Invalid publishing path: $PUBLISH_PATH"
+              exit 1
+              ;;
+          esac
+
+          # Validate package name
+          case "$PACKAGE" in
+            debs|debs-beta)
+              ;;
+            *)
+              echo "::error::Invalid package name: $PACKAGE"
+              exit 1
+              ;;
+          esac
+
+          INPUT_DIR="${STORAGE_PATH}/${PACKAGE}"
+          OUTPUT_DIR="${PUBLISH_PATH}-${PACKAGE}"
+
+          echo "### Checking for .deb files in $PACKAGE/$RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Validate input directory exists
+          if [ ! -d "$INPUT_DIR" ]; then
+            echo "::notice::Input directory does not exist: $INPUT_DIR"
+            exit 0
+          fi
+
+          # Count .deb files in incoming directory
+          DEB_COUNT=$(find "$INPUT_DIR" -type f -name "*.deb" 2>/dev/null | wc -l)
+          echo "Found ${DEB_COUNT} .deb files" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Only run repo.sh if there are files to process
+          if [ "${DEB_COUNT}" -gt 0 ]; then
+            echo "Running repository update for $RELEASE..." | tee -a "$GITHUB_STEP_SUMMARY"
+            tools/repository/repo.sh \
+              -c update \
+              -R "$RELEASE" \
+              -k \
+              -i "$INPUT_DIR" \
+              -o "$OUTPUT_DIR"
+          else
+            echo "::notice::No .deb files found, skipping repository update"
+          fi
+
+  cleanup:
+    name: "Clean input"
+    needs: postclean
+    runs-on: repository
+    strategy:
+      matrix:
+        repository:
+          - name: debs
+          - name: debs-beta
+    steps:
+      - name: "Cleanup for ${{ matrix.repository.name }}"
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          # Check if cleanup is enabled via environment variable
+          if [ "${CLEANUP_INPUT}" != "true" ]; then
+            echo "### Cleanup disabled" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "CLEANUP_INPUT is set to: ${CLEANUP_INPUT}" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Set CLEANUP_INPUT to 'true' to enable cleanup" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          INPUT_DIR="${{ env.STORAGE_PATH }}/${{ matrix.repository.name }}"
+
+          # Validate path to prevent accidental deletion
+          # Ensure it's under the expected storage path
+          case "$INPUT_DIR" in
+            *"/armbian/openssh-server/storage"*)
+              # Path is valid - contains expected parent path
+              ;;
+            *)
+              echo "::error::Invalid input directory path: $INPUT_DIR"
+              echo "::error::Path must be under /armbian/openssh-server/storage"
+              exit 1
+              ;;
+          esac
+
+          echo "### Cleanup for ${{ matrix.repository.name }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Check if directory exists
+          if [ ! -d "${INPUT_DIR}" ]; then
+            echo "::warning::Directory ${INPUT_DIR} does not exist"
+            exit 0
+          fi
+
+          # Additional safety check: ensure it's actually a directory, not a file
+          if [ -f "${INPUT_DIR}" ]; then
+            echo "::error::Path exists but is a file, not a directory: $INPUT_DIR"
+            exit 1
+          fi
+
+          # Count .deb files before deletion (use sudo since files are owned by different user)
+          # Search recursively in subdirectories
+          DEB_COUNT=$(sudo find "${INPUT_DIR}" -type f -name "*.deb" 2>/dev/null | wc -l)
+          echo "Found ${DEB_COUNT} .deb files to delete" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          if [ "${DEB_COUNT}" -eq 0 ]; then
+            echo "No files to delete" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Delete all .deb files recursively (use sudo since files are owned by different user)
+          # Use -print0 and xargs for safer handling of filenames with spaces
+          echo "Deleting .deb files..." | tee -a "$GITHUB_STEP_SUMMARY"
+          sudo find "${INPUT_DIR}" -type f -name "*.deb" -print0 \
+            | xargs -0 -r sudo rm -fv
+
+          # Verify deletion
+          REMAINING=$(sudo find "${INPUT_DIR}" -type f -name "*.deb" 2>/dev/null | wc -l)
+          echo ""
+          echo "✓ Deleted ${DEB_COUNT} .deb files" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Remaining files: ${REMAINING}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # Warn if deletion failed (files remain)
+          if [ "${REMAINING}" -gt 0 ]; then
+            echo "::warning::Some files could not be deleted. ${REMAINING} files remaining."
+            exit 1
+          fi
 
   Prepare:
     name: "Upload to servers"
-    needs: gradle
+    needs: cleanup
     outputs:
       matrix: ${{steps.json.outputs.JSON_CONTENT}}
     runs-on: ubuntu-latest
@@ -132,15 +589,94 @@ jobs:
 
       - name: Get primary mirrors from database
         id: json
+        shell: bash
         run: |
-          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
-          curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&device_role=Mirror&tag=push&status=active" \
-          | jq '.results[] | .name' | grep -v null | sed "s/\"//g" | jq -cnR '[inputs | select(length>0)]' | jq >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          set -e
+          set -o pipefail
+
+          # Validate that required secrets are available
+          if [[ -z "${{ secrets.NETBOX_API }}" || "${{ secrets.NETBOX_API }}" == "" ]]; then
+            echo "::error::NETBOX_API secret is not set or is empty"
+            exit 1
+          fi
+
+          if [[ -z "${{ secrets.NETBOX_TOKEN }}" || "${{ secrets.NETBOX_TOKEN }}" == "" ]]; then
+            echo "::error::NETBOX_TOKEN secret is not set or is empty"
+            exit 1
+          fi
+
+          # Validate API URL format to prevent SSRF
+          NETBOX_API="${{ secrets.NETBOX_API }}"
+          if [[ ! "$NETBOX_API" =~ ^https?:// ]]; then
+            echo "::error::NETBOX_API must start with http:// or https://"
+            exit 1
+          fi
+
+          echo "### Fetching mirror list from NetBox" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Build query with proper filtering
+          API_URL="${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&device_role=Mirror&tag=push&status=active"
+
+          # Fetch data with timeout and security options
+          echo "Querying: $API_URL" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          response=$(curl -fsSL \
+            --max-time 30 \
+            --connect-timeout 10 \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json" \
+            "$API_URL" 2>&1)
+
+          curl_exit_code=$?
+
+          if [[ $curl_exit_code -ne 0 ]]; then
+            echo "::error::Failed to fetch data from NetBox API (curl exit code: $curl_exit_code)"
+            echo "::error::Response: $response"
+            exit 1
+          fi
+
+          # Validate JSON response
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "::error::Invalid JSON response from NetBox API"
+            echo "::error::Response: $response"
+            exit 1
+          fi
+
+          # Extract mirror names safely
+          mirror_names=$(echo "$response" | jq -r '.results[] | .name' 2>/dev/null | grep -v null || echo "")
+
+          if [[ -z "$mirror_names" ]]; then
+            echo "::warning::No mirrors found in NetBox API response"
+            echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
+            echo '[]' >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT
+          else
+            # Count mirrors
+            mirror_count=$(echo "$mirror_names" | wc -l)
+            echo "Found $mirror_count active mirrors" | tee -a "$GITHUB_STEP_SUMMARY"
+
+            # Format as JSON array, filtering empty lines
+            mirror_json=$(echo "$mirror_names" | jq -cnR '[inputs | select(length>0)]' 2>/dev/null)
+
+            if [[ -z "$mirror_json" || "$mirror_json" == "null" ]]; then
+              echo "::error::Failed to format mirror list as JSON"
+              exit 1
+            fi
+
+            # Output to GitHub Actions
+            echo "JSON_CONTENT<<EOF" >> $GITHUB_OUTPUT
+            echo "$mirror_json" >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT
+
+            # List mirrors in summary
+            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Mirror servers:" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$mirror_names" | sed 's/^/  - /' | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
 
   Sync:
-    name: "Files"
+    name: "F"
     runs-on: repository-sync
     needs: Prepare
     outputs:
@@ -164,25 +700,207 @@ jobs:
           if_key_exists: replace
 
       - name: What to sync?
+        shell: bash
         run: |
+          set -e
+          set -o pipefail
 
-          JSON=$(curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${{ matrix.node }}" | jq)
-          SERVER_PATH=$(echo $JSON | jq '.results[] | .custom_fields["path"]' | sed "s/\"//g")
-          SERVER_PORT=$(echo $JSON | jq '.results[] | .custom_fields["port"]' | sed "s/\"//g")
-          SERVER_USERNAME=$(echo $JSON | jq '.results[] | .custom_fields["username"]' | sed "s/\"//g")
+          # Validate secrets
+          if [[ -z "${{ secrets.NETBOX_API }}" || "${{ secrets.NETBOX_API }}" == "" ]]; then
+            echo "::error::NETBOX_API secret is not set or is empty"
+            exit 1
+          fi
 
-          TARGETS=($(echo $JSON | jq '.results[] | .tags' | jq '.[].name' | grep -v null | grep -v Push | sed "s/\"//g"))
+          if [[ -z "${{ secrets.NETBOX_TOKEN }}" || "${{ secrets.NETBOX_TOKEN }}" == "" ]]; then
+            echo "::error::NETBOX_TOKEN secret is not set or is empty"
+            exit 1
+          fi
 
+          # Validate API URL format
+          NETBOX_API="${{ secrets.NETBOX_API }}"
+          if [[ ! "$NETBOX_API" =~ ^https?:// ]]; then
+            echo "::error::NETBOX_API must start with http:// or https://"
+            exit 1
+          fi
+
+          # Validate hostname format
+          HOSTNAME="${{ matrix.node }}"
+          if [[ ! "$HOSTNAME" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            echo "::error::Invalid hostname format: $HOSTNAME"
+            exit 1
+          fi
+
+          echo "### Fetching server configuration for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Fetch server configuration with timeout
+          API_URL="${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${HOSTNAME}"
+
+          response=$(curl -fsSL \
+            --max-time 30 \
+            --connect-timeout 10 \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json" \
+            "$API_URL" 2>&1)
+
+          curl_exit_code=$?
+
+          if [[ $curl_exit_code -ne 0 ]]; then
+            echo "::error::Failed to fetch server config (curl exit code: $curl_exit_code)"
+            echo "::error::Response: $response"
+            exit 1
+          fi
+
+          # Validate JSON response
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "::error::Invalid JSON response from NetBox API"
+            echo "::error::Response: $response"
+            exit 1
+          fi
+
+          # Extract and validate custom fields
+          SERVER_PATH=$(echo "$response" | jq -r '.results[] | .custom_fields["path"]' 2>/dev/null)
+          SERVER_PORT=$(echo "$response" | jq -r '.results[] | .custom_fields["port"]' 2>/dev/null)
+          SERVER_USERNAME=$(echo "$response" | jq -r '.results[] | .custom_fields["username"]' 2>/dev/null)
+
+          # Validate required fields
+          if [[ -z "$SERVER_PATH" || "$SERVER_PATH" == "null" ]]; then
+            echo "::error::Server path not found in NetBox for $HOSTNAME"
+            exit 1
+          fi
+
+          if [[ -z "$SERVER_PORT" || "$SERVER_PORT" == "null" ]]; then
+            echo "::error::Server port not found in NetBox for $HOSTNAME"
+            exit 1
+          fi
+
+          # Validate port is numeric and in valid range
+          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
+            echo "::error::Invalid server port: $SERVER_PORT"
+            exit 1
+          fi
+
+          if [[ -z "$SERVER_USERNAME" || "$SERVER_USERNAME" == "null" ]]; then
+            echo "::error::Server username not found in NetBox for $HOSTNAME"
+            exit 1
+          fi
+
+          # Validate username format (alphanumeric, underscore, hyphen, dot)
+          if [[ ! "$SERVER_USERNAME" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::Invalid username format: $SERVER_USERNAME"
+            exit 1
+          fi
+
+          # Validate server path format (prevent path traversal)
+          if [[ "$SERVER_PATH" =~ \.\. ]]; then
+            echo "::error::Server path contains directory traversal: $SERVER_PATH"
+            exit 1
+          fi
+
+          echo "Server configuration:" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "  Path: $SERVER_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "  Port: $SERVER_PORT" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "  Username: $SERVER_USERNAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Extract targets
+          TARGETS=($(echo "$response" | jq -r '.results[] | .tags[] | .name' 2>/dev/null | grep -v "Push" || echo ""))
+
+          if [[ ${#TARGETS[@]} -eq 0 ]]; then
+            echo "::warning::No targets found for $HOSTNAME"
+            exit 0
+          fi
+
+          # Filter to only valid targets
+          VALID_TARGETS=()
           for target in "${TARGETS[@]}"; do
-              ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "${{ matrix.node }}"
-              echo "Synching $target" >> $GITHUB_STEP_SUMMARY
-              if [[ "$target" == "debs" ]]; then rsync -ar --progress -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new" --exclude "dists" --exclude "control" /outgoing/repository/public/ ${SERVER_USERNAME}@${{ matrix.node }}:${SERVER_PATH}/apt ; fi
-              if [[ "$target" == "debs-beta" && "${{ github.event.inputs.partial }}" != "true" ]]; then rsync -ar --progress -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new" --exclude "dists" --exclude "control" /outgoing/repository-beta/public/ ${SERVER_USERNAME}@${{ matrix.node }}:${SERVER_PATH}/beta ; fi
+            case "$target" in
+              debs|debs-beta)
+                VALID_TARGETS+=("$target")
+                ;;
+              *)
+                echo "::warning::Invalid target '$target' for $HOSTNAME - must be 'debs' or 'debs-beta', skipping"
+                ;;
+            esac
           done
 
+          if [[ ${#VALID_TARGETS[@]} -eq 0 ]]; then
+            echo "::warning::No valid targets found for $HOSTNAME"
+            exit 0
+          fi
+
+          TARGETS=("${VALID_TARGETS[@]}")
+          echo "Sync targets: ${TARGETS[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Set base path using global variable
+          PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
+
+          # Validate publishing path
+          case "$PUBLISHING_PATH" in
+            *"/publishing/repository"*)
+              ;;
+            *)
+              echo "::error::Invalid publishing path: $PUBLISHING_PATH"
+              exit 1
+              ;;
+          esac
+
+          # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
+          RSYNC_OPTIONS="-av"
+          if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
+            RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
+            echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Sync to each target
+          for target in "${TARGETS[@]}"; do
+            echo "→ Syncing $target" | tee -a "$GITHUB_STEP_SUMMARY"
+
+            # Remove old host key
+            ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "$HOSTNAME" 2>/dev/null || true
+
+            case "$target" in
+              debs)
+                REPO_PATH="${PUBLISHING_PATH}-debs"
+                if [[ ! -d "$REPO_PATH/public" ]]; then
+                  echo "::error::Source repository path does not exist: $REPO_PATH/public"
+                  exit 1
+                fi
+                RSYNC_CMD="rsync $RSYNC_OPTIONS -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" --exclude \"dists\" --exclude \"control\" \"$REPO_PATH/public/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt"
+                echo "Command: \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
+                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+                rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
+                  --exclude "dists" --exclude "control" \
+                  "$REPO_PATH/public/" \
+                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt
+                ;;
+              debs-beta)
+                REPO_PATH="${PUBLISHING_PATH}-debs-beta"
+                if [[ ! -d "$REPO_PATH/public" ]]; then
+                  echo "::warning::Beta repository path does not exist: $REPO_PATH/public, skipping"
+                  continue
+                fi
+                RSYNC_CMD="rsync $RSYNC_OPTIONS -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" --exclude \"dists\" --exclude \"control\" \"$REPO_PATH/public/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta"
+                echo "Command: \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
+                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+                rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
+                  --exclude "dists" --exclude "control" \
+                  "$REPO_PATH/public/" \
+                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta
+                ;;
+              *)
+                echo "::warning::Unknown target: $target"
+                ;;
+            esac
+          done
+
+          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "✓ Sync completed for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
+
   Index:
-    name: "Index"
+    name: "I"
     runs-on: repository-sync
     needs: Sync
     if: ${{ needs.Sync.outputs.matrix != '[]' && needs.Sync.outputs.matrix != '' }}
@@ -204,25 +922,186 @@ jobs:
           if_key_exists: replace
 
       - name: What to sync?
+        shell: bash
         run: |
+          set -e
+          set -o pipefail
 
-          JSON=$(curl -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" -H "Accept: application/json; indent=4" \
-          "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${{ matrix.node }}" | jq)
-          SERVER_PATH=$(echo $JSON | jq '.results[] | .custom_fields["path"]' | sed "s/\"//g")
-          SERVER_PORT=$(echo $JSON | jq '.results[] | .custom_fields["port"]' | sed "s/\"//g")
-          SERVER_USERNAME=$(echo $JSON | jq '.results[] | .custom_fields["username"]' | sed "s/\"//g")
-          TARGETS=($(echo $JSON | jq '.results[] | .tags' | jq '.[].name' | grep -v null | grep -v Push | sed "s/\"//g"))
+          # Validate secrets
+          if [[ -z "${{ secrets.NETBOX_API }}" || "${{ secrets.NETBOX_API }}" == "" ]]; then
+            echo "::error::NETBOX_API secret is not set or is empty"
+            exit 1
+          fi
+
+          if [[ -z "${{ secrets.NETBOX_TOKEN }}" || "${{ secrets.NETBOX_TOKEN }}" == "" ]]; then
+            echo "::error::NETBOX_TOKEN secret is not set or is empty"
+            exit 1
+          fi
+
+          # Validate API URL format
+          NETBOX_API="${{ secrets.NETBOX_API }}"
+          if [[ ! "$NETBOX_API" =~ ^https?:// ]]; then
+            echo "::error::NETBOX_API must start with http:// or https://"
+            exit 1
+          fi
+
+          # Validate hostname format
+          HOSTNAME="${{ matrix.node }}"
+          if [[ ! "$HOSTNAME" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            echo "::error::Invalid hostname format: $HOSTNAME"
+            exit 1
+          fi
+
+          echo "### Finalizing sync for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Fetch server configuration with timeout
+          API_URL="${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${HOSTNAME}"
+
+          response=$(curl -fsSL \
+            --max-time 30 \
+            --connect-timeout 10 \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json" \
+            "$API_URL" 2>&1)
+
+          curl_exit_code=$?
+
+          if [[ $curl_exit_code -ne 0 ]]; then
+            echo "::error::Failed to fetch server config (curl exit code: $curl_exit_code)"
+            echo "::error::Response: $response"
+            exit 1
+          fi
+
+          # Validate JSON response
+          if ! echo "$response" | jq empty 2>/dev/null; then
+            echo "::error::Invalid JSON response from NetBox API"
+            echo "::error::Response: $response"
+            exit 1
+          fi
+
+          # Extract and validate custom fields
+          SERVER_PATH=$(echo "$response" | jq -r '.results[] | .custom_fields["path"]' 2>/dev/null)
+          SERVER_PORT=$(echo "$response" | jq -r '.results[] | .custom_fields["port"]' 2>/dev/null)
+          SERVER_USERNAME=$(echo "$response" | jq -r '.results[] | .custom_fields["username"]' 2>/dev/null)
+
+          # Validate required fields
+          if [[ -z "$SERVER_PATH" || "$SERVER_PATH" == "null" ]]; then
+            echo "::error::Server path not found in NetBox for $HOSTNAME"
+            exit 1
+          fi
+
+          if [[ -z "$SERVER_PORT" || "$SERVER_PORT" == "null" ]]; then
+            echo "::error::Server port not found in NetBox for $HOSTNAME"
+            exit 1
+          fi
+
+          # Validate port is numeric and in valid range
+          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
+            echo "::error::Invalid server port: $SERVER_PORT"
+            exit 1
+          fi
+
+          if [[ -z "$SERVER_USERNAME" || "$SERVER_USERNAME" == "null" ]]; then
+            echo "::error::Server username not found in NetBox for $HOSTNAME"
+            exit 1
+          fi
+
+          # Validate username format
+          if [[ ! "$SERVER_USERNAME" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+            echo "::error::Invalid username format: $SERVER_USERNAME"
+            exit 1
+          fi
+
+          # Validate server path format (prevent path traversal)
+          if [[ "$SERVER_PATH" =~ \.\. ]]; then
+            echo "::error::Server path contains directory traversal: $SERVER_PATH"
+            exit 1
+          fi
+
+          # Extract targets
+          TARGETS=($(echo "$response" | jq -r '.results[] | .tags[] | .name' 2>/dev/null | grep -v "Push" || echo ""))
+
+          if [[ ${#TARGETS[@]} -eq 0 ]]; then
+            echo "::warning::No targets found for $HOSTNAME"
+            exit 0
+          fi
+
+          # Filter to only valid targets
+          VALID_TARGETS=()
           for target in "${TARGETS[@]}"; do
-              ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "${{ matrix.node }}"
-              echo "Synching $target" >> $GITHUB_STEP_SUMMARY
-              # --checksum only if target is corrupted
-              if [[ "$target" == "debs-beta" && "${{ github.event.inputs.partial }}" != "true" ]]; then rsync -ar --progress -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new" /outgoing/repository-beta/public/ ${SERVER_USERNAME}@${{ matrix.node }}:${SERVER_PATH}/beta ; fi
-              # delete at the end
-              if [[ "$target" == "debs-beta" && "${{ github.event.inputs.partial }}" != "true" ]]; then rsync -ar --progress --delete -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new" /outgoing/repository-beta/public/ ${SERVER_USERNAME}@${{ matrix.node }}:${SERVER_PATH}/beta ; fi
+            case "$target" in
+              debs|debs-beta)
+                VALID_TARGETS+=("$target")
+                ;;
+              *)
+                echo "::warning::Invalid target '$target' for $HOSTNAME - must be 'debs' or 'debs-beta', skipping"
+                ;;
+            esac
           done
 
-          # fix folder permissions
-          sudo chown -R ${{ secrets.HOST_UPLOAD_USER }}:${{ secrets.HOST_UPLOAD_USER }} /armbian/openssh-server/storage/{debs,debs-beta,artifacts}
+          if [[ ${#VALID_TARGETS[@]} -eq 0 ]]; then
+            echo "::warning::No valid targets found for $HOSTNAME"
+            exit 0
+          fi
+
+          TARGETS=("${VALID_TARGETS[@]}")
+
+          # Set base path using global variable
+          PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
+
+          # Validate publishing path
+          case "$PUBLISHING_PATH" in
+            *"/publishing/repository"*)
+              ;;
+            *)
+              echo "::error::Invalid publishing path: $PUBLISHING_PATH"
+              exit 1
+              ;;
+          esac
+
+          # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
+          RSYNC_OPTIONS="-av"
+          if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
+            RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
+            echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Sync beta repository with cleanup
+          for target in "${TARGETS[@]}"; do
+            echo "→ Finalizing $target" | tee -a "$GITHUB_STEP_SUMMARY"
+
+            case "$target" in
+              debs-beta)
+                REPO_PATH="${PUBLISHING_PATH}-debs-beta"
+                if [[ ! -d "$REPO_PATH/public" ]]; then
+                  echo "::warning::Beta repository path does not exist: $REPO_PATH/public, skipping"
+                  continue
+                fi
+                # Final sync without excludes
+                RSYNC_CMD="rsync $RSYNC_OPTIONS -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" \"$REPO_PATH/public/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta"
+                echo "Command (final sync): \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
+                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+                rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
+                  "$REPO_PATH/public/" \
+                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta
+                # Cleanup sync with --delete
+                RSYNC_CMD="rsync $RSYNC_OPTIONS --delete -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" \"$REPO_PATH/public/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta"
+                echo "Command (cleanup sync): \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
+                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+                rsync $RSYNC_OPTIONS --delete -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
+                  "$REPO_PATH/public/" \
+                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta
+                ;;
+              *)
+                echo "::warning::Unknown target: $target"
+                ;;
+            esac
+          done
+
+          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "✓ Final sync completed for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
 
   dispatch:
     name: "Refresh web and redirector index"
