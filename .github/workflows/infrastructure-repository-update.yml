@@ -579,9 +579,21 @@ jobs:
             exit 1
           fi
 
+  Redirect:
+    name: "Enable inhouse mirrors"
+    # Here we need to load https://github.armbian.com/dlrouter-debs-main.yaml into redirector and reload it
+    # Full redirecor config will be updated with cron eventually
+    needs: cleanup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get primary mirrors from database
+        id: json
+        run: |
+          # TO DO: executing change on redirector
+
   Prepare:
     name: "Upload to servers"
-    needs: cleanup
+    needs: Redirect
     outputs:
       matrix: ${{steps.json.outputs.JSON_CONTENT}}
     runs-on: ubuntu-latest
