@@ -1,6 +1,17 @@
 name: "Infrastructure: Repository update"
 on:
   workflow_dispatch:
+    inputs:
+      purge_external:
+        description: 'Purge external packages before download'
+        required: true
+        type: boolean
+        default: true
+      download_external:
+        description: 'Download external packages'
+        required: true
+        type: boolean
+        default: true
   repository_dispatch:
     types: ["Repository update"]
 
@@ -33,13 +44,14 @@ jobs:
     name: "Download external"
     needs: Check
 
-    if: ${{ github.repository_owner == 'Armbian' }}
+    if: ${{ github.repository_owner == 'Armbian' && (github.event_name == 'workflow_dispatch' && inputs.download_external == true || github.event_name == 'repository_dispatch') }}
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
       #BUILD_RUNNER: "X64"
       HOST_DEPLOY: "repo.armbian.com"
+      PURGE: ${{ inputs.purge_external }}
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
       GPG_KEY2: ${{ secrets.GPG_KEY4 }}
@@ -53,7 +65,8 @@ jobs:
 
   fix-permissions:
     name: "Fix permissions"
-    needs: external
+    needs: Check
+    if: ${{ needs.Check.result == 'success' }}
     runs-on: repository
     strategy:
       matrix:
@@ -84,15 +97,24 @@ jobs:
           echo "### Setting permissions for ${{ matrix.repository.name }}" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
           echo "Repository path: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "Shared group: $SHARED_GROUP" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # Check if the specified group exists
+          if getent group "$SHARED_GROUP" >/dev/null 2>&1; then
+            echo "Shared group: $SHARED_GROUP" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠ Shared group '$SHARED_GROUP' does not exist, skipping group-specific operations" | tee -a "$GITHUB_STEP_SUMMARY"
+            SHARED_GROUP=""
+          fi
           echo ""
 
           if [ -d "$REPO_PATH" ]; then
             echo "Setting cooperative umask (002) for this job..." | tee -a "$GITHUB_STEP_SUMMARY"
             umask 002
 
-            echo "Ensuring group ownership is $SHARED_GROUP (recursive)..." | tee -a "$GITHUB_STEP_SUMMARY"
-            sudo chgrp -R "$SHARED_GROUP" "$REPO_PATH" || true
+            if [ -n "$SHARED_GROUP" ]; then
+              echo "Ensuring group ownership is $SHARED_GROUP (recursive)..." | tee -a "$GITHUB_STEP_SUMMARY"
+              sudo chgrp -R "$SHARED_GROUP" "$REPO_PATH" || true
+            fi
 
             echo "Setting directories to group-writable and setgid (2775)..." | tee -a "$GITHUB_STEP_SUMMARY"
             sudo find "$REPO_PATH" -type d -print0 \
@@ -102,11 +124,13 @@ jobs:
             sudo find "$REPO_PATH" -type f ! -perm -g+w -print0 \
               | xargs -0 -r -P 8 sudo chmod -- g+w 2>/dev/null || true
 
-            echo "Setting default ACLs so new files/dirs keep group rwX (recommended)..." | tee -a "$GITHUB_STEP_SUMMARY"
-            if command -v setfacl >/dev/null 2>&1; then
+            if [ -n "$SHARED_GROUP" ] && command -v setfacl >/dev/null 2>&1; then
+              echo "Setting default ACLs so new files/dirs keep group rwX (recommended)..." | tee -a "$GITHUB_STEP_SUMMARY"
               sudo setfacl -R  -m "g:${SHARED_GROUP}:rwX" "$REPO_PATH" || true
               sudo setfacl -R -d -m "g:${SHARED_GROUP}:rwX" "$REPO_PATH" || true
               echo "✓ ACLs applied" | tee -a "$GITHUB_STEP_SUMMARY"
+            elif [ -z "$SHARED_GROUP" ]; then
+              echo "⚠ No valid shared group, skipping ACLs" | tee -a "$GITHUB_STEP_SUMMARY"
             else
               echo "⚠ setfacl not available; skipping ACLs" | tee -a "$GITHUB_STEP_SUMMARY"
             fi
@@ -132,6 +156,7 @@ jobs:
   prepare-beta:
     name: "Prepare beta repository"
     needs: fix-permissions
+    if: ${{ needs.fix-permissions.result == 'success' }}
     runs-on: repository
     steps:
       - name: "Remove and recreate beta repository"
