@@ -43,8 +43,6 @@ jobs:
   external:
     name: "Download external"
     needs: Check
-
-    if: ${{ github.repository_owner == 'Armbian' && (github.event_name == 'workflow_dispatch' && inputs.download_external == true || github.event_name == 'repository_dispatch') }}
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ACCESS_NAME: armbian
@@ -65,8 +63,7 @@ jobs:
 
   fix-permissions:
     name: "Fix permissions"
-    needs: Check
-    if: ${{ needs.Check.result == 'success' }}
+    needs: external
     runs-on: repository
     strategy:
       matrix:
@@ -156,7 +153,6 @@ jobs:
   prepare-beta:
     name: "Prepare beta repository"
     needs: fix-permissions
-    if: ${{ needs.fix-permissions.result == 'success' }}
     runs-on: repository
     steps:
       - name: "Remove and recreate beta repository"
