@@ -27,10 +27,18 @@ concurrency:
 
 jobs:
 
+  Payload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show payload
+        run: |
+          echo "target = ${{ github.event.client_payload.target }}"
+
   Check:
 
     name: "Check membership" # Only release manager can execute this manually
     runs-on: ubuntu-latest
+    needs: Payload
     steps:
 
       - name: "Check membership"
