@@ -66,7 +66,7 @@ jobs:
       - name: "Restore permissions"
         run: |
 
-          sudo chown -R ${{ secrets.HOST_UPLOAD_USER }}:${{ secrets.HOST_UPLOAD_USER }} /armbian/openssh-server/storage/{debs,debs-beta,artifacts}
+          sudo chown -R ${{ secrets.HOST_UPLOAD_USER }}:gha-runners /armbian/openssh-server/storage/{debs,debs-beta,artifacts}
 
   preclean:
     name: "Purge"
@@ -125,12 +125,12 @@ jobs:
         run: |
 
           # take ownership
-          sudo chown -R ${USER}:${USER} /outgoing/repository
+          sudo chown -R ${USER}:gha-runners /publishing/repository-debs
 
           PKG="${{ matrix.package }}"
 
           LIST=$(
-            tools/repository/repo -i /incoming/debs -o /outgoing/repository -r ${{ matrix.release }} \
+            tools/repository/repo.sh -i /incoming/debs -o /publishing/repository-debs -r ${{ matrix.release }} \
               | sed 's/^[[:space:]]*//' \
               | grep "^${PKG}_" || true
           )
@@ -155,12 +155,12 @@ jobs:
               {
                 echo '### 🧹 Delete package'
                 echo '```bash'
-                echo "tools/repository/repo -o /outgoing/repository -r ${{ matrix.release }} -c delete -l 'Name (= $PKG), \$Version (<< $VERSION)'"
+                echo "tools/repository/repo.sh -o /publishing/repository-debs -r ${{ matrix.release }} -c delete -l 'Name (= $PKG), \$Version (<< $VERSION)'"
                 echo '```'
               } | tee -a "$GITHUB_STEP_SUMMARY" >/dev/null
 
               # === RUN DELETE OPERATION ===
-              tools/repository/repo -i /incoming/debs -o /outgoing/repository -r ${{ matrix.release }} -c delete -l "Name (= $PKG), \$Version (<< $VERSION)"
+              tools/repository/repo.sh -i /incoming/debs -o /publishing/repository-debs -r ${{ matrix.release }} -c delete -l "Name (= $PKG), \$Version (<< $VERSION)"
 
           else
               echo "Only $COUNT package present — skipping delete" \
