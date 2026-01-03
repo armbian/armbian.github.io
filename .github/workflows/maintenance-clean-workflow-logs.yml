@@ -17,7 +17,7 @@ env:
 
 jobs:
   clean-logs:
-    runs-on: ubuntu-latest
+    runs-on: Linux
     permissions:
       actions: write
     steps:
