@@ -47,9 +47,8 @@ jobs:
     with:
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
-      #BUILD_RUNNER: "X64"
       HOST_DEPLOY: "repo.armbian.com"
-      PURGE: ${{ inputs.purge_external }}
+      PURGE: ${{ inputs.purge_external || false }}
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
       GPG_KEY2: ${{ secrets.GPG_KEY4 }}
