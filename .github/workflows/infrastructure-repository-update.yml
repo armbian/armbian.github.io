@@ -45,10 +45,10 @@ jobs:
     runs-on: repository
     steps:
 
-      - name: Delete empty folders in INCOMING_PATH
-        run: |
-
-          sudo find "${{ env.INCOMING_PATH }}" -type d -empty -delete
+#      - name: Delete empty folders in INCOMING_PATH
+#        run: |
+#
+#          sudo find "${{ env.INCOMING_PATH }}" -type d -empty -delete
 
       - name: Display STORAGE_PATH tree structure
         run: |
