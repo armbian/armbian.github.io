@@ -17,6 +17,7 @@ on:
 
 env:
   STORAGE_PATH: /armbian/openssh-server/storage
+  INCOMING_PATH: /armbian/openssh-server/storage/incoming
   PUBLISHING_PATH: /publishing/repository
   CLEANUP_INPUT: true
   DRY_RUN_SYNC: false
@@ -27,18 +28,9 @@ concurrency:
 
 jobs:
 
-  Payload:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Show payload
-        run: |
-          echo "target = ${{ github.event.client_payload.target }}"
-
   Check:
-
     name: "Check membership" # Only release manager can execute this manually
-    runs-on: ubuntu-latest
-    needs: Payload
+    runs-on: Linux
     steps:
 
       - name: "Check membership"
@@ -48,9 +40,100 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEAM: "Release manager"
 
+  Copying:
+    needs: Check
+    runs-on: repository
+    steps:
+
+      - name: Delete empty folders in INCOMING_PATH
+        run: |
+
+          sudo find "${{ env.INCOMING_PATH }}" -type d -empty -delete
+
+      - name: Display STORAGE_PATH tree structure
+        run: |
+
+          tree ${{ env.INCOMING_PATH }} || find ${{ env.INCOMING_PATH }} -print | sed -e 's;[^/]*/;|____;g;s;____|; |;g'
+
+      - name: Generate statistical report for .deb files in INCOMING_PATH
+        run: |
+          echo '## Incoming .deb Files Report' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '| Folder | File Count | Total Size |' >> $GITHUB_STEP_SUMMARY
+          echo '|:-------|-----------:|----------:|' >> $GITHUB_STEP_SUMMARY
+
+          for folder_path in "${{ env.INCOMING_PATH }}"/*/; do
+            folder=$(basename "$folder_path")
+            if [ -d "$folder_path" ]; then
+              file_count=$(find "$folder_path" -type f -name "*.deb" | wc -l)
+              if [ "$file_count" -gt 0 ]; then
+                total_size_kb=$(du -sk "$folder_path" | cut -f1)
+                total_size_mb=$(awk "BEGIN {printf \"%.0f Mb\", $total_size_kb / 1024}")
+              else
+                total_size_mb="0 Mb"
+              fi
+              printf "| %-7s | %10d | %13s |\n" "$folder" "$file_count" "$total_size_mb" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Checkout build repository
+        uses: actions/checkout@v6
+
+      - name: Copy operations
+        run: |
+
+          TARGET="${{ github.event.client_payload.target }}"
+          # Default to cron/ if target is not set
+          if [ -z "$TARGET" ]; then
+            TARGET="cron/"
+          fi
+
+          case "$TARGET" in
+            "stable/")
+              if [ -d "${INCOMING_PATH}/stable" ]; then
+                COPY_UBOOT=false \
+                DRY_RUN=true \
+                SELECT=':edge' \
+                SRC_DIR="${{ env.INCOMING_PATH }}"/nightly/debs-beta/ \
+                DST_DIR=/tmp/x \
+                scripts/copy-kernel-packages.sh 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+              else
+                echo "## Source folder INCOMING/stable does not exist, skipping" >> $GITHUB_STEP_SUMMARY
+              fi
+              ;;
+            "cron/")
+              # move what is inside incoming
+              if [ -d "${INCOMING_PATH}/cron" ]; then
+                echo "## Fixing STORAGE_PATH permissions" >> $GITHUB_STEP_SUMMARY
+                sudo chmod -R g+w ${STORAGE_PATH} 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+                echo "## Rsync from INCOMING/cron to STORAGE_PATH" >> $GITHUB_STEP_SUMMARY
+                rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/cron/ ${STORAGE_PATH} 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
+                echo "## Removing source INCOMING/cron" >> $GITHUB_STEP_SUMMARY
+                rm -rf ${INCOMING_PATH}/cron 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+              else
+                echo "## Source folder INCOMING/cron does not exist, skipping" >> $GITHUB_STEP_SUMMARY
+              fi
+              ;;
+            "nightly/")
+              :
+              ;;
+            "generic/")
+              :
+              ;;
+            "apps/")
+              :
+              ;;
+            "community/")
+              :
+              ;;
+            *)
+              :
+              ;;
+          esac
+
   external:
     name: "Download external"
-    needs: Check
+    needs: Copying
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ACCESS_NAME: armbian
