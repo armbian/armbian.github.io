@@ -134,7 +134,7 @@ jobs:
   external:
     name: "Download external"
     needs: Copying
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@repo_fix
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ENABLED: ${{ inputs.download_external || true }}
       ACCESS_NAME: armbian
@@ -332,7 +332,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: repo_fix
+          ref: main
           clean: false
 
       - name: "Build repository ${{ matrix.repository.name }}"
@@ -411,7 +411,7 @@ jobs:
         with:
           repository: armbian/build
           clean: false
-          ref: repo_fix
+          ref: main
           fetch-depth: 1
           path: build
 
