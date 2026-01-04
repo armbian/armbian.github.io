@@ -9,9 +9,14 @@ on:
         type: boolean
         description: "Force synchronization"
         default: false
+      dry_run:
+        type: boolean
+        description: "Dry run (show what would be transferred without actually syncing)"
+        default: false
 
 env:
   PUBLISHING_PATH: /publishing/repository
+  #DRY_RUN_SYNC: ${{ inputs.dry_run || false }}
   DRY_RUN_SYNC: true
   SYNC_THRESHOLD_SECONDS: 36000
 
@@ -48,85 +53,44 @@ jobs:
           set -e
           set -o pipefail
 
-          # Validate that required secrets are available
-          if [[ -z "${{ secrets.NETBOX_API }}" || "${{ secrets.NETBOX_API }}" == "" ]]; then
-            echo "::error::NETBOX_API secret is not set or is empty"
-            exit 1
-          fi
-
-          if [[ -z "${{ secrets.NETBOX_TOKEN }}" || "${{ secrets.NETBOX_TOKEN }}" == "" ]]; then
-            echo "::error::NETBOX_TOKEN secret is not set or is empty"
-            exit 1
-          fi
-
-          # Validate API URL format to prevent SSRF
           NETBOX_API="${{ secrets.NETBOX_API }}"
-          if [[ ! "$NETBOX_API" =~ ^https?:// ]]; then
-            echo "::error::NETBOX_API must start with http:// or https://"
-            exit 1
-          fi
-
           echo "### Fetching mirror list from NetBox" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
 
-          # Build query with proper filtering
+          # Fetch all mirror data including configuration
           API_URL="${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&device_role=Mirror&tag=push&tag=debs&status=failed&status=active"
-
-          # Fetch data with timeout and security options
-          echo "Querying: $API_URL" | tee -a "$GITHUB_STEP_SUMMARY"
 
           response=$(curl -fsSL \
             --max-time 30 \
             --connect-timeout 10 \
             -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
             -H "Accept: application/json" \
-            "$API_URL" 2>&1)
+            "$API_URL" 2>&1) || exit 1
 
-          curl_exit_code=$?
+          # Build enriched JSON with server configuration
+          mirror_json=$(echo "$response" | jq -r '.results[] | {
+            name: .name,
+            path: .custom_fields.path,
+            port: .custom_fields.port,
+            username: .custom_fields.username,
+            download_path_debs: .custom_fields.download_path_debs
+          } | select(.path != null and .port != null and .username != null)' | jq -s '.' 2>/dev/null)
 
-          if [[ $curl_exit_code -ne 0 ]]; then
-            echo "::error::Failed to fetch data from NetBox API (curl exit code: $curl_exit_code)"
-            echo "::error::Response: $response"
-            exit 1
-          fi
-
-          # Validate JSON response
-          if ! echo "$response" | jq empty 2>/dev/null; then
-            echo "::error::Invalid JSON response from NetBox API"
-            echo "::error::Response: $response"
-            exit 1
-          fi
-
-          # Extract mirror names safely
-          mirror_names=$(echo "$response" | jq -r '.results[] | .name' 2>/dev/null | grep -v null || echo "")
-
-          if [[ -z "$mirror_names" ]]; then
+          if [[ -z "$mirror_json" || "$mirror_json" == "null" || "$mirror_json" == "[]" ]]; then
             echo "::warning::No mirrors found in NetBox API response"
             echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
             echo '[]' >> $GITHUB_OUTPUT
             echo 'EOF' >> $GITHUB_OUTPUT
           else
-            # Count mirrors
-            mirror_count=$(echo "$mirror_names" | wc -l)
+            mirror_count=$(echo "$mirror_json" | jq 'length')
             echo "Found $mirror_count active mirrors" | tee -a "$GITHUB_STEP_SUMMARY"
 
-            # Format as JSON array, filtering empty lines
-            mirror_json=$(echo "$mirror_names" | jq -cnR '[inputs | select(length>0)]' 2>/dev/null)
-
-            if [[ -z "$mirror_json" || "$mirror_json" == "null" ]]; then
-              echo "::error::Failed to format mirror list as JSON"
-              exit 1
-            fi
-
-            # Output to GitHub Actions
             echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
             echo "$mirror_json" >> $GITHUB_OUTPUT
             echo 'EOF' >> $GITHUB_OUTPUT
 
-            # List mirrors in summary
             echo "" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "Mirror servers:" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "$mirror_names" | sed 's/^/  - /' | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$mirror_json" | jq -r '.[].name' | sed 's/^/  - /' | tee -a "$GITHUB_STEP_SUMMARY"
           fi
 
   Sync:
@@ -159,67 +123,11 @@ jobs:
           set -e
           set -o pipefail
 
-          # Validate secrets
-          if [[ -z "${{ secrets.NETBOX_API }}" || "${{ secrets.NETBOX_API }}" == "" ]]; then
-            echo "::error::NETBOX_API secret is not set or is empty"
-            exit 1
-          fi
-
-          if [[ -z "${{ secrets.NETBOX_TOKEN }}" || "${{ secrets.NETBOX_TOKEN }}" == "" ]]; then
-            echo "::error::NETBOX_TOKEN secret is not set or is empty"
-            exit 1
-          fi
-
-          # Validate API URL format
-          NETBOX_API="${{ secrets.NETBOX_API }}"
-          if [[ ! "$NETBOX_API" =~ ^https?:// ]]; then
-            echo "::error::NETBOX_API must start with http:// or https://"
-            exit 1
-          fi
-
-          # Validate hostname format
-          HOSTNAME="${{ matrix.node }}"
-          if [[ ! "$HOSTNAME" =~ ^[a-zA-Z0-9.-]+$ ]]; then
-            echo "::error::Invalid hostname format: $HOSTNAME"
-            exit 1
-          fi
+          HOSTNAME="${{ matrix.node.name }}"
+          DOWNLOAD_PATH="${{ matrix.node.download_path_debs }}"
+          DOWNLOAD_PATH="${DOWNLOAD_PATH:-apt}"
 
           echo "### Checking sync requirements for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Fetch server configuration with timeout
-          API_URL="${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${HOSTNAME}"
-
-          response=$(curl -fsSL \
-            --max-time 30 \
-            --connect-timeout 10 \
-            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
-            -H "Accept: application/json" \
-            "$API_URL" 2>&1)
-
-          curl_exit_code=$?
-
-          if [[ $curl_exit_code -ne 0 ]]; then
-            echo "::error::Failed to fetch server config (curl exit code: $curl_exit_code)"
-            echo "::error::Response: $response"
-            exit 1
-          fi
-
-          # Validate JSON response
-          if ! echo "$response" | jq empty 2>/dev/null; then
-            echo "::error::Invalid JSON response from NetBox API"
-            echo "::error::Response: $response"
-            exit 1
-          fi
-
-          # Extract and validate custom fields
-          DOWNLOAD_PATH=$(echo "$response" | jq -r '.results[] | .custom_fields["download_path_debs"]' 2>/dev/null)
-
-          # Set default download path if not specified
-          if [[ -z "$DOWNLOAD_PATH" || "$DOWNLOAD_PATH" == "null" ]]; then
-            DOWNLOAD_PATH="apt"
-          fi
-
           echo "Download path: $DOWNLOAD_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
 
@@ -228,7 +136,6 @@ jobs:
 
           if [[ -z "$REMOTE_DATE" ]]; then
             echo "::warning::Could not determine remote repository timestamp for $HOSTNAME"
-            echo "::warning::This might indicate the remote repository is not accessible"
             REMOTE_DATE=0
           else
             echo "Remote timestamp: $REMOTE_DATE" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -236,22 +143,6 @@ jobs:
 
           # Get local repository timestamp
           LOCAL_REPO_PATH="${{ env.PUBLISHING_PATH }}-debs/public"
-
-          # Validate local repository path
-          case "$LOCAL_REPO_PATH" in
-            *"/publishing/repository"*)
-              ;;
-            *)
-              echo "::error::Invalid local repository path: $LOCAL_REPO_PATH"
-              exit 1
-              ;;
-          esac
-
-          if [[ ! -f "$LOCAL_REPO_PATH/armbian.key" ]]; then
-            echo "::error::Local repository key file not found: $LOCAL_REPO_PATH/armbian.key"
-            exit 1
-          fi
-
           LOCAL_TIMESTAMP=$(stat -c%Y "$LOCAL_REPO_PATH/armbian.key")
           REMOTE_TIMESTAMP=$(date --date="$REMOTE_DATE" +%s 2>/dev/null || echo "0")
 
@@ -283,220 +174,40 @@ jobs:
           set -e
           set -o pipefail
 
-          # Validate secrets
-          if [[ -z "${{ secrets.NETBOX_API }}" || "${{ secrets.NETBOX_API }}" == "" ]]; then
-            echo "::error::NETBOX_API secret is not set or is empty"
-            exit 1
-          fi
+          # Use server configuration from matrix (fetched in Prepare job)
+          HOSTNAME="${{ matrix.node.name }}"
+          SERVER_PATH="${{ matrix.node.path }}"
+          SERVER_PORT="${{ matrix.node.port }}"
+          SERVER_USERNAME="${{ matrix.node.username }}"
 
-          if [[ -z "${{ secrets.NETBOX_TOKEN }}" || "${{ secrets.NETBOX_TOKEN }}" == "" ]]; then
-            echo "::error::NETBOX_TOKEN secret is not set or is empty"
-            exit 1
-          fi
-
-          # Validate API URL format
-          NETBOX_API="${{ secrets.NETBOX_API }}"
-          if [[ ! "$NETBOX_API" =~ ^https?:// ]]; then
-            echo "::error::NETBOX_API must start with http:// or https://"
-            exit 1
-          fi
-
-          # Validate hostname format
-          HOSTNAME="${{ matrix.node }}"
-          if [[ ! "$HOSTNAME" =~ ^[a-zA-Z0-9.-]+$ ]]; then
-            echo "::error::Invalid hostname format: $HOSTNAME"
-            exit 1
-          fi
-
-          echo "### Syncing to $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Fetch server configuration with timeout
-          API_URL="${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${HOSTNAME}"
-
-          response=$(curl -fsSL \
-            --max-time 30 \
-            --connect-timeout 10 \
-            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
-            -H "Accept: application/json" \
-            "$API_URL" 2>&1)
-
-          curl_exit_code=$?
-
-          if [[ $curl_exit_code -ne 0 ]]; then
-            echo "::error::Failed to fetch server config (curl exit code: $curl_exit_code)"
-            echo "::error::Response: $response"
-            exit 1
-          fi
-
-          # Validate JSON response
-          if ! echo "$response" | jq empty 2>/dev/null; then
-            echo "::error::Invalid JSON response from NetBox API"
-            echo "::error::Response: $response"
-            exit 1
-          fi
-
-          # Extract and validate custom fields
-          SERVER_PATH=$(echo "$response" | jq -r '.results[] | .custom_fields["path"]' 2>/dev/null)
-          SERVER_PORT=$(echo "$response" | jq -r '.results[] | .custom_fields["port"]' 2>/dev/null)
-          SERVER_USERNAME=$(echo "$response" | jq -r '.results[] | .custom_fields["username"]' 2>/dev/null)
-
-          # Validate required fields
-          if [[ -z "$SERVER_PATH" || "$SERVER_PATH" == "null" ]]; then
-            echo "::error::Server path not found in NetBox for $HOSTNAME"
-            exit 1
-          fi
-
-          if [[ -z "$SERVER_PORT" || "$SERVER_PORT" == "null" ]]; then
-            echo "::error::Server port not found in NetBox for $HOSTNAME"
-            exit 1
-          fi
-
-          # Validate port is numeric and in valid range
-          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
-            echo "::error::Invalid server port: $SERVER_PORT"
-            exit 1
-          fi
-
-          if [[ -z "$SERVER_USERNAME" || "$SERVER_USERNAME" == "null" ]]; then
-            echo "::error::Server username not found in NetBox for $HOSTNAME"
-            exit 1
-          fi
-
-          # Validate username format (alphanumeric, underscore, hyphen, dot)
-          if [[ ! "$SERVER_USERNAME" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-            echo "::error::Invalid username format: $SERVER_USERNAME"
-            exit 1
-          fi
-
-          # Validate server path format (prevent path traversal)
-          if [[ "$SERVER_PATH" =~ \.\. ]]; then
-            echo "::error::Server path contains directory traversal: $SERVER_PATH"
-            exit 1
-          fi
-
-          echo "Server configuration:" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### Server: $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "  Path: $SERVER_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "  Port: $SERVER_PORT" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "  Username: $SERVER_USERNAME" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
 
-          # Extract targets
-          TARGETS=($(echo "$response" | jq -r '.results[] | .tags[] | .name' 2>/dev/null | grep -v "Push" || echo ""))
+          # Only sync debs (not debs-beta)
+          REPO_PATH="${{ env.PUBLISHING_PATH }}-debs/public"
+          RSYNC_OPTIONS="-av --size-only --omit-dir-times"
 
-          if [[ ${#TARGETS[@]} -eq 0 ]]; then
-            echo "::warning::No targets found for $HOSTNAME"
-            exit 0
-          fi
-
-          # Filter to only valid targets
-          VALID_TARGETS=()
-          for target in "${TARGETS[@]}"; do
-            case "$target" in
-              debs|debs-beta)
-                VALID_TARGETS+=("$target")
-                ;;
-              *)
-                echo "::warning::Invalid target '$target' for $HOSTNAME - skipping"
-                ;;
-            esac
-          done
-
-          if [[ ${#VALID_TARGETS[@]} -eq 0 ]]; then
-            echo "::warning::No valid targets found for $HOSTNAME"
-            exit 0
-          fi
-
-          TARGETS=("${VALID_TARGETS[@]}")
-          echo "Sync targets: ${TARGETS[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Set base path using global variable
-          PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
-
-          # Validate publishing path
-          case "$PUBLISHING_PATH" in
-            *"/publishing/repository"*)
-              ;;
-            *)
-              echo "::error::Invalid publishing path: $PUBLISHING_PATH"
-              exit 1
-              ;;
-          esac
-
-          # Build rsync options
-          RSYNC_OPTIONS="-ar --progress"
           if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
             RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
-            echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "::notice::DRY_RUN_SYNC is enabled" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo ""
           fi
 
           # Remove old host key
           ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "$HOSTNAME" 2>/dev/null || true
 
-          # Sync to each target
-          for target in "${TARGETS[@]}"; do
-            echo "→ Syncing $target" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Initial sync (without delete)
+          rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
+            "${REPO_PATH}/" \
+            ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
-            case "$target" in
-              debs)
-                REPO_PATH="${PUBLISHING_PATH}-debs/public"
-                if [[ ! -d "$REPO_PATH" ]]; then
-                  echo "::error::Source repository path does not exist: $REPO_PATH"
-                  exit 1
-                fi
-
-                # Initial sync (without delete)
-                RSYNC_CMD="rsync $RSYNC_OPTIONS -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" \"${REPO_PATH}/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt"
-                echo "Command (initial sync): \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
-                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-
-                rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-                  "${REPO_PATH}/" \
-                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-
-                # Final sync with delete
-                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-                RSYNC_CMD="rsync $RSYNC_OPTIONS --delete -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" \"${REPO_PATH}/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt"
-                echo "Command (cleanup sync): \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
-                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-
-                rsync $RSYNC_OPTIONS --delete -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-                  "${REPO_PATH}/" \
-                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-                ;;
-              debs-beta)
-                REPO_PATH="${PUBLISHING_PATH}-debs-beta/public"
-                if [[ ! -d "$REPO_PATH" ]]; then
-                  echo "::warning::Beta repository path does not exist: $REPO_PATH, skipping"
-                  continue
-                fi
-
-                # Initial sync (without delete)
-                RSYNC_CMD="rsync $RSYNC_OPTIONS -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" \"${REPO_PATH}/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta"
-                echo "Command (initial sync): \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
-                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-
-                rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-                  "${REPO_PATH}/" \
-                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-
-                # Final sync with delete
-                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-                RSYNC_CMD="rsync $RSYNC_OPTIONS --delete -e \"ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30\" \"${REPO_PATH}/\" ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta"
-                echo "Command (cleanup sync): \`$RSYNC_CMD\`" | tee -a "$GITHUB_STEP_SUMMARY"
-                echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-
-                rsync $RSYNC_OPTIONS --delete -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-                  "${REPO_PATH}/" \
-                  ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/beta 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-                ;;
-              *)
-                echo "::warning::Unknown target: $target"
-                ;;
-            esac
-          done
+          # Final sync with delete
+          rsync $RSYNC_OPTIONS --delete -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
+            "${REPO_PATH}/" \
+            ${SERVER_USERNAME}@${HOSTNAME}:${SERVER_PATH}/apt 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
 
           echo "" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "✓ Sync completed for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
