@@ -20,7 +20,7 @@ env:
   INCOMING_PATH: /armbian/openssh-server/storage/incoming
   PUBLISHING_PATH: /publishing/repository
   CLEANUP_INPUT: true
-  DRY_RUN_SYNC: false
+  DRY_RUN_SYNC: true
 
 concurrency:
   group: pipeline
@@ -45,10 +45,10 @@ jobs:
     runs-on: repository
     steps:
 
-#      - name: Delete empty folders in INCOMING_PATH
-#        run: |
-#
-#          sudo find "${{ env.INCOMING_PATH }}" -type d -empty -delete
+      - name: Delete empty folders in INCOMING_PATH
+        run: |
+
+          sudo find "${{ env.INCOMING_PATH }}" -type d -empty -delete
 
       - name: Display STORAGE_PATH tree structure
         run: |
@@ -134,8 +134,9 @@ jobs:
   external:
     name: "Download external"
     needs: Copying
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@repo_fix
     with:
+      ENABLED: ${{ inputs.download_external || true }}
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
       HOST_DEPLOY: "repo.armbian.com"
@@ -331,6 +332,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
+          ref: repo_fix
           clean: false
 
       - name: "Build repository ${{ matrix.repository.name }}"
@@ -409,6 +411,7 @@ jobs:
         with:
           repository: armbian/build
           clean: false
+          ref: repo_fix
           fetch-depth: 1
           path: build
 

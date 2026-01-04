@@ -3,6 +3,10 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
+      ENABLED:
+        required: false
+        type: boolean
+        default: true
       ACCESS_NAME:
         required: false
         type: string
@@ -59,9 +63,18 @@ env:
 
 jobs:
 
+  noop:
+    name: "Disabled - no operation"
+    runs-on: ubuntu-latest
+    if: ${{ inputs.ENABLED == false }}
+    steps:
+      - name: "External download is disabled"
+        run: echo "External download workflow is disabled. Skipping all jobs."
+
   perm:
     name: "Restore permissions"
     runs-on: repository-sync
+    if: ${{ inputs.ENABLED == true }}
     steps:
       - name: "Restore permissions"
         run: |
