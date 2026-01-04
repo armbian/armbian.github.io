@@ -332,7 +332,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: main
+          ref: repo_fix
           clean: false
 
       - name: "Build repository ${{ matrix.repository.name }}"
@@ -411,7 +411,7 @@ jobs:
         with:
           repository: armbian/build
           clean: false
-          ref: main
+          ref: repo_fix
           fetch-depth: 1
           path: build
 
