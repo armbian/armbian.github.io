@@ -20,7 +20,7 @@ env:
   INCOMING_PATH: /armbian/openssh-server/storage/incoming
   PUBLISHING_PATH: /publishing/repository
   CLEANUP_INPUT: true
-  DRY_RUN_SYNC: true
+  DRY_RUN_SYNC: false
 
 concurrency:
   group: pipeline
@@ -136,7 +136,7 @@ jobs:
     needs: Copying
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
-      ENABLED: ${{ inputs.download_external || true }}
+      ENABLED: ${{ inputs.download_external != false }}
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
       HOST_DEPLOY: "repo.armbian.com"
@@ -332,7 +332,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: repo_fix
+          ref: main
           clean: false
 
       - name: "Build repository ${{ matrix.repository.name }}"
@@ -411,7 +411,7 @@ jobs:
         with:
           repository: armbian/build
           clean: false
-          ref: repo_fix
+          ref: main
           fetch-depth: 1
           path: build
 
@@ -533,6 +533,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: armbian/build
+          ref: main
           fetch-depth: 1
           clean: false
 
@@ -889,7 +890,7 @@ jobs:
           esac
 
           # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
-          RSYNC_OPTIONS="-av"
+          RSYNC_OPTIONS="-av --size-only --omit-dir-times"
           if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
             RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
             echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -1016,7 +1017,7 @@ jobs:
           esac
 
           # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
-          RSYNC_OPTIONS="-av"
+          RSYNC_OPTIONS="-av --size-only --omit-dir-times"
           if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
             RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
             echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
