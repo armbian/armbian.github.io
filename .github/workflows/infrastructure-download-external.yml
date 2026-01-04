@@ -63,17 +63,8 @@ env:
 
 jobs:
 
-  noop:
-    name: "Disabled - no operation"
-    runs-on: ubuntu-latest
-    if: ${{ inputs.ENABLED == false }}
-    steps:
-      - name: "External download is disabled"
-        run: echo "External download workflow is disabled. Skipping all jobs."
-
   perm:
     name: "Restore permissions"
-    needs: noop
     runs-on: repository-sync
     if: ${{ inputs.ENABLED == true }}
     steps:
