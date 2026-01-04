@@ -73,6 +73,7 @@ jobs:
 
   perm:
     name: "Restore permissions"
+    needs: noop
     runs-on: repository-sync
     if: ${{ inputs.ENABLED == true }}
     steps:
