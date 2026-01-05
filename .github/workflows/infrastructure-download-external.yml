@@ -181,6 +181,11 @@ jobs:
       matrix: ${{steps.lists.outputs.matrix}}
     steps:
 
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
