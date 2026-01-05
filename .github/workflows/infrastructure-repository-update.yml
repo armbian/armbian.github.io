@@ -138,7 +138,7 @@ jobs:
     with:
       ENABLED: ${{ inputs.download_external != false }}
       ACCESS_NAME: armbian
-      BUILD_RUNNER: "ubuntu-latest"
+      BUILD_RUNNER: "docker"
       HOST_DEPLOY: "repo.armbian.com"
       PURGE: ${{ inputs.purge_external || false }}
     secrets:
