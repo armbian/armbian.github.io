@@ -39,6 +39,10 @@ on:
         required: false
         type: boolean
         default: false
+      SKIP_VERSION_CHECK:
+        required: false
+        type: boolean
+        default: false
     secrets:
       GPG_KEY1:
         required: true
@@ -60,6 +64,7 @@ on:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PR_NUMBER: ${{ github.event.number }}
+  PACKAGES_URL: "https://fi.mirror.armbian.de/apt"
 
 jobs:
 
@@ -310,13 +315,13 @@ jobs:
                   # Use architecture-specific runners for other methods (gh, direct)
                   case "${arch}" in
                     amd64)
-                      #runner="ubuntu-latest"
-                      runner="X64"
+                      runner="ubuntu-latest"
+                      #runner="X64"
                       image_arch="${arch}"
                       ;;
                     arm64)
-                      #runner="ubuntu-24.04-arm"
-                      runner="docker"
+                      runner="ubuntu-24.04-arm"
+                      #runner="docker"
                       image_arch="${arch}"
                       ;;
                     armhf|riscv64)
@@ -517,18 +522,22 @@ jobs:
           # Get version from main repository
           BEFORE_VERSION=""
 
-          # Try main component, desktop component, then extra component
+          # Skip version check if SKIP_VERSION_CHECK is enabled (for force repopulation)
+          if [[ "${{ inputs.SKIP_VERSION_CHECK }}" == "true" ]]; then
+            echo "::notice::SKIP_VERSION_CHECK enabled - forcing upload regardless of existing versions"
+            BEFORE_VERSION="0"
+          else
+            # Try main component, desktop component, then extra component
           for repo_component in "main" "${{ matrix.release }}-desktop" "${{ matrix.release }}-utils"; do
             # Build URL for Packages index
-            #PACKAGES_URL="http://apt.armbian.com/dists/${{ matrix.release }}/${repo_component}/binary-${{ matrix.arch }}/Packages.gz"
-            PACKAGES_URL="http://fi.mirror.armbian.de/apt/dists/${{ matrix.release }}/${repo_component}/binary-${{ matrix.arch }}/Packages.gz"
+            CURRENT_PACKAGES_URL="${PACKAGES_URL}/dists/${{ matrix.release }}/${repo_component}/binary-${{ matrix.arch }}/Packages.gz"
 
-            echo "::debug::Trying $PACKAGES_URL"
+            echo "::debug::Trying $CURRENT_PACKAGES_URL"
 
             # Download and parse the package index
             # Use || true to prevent SIGPIPE when wget fails (404)
             # shellcheck disable=SC2002
-            BEFORE_VERSION="$(wget --timeout=10 --tries=3 -qO- "$PACKAGES_URL" 2>/dev/null | \
+            BEFORE_VERSION="$(wget --timeout=10 --tries=3 -qO- "$CURRENT_PACKAGES_URL" 2>/dev/null | \
               gunzip 2>/dev/null | \
               awk -v pkg="$PKG" '
                 /^Package: / { pkg_name = $2 }
@@ -544,6 +553,7 @@ jobs:
           if [[ -z "$BEFORE_VERSION" ]]; then
             echo "::warning::Could not find version for $PKG in repository, assuming new package"
             BEFORE_VERSION="0"
+          fi
           fi
 
           echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
@@ -820,29 +830,35 @@ jobs:
           fi
           echo "UPDATE_NEEDED=${UPDATE_NEEDED}" >> $GITHUB_OUTPUT
 
-          # Copy packages to appropriate output directories
+          # Upload packages directly to remote storage to avoid race conditions
+          # This prevents parallel jobs from overwriting each other's packages
+          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+
           if [[ ${TARGET} == main ]]; then
-            # Copy to main repository directories
+            # Upload to main repository directories
             if grep -qE 'B' <<< "$REPOSITORY"; then
-              find $SOURCE -type f -name "*.deb" -exec cp -v {} build/output/debs-beta/ \;
+              find "$SOURCE" -type f -name "*.deb" -exec \
+                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta/ \;
             fi
             if grep -qE 'S' <<< "$REPOSITORY"; then
-              find $SOURCE -type f -name "*.deb" -exec cp -v {} build/output/debs/ \;
+              find "$SOURCE" -type f -name "*.deb" -exec \
+                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs/ \;
             fi
           else
-            # Copy to specific release directories
+            # Upload to specific release directories
             if grep -qE 'B' <<< "$REPOSITORY"; then
-              find $SOURCE -type f -name "*.deb" -exec cp -v {} build/output/debs-beta/extra/${{ matrix.release }}-${TARGET} \;
+              find "$SOURCE" -type f -name "*.deb" -exec \
+                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
             if grep -qE 'S' <<< "$REPOSITORY"; then
-              find $SOURCE -type f -name "*.deb" -exec cp -v {} build/output/debs/extra/${{ matrix.release }}-${TARGET} \;
+              find "$SOURCE" -type f -name "*.deb" -exec \
+                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
           fi
-
-          # Always sync to debs-beta (before potential early exit)
-          # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-          rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-            -arvc build/output/debs-beta/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta
 
           # Upload to repository if version changed
           if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
@@ -852,11 +868,6 @@ jobs:
             echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ✅ |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
-
-            # Upload packages
-            # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-            rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-              -arvc build/output/debs/ ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs
 
           elif [[ "${{ inputs.HIDE_NO_UPDATE }}" == "true" ]]; then
             # Exit if HIDE_NO_UPDATE is enabled and no update needed
