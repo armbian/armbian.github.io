@@ -304,11 +304,13 @@ jobs:
                   # Use architecture-specific runners for other methods (gh, direct)
                   case "${arch}" in
                     amd64)
-                      runner="ubuntu-latest"
+                      #runner="ubuntu-latest"
+                      runner="X64"
                       image_arch="${arch}"
                       ;;
                     arm64)
-                      runner="ubuntu-24.04-arm"
+                      #runner="ubuntu-24.04-arm"
+                      runner="docker"
                       image_arch="${arch}"
                       ;;
                     armhf|riscv64)
