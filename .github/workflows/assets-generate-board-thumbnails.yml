@@ -456,25 +456,25 @@ jobs:
             for shard in shard-data/shard-data-*/processed-boards.txt; do
               [[ -f "$shard" ]] && cat "$shard"
             done
-          } | sort -u > all-processed-boards.txt
+          } | sort -u | grep -v '^$' > all-processed-boards.txt || true
 
           {
             for shard in shard-data/shard-data-*/failed-boards.txt; do
               [[ -f "$shard" ]] && cat "$shard"
             done
-          } | sort -u > all-failed-boards.txt
+          } | sort -u | grep -v '^$' > all-failed-boards.txt || true
 
           {
             for shard in shard-data/shard-data-*/processed-vendors.txt; do
               [[ -f "$shard" ]] && cat "$shard"
             done
-          } | sort -u > all-processed-vendors.txt
+          } | sort -u | grep -v '^$' > all-processed-vendors.txt || true
 
           {
             for shard in shard-data/shard-data-*/failed-vendors.txt; do
               [[ -f "$shard" ]] && cat "$shard"
             done
-          } | sort -u > all-failed-vendors.txt
+          } | sort -u | grep -v '^$' > all-failed-vendors.txt || true
 
           # Calculate missing pairs
           echo "$BOARDS_CONFIGS" | jq -r '.[]' | sort > all-configs.txt
