@@ -515,7 +515,7 @@ jobs:
             echo "### Board configs without images (${count})"
             echo ""
             if [[ -s configs-no-images.txt ]]; then
-              sed 's/^/- `&`/' configs-no-images.txt
+              awk 'NF' configs-no-images.txt | sed 's/^/- `&`/'
             else
               echo "None"
             fi
@@ -527,7 +527,7 @@ jobs:
             echo "### Board images without configs (${count})"
             echo ""
             if [[ -s images-no-configs.txt ]]; then
-              sed 's/^/- `&`/' images-no-configs.txt
+              awk 'NF' images-no-configs.txt | sed 's/^/- `&`/'
             else
               echo "None"
             fi
@@ -543,7 +543,7 @@ jobs:
             echo "### Vendor configs without logos (${count})"
             echo ""
             if [[ -s vendor-configs-no-logos.txt ]]; then
-              sed 's/^/- `&`/' vendor-configs-no-logos.txt
+              awk 'NF' vendor-configs-no-logos.txt | sed 's/^/- `&`/'
             else
               echo "None"
             fi
@@ -555,7 +555,7 @@ jobs:
             echo "### Vendor logos without configs (${count})"
             echo ""
             if [[ -s vendor-logos-no-configs.txt ]]; then
-              sed 's/^/- `&`/' vendor-logos-no-configs.txt
+              awk 'NF' vendor-logos-no-configs.txt | sed 's/^/- `&`/'
             else
               echo "None"
             fi
@@ -569,7 +569,7 @@ jobs:
             echo "### Boards failed to process (${count})"
             echo ""
             if [[ -s all-failed-boards.txt ]]; then
-              sed 's/^/- `&`/' all-failed-boards.txt
+              awk 'NF' all-failed-boards.txt | sed 's/^/- `&`/'
             else
               echo "None"
             fi
@@ -579,7 +579,7 @@ jobs:
             echo "### Vendors failed to process (${count})"
             echo ""
             if [[ -s all-failed-vendors.txt ]]; then
-              sed 's/^/- `&`/' all-failed-vendors.txt
+              awk 'NF' all-failed-vendors.txt | sed 's/^/- `&`/'
             else
               echo "None"
             fi
