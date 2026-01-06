@@ -65,11 +65,13 @@ jobs:
             exit 0
           fi
 
-          boards=$(find "${BOARD_IMAGES_DIR}" -maxdepth 1 -type f -iname "*.png" \
-                    -printf '%f\n' \
-                  | sed -E 's/\.png$//' \
-                  | sed 's/\(.*\)/\L\1/' \
-                  | sort || true)
+          boards=$(
+            find "${BOARD_IMAGES_DIR}" -maxdepth 1 -type f -iname "*.png" \
+              -printf '%f\n' \
+            | sed -E 's/\.png$//' \
+            | sed 's/\(.*\)/\L\1/' \
+            | sort
+          ) || boards=""
 
           echo "Found ${#boards[@]} board images"
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
@@ -82,12 +84,14 @@ jobs:
           set -euo pipefail
           cd "${BOARDS_PATH}"
 
-          boards=$(find . -maxdepth 1 -type f \
-                    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
-                    -printf '%f\n' \
-                  | sed -E 's/\.(conf|csc|wip|tvb)$//' \
-                  | sed 's/\(.*\)/\L\1/' \
-                  | sort)
+          boards=$(
+            find . -maxdepth 1 -type f \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+              -printf '%f\n' \
+            | sed -E 's/\.(conf|csc|wip|tvb)$//' \
+            | sed 's/\(.*\)/\L\1/' \
+            | sort
+          ) || boards=""
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
           printf '%s\n' "${boards}" | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
@@ -134,8 +138,8 @@ jobs:
             ' \
             | sed 's/\(.*\)/\L\1/' \
             | tr '_' '-' \
-            | sort -u || true
-          )
+            | sort -u
+          ) || vendors=""
 
           echo "Found ${#vendors[@]} vendor logo files"
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
@@ -150,18 +154,18 @@ jobs:
           cd "${BOARDS_PATH}"
 
           vendors=$(
-          find . -maxdepth 1 -type f \
-            \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
-            -exec grep -h 'BOARD_VENDOR=' {} + 2>/dev/null \
-          | sed -E '
-            s/.*BOARD_VENDOR=//;
-            s/^["'\'']//; s/["'\'']$//;
-          ' \
-          | tr '[:upper:]' '[:lower:]' \
-          | tr '_' '-' \
-          | awk 'NF' \
-          | sort -u || true
-          )
+            find . -maxdepth 1 -type f \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+              -exec grep -h 'BOARD_VENDOR=' {} + 2>/dev/null \
+            | sed -E '
+              s/.*BOARD_VENDOR=//;
+              s/^["'\'']//; s/["'\'']$//;
+            ' \
+            | tr '[:upper:]' '[:lower:]' \
+            | tr '_' '-' \
+            | awk 'NF' \
+            | sort -u
+          ) || vendors=""
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
           printf '%s\n' "${vendors}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
