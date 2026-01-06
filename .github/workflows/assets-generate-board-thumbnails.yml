@@ -75,7 +75,7 @@ jobs:
 
           echo "Found ${#boards[@]} board images"
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${boards[@]}" | grep -v '^$' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
       - name: "Generate board configs JSON matrix from build config"
@@ -94,7 +94,7 @@ jobs:
           ) || declare -a boards=()
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${boards[@]}" | grep -v '^$' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
   Vendors-index:
@@ -143,7 +143,7 @@ jobs:
 
           echo "Found ${#vendors[@]} vendor logo files"
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${vendors[@]}" | grep -v '^$' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${vendors[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
       - name: "Generate vendor configs JSON matrix from build config"
@@ -168,7 +168,7 @@ jobs:
           ) || declare -a vendors=()
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${vendors[@]}" | grep -v '^$' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${vendors[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
   Generate-images:
@@ -477,10 +477,10 @@ jobs:
           } | sort -u | grep -v '^$' > all-failed-vendors.txt || true
 
           # Calculate missing pairs
-          echo "$BOARDS_CONFIGS" | jq -r '.[]' | grep -v '^$' | sort > all-configs.txt
-          echo "$BOARDS_IMAGES" | jq -r '.[]' | grep -v '^$' | sort > all-images.txt
-          echo "$VENDORS_CONFIGS" | jq -r '.[]' | grep -v '^$' | sort > all-vendor-configs.txt
-          echo "$VENDORS_IMAGES" | jq -r '.[]' | grep -v '^$' | sort > all-vendor-images.txt
+          echo "$BOARDS_CONFIGS" | jq -r '.[]' | awk 'NF' | sort > all-configs.txt
+          echo "$BOARDS_IMAGES" | jq -r '.[]' | awk 'NF' | sort > all-images.txt
+          echo "$VENDORS_CONFIGS" | jq -r '.[]' | awk 'NF' | sort > all-vendor-configs.txt
+          echo "$VENDORS_IMAGES" | jq -r '.[]' | awk 'NF' | sort > all-vendor-images.txt
 
           # Build report
           {
