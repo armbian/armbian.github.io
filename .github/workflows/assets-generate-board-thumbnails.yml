@@ -585,3 +585,9 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+#      - name: "Remove shard data artifacts"
+#        uses: geekyeggo/delete-artifact@v5
+#        with:
+#          name: shard-data-*
+#          failOnError: false
+
