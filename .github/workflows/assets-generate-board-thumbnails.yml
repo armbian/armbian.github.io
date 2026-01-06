@@ -452,7 +452,18 @@ jobs:
             echo ""
             [ -f missing-vendors.md ] && cat missing-vendors.md || echo "None"
             echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
+          } > shard-summary.md
+
+          # Upload summary as artifact for aggregation
+          mkdir -p shard-reports
+          cp shard-summary.md "shard-reports/shard-${SHARD}.md"
+
+      - name: "Upload shard reports"
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-reports-${{ matrix.shard }}
+          path: shard-reports/
+          retention-days: 1
 
       - name: "Upload images to cache servers"
         run: |
@@ -485,3 +496,84 @@ jobs:
             rsync -e "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
               -rvP output/images/ "${username}@${name}:${path}/cache/images"
           done
+
+  Summary:
+    name: "Generate summary report"
+    runs-on: ubuntu-24.04
+    needs: [Boards-index, Vendors-index, Generate-images]
+    steps:
+      - name: "Download all shard reports"
+        uses: actions/download-artifact@v4
+        with:
+          path: shard-reports
+
+      - name: "Aggregate and display summary"
+        run: |
+          set -euo pipefail
+
+          echo "# Board & Vendor Image Processing Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Generated on: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "---" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Combine all shard reports and remove duplicates
+          {
+            # Find all shard files and process them
+            for shard_file in shard-reports/shard-reports-*/shard-*.md; do
+              if [[ -f "$shard_file" ]]; then
+                cat "$shard_file"
+                echo ""
+              fi
+            done
+          } | awk '
+            BEGIN { in_list = 0; section = "" }
+            /^### / {
+              if (in_list && section != "") {
+                # Sort and dedupe the previous list
+                cmd = "sort -u"
+                print section
+                while (cmd | getline line) {
+                  print line
+                }
+                close(cmd)
+                print ""
+              }
+              section = $0
+              in_list = 0
+              next
+            }
+            /^- `/ {
+              if (!seen[$0]++) {
+                if (!in_list) {
+                  print section
+                  in_list = 1
+                }
+                print $0
+              }
+              next
+            }
+            /^[^$]/ {
+              if (in_list) {
+                # End of list
+                cmd = "sort -u"
+                while (cmd | getline line) {
+                  if (line != "") print line
+                }
+                close(cmd)
+                in_list = 0
+              }
+              print $0
+            }
+            END {
+              if (in_list) {
+                cmd = "sort -u"
+                print section
+                while (cmd | getline line) {
+                  if (line != "") print line
+                }
+                close(cmd)
+              }
+            }
+          ' >> "$GITHUB_STEP_SUMMARY"
