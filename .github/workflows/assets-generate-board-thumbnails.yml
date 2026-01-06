@@ -41,15 +41,43 @@ jobs:
     needs: Check
     outputs:
       matrix: ${{ steps.boards.outputs.JSON_CONTENT }}
+      config_matrix: ${{ steps.board-configs.outputs.JSON_CONTENT }}
     steps:
+      - name: "Checkout armbian/github.io"
+        uses: actions/checkout@v6
+
       - name: "Checkout armbian/build"
         uses: actions/checkout@v6
         with:
           repository: armbian/build
           path: build
 
-      - name: "Generate boards JSON matrix"
+      - name: "Generate boards JSON matrix from board-images directory"
         id: boards
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d "${BOARD_IMAGES_DIR}" ]]; then
+            echo "::warning ::board-images directory not found"
+            echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+            echo '[]' >> "$GITHUB_OUTPUT"
+            echo 'EOF' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          boards=$(find "${BOARD_IMAGES_DIR}" -maxdepth 1 -type f -iname "*.png" \
+                    -printf '%f\n' \
+                  | sed -E 's/\.png$//' \
+                  | sed 's/\(.*\)/\L\1/' \
+                  | sort)
+
+          echo "Found ${#boards[@]} board images"
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards}" | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+      - name: "Generate board configs JSON matrix from build config"
+        id: board-configs
         run: |
           set -euo pipefail
           cd "${BOARDS_PATH}"
@@ -58,6 +86,7 @@ jobs:
                     \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
                     -printf '%f\n' \
                   | sed -E 's/\.(conf|csc|wip|tvb)$//' \
+                  | sed 's/\(.*\)/\L\1/' \
                   | sort)
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
@@ -70,15 +99,51 @@ jobs:
     needs: Check
     outputs:
       matrix: ${{ steps.vendors.outputs.JSON_CONTENT }}
+      config_matrix: ${{ steps.vendor-configs.outputs.JSON_CONTENT }}
     steps:
+      - name: "Checkout armbian/github.io"
+        uses: actions/checkout@v6
+
       - name: "Checkout armbian/build"
         uses: actions/checkout@v6
         with:
           repository: armbian/build
           path: build
 
-      - name: "Generate vendors JSON matrix"
+      - name: "Generate vendors JSON matrix from board-vendor-logos directory"
         id: vendors
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d "${VENDOR_LOGOS_DIR}" ]]; then
+            echo "::warning ::board-vendor-logos directory not found"
+            echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+            echo '[]' >> "$GITHUB_OUTPUT"
+            echo 'EOF' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          vendors=$(
+            find "${VENDOR_LOGOS_DIR}" -maxdepth 1 -type f \
+              \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.svg" \) \
+              -printf '%f\n' \
+            | sed -E '
+              s/\.(png|jpg|jpeg|svg)$//;
+              s/[-_.]?logo[-_.]?//gi;
+              s/-[0-9]+x[0-9]+$//;
+            ' \
+            | sed 's/\(.*\)/\L\1/' \
+            | tr '_' '-' \
+            | sort -u || true
+          )
+
+          echo "Found ${#vendors[@]} vendor logo files"
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${vendors}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+      - name: "Generate vendor configs JSON matrix from build config"
+        id: vendor-configs
         run: |
 
           set -euo pipefail
@@ -98,9 +163,6 @@ jobs:
           | sort -u || true
           )
 
-          echo "Vendors found:"
-          printf '%s\n' "${vendors}"
-
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
           printf '%s\n' "${vendors}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
@@ -116,7 +178,9 @@ jobs:
 
     env:
       BOARDS_JSON: ${{ needs.Boards-index.outputs.matrix }}
+      BOARDS_CONFIG_JSON: ${{ needs.Boards-index.outputs.config_matrix }}
       VENDORS_JSON: ${{ needs.Vendors-index.outputs.matrix }}
+      VENDORS_CONFIG_JSON: ${{ needs.Vendors-index.outputs.config_matrix }}
 
     steps:
       - name: "Checkout armbian.github.io"
@@ -167,7 +231,42 @@ jobs:
           [[ -d "${VENDOR_DIR}" ]] || echo "::warning ::Missing ${VENDOR_DIR} directory"
 
           # -------------------------
-          # BOARDS
+          # COMPARE: BOARDS CONFIG vs IMAGES
+          # -------------------------
+          echo "${BOARDS_JSON}" | jq -r '.[]' > all-boards-images.txt
+          echo "${BOARDS_CONFIG_JSON}" | jq -r '.[]' > all-boards-configs.txt
+
+          echo "## Board comparison: config vs images" >> comparison-report.md
+          echo "" >> comparison-report.md
+
+          # Boards with config but no image
+          echo "### Board configs without images" >> comparison-report.md
+          echo "" >> comparison-report.md
+          comm -23 all-boards-configs.txt all-boards-images.txt > boards-config-no-image.txt || true
+          if [[ -s boards-config-no-image.txt ]]; then
+            while IFS= read -r board; do
+              echo "- \`${board}\`" >> comparison-report.md
+            done < boards-config-no-image.txt
+          else
+            echo "None" >> comparison-report.md
+          fi
+          echo "" >> comparison-report.md
+
+          # Boards with image but no config
+          echo "### Board images without configs" >> comparison-report.md
+          echo "" >> comparison-report.md
+          comm -13 all-boards-configs.txt all-boards-images.txt > boards-image-no-config.txt || true
+          if [[ -s boards-image-no-config.txt ]]; then
+            while IFS= read -r board; do
+              echo "- \`${board}\`" >> comparison-report.md
+            done < boards-image-no-config.txt
+          else
+            echo "None" >> comparison-report.md
+          fi
+          echo "" >> comparison-report.md
+
+          # -------------------------
+          # PROCESS BOARDS (all images present)
           # -------------------------
           echo "${BOARDS_JSON}" | jq -r '.[]' > all-boards.txt
           idx=0
@@ -217,7 +316,44 @@ jobs:
           done < all-boards.txt
 
           # -------------------------
-          # VENDORS
+          # COMPARE: VENDORS CONFIG vs LOGOS
+          # -------------------------
+          if [[ -d "${VENDOR_DIR}" ]]; then
+            echo "${VENDORS_JSON}" | jq -r '.[]' > all-vendors-images.txt
+            echo "${VENDORS_CONFIG_JSON}" | jq -r '.[]' > all-vendors-configs.txt
+
+            echo "## Vendor comparison: config vs images" >> comparison-report.md
+            echo "" >> comparison-report.md
+
+            # Vendors with config but no logo
+            echo "### Vendor configs without logos" >> comparison-report.md
+            echo "" >> comparison-report.md
+            comm -23 all-vendors-configs.txt all-vendors-images.txt > vendors-config-no-image.txt || true
+            if [[ -s vendors-config-no-image.txt ]]; then
+              while IFS= read -r vendor; do
+                echo "- \`${vendor}\`" >> comparison-report.md
+              done < vendors-config-no-image.txt
+            else
+              echo "None" >> comparison-report.md
+            fi
+            echo "" >> comparison-report.md
+
+            # Vendors with logo but no config
+            echo "### Vendor logos without configs" >> comparison-report.md
+            echo "" >> comparison-report.md
+            comm -13 all-vendors-configs.txt all-vendors-images.txt > vendors-image-no-config.txt || true
+            if [[ -s vendors-image-no-config.txt ]]; then
+              while IFS= read -r vendor; do
+                echo "- \`${vendor}\`" >> comparison-report.md
+              done < vendors-image-no-config.txt
+            else
+              echo "None" >> comparison-report.md
+            fi
+            echo "" >> comparison-report.md
+          fi
+
+          # -------------------------
+          # PROCESS VENDORS (all logos present)
           # -------------------------
           if [[ -d "${VENDOR_DIR}" ]]; then
             echo "${VENDORS_JSON}" | jq -r '.[]' > all-vendors.txt
@@ -298,11 +434,17 @@ jobs:
           fi
 
           {
-            echo "## Missing board image"
+            cat comparison-report.md
+            echo ""
+            echo "---"
+            echo ""
+            echo "## Processing failures (should be minimal)"
+            echo ""
+            echo "### Boards failed to process"
             echo ""
             [ -f missing-boards.md ] && cat missing-boards.md || echo "None"
             echo ""
-            echo "## Missing vendor logo"
+            echo "### Vendors failed to process"
             echo ""
             [ -f missing-vendors.md ] && cat missing-vendors.md || echo "None"
             echo ""
