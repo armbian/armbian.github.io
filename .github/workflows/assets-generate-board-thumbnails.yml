@@ -237,19 +237,13 @@ jobs:
           # -------------------------
           # COLLECT DATA FOR AGGREGATION
           # -------------------------
-          # Collect all data (not just this shard's portion)
-          all_boards_images="${BOARDS_JSON}"
-          all_boards_configs="${BOARDS_CONFIG_JSON}"
-          all_vendors_images="${VENDORS_JSON}"
-          all_vendors_configs="${VENDORS_CONFIG_JSON}"
+          # Save full JSON data for summary job to analyze
+          echo "${BOARDS_JSON}" > shard-data/boards-images.json
+          echo "${BOARDS_CONFIG_JSON}" > shard-data/boards-configs.json
+          echo "${VENDORS_JSON}" > shard-data/vendors-images.json
+          echo "${VENDORS_CONFIG_JSON}" > shard-data/vendors-configs.json
 
-          # Save full data for summary job to analyze
-          echo "$all_boards_images" > shard-data/boards-images.json
-          echo "$all_boards_configs" > shard-data/boards-configs.json
-          echo "$all_vendors_images" > shard-data/vendors-images.json
-          echo "$all_vendors_configs" > shard-data/vendors-configs.json
-
-          # Track processed boards (this shard only)
+          # Track processed/failed items (this shard only)
           > shard-data/processed-boards.txt
           > shard-data/processed-vendors.txt
           > shard-data/failed-boards.txt
@@ -439,18 +433,11 @@ jobs:
         with:
           path: shard-data
 
-      - name: "Aggregate and display summary"
+      - name: "Generate summary report"
         run: |
           set -euo pipefail
 
-          echo "# Board & Vendor Image Processing Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Generated on: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "---" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          # Get JSON data from any shard (they all have the same data)
+          # Get JSON data from any shard (they're all identical)
           for shard in shard-data/shard-data-*; do
             if [[ -f "$shard/boards-images.json" ]]; then
               BOARDS_IMAGES=$(cat "$shard/boards-images.json")
@@ -461,126 +448,137 @@ jobs:
             fi
           done
 
-          # Combine all processed boards from all shards
-          > all-processed-boards.txt
-          > all-processed-vendors.txt
-          > all-failed-boards.txt
-          > all-failed-vendors.txt
+          # Aggregate processed/failed from all shards
+          {
+            for shard in shard-data/shard-data-*/processed-boards.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u > all-processed-boards.txt
 
-          for shard in shard-data/shard-data-*; do
-            [[ -f "$shard/processed-boards.txt" ]] && cat "$shard/processed-boards.txt" >> all-processed-boards.txt
-            [[ -f "$shard/processed-vendors.txt" ]] && cat "$shard/processed-vendors.txt" >> all-processed-vendors.txt
-            [[ -f "$shard/failed-boards.txt" ]] && cat "$shard/failed-boards.txt" >> all-failed-boards.txt
-            [[ -f "$shard/failed-vendors.txt" ]] && cat "$shard/failed-vendors.txt" >> all-failed-vendors.txt
-          done
+          {
+            for shard in shard-data/shard-data-*/failed-boards.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u > all-failed-boards.txt
 
-          # Sort and dedupe
-          sort -u all-processed-boards.txt -o all-processed-boards.txt || true
-          sort -u all-processed-vendors.txt -o all-processed-vendors.txt || true
-          sort -u all-failed-boards.txt -o all-failed-boards.txt || true
-          sort -u all-failed-vendors.txt -o all-failed-vendors.txt || true
+          {
+            for shard in shard-data/shard-data-*/processed-vendors.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u > all-processed-vendors.txt
 
-          # Count totals
-          total_images=$(echo "$BOARDS_IMAGES" | jq '. | length')
-          total_configs=$(echo "$BOARDS_CONFIGS" | jq '. | length')
-          total_processed=$(wc -l < all-processed-boards.txt | awk '{print $1}')
-          total_failed=$(wc -l < all-failed-boards.txt | awk '{print $1}')
-
-          echo "## Statistics" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Board images found:** ${total_images}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Board configs found:** ${total_configs}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Successfully processed:** ${total_processed}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Failed to process:** ${total_failed}" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          {
+            for shard in shard-data/shard-data-*/failed-vendors.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u > all-failed-vendors.txt
 
           # Calculate missing pairs
-          echo "$BOARDS_CONFIGS" | jq -r '.[]' > all-configs.txt
-          echo "$BOARDS_IMAGES" | jq -r '.[]' > all-images.txt
+          echo "$BOARDS_CONFIGS" | jq -r '.[]' | sort > all-configs.txt
+          echo "$BOARDS_IMAGES" | jq -r '.[]' | sort > all-images.txt
+          echo "$VENDORS_CONFIGS" | jq -r '.[]' | sort > all-vendor-configs.txt
+          echo "$VENDORS_IMAGES" | jq -r '.[]' | sort > all-vendor-images.txt
 
-          echo "## Board comparison" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          # Build report
+          {
+            echo "# Board & Vendor Image Processing Summary"
+            echo ""
+            echo "Generated on: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "---"
+            echo ""
 
-          # Configs without images
-          comm -23 all-configs.txt all-images.txt > configs-no-images.txt || true
-          echo "### Board configs without images ($(wc -l < configs-no-images.txt | awk '{print $1}'))" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -s configs-no-images.txt ]]; then
-            while IFS= read -r board; do
-              [[ -n "$board" ]] && echo "- \`${board}\`" >> "$GITHUB_STEP_SUMMARY"
-            done < configs-no-images.txt
-          else
-            echo "None" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+            # Statistics
+            total_images=$(echo "$BOARDS_IMAGES" | jq '. | length')
+            total_configs=$(echo "$BOARDS_CONFIGS" | jq '. | length')
+            total_processed=$(wc -l < all-processed-boards.txt | awk '{print $1}')
+            total_failed=$(wc -l < all-failed-boards.txt | awk '{print $1}')
 
-          # Images without configs
-          comm -13 all-configs.txt all-images.txt > images-no-configs.txt || true
-          echo "### Board images without configs ($(wc -l < images-no-configs.txt | awk '{print $1}'))" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -s images-no-configs.txt ]]; then
-            while IFS= read -r board; do
-              [[ -n "$board" ]] && echo "- \`${board}\`" >> "$GITHUB_STEP_SUMMARY"
-            done < images-no-configs.txt
-          else
-            echo "None" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "## Statistics"
+            echo ""
+            echo "- **Board images found:** ${total_images}"
+            echo "- **Board configs found:** ${total_configs}"
+            echo "- **Successfully processed:** ${total_processed}"
+            echo "- **Failed to process:** ${total_failed}"
+            echo ""
 
-          # Vendor comparison
-          echo "$VENDORS_CONFIGS" | jq -r '.[]' > all-vendor-configs.txt
-          echo "$VENDORS_IMAGES" | jq -r '.[]' > all-vendor-images.txt
+            # Board comparison
+            echo "## Board comparison"
+            echo ""
 
-          echo "## Vendor comparison" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+            # Configs without images
+            comm -23 all-configs.txt all-images.txt > configs-no-images.txt
+            count=$(wc -l < configs-no-images.txt | awk '{print $1}')
+            echo "### Board configs without images (${count})"
+            echo ""
+            if [[ -s configs-no-images.txt ]]; then
+              sed 's/^/- `&`/' configs-no-images.txt
+            else
+              echo "None"
+            fi
+            echo ""
 
-          # Configs without logos
-          comm -23 all-vendor-configs.txt all-vendor-images.txt > vendor-configs-no-logos.txt || true
-          echo "### Vendor configs without logos ($(wc -l < vendor-configs-no-logos.txt | awk '{print $1}'))" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -s vendor-configs-no-logos.txt ]]; then
-            while IFS= read -r vendor; do
-              [[ -n "$vendor" ]] && echo "- \`${vendor}\`" >> "$GITHUB_STEP_SUMMARY"
-            done < vendor-configs-no-logos.txt
-          else
-            echo "None" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+            # Images without configs
+            comm -13 all-configs.txt all-images.txt > images-no-configs.txt
+            count=$(wc -l < images-no-configs.txt | awk '{print $1}')
+            echo "### Board images without configs (${count})"
+            echo ""
+            if [[ -s images-no-configs.txt ]]; then
+              sed 's/^/- `&`/' images-no-configs.txt
+            else
+              echo "None"
+            fi
+            echo ""
 
-          # Logos without configs
-          comm -13 all-vendor-configs.txt all-vendor-images.txt > vendor-logos-no-configs.txt || true
-          echo "### Vendor logos without configs ($(wc -l < vendor-logos-no-configs.txt | awk '{print $1}'))" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -s vendor-logos-no-configs.txt ]]; then
-            while IFS= read -r vendor; do
-              [[ -n "$vendor" ]] && echo "- \`${vendor}\`" >> "$GITHUB_STEP_SUMMARY"
-            done < vendor-logos-no-configs.txt
-          else
-            echo "None" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+            # Vendor comparison
+            echo "## Vendor comparison"
+            echo ""
 
-          # Processing failures
-          echo "## Processing failures" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Boards failed to process ($(wc -l < all-failed-boards.txt | awk '{print $1}'))" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -s all-failed-boards.txt ]]; then
-            while IFS= read -r board; do
-              [[ -n "$board" ]] && echo "- \`${board}\`" >> "$GITHUB_STEP_SUMMARY"
-            done < all-failed-boards.txt
-          else
-            echo "None" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+            # Configs without logos
+            comm -23 all-vendor-configs.txt all-vendor-images.txt > vendor-configs-no-logos.txt
+            count=$(wc -l < vendor-configs-no-logos.txt | awk '{print $1}')
+            echo "### Vendor configs without logos (${count})"
+            echo ""
+            if [[ -s vendor-configs-no-logos.txt ]]; then
+              sed 's/^/- `&`/' vendor-configs-no-logos.txt
+            else
+              echo "None"
+            fi
+            echo ""
 
-          echo "### Vendors failed to process ($(wc -l < all-failed-vendors.txt | awk '{print $1}'))" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -s all-failed-vendors.txt ]]; then
-            while IFS= read -r vendor; do
-              [[ -n "$vendor" ]] && echo "- \`${vendor}\`" >> "$GITHUB_STEP_SUMMARY"
-            done < all-failed-vendors.txt
-          else
-            echo "None" >> "$GITHUB_STEP_SUMMARY"
-          fi
+            # Logos without configs
+            comm -13 all-vendor-configs.txt all-vendor-images.txt > vendor-logos-no-configs.txt
+            count=$(wc -l < vendor-logos-no-configs.txt | awk '{print $1}')
+            echo "### Vendor logos without configs (${count})"
+            echo ""
+            if [[ -s vendor-logos-no-configs.txt ]]; then
+              sed 's/^/- `&`/' vendor-logos-no-configs.txt
+            else
+              echo "None"
+            fi
+            echo ""
+
+            # Processing failures
+            echo "## Processing failures"
+            echo ""
+
+            count=$(wc -l < all-failed-boards.txt | awk '{print $1}')
+            echo "### Boards failed to process (${count})"
+            echo ""
+            if [[ -s all-failed-boards.txt ]]; then
+              sed 's/^/- `&`/' all-failed-boards.txt
+            else
+              echo "None"
+            fi
+            echo ""
+
+            count=$(wc -l < all-failed-vendors.txt | awk '{print $1}')
+            echo "### Vendors failed to process (${count})"
+            echo ""
+            if [[ -s all-failed-vendors.txt ]]; then
+              sed 's/^/- `&`/' all-failed-vendors.txt
+            else
+              echo "None"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
