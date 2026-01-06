@@ -169,7 +169,7 @@ jobs:
           set -o pipefail
 
           REPO_PATH="${{ env.PUBLISHING_PATH }}-${{ matrix.repository.name }}"
-          SHARED_GROUP="${SHARED_GROUP:-runners}"
+          SHARED_GROUP="${SHARED_GROUP:-gha-runners}"
 
           # Validate path to prevent accidental operations
           case "$REPO_PATH" in
@@ -843,6 +843,9 @@ jobs:
 
     steps:
 
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
@@ -850,112 +853,24 @@ jobs:
           known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
           if_key_exists: replace
 
-      - name: What to sync?
+      - name: Sync packages
         shell: bash
         run: |
           set -e
           set -o pipefail
 
-          # Use server configuration from matrix (fetched and validated in Prepare job)
-          HOSTNAME="${{ matrix.node.name }}"
-          SERVER_PATH="${{ matrix.node.path }}"
-          SERVER_PORT="${{ matrix.node.port }}"
-          SERVER_USERNAME="${{ matrix.node.username }}"
+          # Export environment variables for the script
+          export MATRIX_NODE_NAME="${{ matrix.node.name }}"
+          export MATRIX_NODE_PATH="${{ matrix.node.path }}"
+          export MATRIX_NODE_PORT="${{ matrix.node.port }}"
+          export MATRIX_NODE_USERNAME="${{ matrix.node.username }}"
+          export NETBOX_API="${{ secrets.NETBOX_API }}"
+          export NETBOX_TOKEN="${{ secrets.NETBOX_TOKEN }}"
+          export PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
+          export DRY_RUN_SYNC="${{ env.DRY_RUN_SYNC }}"
 
-          echo "### Server: $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "  Path: $SERVER_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "  Port: $SERVER_PORT" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "  Username: $SERVER_USERNAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Fetch targets from NetBox API (need tags for determining sync targets)
-          API_URL="${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${HOSTNAME}"
-
-          response=$(curl -fsSL \
-            --max-time 30 \
-            --connect-timeout 10 \
-            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
-            -H "Accept: application/json" \
-            "$API_URL" 2>&1) || exit 1
-
-          # Extract targets from tags
-          TARGETS=($(echo "$response" | jq -r '.results[] | .tags[] | .name' 2>/dev/null | grep -v "Push" || echo ""))
-
-          if [[ ${#TARGETS[@]} -eq 0 ]]; then
-            echo "::warning::No targets found for $HOSTNAME"
-            exit 0
-          fi
-
-          # Filter to only valid targets
-          VALID_TARGETS=()
-          for target in "${TARGETS[@]}"; do
-            case "$target" in
-              debs|debs-beta)
-                VALID_TARGETS+=("$target")
-                ;;
-              *)
-                echo "::warning::Invalid target '$target' for $HOSTNAME - must be 'debs' or 'debs-beta', skipping"
-                ;;
-            esac
-          done
-
-          if [[ ${#VALID_TARGETS[@]} -eq 0 ]]; then
-            echo "::warning::No valid targets found for $HOSTNAME"
-            exit 0
-          fi
-
-          TARGETS=("${VALID_TARGETS[@]}")
-          echo "Sync targets: ${TARGETS[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Set base path using global variable
-          PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
-
-          # Validate publishing path
-          case "$PUBLISHING_PATH" in
-            *"/publishing/repository"*)
-              ;;
-            *)
-              echo "::error::Invalid publishing path: $PUBLISHING_PATH"
-              exit 1
-              ;;
-          esac
-
-          # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
-          RSYNC_OPTIONS="-av --size-only --omit-dir-times"
-          if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
-            RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
-            echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-          fi
-
-          # Sync to each target
-          for target in "${TARGETS[@]}"; do
-            echo "→ Syncing $target" | tee -a "$GITHUB_STEP_SUMMARY"
-
-            # Remove old host key
-            ssh-keygen -f "${HOME}/.ssh/known_hosts" -R "$HOSTNAME" 2>/dev/null || true
-
-            REPO_PATH="${PUBLISHING_PATH}-${target}"
-            if [[ ! -d "$REPO_PATH/public" ]]; then
-              if [[ "$target" == "debs" ]]; then
-                echo "::error::Source repository path does not exist: $REPO_PATH/public"
-                exit 1
-              else
-                echo "::warning::Repository path does not exist: $REPO_PATH/public, skipping"
-                continue
-              fi
-            fi
-
-            DEST_PATH="${SERVER_PATH}/$(echo "$target" | sed 's/debs-beta$/beta/;s/^debs$/apt/')"
-            rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-              --exclude "dists" --exclude "control" \
-              "$REPO_PATH/public/" \
-              ${SERVER_USERNAME}@${HOSTNAME}:"${DEST_PATH}"
-          done
-
-          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "✓ Sync completed for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Run sync script for files
+          scripts/sync-repository.sh files
 
   Index:
     name: "I"
@@ -972,6 +887,9 @@ jobs:
 
     steps:
 
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
@@ -979,108 +897,24 @@ jobs:
           known_hosts: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
           if_key_exists: replace
 
-      - name: What to sync?
+      - name: Sync indices
         shell: bash
         run: |
           set -e
           set -o pipefail
 
-          # Use server configuration from matrix (fetched and validated in Prepare job)
-          HOSTNAME="${{ matrix.node.name }}"
-          SERVER_PATH="${{ matrix.node.path }}"
-          SERVER_PORT="${{ matrix.node.port }}"
-          SERVER_USERNAME="${{ matrix.node.username }}"
+          # Export environment variables for the script
+          export MATRIX_NODE_NAME="${{ matrix.node.name }}"
+          export MATRIX_NODE_PATH="${{ matrix.node.path }}"
+          export MATRIX_NODE_PORT="${{ matrix.node.port }}"
+          export MATRIX_NODE_USERNAME="${{ matrix.node.username }}"
+          export NETBOX_API="${{ secrets.NETBOX_API }}"
+          export NETBOX_TOKEN="${{ secrets.NETBOX_TOKEN }}"
+          export PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
+          export DRY_RUN_SYNC="${{ env.DRY_RUN_SYNC }}"
 
-          echo "### Server: $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "  Path: $SERVER_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "  Port: $SERVER_PORT" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "  Username: $SERVER_USERNAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Fetch targets from NetBox API (need tags for determining sync targets)
-          API_URL="${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&name=${HOSTNAME}"
-
-          response=$(curl -fsSL \
-            --max-time 30 \
-            --connect-timeout 10 \
-            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
-            -H "Accept: application/json" \
-            "$API_URL" 2>&1) || exit 1
-
-          # Extract targets from tags
-          TARGETS=($(echo "$response" | jq -r '.results[] | .tags[] | .name' 2>/dev/null | grep -v "Push" || echo ""))
-
-          if [[ ${#TARGETS[@]} -eq 0 ]]; then
-            echo "::warning::No targets found for $HOSTNAME"
-            exit 0
-          fi
-
-          # Filter to only valid targets
-          VALID_TARGETS=()
-          for target in "${TARGETS[@]}"; do
-            case "$target" in
-              debs|debs-beta)
-                VALID_TARGETS+=("$target")
-                ;;
-              *)
-                echo "::warning::Invalid target '$target' for $HOSTNAME - must be 'debs' or 'debs-beta', skipping"
-                ;;
-            esac
-          done
-
-          if [[ ${#VALID_TARGETS[@]} -eq 0 ]]; then
-            echo "::warning::No valid targets found for $HOSTNAME"
-            exit 0
-          fi
-
-          TARGETS=("${VALID_TARGETS[@]}")
-
-          # Set base path using global variable
-          PUBLISHING_PATH="${{ env.PUBLISHING_PATH }}"
-
-          # Validate publishing path
-          case "$PUBLISHING_PATH" in
-            *"/publishing/repository"*)
-              ;;
-            *)
-              echo "::error::Invalid publishing path: $PUBLISHING_PATH"
-              exit 1
-              ;;
-          esac
-
-          # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
-          RSYNC_OPTIONS="-av --size-only --omit-dir-times"
-          if [[ "${{ env.DRY_RUN_SYNC }}" == "true" ]]; then
-            RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
-            echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-          fi
-
-          # Sync beta repository with cleanup
-          for target in "${TARGETS[@]}"; do
-            echo "→ Finalizing $target" | tee -a "$GITHUB_STEP_SUMMARY"
-
-            REPO_PATH="${PUBLISHING_PATH}-${target}"
-            if [[ ! -d "$REPO_PATH/public" ]]; then
-              echo "::warning::Repository path does not exist: $REPO_PATH/public, skipping"
-              continue
-            fi
-
-            DEST_PATH="${SERVER_PATH}/$(echo "$target" | sed 's/debs-beta$/beta/')"
-
-            # Final sync without excludes
-            rsync $RSYNC_OPTIONS -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-              "$REPO_PATH/public/" \
-              ${SERVER_USERNAME}@${HOSTNAME}:"${DEST_PATH}"
-
-            # Cleanup sync with --delete
-            rsync $RSYNC_OPTIONS --delete -e "ssh -p ${SERVER_PORT} -o StrictHostKeyChecking=accept-new -o ConnectTimeout=30" \
-              "$REPO_PATH/public/" \
-              ${SERVER_USERNAME}@${HOSTNAME}:"${DEST_PATH}"
-          done
-
-          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "✓ Final sync completed for $HOSTNAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          # Run sync script for index
+          scripts/sync-repository.sh index
 
   dispatch:
     name: "Refresh web and redirector index"
