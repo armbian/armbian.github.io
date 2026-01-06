@@ -69,7 +69,7 @@ jobs:
                     -printf '%f\n' \
                   | sed -E 's/\.png$//' \
                   | sed 's/\(.*\)/\L\1/' \
-                  | sort)
+                  | sort || true)
 
           echo "Found ${#boards[@]} board images"
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
