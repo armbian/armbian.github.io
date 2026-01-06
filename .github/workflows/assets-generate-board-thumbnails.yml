@@ -86,9 +86,9 @@ jobs:
 
           mapfile -t boards < <(
             find . -maxdepth 1 -type f \
-              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" -o -name "*.eos" \) \
               -printf '%f\n' \
-            | sed -E 's/\.(conf|csc|wip|tvb)$//' \
+            | sed -E 's/\.(conf|csc|wip|tvb|eos)$//' \
             | sed 's/\(.*\)/\L\1/' \
             | sort
           ) || declare -a boards=()
@@ -155,7 +155,7 @@ jobs:
 
           mapfile -t vendors < <(
             find . -maxdepth 1 -type f \
-              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" -o -name "*.eos" \) \
               -exec grep -h 'BOARD_VENDOR=' {} + 2>/dev/null \
             | sed -E '
               s/.*BOARD_VENDOR=//;
