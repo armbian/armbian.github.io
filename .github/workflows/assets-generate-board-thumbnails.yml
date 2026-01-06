@@ -237,6 +237,9 @@ jobs:
           # -------------------------
           # COLLECT DATA FOR AGGREGATION
           # -------------------------
+          # Create shard-data directory
+          mkdir -p shard-data
+
           # Save full JSON data for summary job to analyze
           echo "${BOARDS_JSON}" > shard-data/boards-images.json
           echo "${BOARDS_CONFIG_JSON}" > shard-data/boards-configs.json
