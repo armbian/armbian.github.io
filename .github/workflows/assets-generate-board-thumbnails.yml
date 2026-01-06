@@ -41,27 +41,60 @@ jobs:
     needs: Check
     outputs:
       matrix: ${{ steps.boards.outputs.JSON_CONTENT }}
+      config_matrix: ${{ steps.board-configs.outputs.JSON_CONTENT }}
     steps:
+      - name: "Checkout armbian/github.io"
+        uses: actions/checkout@v6
+
       - name: "Checkout armbian/build"
         uses: actions/checkout@v6
         with:
           repository: armbian/build
           path: build
 
-      - name: "Generate boards JSON matrix"
+      - name: "Generate boards JSON matrix from board-images directory"
         id: boards
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d "${BOARD_IMAGES_DIR}" ]]; then
+            echo "::warning ::board-images directory not found"
+            echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+            echo '[]' >> "$GITHUB_OUTPUT"
+            echo 'EOF' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mapfile -t boards < <(
+            find "${BOARD_IMAGES_DIR}" -maxdepth 1 -type f -iname "*.png" \
+              -printf '%f\n' \
+            | sed -E 's/\.png$//' \
+            | sed 's/\(.*\)/\L\1/' \
+            | sort
+          ) || declare -a boards=()
+
+          echo "Found ${#boards[@]} board images"
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+      - name: "Generate board configs JSON matrix from build config"
+        id: board-configs
         run: |
           set -euo pipefail
           cd "${BOARDS_PATH}"
 
-          boards=$(find . -maxdepth 1 -type f \
-                    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
-                    -printf '%f\n' \
-                  | sed -E 's/\.(conf|csc|wip|tvb)$//' \
-                  | sort)
+          mapfile -t boards < <(
+            find . -maxdepth 1 -type f \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" -o -name "*.eos" \) \
+              -printf '%f\n' \
+            | sed -E 's/\.(conf|csc|wip|tvb|eos)$//' \
+            | sed 's/\(.*\)/\L\1/' \
+            | sort
+          ) || declare -a boards=()
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${boards}" | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${boards[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
   Vendors-index:
@@ -70,43 +103,76 @@ jobs:
     needs: Check
     outputs:
       matrix: ${{ steps.vendors.outputs.JSON_CONTENT }}
+      config_matrix: ${{ steps.vendor-configs.outputs.JSON_CONTENT }}
     steps:
+      - name: "Checkout armbian/github.io"
+        uses: actions/checkout@v6
+
       - name: "Checkout armbian/build"
         uses: actions/checkout@v6
         with:
           repository: armbian/build
           path: build
 
-      - name: "Generate vendors JSON matrix"
+      - name: "Generate vendors JSON matrix from board-vendor-logos directory"
         id: vendors
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d "${VENDOR_LOGOS_DIR}" ]]; then
+            echo "::warning ::board-vendor-logos directory not found"
+            echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+            echo '[]' >> "$GITHUB_OUTPUT"
+            echo 'EOF' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mapfile -t vendors < <(
+            find "${VENDOR_LOGOS_DIR}" -maxdepth 1 -type f \
+              \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.svg" \) \
+              -printf '%f\n' \
+            | sed -E '
+              s/\.(png|jpg|jpeg|svg)$//;
+              s/[-_.]?logo[-_.]?//gi;
+              s/-[0-9]+x[0-9]+$//;
+            ' \
+            | sed 's/\(.*\)/\L\1/' \
+            | tr '_' '-' \
+            | sort -u
+          ) || declare -a vendors=()
+
+          echo "Found ${#vendors[@]} vendor logo files"
+          echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${vendors[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+      - name: "Generate vendor configs JSON matrix from build config"
+        id: vendor-configs
         run: |
 
           set -euo pipefail
           cd "${BOARDS_PATH}"
 
-          vendors=$(
-          find . -maxdepth 1 -type f \
-            \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
-            -exec grep -h 'BOARD_VENDOR=' {} + 2>/dev/null \
-          | sed -E '
-            s/.*BOARD_VENDOR=//;
-            s/^["'\'']//; s/["'\'']$//;
-          ' \
-          | tr '[:upper:]' '[:lower:]' \
-          | tr '_' '-' \
-          | awk 'NF' \
-          | sort -u || true
-          )
-
-          echo "Vendors found:"
-          printf '%s\n' "${vendors}"
+          mapfile -t vendors < <(
+            find . -maxdepth 1 -type f \
+              \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" -o -name "*.eos" \) \
+              -exec grep -h 'BOARD_VENDOR=' {} + 2>/dev/null \
+            | sed -E '
+              s/.*BOARD_VENDOR=//;
+              s/^["'\'']//; s/["'\'']$//;
+            ' \
+            | tr '[:upper:]' '[:lower:]' \
+            | tr '_' '-' \
+            | awk 'NF' \
+            | sort -u
+          ) || declare -a vendors=()
 
           echo 'JSON_CONTENT<<EOF' >> "$GITHUB_OUTPUT"
-          printf '%s\n' "${vendors}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
+          printf '%s\n' "${vendors[@]}" | awk 'NF' | jq -R . | jq -s . >> "$GITHUB_OUTPUT"
           echo 'EOF' >> "$GITHUB_OUTPUT"
 
   Generate-images:
-    name: "Generate board + vendor images"
+    name: "Maker board & vendor pics"
     runs-on: ubuntu-24.04
     needs: [Boards-index, Vendors-index]
     strategy:
@@ -116,7 +182,9 @@ jobs:
 
     env:
       BOARDS_JSON: ${{ needs.Boards-index.outputs.matrix }}
+      BOARDS_CONFIG_JSON: ${{ needs.Boards-index.outputs.config_matrix }}
       VENDORS_JSON: ${{ needs.Vendors-index.outputs.matrix }}
+      VENDORS_CONFIG_JSON: ${{ needs.Vendors-index.outputs.config_matrix }}
 
     steps:
       - name: "Checkout armbian.github.io"
@@ -167,7 +235,25 @@ jobs:
           [[ -d "${VENDOR_DIR}" ]] || echo "::warning ::Missing ${VENDOR_DIR} directory"
 
           # -------------------------
-          # BOARDS
+          # COLLECT DATA FOR AGGREGATION
+          # -------------------------
+          # Create shard-data directory
+          mkdir -p shard-data
+
+          # Save full JSON data for summary job to analyze
+          echo "${BOARDS_JSON}" > shard-data/boards-images.json
+          echo "${BOARDS_CONFIG_JSON}" > shard-data/boards-configs.json
+          echo "${VENDORS_JSON}" > shard-data/vendors-images.json
+          echo "${VENDORS_CONFIG_JSON}" > shard-data/vendors-configs.json
+
+          # Track processed/failed items (this shard only)
+          > shard-data/processed-boards.txt
+          > shard-data/processed-vendors.txt
+          > shard-data/failed-boards.txt
+          > shard-data/failed-vendors.txt
+
+          # -------------------------
+          # PROCESS BOARDS (all images present)
           # -------------------------
           echo "${BOARDS_JSON}" | jq -r '.[]' > all-boards.txt
           idx=0
@@ -183,7 +269,7 @@ jobs:
             mapfile -t matches < <(find "${BOARD_DIR}" -type f -iname "${BOARD}.png" | sort || true)
 
             if [[ "${#matches[@]}" -eq 0 ]]; then
-              echo "- \`${BOARD}\`" >> missing-boards.md
+              echo "${BOARD}" >> shard-data/failed-boards.txt
               idx=$((idx + 1))
               continue
             fi
@@ -213,11 +299,12 @@ jobs:
               fi
             done
 
+            echo "${BOARD}" >> shard-data/processed-boards.txt
             idx=$((idx + 1))
           done < all-boards.txt
 
           # -------------------------
-          # VENDORS
+          # PROCESS VENDORS (all logos present)
           # -------------------------
           if [[ -d "${VENDOR_DIR}" ]]; then
             echo "${VENDORS_JSON}" | jq -r '.[]' > all-vendors.txt
@@ -246,7 +333,7 @@ jobs:
               )
 
               if [[ "${#vmatches[@]}" -eq 0 ]]; then
-                echo "- \`${VENDOR}\`" >> missing-vendors.md
+                echo "${VENDOR}" >> shard-data/failed-vendors.txt
                 vidx=$((vidx + 1))
                 continue
               fi
@@ -260,12 +347,14 @@ jobs:
               if [[ "${VORIG,,}" == *.svg ]]; then
                 if ! convert -background none -density 300 "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
                   echo "WARN: failed to render SVG for ${VENDOR}" >&2
+                  echo "${VENDOR}" >> shard-data/failed-vendors.txt
                   vidx=$((vidx + 1))
                   continue
                 fi
               else
                 if ! convert "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
                   echo "WARN: failed to normalize logo for ${VENDOR}" >&2
+                  echo "${VENDOR}" >> shard-data/failed-vendors.txt
                   vidx=$((vidx + 1))
                   continue
                 fi
@@ -293,20 +382,17 @@ jobs:
                 fi
               done
 
+              echo "${VENDOR}" >> shard-data/processed-vendors.txt
               vidx=$((vidx + 1))
             done < all-vendors.txt
           fi
 
-          {
-            echo "## Missing board image"
-            echo ""
-            [ -f missing-boards.md ] && cat missing-boards.md || echo "None"
-            echo ""
-            echo "## Missing vendor logo"
-            echo ""
-            [ -f missing-vendors.md ] && cat missing-vendors.md || echo "None"
-            echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
+      - name: "Upload shard data"
+        uses: actions/upload-artifact@v4
+        with:
+          name: shard-data-${{ matrix.shard }}
+          path: shard-data/
+          retention-days: 1
 
       - name: "Upload images to cache servers"
         run: |
@@ -339,3 +425,169 @@ jobs:
             rsync -e "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
               -rvP output/images/ "${username}@${name}:${path}/cache/images"
           done
+
+  Summary:
+    name: "Generate summary report"
+    runs-on: ubuntu-24.04
+    needs: [Boards-index, Vendors-index, Generate-images]
+    steps:
+      - name: "Download all shard data"
+        uses: actions/download-artifact@v4
+        with:
+          path: shard-data
+
+      - name: "Generate summary report"
+        run: |
+          set -euo pipefail
+
+          # Get JSON data from any shard (they're all identical)
+          for shard in shard-data/shard-data-*; do
+            if [[ -f "$shard/boards-images.json" ]]; then
+              BOARDS_IMAGES=$(cat "$shard/boards-images.json")
+              BOARDS_CONFIGS=$(cat "$shard/boards-configs.json")
+              VENDORS_IMAGES=$(cat "$shard/vendors-images.json")
+              VENDORS_CONFIGS=$(cat "$shard/vendors-configs.json")
+              break
+            fi
+          done
+
+          # Aggregate processed/failed from all shards
+          {
+            for shard in shard-data/shard-data-*/processed-boards.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u | grep -v '^$' > all-processed-boards.txt || true
+
+          {
+            for shard in shard-data/shard-data-*/failed-boards.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u | grep -v '^$' > all-failed-boards.txt || true
+
+          {
+            for shard in shard-data/shard-data-*/processed-vendors.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u | grep -v '^$' > all-processed-vendors.txt || true
+
+          {
+            for shard in shard-data/shard-data-*/failed-vendors.txt; do
+              [[ -f "$shard" ]] && cat "$shard"
+            done
+          } | sort -u | grep -v '^$' > all-failed-vendors.txt || true
+
+          # Calculate missing pairs
+          echo "$BOARDS_CONFIGS" | jq -r '.[]' | awk 'NF' | sort > all-configs.txt
+          echo "$BOARDS_IMAGES" | jq -r '.[]' | awk 'NF' | sort > all-images.txt
+          echo "$VENDORS_CONFIGS" | jq -r '.[]' | awk 'NF' | sort > all-vendor-configs.txt
+          echo "$VENDORS_IMAGES" | jq -r '.[]' | awk 'NF' | sort > all-vendor-images.txt
+
+          # Build report
+          {
+            echo "# Board & Vendor Image Processing Summary"
+            echo ""
+            echo "Generated on: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            echo ""
+            echo "---"
+            echo ""
+
+            # Statistics
+            total_images=$(echo "$BOARDS_IMAGES" | jq '. | length')
+            total_configs=$(echo "$BOARDS_CONFIGS" | jq '. | length')
+            total_processed=$(wc -l < all-processed-boards.txt | awk '{print $1}')
+            total_failed=$(wc -l < all-failed-boards.txt | awk '{print $1}')
+
+            echo "## Statistics"
+            echo ""
+            echo "- **Board images found:** ${total_images}"
+            echo "- **Board configs found:** ${total_configs}"
+            echo "- **Successfully processed:** ${total_processed}"
+            echo "- **Failed to process:** ${total_failed}"
+            echo ""
+
+            # Board comparison
+            echo "## Board comparison"
+            echo ""
+
+            # Configs without images
+            comm -23 all-configs.txt all-images.txt > configs-no-images.txt
+            count=$(wc -l < configs-no-images.txt | awk '{print $1}')
+            echo "### Board configs without images (${count})"
+            echo ""
+            if [[ -s configs-no-images.txt ]]; then
+              awk 'NF' configs-no-images.txt | sed 's/^/- &/'
+            else
+              echo "None"
+            fi
+            echo ""
+
+            # Images without configs
+            comm -13 all-configs.txt all-images.txt > images-no-configs.txt
+            count=$(wc -l < images-no-configs.txt | awk '{print $1}')
+            echo "### Board images without configs (${count})"
+            echo ""
+            if [[ -s images-no-configs.txt ]]; then
+              awk 'NF' images-no-configs.txt | sed 's/^/- &/'
+            else
+              echo "None"
+            fi
+            echo ""
+
+            # Vendor comparison
+            echo "## Vendor comparison"
+            echo ""
+
+            # Configs without logos
+            comm -23 all-vendor-configs.txt all-vendor-images.txt > vendor-configs-no-logos.txt
+            count=$(wc -l < vendor-configs-no-logos.txt | awk '{print $1}')
+            echo "### Vendor configs without logos (${count})"
+            echo ""
+            if [[ -s vendor-configs-no-logos.txt ]]; then
+              awk 'NF' vendor-configs-no-logos.txt | sed 's/^/- &/'
+            else
+              echo "None"
+            fi
+            echo ""
+
+            # Logos without configs
+            comm -13 all-vendor-configs.txt all-vendor-images.txt > vendor-logos-no-configs.txt
+            count=$(wc -l < vendor-logos-no-configs.txt | awk '{print $1}')
+            echo "### Vendor logos without configs (${count})"
+            echo ""
+            if [[ -s vendor-logos-no-configs.txt ]]; then
+              awk 'NF' vendor-logos-no-configs.txt | sed 's/^/- &/'
+            else
+              echo "None"
+            fi
+            echo ""
+
+            # Processing failures
+            echo "## Processing failures"
+            echo ""
+
+            count=$(wc -l < all-failed-boards.txt | awk '{print $1}')
+            echo "### Boards failed to process (${count})"
+            echo ""
+            if [[ -s all-failed-boards.txt ]]; then
+              awk 'NF' all-failed-boards.txt | sed 's/^/- &/'
+            else
+              echo "None"
+            fi
+            echo ""
+
+            count=$(wc -l < all-failed-vendors.txt | awk '{print $1}')
+            echo "### Vendors failed to process (${count})"
+            echo ""
+            if [[ -s all-failed-vendors.txt ]]; then
+              awk 'NF' all-failed-vendors.txt | sed 's/^/- &/'
+            else
+              echo "None"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Remove shard data artifacts"
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: shard-data-*
+          failOnError: false
+
