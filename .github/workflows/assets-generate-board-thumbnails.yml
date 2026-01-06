@@ -515,7 +515,7 @@ jobs:
             echo "### Board configs without images (${count})"
             echo ""
             if [[ -s configs-no-images.txt ]]; then
-              awk 'NF' configs-no-images.txt | sed 's/^/- `&`/'
+              awk 'NF' configs-no-images.txt | sed 's/^/- &/'
             else
               echo "None"
             fi
@@ -527,7 +527,7 @@ jobs:
             echo "### Board images without configs (${count})"
             echo ""
             if [[ -s images-no-configs.txt ]]; then
-              awk 'NF' images-no-configs.txt | sed 's/^/- `&`/'
+              awk 'NF' images-no-configs.txt | sed 's/^/- &/'
             else
               echo "None"
             fi
@@ -543,7 +543,7 @@ jobs:
             echo "### Vendor configs without logos (${count})"
             echo ""
             if [[ -s vendor-configs-no-logos.txt ]]; then
-              awk 'NF' vendor-configs-no-logos.txt | sed 's/^/- `&`/'
+              awk 'NF' vendor-configs-no-logos.txt | sed 's/^/- &/'
             else
               echo "None"
             fi
@@ -555,7 +555,7 @@ jobs:
             echo "### Vendor logos without configs (${count})"
             echo ""
             if [[ -s vendor-logos-no-configs.txt ]]; then
-              awk 'NF' vendor-logos-no-configs.txt | sed 's/^/- `&`/'
+              awk 'NF' vendor-logos-no-configs.txt | sed 's/^/- &/'
             else
               echo "None"
             fi
@@ -569,7 +569,7 @@ jobs:
             echo "### Boards failed to process (${count})"
             echo ""
             if [[ -s all-failed-boards.txt ]]; then
-              awk 'NF' all-failed-boards.txt | sed 's/^/- `&`/'
+              awk 'NF' all-failed-boards.txt | sed 's/^/- &/'
             else
               echo "None"
             fi
@@ -579,15 +579,15 @@ jobs:
             echo "### Vendors failed to process (${count})"
             echo ""
             if [[ -s all-failed-vendors.txt ]]; then
-              awk 'NF' all-failed-vendors.txt | sed 's/^/- `&`/'
+              awk 'NF' all-failed-vendors.txt | sed 's/^/- &/'
             else
               echo "None"
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-#      - name: "Remove shard data artifacts"
-#        uses: geekyeggo/delete-artifact@v5
-#        with:
-#          name: shard-data-*
-#          failOnError: false
+      - name: "Remove shard data artifacts"
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: shard-data-*
+          failOnError: false
 
