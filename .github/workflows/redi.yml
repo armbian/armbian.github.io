@@ -1,0 +1,67 @@
+name: Redi tasks
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: redi-tasks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REDI_HOST: "redi@${{ secrets.HOST_REDI }}"
+  REDI_PORT: "22"
+
+jobs:
+  run_redi_tasks:
+    name: "Run Redi tasks"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install SSH key + known_hosts (task one)
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_REDI_TASK_ONE }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_REDI }}
+          name: redi_task_one
+
+      - name: Run Redi task one
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/redi_task_one \
+            -p "${{ env.REDI_PORT }}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            "${{ env.REDI_HOST }}" </dev/null
+
+      - name: Install SSH key + known_hosts (task two)
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KEY_REDI_TASK_TWO }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS_REDI }}
+          name: redi_task_two
+
+      - name: Run Redi task two
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/redi_task_two \
+            -p "${{ env.REDI_PORT }}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=3 \
+            "${{ env.REDI_HOST }}" </dev/null
