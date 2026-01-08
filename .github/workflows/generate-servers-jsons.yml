@@ -1,7 +1,6 @@
 name: "Infrastructure: Cache servers JSONs"
 
 on:
-  push:
   workflow_dispatch:
   schedule:
     - cron: '0 * * * *'
