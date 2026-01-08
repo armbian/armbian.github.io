@@ -1,0 +1,154 @@
+name: "Infrastructure: Cache servers JSONs"
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    name: "Generate JSON from NetBox"
+    runs-on: ubuntu-24.04
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/armbian.github.io
+          fetch-depth: 0
+          clean: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: "Generate JSON from NetBox"
+        id: prepare-urls
+        run: |
+
+          set -euo pipefail
+
+          BASE_URL="${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=0&name__empty=false&status=active"
+
+          # One jq filter used for all kinds – same fields everywhere
+          JQ_FILTER='
+            .results
+            | map(
+                select(.name != null)
+                | {
+                    host: .name,
+                    upload_path: (.custom_fields["path"] // ""),
+
+                    download_path_archive:
+                      ((.custom_fields["download_path_archive"] // "/archive")
+                        | if startswith("/") then . else "/" + . end),
+
+                    download_path_images:
+                      ((.custom_fields["download_path_images"] // "/dl")
+                        | if startswith("/") then . else "/" + . end),
+
+                    download_path_debs:
+                      ((.custom_fields["download_path_debs"] // "/apt")
+                        | if startswith("/") then . else "/" + . end),
+
+                    port: (.custom_fields["port"] // 22),
+                    username: (.custom_fields["username"] // "mirror")
+                  }
+              )
+            | sort_by(.host)
+          '
+
+          for kind in download cache upload; do
+            case "$kind" in
+              download)
+                # Mirrors used as HTTP download sources (webseeds)
+                url="$BASE_URL&device_role=Mirror&tag=images"
+                outfile="download.jq"
+                ;;
+              cache)
+                # Cache mirrors (can be used for HTTP + rsync)
+                url="$BASE_URL&device_role=Mirror&tag=cache"
+                outfile="cache.jq"
+                ;;
+              upload)
+                # Upload targets (SSH)
+                url="$BASE_URL&tag=upload&tag=images"
+                outfile="upload.jq"
+                ;;
+            esac
+
+            echo "Generating $outfile from $url"
+
+            timeout 10 curl -s \
+              -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+              -H "Accept: application/json; indent=4" \
+              "$url" \
+            | jq "$JQ_FILTER" > "$outfile"
+
+          done
+
+      - name: Display generated JSON files
+        run: |
+          {
+            echo "### download.jq"
+            echo "\`\`\`json"
+            cat download.jq
+            echo "\`\`\`"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+          {
+            echo "### cache.jq"
+            echo "\`\`\`json"
+            cat cache.jq
+            echo "\`\`\`"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+          {
+            echo "### upload.jq"
+            echo "\`\`\`json"
+            cat upload.jq
+            echo "\`\`\`"
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Commit changes if any
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github"
+
+          # Save the generated files to a temp directory
+          mkdir -p /tmp/json-files
+          cp *.jq /tmp/json-files/
+
+          git fetch origin data
+          git checkout data
+          git pull --rebase origin data
+
+          # Restore the generated files
+          mkdir -p data/servers
+          cp /tmp/json-files/*.jq data/servers/
+
+          git add data/servers/
+          if ! git diff --cached --quiet; then
+            git commit -m "Update server JSONs from NetBox"
+            # rebase once more right before push to reduce race window
+            git pull --rebase origin data
+            git push origin data
+          fi
+
+      - name: Trigger webindex-update workflow
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Web: Directory listing"
