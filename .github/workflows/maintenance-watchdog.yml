@@ -29,6 +29,7 @@ jobs:
           - data-update-base-files-info
           - infrastructure-mirror-repository-artifacts
           - infrastructure-repository-update
+          - generate-servers-jsons
 
     name: "R"
     runs-on: ubuntu-24.04
