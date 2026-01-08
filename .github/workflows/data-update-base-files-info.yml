@@ -1,14 +1,21 @@
 name: "Data: Update base-files info"
-# Trigger this in a train (from data-update-jira-excerpt.yml)
+# Triggered by data-update-partners-data.yml
 on:
   workflow_dispatch:
   repository_dispatch:
     types: ["Data: Update base-files info"]
 
+concurrency:
+  group: base-files-info
+  cancel-in-progress: false
+
 jobs:
   run-script:
+    name: "Update base-files info"
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       # Step 1: Checkout the repository
       - name: Checkout repository
@@ -34,8 +41,8 @@ jobs:
           git checkout data
           mkdir -p data/
           mv base-files.json data/base-files.json
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/base-files.json
           git diff --cached --quiet || git commit -m "Update base-files package info"
           git push
