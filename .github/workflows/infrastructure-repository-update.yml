@@ -136,7 +136,7 @@ jobs:
     needs: Copying
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
-      ENABLED: ${{ inputs.download_external != false }}
+      ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
       SKIP_VERSION_CHECK: false
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
