@@ -137,7 +137,7 @@ jobs:
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ENABLED: ${{ inputs.download_external != false }}
-      SKIP_VERSION_CHECK: true
+      SKIP_VERSION_CHECK: false
       ACCESS_NAME: armbian
       BUILD_RUNNER: "ubuntu-latest"
       HOST_DEPLOY: "repo.armbian.com"
