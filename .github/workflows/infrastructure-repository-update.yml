@@ -581,9 +581,10 @@ jobs:
           INPUT_DIR="${STORAGE_PATH}/${PACKAGE}"
           OUTPUT_DIR="${PUBLISH_PATH}-${PACKAGE}"
 
-          echo "### Checking for .deb files in $PACKAGE/$RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "### Building release-specific components for $PACKAGE/$RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
           echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Output directory: $OUTPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
 
           # Validate input directory exists
@@ -599,20 +600,118 @@ jobs:
 
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
-            echo "Running repository update for $RELEASE..." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Building release-specific repos and snapshots for $RELEASE..." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Note: Common component was already built by 'main' job" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Release-specific components will be merged by 'merge' job" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo ""
             tools/repository/repo.sh \
               -c update \
               -R "$RELEASE" \
               -k \
               -i "$INPUT_DIR" \
               -o "$OUTPUT_DIR"
+            echo "✓ Release-specific components built for $RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "::notice::No .deb files found, skipping repository update"
           fi
 
+  merge:
+    needs: postclean
+    strategy:
+      fail-fast: false
+      matrix:
+        repository:
+          - name: debs
+          - name: debs-beta
+    name: "Merge ${{ matrix.repository.name }}"
+    timeout-minutes: 120
+    runs-on: repository
+    steps:
+
+      # Cleaning self hosted runners
+      - name: Runner clean
+        uses: armbian/actions/runner-clean@main
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY3 }}
+
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_KEY4 }}
+
+      - name: Checkout build repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          ref: main
+          fetch-depth: 1
+          clean: false
+
+      - name: "Merge repository ${{ matrix.repository.name }}"
+        shell: bash
+        run: |
+          set -e
+          set -o pipefail
+
+          STORAGE_PATH="${{ env.STORAGE_PATH }}"
+          PUBLISH_PATH="${{ env.PUBLISHING_PATH }}"
+          REPO_NAME="${{ matrix.repository.name }}"
+
+          # Validate paths
+          case "$STORAGE_PATH" in
+            *"/armbian/openssh-server/storage"*)
+              ;;
+            *)
+              echo "::error::Invalid storage path: $STORAGE_PATH"
+              exit 1
+              ;;
+          esac
+
+          case "$PUBLISH_PATH" in
+            *"/publishing/repository"*)
+              ;;
+            *)
+              echo "::error::Invalid publishing path: $PUBLISH_PATH"
+              exit 1
+              ;;
+          esac
+
+          INPUT_DIR="${STORAGE_PATH}/${REPO_NAME}"
+          OUTPUT_DIR="${PUBLISH_PATH}-${REPO_NAME}"
+
+          echo "### Merging repository $REPO_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Output directory: $OUTPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Validate output directory exists
+          if [ ! -d "$OUTPUT_DIR" ]; then
+            echo "::notice::Output directory does not exist: $OUTPUT_DIR"
+            echo "This is expected if no packages were processed yet" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "Merging common component with release-specific components..." | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "This imports from isolated databases and publishes complete repositories" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+
+          # Run merge command to combine common + release-specific components
+          tools/repository/repo.sh \
+            -c merge \
+            -i "$INPUT_DIR" \
+            -o "$OUTPUT_DIR"
+
+          echo "✓ Repository merge completed for $REPO_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo ""
+          echo "Repository is now ready with all components combined" | tee -a "$GITHUB_STEP_SUMMARY"
+
   cleanup:
     name: "Clean input"
-    needs: postclean
+    needs: merge
     runs-on: repository
     strategy:
       matrix:
