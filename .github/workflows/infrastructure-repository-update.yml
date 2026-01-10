@@ -333,7 +333,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: feature/new-parallel-repo-architecture
+          ref: main
           clean: false
 
       - name: "Build repository ${{ matrix.repository.name }}"
@@ -412,7 +412,7 @@ jobs:
         with:
           repository: armbian/build
           clean: false
-          ref: feature/new-parallel-repo-architecture
+          ref: main
           fetch-depth: 1
           path: build
 
@@ -534,7 +534,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: armbian/build
-          ref: feature/new-parallel-repo-architecture
+          ref: main
           fetch-depth: 1
           clean: false
 
@@ -646,7 +646,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: armbian/build
-          ref: feature/new-parallel-repo-architecture
+          ref: main
           fetch-depth: 1
           clean: false
 
