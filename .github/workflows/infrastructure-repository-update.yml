@@ -152,6 +152,11 @@ jobs:
               ;;
           esac
 
+          # Always sync external
+          if [ -d "${INCOMING_PATH}/external" ]; then
+              rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/external/debs ${STORAGE_PATH}/debs 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
+              rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/external/debs-beta ${STORAGE_PATH}/debs-beta 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
+          fi
 
   fix-permissions:
     name: "Fix permissions"

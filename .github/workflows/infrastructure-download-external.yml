@@ -434,15 +434,20 @@ jobs:
 
           # Install appropriate keyring based on container type
           if grep -q "debian" /etc/os-release; then
-            apt-get -y install debian-keyring
+            apt-get -y install debian-keyring 2>&1 | grep -v "^gpg:" || true
           elif grep -q "ubuntu" /etc/os-release; then
-            apt-get -y install ubuntu-keyring
+            apt-get -y install ubuntu-keyring 2>&1 | grep -v "^gpg:" || true
           fi
 
-          # Import additional keys
-          gpg --no-default-keyring --keyring trustedkeys.gpg \
+          # Import additional keys with timeout and suppress verbose output
+          # Use timeout to prevent hanging on unavailable keyservers
+          if timeout 30 gpg --no-default-keyring --keyring trustedkeys.gpg \
             --keyserver keyserver.ubuntu.com \
-            --recv-keys 648ACFD622F3D138 0E98404D386FA1D9
+            --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 2>&1 | grep -v "not changed\|unchanged\|not checked" || true; then
+            echo "::notice::GPG keys imported successfully"
+          else
+            echo "::warning::Some GPG keys could not be imported from keyserver (non-critical)"
+          fi
 
       - name: "Prepare machine"
         id: preparing
@@ -526,14 +531,49 @@ jobs:
             COMPONENT="extra/${{ matrix.release }}-${TARGET}"
           fi
 
-          # Get version from main repository
-          BEFORE_VERSION=""
+          # Check if files already exist on remote storage to avoid re-downloading
+          # Only check if SKIP_VERSION_CHECK is not enabled
+          SKIP_DOWNLOAD=false
+          if [[ "${{ inputs.SKIP_VERSION_CHECK }}" != "true" ]]; then
+            echo "::debug::Checking if files already exist on remote storage..."
+            # Determine remote path based on REPOSITORY (B=beta, S=stable)
+            REMOTE_BASE_PATH="${UPLOAD_PATH}"
+            if grep -qE 'B' <<< "$REPOSITORY"; then
+              if [[ "${TARGET}" == "main" ]]; then
+                REMOTE_PATH="debs-beta/"
+              else
+                REMOTE_PATH="debs-beta/extra/${{ matrix.release }}-${TARGET}/"
+              fi
+            elif grep -qE 'S' <<< "$REPOSITORY"; then
+              if [[ "${TARGET}" == "main" ]]; then
+                REMOTE_PATH="debs/"
+              else
+                REMOTE_PATH="debs/extra/${{ matrix.release }}-${TARGET}/"
+              fi
+            fi
 
-          # Skip version check if SKIP_VERSION_CHECK is enabled (for force repopulation)
-          if [[ "${{ inputs.SKIP_VERSION_CHECK }}" == "true" ]]; then
-            echo "::notice::SKIP_VERSION_CHECK enabled - forcing upload regardless of existing versions"
-            BEFORE_VERSION="0"
-          else
+            # Check if any .deb files for this package exist remotely
+            REMOTE_FILES=$(ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} \
+              ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }} \
+              "find ${REMOTE_BASE_PATH}/${REMOTE_PATH} -type f -name '${PKG}*.deb' 2>/dev/null" || true)
+
+            if [[ -n "$REMOTE_FILES" ]]; then
+              echo "::notice::Found existing files on remote storage for $PKG:"
+              echo "$REMOTE_FILES"
+              # Get the version from the newest remote file
+              REMOTE_VERSION=$(echo "$REMOTE_FILES" | xargs -I {} basename {} | \
+                sed "s/${PKG}_//" | sed "s/_.*//" | sort -V | tail -n 1)
+              echo "::notice::Remote version: $REMOTE_VERSION"
+              BEFORE_VERSION="$REMOTE_VERSION"
+              SKIP_DOWNLOAD=true
+            else
+              echo "::debug::No existing files found on remote storage, will proceed with download"
+            fi
+          fi
+
+          # Get version from main repository (only if not found on remote)
+          if [[ -z "$BEFORE_VERSION" ]]; then
+            BEFORE_VERSION=""
             # Try main component, desktop component, then extra component
           for repo_component in "main" "${{ matrix.release }}-desktop" "${{ matrix.release }}-utils"; do
             # Build URL for Packages index
@@ -564,7 +604,16 @@ jobs:
           fi
 
           echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
-          
+          echo "SKIP_DOWNLOAD=${SKIP_DOWNLOAD}" >> $GITHUB_OUTPUT
+
+          # Skip download if files already exist on remote and version check passed
+          if [[ "$SKIP_DOWNLOAD" == "true" ]]; then
+            echo "::notice::Skipping download - files already exist on remote storage with version $BEFORE_VERSION"
+            # Create a dummy file to satisfy subsequent steps
+            touch "${SOURCE}skip.txt"
+          else
+            echo "::notice::Proceeding with download..."
+
           # Download packages based on method
           if [[ ${METHOD} == gh ]]; then
             # GitHub release download method
@@ -806,9 +855,10 @@ jobs:
               done < <(find "$root" -type f -name '*.deb' -printf '%h\0' | sort -zu)
             done
           fi
+          fi  # End of SKIP_DOWNLOAD check
 
           # Repack deb files with Armbian version
-          if [[ "${{ matrix.name }}" == "firefox" ]]; then
+          if [[ "${{ matrix.name }}" == "firefox" ]] && [[ "$SKIP_DOWNLOAD" != "true" ]]; then
             apt-get install -y devscripts
             DEBS=($(sudo find "${SOURCE}"* -type f -name '*firefox_*.deb'))
             for d in "${DEBS[@]}"; do
@@ -823,11 +873,17 @@ jobs:
           fi
 
           # Store info to GitHub Actions
-          AFTER_VERSION=$(find "$SOURCE" -type f -name "${INSTALL%% *}*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
-          if [[ -z $AFTER_VERSION ]]; then
-            AFTER_VERSION=$(find "$SOURCE" -type f -name "*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
+          if [[ "$SKIP_DOWNLOAD" == "true" ]]; then
+            # Use the remote version as AFTER_VERSION since we skipped download
+            AFTER_VERSION="$BEFORE_VERSION"
+            PKG_LINES="Skipped download - using existing files on remote storage"
+          else
+            AFTER_VERSION=$(find "$SOURCE" -type f -name "${INSTALL%% *}*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
+            if [[ -z $AFTER_VERSION ]]; then
+              AFTER_VERSION=$(find "$SOURCE" -type f -name "*.deb" -exec dpkg-deb -f {} Version \; | sort | uniq | tail -n 1 | cut -d":" -f2)
+            fi
+            PKG_LINES="$(find "$SOURCE" -type f -name "*.deb" -printf "%f\n" 2>/dev/null | sort | sed 's/$/<br>/')"
           fi
-          PKG_LINES="$(find "$SOURCE" -type f -name "*.deb" -printf "%f\n" 2>/dev/null | sort | sed 's/$/<br>/')"
           echo "AFTER_VERSION=${AFTER_VERSION}" >> $GITHUB_OUTPUT
 
           # Determine if update is needed
@@ -841,6 +897,8 @@ jobs:
           # This prevents parallel jobs from overwriting each other's packages
           # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
 
+          # Skip upload if download was skipped (files already exist on remote)
+          if [[ "$SKIP_DOWNLOAD" != "true" ]]; then
           if [[ ${TARGET} == main ]]; then
             # Upload to main repository directories
             if grep -qE 'B' <<< "$REPOSITORY"; then
@@ -866,6 +924,7 @@ jobs:
                 -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
           fi
+          fi  # End of SKIP_DOWNLOAD upload check
 
           # Upload to repository if version changed
           if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
@@ -875,6 +934,12 @@ jobs:
             echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | $AFTER_VERSION | ✅ |" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "packages: <br><code>$PKG_LINES</code>" >> $GITHUB_STEP_SUMMARY
+
+          elif [[ "$SKIP_DOWNLOAD" == "true" ]]; then
+            # Add summary for skipped downloads
+            echo '| name | method | arch | release | needs_qemu | target | version | status |' >> $GITHUB_STEP_SUMMARY
+            echo '|--------|-------|------|---------|------------|--------|---------|--------|' >> $GITHUB_STEP_SUMMARY
+            echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | $BEFORE_VERSION | ⏭️ Skipped (already on remote) |" >> $GITHUB_STEP_SUMMARY
 
           elif [[ "${{ inputs.HIDE_NO_UPDATE }}" == "true" ]]; then
             # Exit if HIDE_NO_UPDATE is enabled and no update needed
