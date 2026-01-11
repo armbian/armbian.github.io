@@ -158,6 +158,51 @@ jobs:
               rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/external/debs-beta ${STORAGE_PATH}/debs-beta 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
           fi
 
+  prepare-repos:
+    name: "Prepare repositories"
+    needs: Copying
+    runs-on: repository
+    steps:
+      - name: Checkout build repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/build
+          path: build
+          clean: false
+
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v6
+        with:
+          repository: armbian/armbian.github.io
+          path: armbian-github-io
+          clean: false
+
+      - name: Copy example.deb to repository subfolders
+        run: |
+          # Get all supported releases from build config
+          ALL_RELEASES=($(grep -rw build/config/distributions/*/support -ve 'eos' | cut -d"/" -f4))
+          echo "Found ${#ALL_RELEASES[@]} releases: ${ALL_RELEASES[*]}" | tee -a $GITHUB_STEP_SUMMARY
+
+          # Copy example.deb to all subfolders for debs
+          for RELEASE in "${ALL_RELEASES[@]}"; do
+            echo "Copying example.deb for debs/$RELEASE" | tee -a $GITHUB_STEP_SUMMARY
+            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/$RELEASE/"
+            mkdir -p "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-utils"
+            mkdir -p "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-desktop"
+            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-utils/"
+            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-desktop/"
+          done
+
+          # Copy example.deb to all subfolders for debs-beta
+          for RELEASE in "${ALL_RELEASES[@]}"; do
+            echo "Copying example.deb for debs-beta/$RELEASE" | tee -a $GITHUB_STEP_SUMMARY
+            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/$RELEASE/"
+            mkdir -p "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-utils"
+            mkdir -p "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-desktop"
+            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-utils/"
+            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-desktop/"
+          done
+
   fix-permissions:
     name: "Fix permissions"
     needs: external
