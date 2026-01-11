@@ -552,13 +552,39 @@ jobs:
               fi
             fi
 
-            # Check if any .deb files for this package exist remotely
+            # Check if any .deb files for this package exist remotely with matching architecture
+            # Map Debian architecture names to common variants used in .deb filenames
+            case "${{ matrix.arch }}" in
+              amd64)
+                ARCH_PATTERNS=("amd64" "x86_64" "x64")
+                ;;
+              arm64)
+                ARCH_PATTERNS=("arm64" "aarch64")
+                ;;
+              armhf)
+                ARCH_PATTERNS=("armhf" "armv7h" "armv7l" "armv6")
+                ;;
+              riscv64)
+                ARCH_PATTERNS=("riscv64")
+                ;;
+              *)
+                ARCH_PATTERNS=("${{ matrix.arch }}")
+                ;;
+            esac
+
+            # Build find command with architecture-specific patterns
+            FIND_CMD="find ${REMOTE_BASE_PATH}/${REMOTE_PATH} -type f -name '${PKG}_*.deb'"
+            for arch_pat in "${ARCH_PATTERNS[@]}"; do
+              FIND_CMD="$FIND_CMD -o -name '*_${arch_pat}.deb'"
+            done
+            FIND_CMD="$FIND_CMD 2>/dev/null"
+
             REMOTE_FILES=$(ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} \
               ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }} \
-              "find ${REMOTE_BASE_PATH}/${REMOTE_PATH} -type f -name '${PKG}*.deb' 2>/dev/null" || true)
+              "$FIND_CMD" || true)
 
             if [[ -n "$REMOTE_FILES" ]]; then
-              echo "::notice::Found existing files on remote storage for $PKG:"
+              echo "::notice::Found existing files on remote storage for $PKG (arch: ${{ matrix.arch }}):"
               echo "$REMOTE_FILES"
               # Get the version from the newest remote file
               REMOTE_VERSION=$(echo "$REMOTE_FILES" | xargs -I {} basename {} | \
@@ -567,7 +593,7 @@ jobs:
               BEFORE_VERSION="$REMOTE_VERSION"
               SKIP_DOWNLOAD=true
             else
-              echo "::debug::No existing files found on remote storage, will proceed with download"
+              echo "::debug::No existing files found on remote storage for $PKG (arch: ${{ matrix.arch }}), will proceed with download"
             fi
           fi
 
