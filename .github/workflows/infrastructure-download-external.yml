@@ -65,7 +65,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PR_NUMBER: ${{ github.event.number }}
   PACKAGES_URL: "https://fi.mirror.armbian.de/apt"
-  DOWNLOAD_PATH: /armbian/openssh-server/storage
+  UPLOAD_PATH: "storage/incoming/external"
 
 jobs:
 
@@ -220,7 +220,7 @@ jobs:
           # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
           ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} \
             ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} \
-            "rm -rf storage/artifacts/*"
+            "rm -rf ${UPLOAD_PATH}/artifacts/*"
 
       - name: Checkout Armbian OS repository
         uses: actions/checkout@v6
@@ -466,6 +466,12 @@ jobs:
             mkdir -p build/output/{debs,debs-beta}/${i}
             mkdir -p build/output/{debs,debs-beta}/extra/${i}-utils
             mkdir -p build/output/{debs,debs-beta}/extra/${i}-desktop
+            # Add example.deb to each subfolder to ensure empty repos are published
+            for repo_root in build/output/debs build/output/debs-beta; do
+              cp build/tools/repository/example.deb ${repo_root}/${i}/
+              cp build/tools/repository/example.deb ${repo_root}/extra/${i}-utils/
+              cp build/tools/repository/example.deb ${repo_root}/extra/${i}-desktop/
+            done
           done
 
           needs_qemu='${{ matrix.needs_qemu }}'
@@ -840,24 +846,24 @@ jobs:
             if grep -qE 'B' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta/ \;
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/ \;
             fi
             if grep -qE 'S' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs/ \;
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/ \;
             fi
           else
             # Upload to specific release directories
             if grep -qE 'B' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
             if grep -qE 'S' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs/extra/${{ matrix.release }}-${TARGET}/ \;
+                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
           fi
 
