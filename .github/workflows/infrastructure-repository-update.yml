@@ -22,9 +22,9 @@ env:
   CLEANUP_INPUT: true
   DRY_RUN_SYNC: false
 
-concurrency:
-  group: pipeline
-  cancel-in-progress: false
+#concurrency:
+#  group: pipeline
+#  cancel-in-progress: false
 
 jobs:
 
@@ -48,7 +48,7 @@ jobs:
       ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
       SKIP_VERSION_CHECK: false
       ACCESS_NAME: armbian
-      BUILD_RUNNER: "ubuntu-latest"
+      BUILD_RUNNER: "docker"
       HOST_DEPLOY: "repo.armbian.com"
       PURGE: ${{ inputs.purge_external || false }}
     secrets:

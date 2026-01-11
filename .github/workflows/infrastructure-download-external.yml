@@ -310,27 +310,25 @@ jobs:
                 # Force amd64 runner for aptly method due to stability issues on ARM
                 if [[ "${METHOD:-aptly}" == "aptly" ]]; then
                   # Always use amd64 runner for aptly, use QEMU for other arches
-                  runner="ubuntu-latest"
+                  runner='["docker", "X64"]'
                   image_arch="amd64"
                 else
                   # Use architecture-specific runners for other methods (gh, direct)
                   case "${arch}" in
                     amd64)
-                      runner="ubuntu-latest"
-                      #runner="X64"
+                      runner='["docker", "X64"]'
                       image_arch="${arch}"
                       ;;
                     arm64)
-                      runner="ubuntu-24.04-arm"
-                      #runner="docker"
+                      runner='["docker", "ARM64"]'
                       image_arch="${arch}"
                       ;;
                     armhf|riscv64)
-                      runner="ubuntu-latest"
+                      runner='["ubuntu-latest"]'
                       image_arch="amd64"  # Use amd64 image with QEMU emulation
                       ;;
                     *)
-                      runner="ubuntu-latest"
+                      runner='["ubuntu-latest"]'
                       image_arch="amd64"
                       ;;
                   esac
@@ -348,7 +346,7 @@ jobs:
                   --arg image_arch "${image_arch}" \
                   --arg registry "ghcr.io/${{ github.repository_owner }}" \
                   --argjson needs_qemu "${needs_qemu}" \
-                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, runner: $runner, image_arch: $image_arch, registry: $registry, needs_qemu: $needs_qemu}'
+                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, runner: ($runner | fromjson), image_arch: $image_arch, registry: $registry, needs_qemu: $needs_qemu}'
               done
             done
           done | jq -s '{"include": .}'
@@ -461,6 +459,7 @@ jobs:
           [[ "${SIGNATURES}" == "ignore" ]] && APTLY_CONF+="-ignore-signatures "
 
           # Read existing releases and create folder structure
+          rm -rf build/output/{debs,debs-beta}
           ALL_RELEASES=($(grep -rw build/config/distributions/*/support -ve 'eos' | cut -d"/" -f4 ))
           for i in ${ALL_RELEASES[@]}; do
             mkdir -p build/output/{debs,debs-beta}/${i}
@@ -514,6 +513,7 @@ jobs:
           . os/external/${{ matrix.name }}.conf
 
           SOURCE="temp/"
+          rm -rf ${SOURCE}
           mkdir -p ${SOURCE}
 
           # Get current version from Armbian repository
@@ -846,24 +846,24 @@ jobs:
             if grep -qE 'B' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/ \;
+                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/ \;
             fi
             if grep -qE 'S' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/ \;
+                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/ \;
             fi
           else
             # Upload to specific release directories
             if grep -qE 'B' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
+                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
             if grep -qE 'S' <<< "$REPOSITORY"; then
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/extra/${{ matrix.release }}-${TARGET}/ \;
+                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/extra/${{ matrix.release }}-${TARGET}/ \;
             fi
           fi
 
