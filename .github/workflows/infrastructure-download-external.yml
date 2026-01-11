@@ -65,6 +65,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PR_NUMBER: ${{ github.event.number }}
   PACKAGES_URL: "https://fi.mirror.armbian.de/apt"
+  UPLOAD_PATH: "storage/incoming/external"
 
 jobs:
 
@@ -219,7 +220,7 @@ jobs:
           # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
           ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }} \
             ${{ inputs.HOST_USER }}@${{ inputs.HOST_DEPLOY }} \
-            "rm -rf storage/artifacts/*"
+            "rm -rf ${UPLOAD_PATH}/artifacts/*"
 
       - name: Checkout Armbian OS repository
         uses: actions/checkout@v6
@@ -309,27 +310,26 @@ jobs:
                 # Force amd64 runner for aptly method due to stability issues on ARM
                 if [[ "${METHOD:-aptly}" == "aptly" ]]; then
                   # Always use amd64 runner for aptly, use QEMU for other arches
-                  runner="ubuntu-latest"
+                  runner='["docker", "X64"]'
                   image_arch="amd64"
                 else
                   # Use architecture-specific runners for other methods (gh, direct)
                   case "${arch}" in
                     amd64)
-                      runner="ubuntu-latest"
-                      #runner="X64"
+                      runner='["docker", "X64"]'
                       image_arch="${arch}"
                       ;;
                     arm64)
-                      runner="ubuntu-24.04-arm"
-                      #runner="docker"
+                      runner='["docker", "ARM64"]'
                       image_arch="${arch}"
                       ;;
                     armhf|riscv64)
-                      runner="ubuntu-latest"
+                      runner='["ubuntu-latest"]'
+                      runner='["docker", "X64"]'
                       image_arch="amd64"  # Use amd64 image with QEMU emulation
                       ;;
                     *)
-                      runner="ubuntu-latest"
+                      runner='["ubuntu-latest"]'
                       image_arch="amd64"
                       ;;
                   esac
@@ -347,7 +347,7 @@ jobs:
                   --arg image_arch "${image_arch}" \
                   --arg registry "ghcr.io/${{ github.repository_owner }}" \
                   --argjson needs_qemu "${needs_qemu}" \
-                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, runner: $runner, image_arch: $image_arch, registry: $registry, needs_qemu: $needs_qemu}'
+                  '{name: $name, arch: $arch, release: $release, target: $target, method: $method, install: $install, runner: ($runner | fromjson), image_arch: $image_arch, registry: $registry, needs_qemu: $needs_qemu}'
               done
             done
           done | jq -s '{"include": .}'
@@ -435,15 +435,20 @@ jobs:
 
           # Install appropriate keyring based on container type
           if grep -q "debian" /etc/os-release; then
-            apt-get -y install debian-keyring
+            apt-get -y install debian-keyring 2>&1 | grep -v "^gpg:" || true
           elif grep -q "ubuntu" /etc/os-release; then
-            apt-get -y install ubuntu-keyring
+            apt-get -y install ubuntu-keyring 2>&1 | grep -v "^gpg:" || true
           fi
 
-          # Import additional keys
-          gpg --no-default-keyring --keyring trustedkeys.gpg \
+          # Import additional keys with timeout and suppress verbose output
+          # Use timeout to prevent hanging on unavailable keyservers
+          if timeout 30 gpg --no-default-keyring --keyring trustedkeys.gpg \
             --keyserver keyserver.ubuntu.com \
-            --recv-keys 648ACFD622F3D138 0E98404D386FA1D9
+            --recv-keys 648ACFD622F3D138 0E98404D386FA1D9 2>&1 | grep -v "not changed\|unchanged\|not checked" || true; then
+            echo "::notice::GPG keys imported successfully"
+          else
+            echo "::warning::Some GPG keys could not be imported from keyserver (non-critical)"
+          fi
 
       - name: "Prepare machine"
         id: preparing
@@ -460,11 +465,18 @@ jobs:
           [[ "${SIGNATURES}" == "ignore" ]] && APTLY_CONF+="-ignore-signatures "
 
           # Read existing releases and create folder structure
+          rm -rf build/output/{debs,debs-beta}
           ALL_RELEASES=($(grep -rw build/config/distributions/*/support -ve 'eos' | cut -d"/" -f4 ))
           for i in ${ALL_RELEASES[@]}; do
             mkdir -p build/output/{debs,debs-beta}/${i}
             mkdir -p build/output/{debs,debs-beta}/extra/${i}-utils
             mkdir -p build/output/{debs,debs-beta}/extra/${i}-desktop
+            # Add example.deb to each subfolder to ensure empty repos are published
+            for repo_root in build/output/debs build/output/debs-beta; do
+              cp build/tools/repository/example.deb ${repo_root}/${i}/
+              cp build/tools/repository/example.deb ${repo_root}/extra/${i}-utils/
+              cp build/tools/repository/example.deb ${repo_root}/extra/${i}-desktop/
+            done
           done
 
           needs_qemu='${{ matrix.needs_qemu }}'
@@ -507,6 +519,7 @@ jobs:
           . os/external/${{ matrix.name }}.conf
 
           SOURCE="temp/"
+          rm -rf ${SOURCE}
           mkdir -p ${SOURCE}
 
           # Get current version from Armbian repository
@@ -521,13 +534,7 @@ jobs:
 
           # Get version from main repository
           BEFORE_VERSION=""
-
-          # Skip version check if SKIP_VERSION_CHECK is enabled (for force repopulation)
-          if [[ "${{ inputs.SKIP_VERSION_CHECK }}" == "true" ]]; then
-            echo "::notice::SKIP_VERSION_CHECK enabled - forcing upload regardless of existing versions"
-            BEFORE_VERSION="0"
-          else
-            # Try main component, desktop component, then extra component
+          # Try main component, desktop component, then extra component
           for repo_component in "main" "${{ matrix.release }}-desktop" "${{ matrix.release }}-utils"; do
             # Build URL for Packages index
             CURRENT_PACKAGES_URL="${PACKAGES_URL}/dists/${{ matrix.release }}/${repo_component}/binary-${{ matrix.arch }}/Packages.gz"
@@ -554,10 +561,9 @@ jobs:
             echo "::warning::Could not find version for $PKG in repository, assuming new package"
             BEFORE_VERSION="0"
           fi
-          fi
 
           echo "BEFORE_VERSION=${BEFORE_VERSION}" >> $GITHUB_OUTPUT
-          
+
           # Download packages based on method
           if [[ ${METHOD} == gh ]]; then
             # GitHub release download method
@@ -833,30 +839,37 @@ jobs:
           # Upload packages directly to remote storage to avoid race conditions
           # This prevents parallel jobs from overwriting each other's packages
           # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
-
+          # Always upload to debs-beta for external packages
           if [[ ${TARGET} == main ]]; then
-            # Upload to main repository directories
-            if grep -qE 'B' <<< "$REPOSITORY"; then
+            # Upload to main repository directory
+            find "$SOURCE" -type f -name "*.deb" -exec \
+              rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/ \;
+
+            # Upload to debs only if version is newer than what's in repository
+            # This is checked by comparing BEFORE_VERSION from the repository
+            if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+              echo "::notice::Newer version $AFTER_VERSION found, uploading to debs"
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta/ \;
-            fi
-            if grep -qE 'S' <<< "$REPOSITORY"; then
-              find "$SOURCE" -type f -name "*.deb" -exec \
-                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs/ \;
+                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/ \;
+            else
+              echo "::notice::Version $AFTER_VERSION already exists in debs (has $BEFORE_VERSION), skipping upload"
             fi
           else
-            # Upload to specific release directories
-            if grep -qE 'B' <<< "$REPOSITORY"; then
+            # Upload to specific release directory in debs-beta
+            find "$SOURCE" -type f -name "*.deb" -exec \
+              rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
+
+            # Upload to debs only if version is newer than what's in repository
+            if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+              echo "::notice::Newer version $AFTER_VERSION found, uploading to debs/extra"
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
-            fi
-            if grep -qE 'S' <<< "$REPOSITORY"; then
-              find "$SOURCE" -type f -name "*.deb" -exec \
-                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:storage/debs/extra/${{ matrix.release }}-${TARGET}/ \;
+                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/extra/${{ matrix.release }}-${TARGET}/ \;
+            else
+              echo "::notice::Version $AFTER_VERSION already exists in debs (has $BEFORE_VERSION), skipping upload"
             fi
           fi
 
