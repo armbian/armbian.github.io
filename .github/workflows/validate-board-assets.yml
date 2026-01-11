@@ -1,0 +1,28 @@
+name: Validate board images & vendor logos
+
+on:
+  pull_request:
+    paths:
+      - "board-images/**"
+      - "board-vendor-logos/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Validate images
+        env:
+          BASE_REF: "origin/${{ github.base_ref }}"
+          HEAD_REF: "${{ github.sha }}"
+        run: |
+          scripts/validate-board-assets.sh
