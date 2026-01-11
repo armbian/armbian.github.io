@@ -40,8 +40,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEAM: "Release manager"
 
-  Copying:
+  external:
+    name: "Download external"
     needs: Check
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
+    with:
+      ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
+      SKIP_VERSION_CHECK: false
+      ACCESS_NAME: armbian
+      BUILD_RUNNER: "ubuntu-latest"
+      HOST_DEPLOY: "repo.armbian.com"
+      PURGE: ${{ inputs.purge_external || false }}
+    secrets:
+      GPG_KEY1: ${{ secrets.GPG_KEY3 }}
+      GPG_KEY2: ${{ secrets.GPG_KEY4 }}
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      KEY_UPLOAD: ${{ secrets.KEY_UPLOAD }}
+      HOST_UPLOAD: ${{ secrets.HOST_UPLOAD }}
+      HOST_UPLOAD_USER: ${{ secrets.HOST_UPLOAD_USER }}
+      HOST_UPLOAD_PORT: ${{ secrets.HOST_UPLOAD_PORT }}
+      KNOWN_HOSTS_ARMBIAN_UPLOAD: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
+
+  Copying:
+    needs: external
     runs-on: repository
     steps:
 
@@ -130,27 +151,6 @@ jobs:
               :
               ;;
           esac
-
-  external:
-    name: "Download external"
-    needs: Copying
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
-    with:
-      ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
-      SKIP_VERSION_CHECK: false
-      ACCESS_NAME: armbian
-      BUILD_RUNNER: "ubuntu-latest"
-      HOST_DEPLOY: "repo.armbian.com"
-      PURGE: ${{ inputs.purge_external || false }}
-    secrets:
-      GPG_KEY1: ${{ secrets.GPG_KEY3 }}
-      GPG_KEY2: ${{ secrets.GPG_KEY4 }}
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      KEY_UPLOAD: ${{ secrets.KEY_UPLOAD }}
-      HOST_UPLOAD: ${{ secrets.HOST_UPLOAD }}
-      HOST_UPLOAD_USER: ${{ secrets.HOST_UPLOAD_USER }}
-      HOST_UPLOAD_PORT: ${{ secrets.HOST_UPLOAD_PORT }}
-      KNOWN_HOSTS_ARMBIAN_UPLOAD: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
 
 
   fix-permissions:

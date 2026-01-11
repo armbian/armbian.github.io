@@ -65,6 +65,7 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PR_NUMBER: ${{ github.event.number }}
   PACKAGES_URL: "https://fi.mirror.armbian.de/apt"
+  DOWNLOAD_PATH: /armbian/openssh-server/storage
 
 jobs:
 
