@@ -22,9 +22,9 @@ env:
   CLEANUP_INPUT: true
   DRY_RUN_SYNC: false
 
-#concurrency:
-#  group: pipeline
-#  cancel-in-progress: false
+concurrency:
+  group: pipeline
+  cancel-in-progress: false
 
 jobs:
 
@@ -43,7 +43,7 @@ jobs:
   external:
     name: "Download external"
     needs: Check
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@always
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
       SKIP_VERSION_CHECK: false
@@ -153,9 +153,25 @@ jobs:
           esac
 
           # Always sync external
-          if [ -d "${INCOMING_PATH}/external" ]; then
-              rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/external/debs ${STORAGE_PATH}/debs 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
-              rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/external/debs-beta ${STORAGE_PATH}/debs-beta 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
+          if [ -d "${INCOMING_PATH}/external/debs" ]; then
+              rsync -av \
+              --include='*/' \
+              --include='*.deb' \
+              --exclude='*' \
+              --omit-dir-times --no-perms --no-group \
+              "${INCOMING_PATH}/external/debs/" "${STORAGE_PATH}/debs/" \
+              2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
+              echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -d "${INCOMING_PATH}/external/debs-beta" ]; then
+              rsync -av \
+              --include='*/' \
+              --include='*.deb' \
+              --exclude='*' \
+              --omit-dir-times --no-perms --no-group \
+              "${INCOMING_PATH}/external/debs-beta/" "${STORAGE_PATH}/debs-beta/" \
+              2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
+              echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
           fi
 
   prepare-repos:
@@ -179,33 +195,36 @@ jobs:
 
       - name: Copy example.deb to repository subfolders
         run: |
+
           # Get all supported releases from build config
           ALL_RELEASES=($(grep -rw build/config/distributions/*/support -ve 'eos' | cut -d"/" -f4))
           echo "Found ${#ALL_RELEASES[@]} releases: ${ALL_RELEASES[*]}" | tee -a $GITHUB_STEP_SUMMARY
 
+
+          sudo cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/$RELEASE/"
+          sudo cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/$RELEASE/"
+
           # Copy example.deb to all subfolders for debs
           for RELEASE in "${ALL_RELEASES[@]}"; do
-            echo "Copying example.deb for debs/$RELEASE" | tee -a $GITHUB_STEP_SUMMARY
-            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/$RELEASE/"
+            echo "Copying example.deb for debs/$RELEASE and subfolders" | tee -a $GITHUB_STEP_SUMMARY
             mkdir -p "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-utils"
             mkdir -p "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-desktop"
-            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-utils/"
-            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-desktop/"
+            sudo cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-utils/"
+            sudo cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs/extra/$RELEASE-desktop/"
           done
 
           # Copy example.deb to all subfolders for debs-beta
           for RELEASE in "${ALL_RELEASES[@]}"; do
-            echo "Copying example.deb for debs-beta/$RELEASE" | tee -a $GITHUB_STEP_SUMMARY
-            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/$RELEASE/"
+            echo "Copying example.deb for debs-beta/$RELEASE and subfolders" | tee -a $GITHUB_STEP_SUMMARY
             mkdir -p "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-utils"
             mkdir -p "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-desktop"
-            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-utils/"
-            cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-desktop/"
+            sudo cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-utils/"
+            sudo cp build/tools/repository/example.deb "${{ env.STORAGE_PATH }}/debs-beta/extra/$RELEASE-desktop/"
           done
 
   fix-permissions:
     name: "Fix permissions"
-    needs: external
+    needs: prepare-repos
     runs-on: repository
     strategy:
       matrix:

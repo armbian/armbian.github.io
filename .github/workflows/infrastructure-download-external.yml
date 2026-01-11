@@ -325,6 +325,7 @@ jobs:
                       ;;
                     armhf|riscv64)
                       runner='["ubuntu-latest"]'
+                      runner='["docker", "X64"]'
                       image_arch="amd64"  # Use amd64 image with QEMU emulation
                       ;;
                     *)
@@ -838,29 +839,37 @@ jobs:
           # Upload packages directly to remote storage to avoid race conditions
           # This prevents parallel jobs from overwriting each other's packages
           # Note: StrictHostKeychecking=no is used here; consider using proper known_hosts in production
+          # Always upload to debs-beta for external packages
           if [[ ${TARGET} == main ]]; then
-            # Upload to main repository directories
-            if grep -qE 'B' <<< "$REPOSITORY"; then
-              find "$SOURCE" -type f -name "*.deb" -exec \
-                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/ \;
-            fi
-            if grep -qE 'S' <<< "$REPOSITORY"; then
+            # Upload to main repository directory
+            find "$SOURCE" -type f -name "*.deb" -exec \
+              rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/ \;
+
+            # Upload to debs only if version is newer than what's in repository
+            # This is checked by comparing BEFORE_VERSION from the repository
+            if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+              echo "::notice::Newer version $AFTER_VERSION found, uploading to debs"
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
                 -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/ \;
+            else
+              echo "::notice::Version $AFTER_VERSION already exists in debs (has $BEFORE_VERSION), skipping upload"
             fi
           else
-            # Upload to specific release directories
-            if grep -qE 'B' <<< "$REPOSITORY"; then
-              find "$SOURCE" -type f -name "*.deb" -exec \
-                rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
-                -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
-            fi
-            if grep -qE 'S' <<< "$REPOSITORY"; then
+            # Upload to specific release directory in debs-beta
+            find "$SOURCE" -type f -name "*.deb" -exec \
+              rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
+              -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs-beta/extra/${{ matrix.release }}-${TARGET}/ \;
+
+            # Upload to debs only if version is newer than what's in repository
+            if dpkg --compare-versions "$AFTER_VERSION" gt "$BEFORE_VERSION"; then
+              echo "::notice::Newer version $AFTER_VERSION found, uploading to debs/extra"
               find "$SOURCE" -type f -name "*.deb" -exec \
                 rsync -e "ssh -o StrictHostKeychecking=no -p ${{ secrets.HOST_UPLOAD_PORT }}" \
                 -arvc --mkpath --ignore-existing {} ${{ secrets.HOST_UPLOAD_USER }}@${{ secrets.HOST_UPLOAD }}:${UPLOAD_PATH}/debs/extra/${{ matrix.release }}-${TARGET}/ \;
+            else
+              echo "::notice::Version $AFTER_VERSION already exists in debs (has $BEFORE_VERSION), skipping upload"
             fi
           fi
 
