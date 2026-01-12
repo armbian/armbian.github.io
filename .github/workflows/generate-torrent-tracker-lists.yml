@@ -50,17 +50,25 @@ jobs:
 
       - name: Commit to data branch
         run: |
+          set -euo pipefail
+
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
+          git fetch origin data
           git checkout -b data origin/data || git checkout -b data
+          git pull --rebase origin data
 
-          mkdir -p servers
-          cp /tmp/best-torrent-servers.txt servers/best-torrent-servers.txt
+          mkdir -p data/servers
+          cp /tmp/best-torrent-servers.txt data/servers/best-torrent-servers.txt
 
-          git add servers/best-torrent-servers.txt
-          git commit -m "Update torrent trackers" || echo "No changes to commit"
-          git push origin data
+          git add data/servers/best-torrent-servers.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "Update torrent trackers"
+            # rebase once more right before push to reduce race window
+            git pull --rebase origin data
+            git push origin data
+          fi
 
       - name: Trigger webindex-update workflow
         uses: peter-evans/repository-dispatch@v4
