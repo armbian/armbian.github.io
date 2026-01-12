@@ -1,4 +1,4 @@
-name: Prepare Torrent Trackers
+name: "Data: Update Torrent Trackers"
 
 on:
   workflow_dispatch:
