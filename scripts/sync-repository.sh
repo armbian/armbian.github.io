@@ -84,7 +84,7 @@ case "$PUBLISHING_PATH" in
 esac
 
 # Build rsync options - add --dry-run if DRY_RUN_SYNC is enabled
-RSYNC_OPTIONS="-av --size-only --omit-dir-times"
+RSYNC_OPTIONS="-av --omit-dir-times"
 if [[ "${DRY_RUN_SYNC}" == "true" ]]; then
   RSYNC_OPTIONS="$RSYNC_OPTIONS --dry-run"
   echo "::notice::DRY_RUN_SYNC is enabled - rsync will only show what would be transferred" | tee -a "$GITHUB_STEP_SUMMARY"
