@@ -154,6 +154,7 @@ jobs:
 
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
+              echo "## Copy external debs "
               rsync -av \
               --include='*/' \
               --include='*.deb' \
@@ -164,6 +165,7 @@ jobs:
               echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ -d "${INCOMING_PATH}/external/debs-beta" ]; then
+              echo "## Copy external debs-beta "
               rsync -av \
               --include='*/' \
               --include='*.deb' \
