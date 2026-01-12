@@ -374,9 +374,9 @@ jobs:
           echo "" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "✓ Beta repository prepared" | tee -a "$GITHUB_STEP_SUMMARY"
 
-  main:
+  update-repository:
     needs: prepare-beta
-    name: "Publish main"
+    name: "Update ${{ matrix.repository.name }}"
     runs-on: repository
     strategy:
       matrix:
@@ -399,15 +399,15 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_KEY4 }}
 
-      - name: Checkout build repository for ${{ matrix.repository.name }}
+      - name: Checkout build repository
         uses: actions/checkout@v6
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: always
+          ref: singlemode
           clean: false
 
-      - name: "Build repository ${{ matrix.repository.name }}"
+      - name: "Update repository ${{ matrix.repository.name }}"
         shell: bash
         run: |
           set -e
@@ -461,328 +461,19 @@ jobs:
 
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
-            echo "Running repository update..." | tee -a "$GITHUB_STEP_SUMMARY"
-            tools/repository/repo.sh \
-              -c update-main \
-              -k \
-              -i "$INPUT_DIR" \
-              -o "$OUTPUT_DIR"
-          else
-            echo "::notice::No .deb files found, skipping repository update"
-          fi
-
-  preclean:
-    needs: main
-    name: "Publish"
-    runs-on: repository
-    outputs:
-      matrix:  ${{steps.json.outputs.JSON_CONTENT}}
-    steps:
-      - name: "Checkout Armbian build Framework"
-        uses: actions/checkout@v6
-        with:
-          repository: armbian/build
-          clean: false
-          ref: always
-          fetch-depth: 1
-          path: build
-
-      - name: "Make JSON"
-        id: json
-        shell: bash
-        run: |
-          set -e
-          set -o pipefail
-
-          pkg="debs,debs-beta"
-
-          # Validate build config directory exists
-          if [[ ! -d "build/config/distributions" ]]; then
-            echo "::error::Build config directory not found"
-            exit 1
-          fi
-
-          # Get all supported releases from config files
-          releases=()
-          while IFS= read -r support_file; do
-            if [[ -f "$support_file" ]]; then
-              release=$(echo "$support_file" | cut -d"/" -f4)
-              if [[ -n "$release" ]]; then
-                releases+=("$release")
-              fi
-            fi
-          done < <(find build/config/distributions -name "support" -type f 2>/dev/null)
-
-          if [[ ${#releases[@]} -eq 0 ]]; then
-            echo "::error::No releases found in build/config/distributions"
-            exit 1
-          fi
-
-          echo "Found ${#releases[@]} releases: ${releases[*]}" | tee -a "$GITHUB_STEP_SUMMARY"
-
-          # Build JSON matrix
-          echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
-          for i in "${releases[@]}"; do
-            for j in debs debs-beta; do
-              echo "{\"release\":\"${i}\",\"package\":\"$j\"}"
-            done
-          done | jq -s >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
-
-  postclean:
-    needs: preclean
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.preclean.outputs.matrix) }}
-
-    name: "${{ matrix.release }} (${{ matrix.package }})"
-    timeout-minutes: 120
-    runs-on: repository
-    steps:
-
-      # Cleaning self hosted runners
-      - name: Runner clean
-        uses: armbian/actions/runner-clean@main
-
-      - name: "Fix permissions for ${{ matrix.package }}"
-        shell: bash
-        run: |
-          set -e
-          set -o pipefail
-
-          REPO_PATH="${{ env.PUBLISHING_PATH }}-${{ matrix.package }}"
-          SHARED_GROUP="${SHARED_GROUP:-runners}"
-
-          # Validate path to prevent accidental operations
-          case "$REPO_PATH" in
-            *"/publishing/repository"*)
-              # Path is valid
-              ;;
-            *)
-              echo "::error::Invalid repository path: $REPO_PATH"
-              echo "::error::Path must be under /publishing/repository"
-              exit 1
-              ;;
-          esac
-
-          echo "### Setting permissions for ${{ matrix.package }}" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-          echo "Repository path: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          if [ -d "$REPO_PATH" ]; then
-            echo "Setting umask 002" | tee -a "$GITHUB_STEP_SUMMARY"
-            umask 002
-
-            echo "Setting directories to group-writable and setgid (2775)..." | tee -a "$GITHUB_STEP_SUMMARY"
-            sudo find "$REPO_PATH" -type d -print0 \
-              | xargs -0 -r -P 8 sudo chmod -- 2775 2>/dev/null || true
-
-            echo "Ensuring files are group-writable (g+w)..." | tee -a "$GITHUB_STEP_SUMMARY"
-            sudo find "$REPO_PATH" -type f ! -perm -g+w -print0 \
-              | xargs -0 -r -P 8 sudo chmod -- g+w 2>/dev/null || true
-
-            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "✓ Permissions fixed" | tee -a "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Repository path does not exist yet: $REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
-          fi
-
-          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_KEY3 }}
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_KEY4 }}
-
-      - name: Checkout build repository
-        uses: actions/checkout@v6
-        with:
-          repository: armbian/build
-          ref: always
-          fetch-depth: 1
-          clean: false
-
-      - name: "Build repository ${{ matrix.release }}"
-        shell: bash
-        run: |
-          set -e
-          set -o pipefail
-
-          STORAGE_PATH="${{ env.STORAGE_PATH }}"
-          PUBLISH_PATH="${{ env.PUBLISHING_PATH }}"
-          PACKAGE="${{ matrix.package }}"
-          RELEASE="${{ matrix.release }}"
-
-          # Validate paths
-          case "$STORAGE_PATH" in
-            *"/armbian/openssh-server/storage"*)
-              ;;
-            *)
-              echo "::error::Invalid storage path: $STORAGE_PATH"
-              exit 1
-              ;;
-          esac
-
-          case "$PUBLISH_PATH" in
-            *"/publishing/repository"*)
-              ;;
-            *)
-              echo "::error::Invalid publishing path: $PUBLISH_PATH"
-              exit 1
-              ;;
-          esac
-
-          # Validate package name
-          case "$PACKAGE" in
-            debs|debs-beta)
-              ;;
-            *)
-              echo "::error::Invalid package name: $PACKAGE"
-              exit 1
-              ;;
-          esac
-
-          INPUT_DIR="${STORAGE_PATH}/${PACKAGE}"
-          OUTPUT_DIR="${PUBLISH_PATH}-${PACKAGE}"
-
-          echo "### Building release-specific components for $PACKAGE/$RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-          echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "Output directory: $OUTPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Validate input directory exists
-          if [ ! -d "$INPUT_DIR" ]; then
-            echo "::notice::Input directory does not exist: $INPUT_DIR"
-            exit 0
-          fi
-
-          # Count .deb files in incoming directory
-          DEB_COUNT=$(find "$INPUT_DIR" -type f -name "*.deb" 2>/dev/null | wc -l)
-          echo "Found ${DEB_COUNT} .deb files" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Only run repo.sh if there are files to process
-          if [ "${DEB_COUNT}" -gt 0 ]; then
-            echo "Building release-specific repos and snapshots for $RELEASE..." | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "Note: Common component was already built by 'main' job" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "Release-specific components will be merged by 'merge' job" | tee -a "$GITHUB_STEP_SUMMARY"
-            echo ""
+            echo "Running sequential repository update..." | tee -a "$GITHUB_STEP_SUMMARY"
             tools/repository/repo.sh \
               -c update \
-              -R "$RELEASE" \
               -k \
               -i "$INPUT_DIR" \
               -o "$OUTPUT_DIR"
-            echo "✓ Release-specific components built for $RELEASE" | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "::notice::No .deb files found, skipping repository update"
           fi
-
-  merge:
-    needs: postclean
-    strategy:
-      fail-fast: false
-      matrix:
-        repository:
-          - name: debs
-          - name: debs-beta
-    name: "Merge ${{ matrix.repository.name }}"
-    timeout-minutes: 120
-    runs-on: repository
-    steps:
-
-      # Cleaning self hosted runners
-      - name: Runner clean
-        uses: armbian/actions/runner-clean@main
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_KEY3 }}
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_KEY4 }}
-
-      - name: Checkout build repository
-        uses: actions/checkout@v6
-        with:
-          repository: armbian/build
-          ref: always
-          fetch-depth: 1
-          clean: false
-
-      - name: "Merge repository ${{ matrix.repository.name }}"
-        shell: bash
-        run: |
-          set -e
-          set -o pipefail
-
-          STORAGE_PATH="${{ env.STORAGE_PATH }}"
-          PUBLISH_PATH="${{ env.PUBLISHING_PATH }}"
-          REPO_NAME="${{ matrix.repository.name }}"
-
-          # Validate paths
-          case "$STORAGE_PATH" in
-            *"/armbian/openssh-server/storage"*)
-              ;;
-            *)
-              echo "::error::Invalid storage path: $STORAGE_PATH"
-              exit 1
-              ;;
-          esac
-
-          case "$PUBLISH_PATH" in
-            *"/publishing/repository"*)
-              ;;
-            *)
-              echo "::error::Invalid publishing path: $PUBLISH_PATH"
-              exit 1
-              ;;
-          esac
-
-          INPUT_DIR="${STORAGE_PATH}/${REPO_NAME}"
-          OUTPUT_DIR="${PUBLISH_PATH}-${REPO_NAME}"
-
-          echo "### Merging repository $REPO_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-          echo "Input directory: $INPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "Output directory: $OUTPUT_DIR" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Validate output directory exists
-          if [ ! -d "$OUTPUT_DIR" ]; then
-            echo "::notice::Output directory does not exist: $OUTPUT_DIR"
-            echo "This is expected if no packages were processed yet" | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-
-          echo "Merging common component with release-specific components..." | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "This imports from isolated databases and publishes complete repositories" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-
-          # Run merge command to combine common + release-specific components
-          tools/repository/repo.sh \
-            -c merge \
-            -i "$INPUT_DIR" \
-            -o "$OUTPUT_DIR"
-
-          echo "✓ Repository merge completed for $REPO_NAME" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo ""
-          echo "Repository is now ready with all components combined" | tee -a "$GITHUB_STEP_SUMMARY"
 
   cleanup:
     name: "Clean input"
-    needs: merge
+    needs: update-repository
     runs-on: repository
     strategy:
       matrix:
