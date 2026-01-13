@@ -432,7 +432,7 @@ jobs:
     needs: [Boards-index, Vendors-index, Generate-images]
     steps:
       - name: "Download all shard data"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: shard-data
 
