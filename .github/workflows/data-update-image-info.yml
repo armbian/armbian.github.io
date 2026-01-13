@@ -17,6 +17,7 @@ jobs:
   update-image-info:
     name: Update image info data
     runs-on: super
+    if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
       - name: Fix workspace permissions

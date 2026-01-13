@@ -12,6 +12,7 @@ jobs:
   generate:
     name: "Generate JSON from NetBox"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

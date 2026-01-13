@@ -22,6 +22,7 @@ jobs:
 
     name: "Check permissions"
     runs-on: "ubuntu-24.04"
+    if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
       - name: "Check permissions"
@@ -34,6 +35,7 @@ jobs:
   build:
     name: "Source of truth"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     needs: Check
     strategy:
       fail-fast: true
@@ -582,8 +584,8 @@ jobs:
         mkdir -p data/
         cp ${{ github.workspace }}/status/*.yaml data/
         cp ${{ github.workspace }}/*.mmdb data/
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
         git add data/.
         git diff --cached --quiet || git commit -m "Update Redirector YAML configuration"
         git push

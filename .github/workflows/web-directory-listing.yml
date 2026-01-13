@@ -21,8 +21,9 @@ jobs:
     name: "Rebuild data branch + upload artifact"
     runs-on: ubuntu-24.04
 
+    # Only run in Armbian organization
     # Loop guard: don't rerun on our own generated commit
-    if: ${{ github.event_name != 'push' || !contains(github.event.head_commit.message, 'Rebuild data branch (generated)') }}
+    if: ${{ github.repository_owner == 'Armbian' && (github.event_name != 'push' || !contains(github.event.head_commit.message, 'Rebuild data branch (generated)')) }}
 
     steps:
       - name: Checkout data branch

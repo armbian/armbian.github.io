@@ -16,6 +16,7 @@ jobs:
   prepare:
     name: "Split JSON into parts"
     runs-on: "ubuntu-24.04"
+    if: ${{ github.repository_owner == 'Armbian' }}
     outputs:
       matrix:  ${{steps.json.outputs.JSON_CONTENT}}
     steps:
