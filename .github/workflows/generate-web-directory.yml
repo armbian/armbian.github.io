@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    name: "Rebuild data branch + upload artifact"
+    name: "Rebuild data branch"
     runs-on: ubuntu-24.04
 
     # Only run in Armbian organization
