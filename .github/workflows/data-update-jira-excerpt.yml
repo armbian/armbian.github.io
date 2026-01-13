@@ -12,6 +12,7 @@ jobs:
   jira:
     runs-on: ubuntu-24.04
     name: "Get from Armbian Jira"
+    if: ${{ github.repository_owner == 'Armbian' }}
     permissions:
       contents: write
     env:

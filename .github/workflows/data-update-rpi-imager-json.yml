@@ -17,6 +17,9 @@ jobs:
 
     name: "Generate JSON Index"
     runs-on: "ubuntu-24.04"
+    if: ${{ github.repository_owner == 'Armbian' }}
+    permissions:
+      contents: write
     steps:
 
       - name: Checkout build framework repository
@@ -132,8 +135,8 @@ jobs:
 
           cp ${{ github.workspace }}/rpi-imager.json data/
 
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/.
-          git diff --cached --quiet || git commit -m "Update WEB indes files"
+          git diff --cached --quiet || git commit -m "Update WEB index files"
           git push

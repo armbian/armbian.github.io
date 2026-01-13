@@ -12,6 +12,9 @@ jobs:
   fetch-bigin-data:
     runs-on: ubuntu-latest
     name: "Fetch data"
+    if: ${{ github.repository_owner == 'Armbian' }}
+    permissions:
+      contents: write
     steps:
       - name: Checkout armbian.github.io repository
         uses: actions/checkout@v6
@@ -109,7 +112,7 @@ jobs:
           mkdir -p data/
           cp ${{ github.workspace }}/*.json data/
           git config user.name "github-actions[bot]"
-          git config --global user.email "github-actions@github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/platinum-partner.json data/gold-partner.json data/silver-partner.json data/maintainers.json
           git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
           git push

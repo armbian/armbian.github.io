@@ -20,6 +20,7 @@ jobs:
   enforce-triage:
     name: "Enforce Triage"
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'Armbian' }}
     concurrency:
       group: org-triage-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: false
