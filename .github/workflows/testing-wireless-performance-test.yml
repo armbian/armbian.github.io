@@ -15,6 +15,7 @@ jobs:
     outputs:
       DEPLOYMENT_MATRIX: "${{ steps.json.outputs.DEPLOYMENT_MATRIX }}"
     runs-on: "ubuntu-24.04"
+    if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
       # step for actual powering on / off TBD

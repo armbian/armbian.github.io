@@ -16,6 +16,7 @@ jobs:
 
     name: "Check permissions"
     runs-on: "ubuntu-22.04"
+    if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
       - name: "Check permissions"
@@ -28,6 +29,7 @@ jobs:
   build:
     name: "Get self hosted runners status"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     needs: Check
     steps:
 

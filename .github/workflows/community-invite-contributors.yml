@@ -12,6 +12,7 @@ on:
 jobs:
   check-eligibility:
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'Armbian' }}
     steps:
       - name: Collect PR authors from multiple Armbian repositories
         id: get-contributors

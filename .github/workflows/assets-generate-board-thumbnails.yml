@@ -27,6 +27,7 @@ jobs:
   Check:
     name: "Check permissions"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     steps:
       - name: "Check permissions"
         uses: armbian/actions/team-check@main
@@ -38,6 +39,7 @@ jobs:
   Boards-index:
     name: "Build boards matrix"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     needs: Check
     outputs:
       matrix: ${{ steps.boards.outputs.JSON_CONTENT }}
@@ -100,6 +102,7 @@ jobs:
   Vendors-index:
     name: "Build vendors matrix"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     needs: Check
     outputs:
       matrix: ${{ steps.vendors.outputs.JSON_CONTENT }}
@@ -174,6 +177,7 @@ jobs:
   Generate-images:
     name: "Maker board & vendor pics"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     needs: [Boards-index, Vendors-index]
     strategy:
       fail-fast: false
@@ -429,6 +433,7 @@ jobs:
   Summary:
     name: "Generate summary report"
     runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
     needs: [Boards-index, Vendors-index, Generate-images]
     steps:
       - name: "Download all shard data"
