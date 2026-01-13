@@ -388,7 +388,7 @@ jobs:
           fi
 
       - name: "Upload shard data"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: shard-data-${{ matrix.shard }}
           path: shard-data/
