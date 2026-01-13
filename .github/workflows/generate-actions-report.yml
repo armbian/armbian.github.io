@@ -1,0 +1,129 @@
+name: AI Actions Report
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      repositories:
+        description: "Comma-separated list of repositories to scan"
+        required: false
+        default: "armbian.github.io,build"
+      scan_root:
+        description: "Folder to scan (default .github)"
+        required: false
+        default: ".github"
+      default_branch:
+        description: "Default branch for links (default main)"
+        required: false
+        default: "main"
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    name: "Matrix"
+    outputs:
+      repo_matrix: ${{ steps.set_repos.outputs.matrix }}
+    steps:
+      - name: Set repository matrix
+        id: set_repos
+        run: |
+          REPOS="${{ inputs.repositories }}"
+          if [ -z "$REPOS" ]; then
+            REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
+          fi
+          # Convert comma-separated to JSON array using python for simpler parsing
+          MATRIX=$(python3 -c "import json,sys; repos=[r.strip() for r in '$REPOS'.split(',') if r.strip()]; print(json.dumps(repos))")
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "Repositories to scan: $REPOS"
+
+  scan-repositories:
+    name: "Scan"
+    needs: setup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      models: read
+
+    strategy:
+      matrix:
+        repo: ${{ fromJson(needs.setup.outputs.repo_matrix) }}
+      fail-fast: false
+      max-parallel: 1 # free api is very limited
+
+    steps:
+      - name: Checkout ${{ matrix.repo }}
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/${{ matrix.repo }}
+          path: repo-source
+
+      - name: Checkout script repo
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/armbian.github.io
+          path: script-repo
+          ref: ai
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: |
+          npm init -y
+          npm i fast-glob js-yaml
+
+      - name: Generate report for ${{ matrix.repo }}
+        run: |
+          cd repo-source
+          GITHUB_REPOSITORY=armbian/${{ matrix.repo }} SCAN_ROOT=${{ inputs.scan_root }} node ../script-repo/scripts/claude-actions-report.mjs
+          mv actions-report.json ../actions-report-${{ matrix.repo }}.json
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AI_PROVIDER: openai
+          AI_MODEL: gpt-4o-mini
+          REPO_DEFAULT_BRANCH: ${{ inputs.default_branch }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: actions-report-${{ matrix.repo }}
+          path: actions-report-${{ matrix.repo }}.json
+
+  merge-and-commit:
+    needs: [setup, scan-repositories]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data-branch
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Merge reports
+        run: |
+          mkdir -p data-branch/data/actions
+          cp artifacts/actions-report-*/*.json data-branch/data/actions/ 2>/dev/null || true
+          ls -la data-branch/data/actions/
+
+      - name: Commit to data branch
+        run: |
+          cd data-branch
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add data/actions/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update actions reports [skip ci]"
+            git push
+          fi
