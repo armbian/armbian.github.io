@@ -564,6 +564,11 @@ async function callAnthropic({ apiKey, model, fileKind, relPath, content, parsed
 }
 
 async function main() {
+  console.log(`=== Starting AI Actions Report ===`);
+  console.log(`Working directory: ${process.cwd()}`);
+  console.log(`Cache directory will be: ${path.resolve(process.cwd(), CACHE_DIR)}`);
+  console.log(`====================================\n`);
+
   const provider = getProvider();
   const apiKey = provider === "zai"
     ? requiredEnv("ZAI_API_KEY")
@@ -631,9 +636,11 @@ async function main() {
 
       if (cached) {
         // Use cached description
+        console.log(`✓ CACHE HIT for ${relPath}`);
         ai = cached;
         cacheHits++;
       } else {
+        console.log(`✗ CACHE MISS for ${relPath} - calling AI...`);
         // Generate new description with AI
         const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
 
@@ -646,6 +653,7 @@ async function main() {
             content: raw.slice(0, 20000), // avoid huge payloads
             parsedExecution,
           });
+          console.log(`✓ AI generation succeeded for ${relPath}`);
         } catch (aiError) {
           // AI call failed, use fallback
           console.error(`AI generation failed for ${relPath}: ${aiError.message}`);
@@ -655,11 +663,13 @@ async function main() {
           };
         }
 
+        console.log(`→ About to save cache for ${relPath}...`);
         // Save to cache for future runs (even if AI failed)
         await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
         cacheMisses++;
       }
     } catch (e) {
+      console.error(`✗ Processing error for ${relPath}: ${e.message}`);
       ai = {
         description: `Processing failed: ${e.message}`,
         execution_method: parsedExecution,
