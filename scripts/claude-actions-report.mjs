@@ -163,7 +163,7 @@ async function saveCachedDescription(relPath, content, description, execution_me
     };
 
     await fs.writeFile(cachePath, JSON.stringify(cacheData, null, 2) + "\n", "utf8");
-    console.log(`✓ Cached description for ${relPath}`);
+    console.log(`✓ Cached description for ${relPath} -> ${cachePath}`);
   } catch (error) {
     console.warn(`Warning: Failed to cache description for ${relPath}:`, error.message);
     // Don't fail the entire process if caching fails
@@ -575,6 +575,9 @@ async function main() {
   const files = await fg(patterns, { dot: true, onlyFiles: true, unique: true });
 
   const actions = [];
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
   for (const file of files) {
     const relPath = file.replaceAll("\\", "/");
     const filename = path.basename(relPath);
@@ -617,6 +620,7 @@ async function main() {
       if (cached) {
         // Use cached description
         ai = cached;
+        cacheHits++;
       } else {
         // Generate new description with AI
         const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
@@ -631,6 +635,7 @@ async function main() {
 
         // Save to cache for future runs
         await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
+        cacheMisses++;
       }
     } catch (e) {
       ai = {
@@ -695,6 +700,13 @@ async function main() {
   const outPath = path.resolve(process.cwd(), "actions-report.json");
   await fs.writeFile(outPath, JSON.stringify(report, null, 2) + "\n", "utf8");
   console.log(`Wrote ${actions.length} entries to ${outPath}`);
+
+  // Print cache statistics
+  console.log(`\n📊 Cache Statistics:`);
+  console.log(`   ✓ Cache hits: ${cacheHits}`);
+  console.log(`   ✗ Cache misses: ${cacheMisses}`);
+  console.log(`   Hit rate: ${actions.length > 0 ? Math.round((cacheHits / actions.length) * 100) : 0}%`);
+  console.log(`   Cache directory: ${path.resolve(process.cwd(), CACHE_DIR)}`);
 }
 
 main().catch((err) => {
