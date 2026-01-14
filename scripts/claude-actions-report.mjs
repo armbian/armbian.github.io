@@ -151,7 +151,15 @@ async function saveCachedDescription(relPath, content, description, execution_me
   try {
     // Ensure cache directory exists
     const cacheDir = path.dirname(cachePath);
+
+    console.log(`📝 Attempting to save cache:`);
+    console.log(`   relPath: ${relPath}`);
+    console.log(`   cacheDir: ${cacheDir}`);
+    console.log(`   cachePath: ${cachePath}`);
+    console.log(`   cwd: ${process.cwd()}`);
+
     await fs.mkdir(cacheDir, { recursive: true });
+    console.log(`   ✓ Directory created/verified`);
 
     const cacheData = {
       version: CACHE_VERSION,
@@ -169,6 +177,7 @@ async function saveCachedDescription(relPath, content, description, execution_me
     console.error(`✗ Failed to cache description for ${relPath}:`, error.message);
     console.error(`  Cache path: ${cachePath}`);
     console.error(`  Working directory: ${process.cwd()}`);
+    console.error(`  Full error:`, error);
     // Don't fail the entire process if caching fails
   }
 }
