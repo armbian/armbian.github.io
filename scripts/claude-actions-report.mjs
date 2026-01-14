@@ -591,6 +591,11 @@ async function main() {
 
   const files = await fg(patterns, { dot: true, onlyFiles: true, unique: true });
 
+  console.log(`Found ${files.length} workflow/action files to process`);
+  if (files.length > 0) {
+    console.log(`Files:`, files.slice(0, 5).join(', '), files.length > 5 ? '...' : '');
+  }
+
   const actions = [];
   let cacheHits = 0;
   let cacheMisses = 0;
@@ -664,8 +669,13 @@ async function main() {
         }
 
         console.log(`→ About to save cache for ${relPath}...`);
+        console.log(`   Description length: ${ai.description?.length || 0}`);
+        console.log(`   Execution method: ${ai.execution_method}`);
+
         // Save to cache for future runs (even if AI failed)
-        await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
+        const saveResult = await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
+        console.log(`← saveCachedDescription returned for ${relPath}, result:`, saveResult);
+
         cacheMisses++;
       }
     } catch (e) {
