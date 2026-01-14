@@ -29,8 +29,7 @@ jobs:
         run: |
           REPOS="${{ inputs.repositories }}"
           if [ -z "$REPOS" ]; then
-            REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
-            REPOS="imager"
+            REPOS="documentation"
           fi
           # Convert comma-separated to JSON array using python for simpler parsing
           MATRIX=$(python3 -c "import json,sys; repos=[r.strip() for r in '$REPOS'.split(',') if r.strip()]; print(json.dumps(repos))")
@@ -94,6 +93,14 @@ jobs:
           AI_PROVIDER: openai
           AI_MODEL: gpt-4o-mini
           REPO_DEFAULT_BRANCH: ${{ inputs.default_branch }}
+
+      - name: Debug cache directory
+        run: |
+          echo "Checking for .ai-cache directory:"
+          ls -la repo-source/.ai-cache/ 2>&1 || echo "Directory does not exist"
+          echo ""
+          echo "Working directory contents:"
+          ls -la repo-source/ | grep -E "ai-cache|actions-report" || echo "No cache or report files found"
 
       - name: Save AI description cache
         uses: actions/cache@v4
