@@ -627,22 +627,32 @@ async function main() {
       } else {
         // Generate new description with AI
         const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
-        ai = await callAI({
-          apiKey,
-          model,
-          fileKind,
-          relPath,
-          content: raw.slice(0, 20000), // avoid huge payloads
-          parsedExecution,
-        });
 
-        // Save to cache for future runs
+        try {
+          ai = await callAI({
+            apiKey,
+            model,
+            fileKind,
+            relPath,
+            content: raw.slice(0, 20000), // avoid huge payloads
+            parsedExecution,
+          });
+        } catch (aiError) {
+          // AI call failed, use fallback
+          console.error(`AI generation failed for ${relPath}: ${aiError.message}`);
+          ai = {
+            description: `AI description failed: ${aiError.message}`,
+            execution_method: parsedExecution,
+          };
+        }
+
+        // Save to cache for future runs (even if AI failed)
         await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
         cacheMisses++;
       }
     } catch (e) {
       ai = {
-        description: `AI description failed: ${e.message}`,
+        description: `Processing failed: ${e.message}`,
         execution_method: parsedExecution,
       };
     }
