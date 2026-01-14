@@ -113,25 +113,21 @@ async function loadCachedDescription(relPath, content) {
 
     // Verify cache version
     if (cacheData.version !== CACHE_VERSION) {
-      console.log(`Cache version mismatch for ${relPath}, regenerating...`);
       return null;
     }
 
     // Verify file content hash
     const currentHash = computeFileHash(content);
     if (cacheData.content_hash !== currentHash) {
-      console.log(`File changed for ${relPath}, regenerating description...`);
       return null;
     }
 
     // Verify AI model hasn't changed (optional, can be useful)
     const currentModel = process.env.AI_MODEL || "default";
     if (cacheData.ai_model && cacheData.ai_model !== currentModel) {
-      console.log(`AI model changed for ${relPath}, regenerating...`);
       return null;
     }
 
-    console.log(`✓ Using cached description for ${relPath}`);
     return {
       description: cacheData.description,
       execution_method: cacheData.execution_method,
@@ -151,15 +147,7 @@ async function saveCachedDescription(relPath, content, description, execution_me
   try {
     // Ensure cache directory exists
     const cacheDir = path.dirname(cachePath);
-
-    console.log(`📝 Attempting to save cache:`);
-    console.log(`   relPath: ${relPath}`);
-    console.log(`   cacheDir: ${cacheDir}`);
-    console.log(`   cachePath: ${cachePath}`);
-    console.log(`   cwd: ${process.cwd()}`);
-
     await fs.mkdir(cacheDir, { recursive: true });
-    console.log(`   ✓ Directory created/verified`);
 
     const cacheData = {
       version: CACHE_VERSION,
@@ -172,12 +160,8 @@ async function saveCachedDescription(relPath, content, description, execution_me
     };
 
     await fs.writeFile(cachePath, JSON.stringify(cacheData, null, 2) + "\n", "utf8");
-    console.log(`✓ Cached description for ${relPath} -> ${cachePath}`);
   } catch (error) {
-    console.error(`✗ Failed to cache description for ${relPath}:`, error.message);
-    console.error(`  Cache path: ${cachePath}`);
-    console.error(`  Working directory: ${process.cwd()}`);
-    console.error(`  Full error:`, error);
+    console.warn(`Warning: Failed to cache description for ${relPath}: ${error.message}`);
     // Don't fail the entire process if caching fails
   }
 }
@@ -564,11 +548,6 @@ async function callAnthropic({ apiKey, model, fileKind, relPath, content, parsed
 }
 
 async function main() {
-  console.log(`=== Starting AI Actions Report ===`);
-  console.log(`Working directory: ${process.cwd()}`);
-  console.log(`Cache directory will be: ${path.resolve(process.cwd(), CACHE_DIR)}`);
-  console.log(`====================================\n`);
-
   const provider = getProvider();
   const apiKey = provider === "zai"
     ? requiredEnv("ZAI_API_KEY")
@@ -590,11 +569,6 @@ async function main() {
   ];
 
   const files = await fg(patterns, { dot: true, onlyFiles: true, unique: true });
-
-  console.log(`Found ${files.length} workflow/action files to process`);
-  if (files.length > 0) {
-    console.log(`Files:`, files.slice(0, 5).join(', '), files.length > 5 ? '...' : '');
-  }
 
   const actions = [];
   let cacheHits = 0;
@@ -641,11 +615,9 @@ async function main() {
 
       if (cached) {
         // Use cached description
-        console.log(`✓ CACHE HIT for ${relPath}`);
         ai = cached;
         cacheHits++;
       } else {
-        console.log(`✗ CACHE MISS for ${relPath} - calling AI...`);
         // Generate new description with AI
         const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
 
@@ -658,28 +630,19 @@ async function main() {
             content: raw.slice(0, 20000), // avoid huge payloads
             parsedExecution,
           });
-          console.log(`✓ AI generation succeeded for ${relPath}`);
         } catch (aiError) {
           // AI call failed, use fallback
-          console.error(`AI generation failed for ${relPath}: ${aiError.message}`);
           ai = {
             description: `AI description failed: ${aiError.message}`,
             execution_method: parsedExecution,
           };
         }
 
-        console.log(`→ About to save cache for ${relPath}...`);
-        console.log(`   Description length: ${ai.description?.length || 0}`);
-        console.log(`   Execution method: ${ai.execution_method}`);
-
         // Save to cache for future runs (even if AI failed)
-        const saveResult = await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
-        console.log(`← saveCachedDescription returned for ${relPath}, result:`, saveResult);
-
+        await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
         cacheMisses++;
       }
     } catch (e) {
-      console.error(`✗ Processing error for ${relPath}: ${e.message}`);
       ai = {
         description: `Processing failed: ${e.message}`,
         execution_method: parsedExecution,
@@ -743,12 +706,10 @@ async function main() {
   await fs.writeFile(outPath, JSON.stringify(report, null, 2) + "\n", "utf8");
   console.log(`Wrote ${actions.length} entries to ${outPath}`);
 
-  // Print cache statistics
-  console.log(`\n📊 Cache Statistics:`);
-  console.log(`   ✓ Cache hits: ${cacheHits}`);
-  console.log(`   ✗ Cache misses: ${cacheMisses}`);
-  console.log(`   Hit rate: ${actions.length > 0 ? Math.round((cacheHits / actions.length) * 100) : 0}%`);
-  console.log(`   Cache directory: ${path.resolve(process.cwd(), CACHE_DIR)}`);
+  // Print cache statistics (only if there were any files processed)
+  if (actions.length > 0 && (cacheHits > 0 || cacheMisses > 0)) {
+    console.log(`Cache: ${cacheHits} hits, ${cacheMisses} misses (${Math.round((cacheHits / actions.length) * 100)}% hit rate)`);
+  }
 }
 
 main().catch((err) => {
