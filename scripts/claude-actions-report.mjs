@@ -20,7 +20,12 @@
  *       "script_link": string,
  *       "filelength": number (file size in bytes),
  *       "edited": string (ISO 8601 timestamp of last file modification),
- *       "executed": string (ISO 8601 timestamp of last workflow run)
+ *       "executed": string (ISO 8601 timestamp of last workflow run),
+ *       "last_run_status": string ("success", "failure", etc.),
+ *       "retry_count": number (number of re-run attempts on last workflow),
+ *       "total_run_time_seconds": number (total execution time including retries),
+ *       "last_run_duration_seconds": number (duration of last run attempt),
+ *       "total_runs": number (total number of runs recorded)
  *     }
  *   ]
  * }
@@ -173,7 +178,7 @@ async function getFileEditTime(filePath) {
   }
 }
 
-async function getLastWorkflowRunTime(workflowName, apiKey) {
+async function getWorkflowRunDetails(workflowName, apiKey) {
   const repo = process.env.GITHUB_REPOSITORY;
   const server = process.env.GITHUB_SERVER_URL || "https://github.com";
   const apiUrl = server.replace("github.com", "api.github.com");
@@ -181,7 +186,8 @@ async function getLastWorkflowRunTime(workflowName, apiKey) {
   if (!repo || !workflowName) return null;
 
   try {
-    const res = await fetch(`${apiUrl}/repos/${repo}/actions/workflows/${workflowName}/runs?per_page=1`, {
+    // Fetch multiple recent runs to calculate statistics
+    const res = await fetch(`${apiUrl}/repos/${repo}/actions/workflows/${workflowName}/runs?per_page=10`, {
       headers: {
         "authorization": `Bearer ${apiKey}`,
         "accept": "application/vnd.github.v3+json",
@@ -191,9 +197,48 @@ async function getLastWorkflowRunTime(workflowName, apiKey) {
     if (!res.ok) return null;
 
     const data = await res.json();
-    const lastRun = data?.workflow_runs?.[0];
-    return lastRun?.updated_at || lastRun?.created_at || null;
-  } catch {
+    const runs = data?.workflow_runs || [];
+
+    if (runs.length === 0) return null;
+
+    // Get the most recent run
+    const lastRun = runs[0];
+
+    // Calculate retry count for the most recent workflow run
+    // GitHub uses run_number for the workflow run and run_attempt for retries
+    // run_attempt > 1 indicates this is a retry
+    const retryCount = lastRun.run_attempt ? lastRun.run_attempt - 1 : 0;
+
+    // Calculate duration for the last run attempt (in seconds)
+    const lastRunDuration = lastRun.updated_at && lastRun.created_at
+      ? Math.floor((new Date(lastRun.updated_at) - new Date(lastRun.created_at)) / 1000)
+      : null;
+
+    // Calculate total execution time including all retry attempts
+    // Sum up all runs with the same run_number (original + retries)
+    const lastRunNumber = lastRun.run_number;
+    const retryRuns = runs.filter(r => r.run_number === lastRunNumber);
+    const totalRunTime = retryRuns.reduce((sum, run) => {
+      if (run.updated_at && run.created_at) {
+        return sum + Math.floor((new Date(run.updated_at) - new Date(run.created_at)) / 1000);
+      }
+      return sum;
+    }, 0);
+
+    // Get total number of runs (from the fetched sample)
+    // Note: GitHub API returns up to per_page runs, so this is a sample
+    const totalRuns = runs.length;
+
+    return {
+      executed: lastRun?.updated_at || lastRun?.created_at || null,
+      last_run_status: lastRun?.conclusion || lastRun?.status || "unknown",
+      retry_count: retryCount,
+      total_run_time_seconds: totalRunTime || null,
+      last_run_duration_seconds: lastRunDuration,
+      total_runs: totalRuns,
+    };
+  } catch (error) {
+    console.error(`Error fetching workflow details for ${workflowName}:`, error.message);
     return null;
   }
 }
@@ -495,10 +540,24 @@ async function main() {
     const stats = await fs.stat(file);
     const filelength = stats.size;
 
-    // Get last workflow execution time (only for workflows)
+    // Get workflow execution details (only for workflows)
     let executed = null;
+    let last_run_status = null;
+    let retry_count = 0;
+    let total_run_time_seconds = null;
+    let last_run_duration_seconds = null;
+    let total_runs = 0;
+
     if (isWorkflowFile(relPath)) {
-      executed = await getLastWorkflowRunTime(filename, apiKey);
+      const runDetails = await getWorkflowRunDetails(filename, apiKey);
+      if (runDetails) {
+        executed = runDetails.executed;
+        last_run_status = runDetails.last_run_status;
+        retry_count = runDetails.retry_count;
+        total_run_time_seconds = runDetails.total_run_time_seconds;
+        last_run_duration_seconds = runDetails.last_run_duration_seconds;
+        total_runs = runDetails.total_runs;
+      }
     }
 
     actions.push({
@@ -512,6 +571,11 @@ async function main() {
       filelength,
       edited,
       executed,
+      last_run_status,
+      retry_count,
+      total_run_time_seconds,
+      last_run_duration_seconds,
+      total_runs,
     });
   }
 
