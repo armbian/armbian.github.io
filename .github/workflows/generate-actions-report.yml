@@ -29,7 +29,7 @@ jobs:
         run: |
           REPOS="${{ inputs.repositories }}"
           if [ -z "$REPOS" ]; then
-            REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
+            REPOS="imager"
           fi
           # Convert comma-separated to JSON array using python for simpler parsing
           MATRIX=$(python3 -c "import json,sys; repos=[r.strip() for r in '$REPOS'.split(',') if r.strip()]; print(json.dumps(repos))")
@@ -74,6 +74,15 @@ jobs:
           npm init -y
           npm i fast-glob js-yaml
 
+      - name: Restore AI description cache
+        uses: actions/cache@v4
+        with:
+          path: repo-source/.ai-cache
+          key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
+          restore-keys: |
+            ai-descriptions-${{ matrix.repo }}-
+            ai-descriptions-
+
       - name: Generate report for ${{ matrix.repo }}
         run: |
           cd repo-source
@@ -84,6 +93,12 @@ jobs:
           AI_PROVIDER: openai
           AI_MODEL: gpt-4o-mini
           REPO_DEFAULT_BRANCH: ${{ inputs.default_branch }}
+
+      - name: Save AI description cache
+        uses: actions/cache@v4
+        with:
+          path: repo-source/.ai-cache
+          key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

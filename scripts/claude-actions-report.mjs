@@ -5,6 +5,12 @@
  *
  * Can scan a single repository or entire organization.
  *
+ * CACHING:
+ * This script uses file hashing to cache AI descriptions and avoid redundant API calls.
+ * Cache files are stored in .ai-cache/ directory. To enable GitHub Actions caching,
+ * add cache steps before and after this script using actions/cache@v4 with path: .ai-cache
+ * and a unique key based on hashFiles of your YAML files.
+ *
  * Output JSON structure:
  * {
  *   "organization": string,
@@ -47,6 +53,7 @@ import path from "node:path";
 import process from "node:process";
 import fg from "fast-glob";
 import yaml from "js-yaml";
+import crypto from "node:crypto";
 
 // Retry with exponential backoff for rate limiting
 async function fetchWithRetry(fetchFn, maxRetries = 5) {
@@ -75,6 +82,93 @@ async function fetchWithRetry(fetchFn, maxRetries = 5) {
 const ZAI_API_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const OPENAI_API_URL = "https://models.inference.ai.azure.com/chat/completions";
+
+// Cache configuration
+const CACHE_DIR = ".ai-cache";
+const CACHE_VERSION = "v1";
+
+/**
+ * Compute SHA-256 hash of file content
+ */
+function computeFileHash(content) {
+  return crypto.createHash("sha256").update(content).digest("hex");
+}
+
+/**
+ * Get cache file path for a given workflow file
+ */
+function getCachePath(relPath) {
+  const safeName = relPath.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return path.resolve(process.cwd(), CACHE_DIR, `${safeName}.json`);
+}
+
+/**
+ * Load cached AI description if available and valid
+ */
+async function loadCachedDescription(relPath, content) {
+  const cachePath = getCachePath(relPath);
+
+  try {
+    const cacheData = JSON.parse(await fs.readFile(cachePath, "utf8"));
+
+    // Verify cache version
+    if (cacheData.version !== CACHE_VERSION) {
+      console.log(`Cache version mismatch for ${relPath}, regenerating...`);
+      return null;
+    }
+
+    // Verify file content hash
+    const currentHash = computeFileHash(content);
+    if (cacheData.content_hash !== currentHash) {
+      console.log(`File changed for ${relPath}, regenerating description...`);
+      return null;
+    }
+
+    // Verify AI model hasn't changed (optional, can be useful)
+    const currentModel = process.env.AI_MODEL || "default";
+    if (cacheData.ai_model && cacheData.ai_model !== currentModel) {
+      console.log(`AI model changed for ${relPath}, regenerating...`);
+      return null;
+    }
+
+    console.log(`✓ Using cached description for ${relPath}`);
+    return {
+      description: cacheData.description,
+      execution_method: cacheData.execution_method,
+    };
+  } catch (error) {
+    // Cache file doesn't exist or is invalid
+    return null;
+  }
+}
+
+/**
+ * Save AI description to cache
+ */
+async function saveCachedDescription(relPath, content, description, execution_method) {
+  const cachePath = getCachePath(relPath);
+
+  try {
+    // Ensure cache directory exists
+    await fs.mkdir(path.dirname(cachePath), { recursive: true });
+
+    const cacheData = {
+      version: CACHE_VERSION,
+      content_hash: computeFileHash(content),
+      ai_model: process.env.AI_MODEL || "default",
+      relPath,
+      description,
+      execution_method,
+      cached_at: new Date().toISOString(),
+    };
+
+    await fs.writeFile(cachePath, JSON.stringify(cacheData, null, 2) + "\n", "utf8");
+    console.log(`✓ Cached description for ${relPath}`);
+  } catch (error) {
+    console.warn(`Warning: Failed to cache description for ${relPath}:`, error.message);
+    // Don't fail the entire process if caching fails
+  }
+}
 
 function requiredEnv(name) {
   const v = process.env[name];
@@ -517,15 +611,27 @@ async function main() {
 
     let ai;
     try {
-      const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
-      ai = await callAI({
-        apiKey,
-        model,
-        fileKind,
-        relPath,
-        content: raw.slice(0, 20000), // avoid huge payloads
-        parsedExecution,
-      });
+      // Try to load from cache first
+      const cached = await loadCachedDescription(relPath, raw);
+
+      if (cached) {
+        // Use cached description
+        ai = cached;
+      } else {
+        // Generate new description with AI
+        const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
+        ai = await callAI({
+          apiKey,
+          model,
+          fileKind,
+          relPath,
+          content: raw.slice(0, 20000), // avoid huge payloads
+          parsedExecution,
+        });
+
+        // Save to cache for future runs
+        await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
+      }
     } catch (e) {
       ai = {
         description: `AI description failed: ${e.message}`,
