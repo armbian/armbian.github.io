@@ -347,7 +347,9 @@ async function callZai({ apiKey, model, fileKind, relPath, content, parsedExecut
     "",
     "Rules:",
     "- Be concise but specific (1–4 sentences for description).",
-    "- For description: Focus ONLY on what the workflow/action DOES - its purpose, operations, and outcomes. DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions. Focus on the actual work performed.",
+    "- Start description directly with what the workflow DOES (e.g., \"Builds and deploys\", \"Runs tests on\", \"Generates report for\"). DO NOT start with \"This workflow\", \"The workflow\", or similar.",
+    "- Focus on the actual work performed: purpose, operations, and outcomes.",
+    "- DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions.",
     "- For execution_method: List concrete triggers/entrypoints (events, workflow_dispatch inputs, schedule cron, reusable workflow calls, composite steps, docker/js, etc.).",
     "- Do not invent URLs or file paths; only describe behavior based on content.",
   ].join("\n");
@@ -419,7 +421,9 @@ async function callOpenAI({ apiKey, model, fileKind, relPath, content, parsedExe
     "",
     "Rules:",
     "- Be concise but specific (1–4 sentences for description).",
-    "- For description: Focus ONLY on what the workflow/action DOES - its purpose, operations, and outcomes. DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions. Focus on the actual work performed.",
+    "- Start description directly with what the workflow DOES (e.g., \"Builds and deploys\", \"Runs tests on\", \"Generates report for\"). DO NOT start with \"This workflow\", \"The workflow\", or similar.",
+    "- Focus on the actual work performed: purpose, operations, and outcomes.",
+    "- DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions.",
     "- For execution_method: List concrete triggers/entrypoints (events, workflow_dispatch inputs, schedule cron, reusable workflow calls, composite steps, docker/js, etc.).",
     "- Do not invent URLs or file paths; only describe behavior based on content.",
   ].join("\n");
@@ -490,7 +494,9 @@ async function callAnthropic({ apiKey, model, fileKind, relPath, content, parsed
     "",
     "Rules:",
     "- Be concise but specific (1–4 sentences for description).",
-    "- For description: Focus ONLY on what the workflow/action DOES - its purpose, operations, and outcomes. DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions. Focus on the actual work performed.",
+    "- Start description directly with what the workflow DOES (e.g., \"Builds and deploys\", \"Runs tests on\", \"Generates report for\"). DO NOT start with \"This workflow\", \"The workflow\", or similar.",
+    "- Focus on the actual work performed: purpose, operations, and outcomes.",
+    "- DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions.",
     "- For execution_method: List concrete triggers/entrypoints (events, workflow_dispatch inputs, schedule cron, reusable workflow calls, composite steps, docker/js, etc.).",
     "- Do not invent URLs or file paths; only describe behavior based on content.",
   ].join("\n");
