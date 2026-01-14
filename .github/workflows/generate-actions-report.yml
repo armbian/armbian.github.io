@@ -29,6 +29,7 @@ jobs:
         run: |
           REPOS="${{ inputs.repositories }}"
           if [ -z "$REPOS" ]; then
+            REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
             REPOS="imager"
           fi
           # Convert comma-separated to JSON array using python for simpler parsing
@@ -95,7 +96,6 @@ jobs:
           REPO_DEFAULT_BRANCH: ${{ inputs.default_branch }}
 
       - name: Save AI description cache
-        if: hashFiles('repo-source/.ai-cache/**') != ''
         uses: actions/cache@v4
         with:
           path: repo-source/.ai-cache
