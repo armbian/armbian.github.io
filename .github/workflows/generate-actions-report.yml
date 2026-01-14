@@ -62,7 +62,7 @@ jobs:
         with:
           repository: armbian/armbian.github.io
           path: script-repo
-          ref: ai
+          ref: feature/ai-cache-optimization
 
       - name: Setup Node
         uses: actions/setup-node@v4
