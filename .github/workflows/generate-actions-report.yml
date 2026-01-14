@@ -130,6 +130,25 @@ jobs:
           cp artifacts/actions-report-*/*.json data-branch/data/actions/ 2>/dev/null || true
           ls -la data-branch/data/actions/
 
+      - name: Generate index
+        run: |
+          cd data-branch/data/actions
+          # Create list of all JSON files
+          files=$(ls actions-report-*.json 2>/dev/null | sort)
+          # Generate index.json
+          echo "{\"generated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"files\":[" > index.json
+          first=true
+          for f in $files; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo "," >> index.json
+            fi
+            echo -n "\"$f\"" >> index.json
+          done
+          echo "]}" >> index.json
+          cat index.json
+
       - name: Commit to data branch
         run: |
           cd data-branch
