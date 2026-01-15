@@ -1,9 +1,9 @@
-name: "Download latest keyrings for Debian & Ubuntu"
+name: "Data: Download keyrings for Debian & Ubuntu"
 
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: ["Keyrings update"]
+  schedule:
+    - cron: '40 3 * * 3'
 
 concurrency:
   group: redirector
@@ -151,8 +151,8 @@ jobs:
             echo "No changes to commit."
           fi
 
-      - name: "Run Bigin update action"
+      - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Bigin update"
+          event-type: "Web: Directory listing"
