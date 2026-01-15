@@ -10,9 +10,9 @@ This repository acts as a central **automation and orchestration hub** for the A
 It also produces [data exchange files](https://github.armbian.com/) used for automation, reporting, and content delivery across the Armbian infrastructure.
 
 
-### Workflow Status & Monitoring
+### Workflow status & monitoring
 
 ❤️‍🩹 [Explore all actions workflows](https://actions.armbian.com/?repo=armbian.github.io)
 
-Real-time workflow status, execution history, and performance metrics for this repository.
+Real-time workflow status, execution history, and performance metrics for all Armbian action scripts.
 
