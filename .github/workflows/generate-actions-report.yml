@@ -36,7 +36,6 @@ jobs:
         with:
           repository: armbian/armbian.github.io
           path: script-repo
-          ref: ai
 
       - name: Setup Node
         uses: actions/setup-node@v4
