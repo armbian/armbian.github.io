@@ -1,7 +1,8 @@
-name: AI Actions Report
+name: "Infrastructure: AI actions summary generator"
 
 on:
-  push:
+  schedule:
+    - cron: '0 1 */2 * *'
   workflow_dispatch:
     inputs:
       repositories:
@@ -86,7 +87,7 @@ jobs:
       - name: Generate report for ${{ matrix.repo }}
         run: |
           cd repo-source
-          GITHUB_REPOSITORY=armbian/${{ matrix.repo }} SCAN_ROOT=${{ inputs.scan_root }} node ../script-repo/scripts/claude-actions-report.mjs
+          GITHUB_REPOSITORY=armbian/${{ matrix.repo }} SCAN_ROOT=${{ inputs.scan_root }} node ../script-repo/scripts/generate-actions-report.mjs
           mv actions-report.json ../actions-report-${{ matrix.repo }}.json
         env:
           GITHUB_TOKEN: ${{ github.token }}
