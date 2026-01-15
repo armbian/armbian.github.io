@@ -161,3 +161,11 @@ jobs:
             git commit -m "Update actions reports [skip ci]"
             git push
           fi
+
+      # Run websire generation
+      - name: "Generate website actions.armbian.com"
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.DISPATCH }}
+          repository: armbian/actions
+          event-type: "Generate website"
