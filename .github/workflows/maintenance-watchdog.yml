@@ -1,7 +1,4 @@
-#
-# This action restarts actions that failed - 3x
-#
-name: "Maintenance: Watchdog (cronjob)"
+name: "Maintenance: Watchdog"
 on:
   push:
   schedule:
@@ -17,7 +14,7 @@ concurrency:
 
 jobs:
 
-  gradle:
+  watchdog:
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -31,23 +28,46 @@ jobs:
           - infrastructure-repository-update
           - generate-servers-jsons
 
-    name: "R"
+    name: "${{ matrix.script }}"
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
       - name: "Restart ${{ matrix.script }}.yml"
         run: |
+          set -euo pipefail
 
           # Define variables here
-          OWNER_REPO="armbian/armbian.github.io"
           ATTEMPTS="3"
           SCRIPT="${{ matrix.script }}"
 
-          WORKFLOW=$(gh api "/repos/${{ github.repository }}/actions/workflows" | jq '.workflows[] | select(.path==".github/workflows/${{ matrix.script }}.yml")' | jq -r '.id')
-          read ID STATUS ATTEMPT <<< $(gh api "/repos/${{ github.repository }}/actions/workflows/${WORKFLOW}/runs" | jq '.workflow_runs[]' | jq -r '.id,.conclusion,.run_attempt' | head -3 | xargs -n3 -d'\n')
+          # Get workflow ID
+          WORKFLOW=$(gh api "/repos/${{ github.repository }}/actions/workflows" | jq -r --arg path ".github/workflows/${SCRIPT}.yml" '.workflows[] | select(.path==$path) | .id')
 
-          # if attempt is lower then 5 and status is "cancelled" or "failed", rerun failed jobs
-          if [ "${ATTEMPT}" -lt "${ATTEMPTS}" ] && ([ "$STATUS" == "failure" ] || [ "$STATUS" == "failure" ]); then
-          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/actions/runs/${ID}/rerun-failed-jobs
+          if [ -z "$WORKFLOW" ]; then
+            echo "Error: Workflow ${SCRIPT}.yml not found"
+            exit 1
+          fi
+
+          # Get the most recent workflow run (sorted by created, descending)
+          RUN_DATA=$(gh api "/repos/${{ github.repository }}/actions/workflows/${WORKFLOW}/runs?per_page=1" | jq '.workflow_runs[0] | {id: .id, conclusion: .conclusion, attempt: .run_attempt}')
+
+          ID=$(echo "$RUN_DATA" | jq -r '.id')
+          STATUS=$(echo "$RUN_DATA" | jq -r '.conclusion')
+          ATTEMPT=$(echo "$RUN_DATA" | jq -r '.attempt')
+
+          if [ -z "$ID" ] || [ "$ID" == "null" ]; then
+            echo "No workflow runs found for ${SCRIPT}.yml"
+            exit 0
+          fi
+
+          # if attempt is lower than 3 and status is "failure", rerun failed jobs
+          if [ "${ATTEMPT}" -lt "${ATTEMPTS}" ] && [ "$STATUS" == "failure" ]; then
+            echo "Rerunning failed jobs for ${SCRIPT}.yml (attempt ${ATTEMPT}/${ATTEMPTS}, status: ${STATUS})"
+            gh api --method POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/${{ github.repository }}/actions/runs/${ID}/rerun-failed-jobs"
+          else
+            echo "No rerun needed for ${SCRIPT}.yml (attempt ${ATTEMPT}/${ATTEMPTS}, status: ${STATUS})"
           fi
