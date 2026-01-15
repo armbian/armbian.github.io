@@ -68,8 +68,9 @@ jobs:
           # Platinum Partners
           echo "## Platinum" >> $GITHUB_STEP_SUMMARY
           echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Partnership_Status == "Platinum Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)'\'' width='\''150'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+          TIMESTAMP=$(date +%s)
+          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Platinum Partner") |
+            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''150'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
             partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
           echo '</p>' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -77,8 +78,8 @@ jobs:
           # Gold Partners
           echo "## Gold" >> $GITHUB_STEP_SUMMARY
           echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Partnership_Status == "Gold Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)'\'' width='\''105'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Gold Partner") |
+            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''105'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
             partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
           echo '</p>' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -86,8 +87,8 @@ jobs:
           # Silver Partners
           echo "## Silver" >> $GITHUB_STEP_SUMMARY
           echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Partnership_Status == "Silver Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)'\'' width='\''75'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Silver Partner") |
+            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''75'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
             partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
           echo '</p>' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
