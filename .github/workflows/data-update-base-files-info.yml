@@ -1,6 +1,7 @@
-name: "Data: Update base-files info"
-# Triggered by data-update-partners-data.yml
+name: "Data: Generate base-files package index"
 on:
+  schedule:
+    - cron: '45 3 * * *'
   workflow_dispatch:
   repository_dispatch:
     types: ["Data: Update base-files info"]

@@ -1,8 +1,8 @@
-name: "Data: Update image-info JSON"
+name: "Data: Generate build engine inventory"
 
 on:
   schedule:
-    - cron: "0 0 * * MON"
+    - cron: "30 0 * * MON"
   workflow_dispatch:
 
 concurrency:
@@ -24,7 +24,7 @@ jobs:
         run: |
           sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" || true
           sudo chmod -R u+rwX "$GITHUB_WORKSPACE" || true
-       
+
       - name: Checkout armbian.github.io
         uses: actions/checkout@v6
         with:
@@ -69,5 +69,5 @@ jobs:
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Bigin update"
+          event-type: "Web: Directory listing"
 

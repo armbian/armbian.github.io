@@ -1,4 +1,4 @@
-name: "Community: Enforce triage role"
+name: "Community: Enforce all-repository triage role"
 on:
   schedule:
     - cron: '0 3 * * 1'   # Weekly, Monday 03:00 UTC

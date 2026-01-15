@@ -1,4 +1,4 @@
-name: "Data: Update download index"
+name: "Data: Generate and publish Armbian download index"
 
 on:
   repository_dispatch:

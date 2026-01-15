@@ -1,4 +1,4 @@
-name: "Community: Invite contributors"
+name: "Community: Invite contributors to Armbian ORG"
 on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly
