@@ -50,7 +50,7 @@ jobs:
               --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
               | jq -c ".data[] | select(.Company_slug != null and .Company_slug != \"\") | {
                   Account_Name,
-                  logo_url: (\"https://cache.armbian.com/images/vendors/150/\(.Company_slug).png\"),
+                  logo_url: (\"https://cache.armbian.com/images/vendors/150/\(.Company_slug)-border.png\"),
                   Website,
                   Description,
                   Partnership_Status: .Partnership_Status
