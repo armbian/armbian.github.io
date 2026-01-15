@@ -203,21 +203,11 @@ jobs:
           known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
           if_key_exists: replace
 
-      - name: "Install ImageMagick (robust)"
+      - name: "Install GraphicsMagick"
         run: |
           set -euo pipefail
           sudo apt-get update -y
-          sudo apt-get install -y imagemagick pngquant
-
-          if ! command -v convert >/dev/null 2>&1; then
-            if command -v magick >/dev/null 2>&1; then
-              echo -e '#!/bin/bash\nexec magick convert "$@"' | sudo tee /usr/local/bin/convert >/dev/null
-              sudo chmod +x /usr/local/bin/convert
-            else
-              echo "::error ::ImageMagick installation failed — 'convert' or 'magick' not found!"
-              exit 1
-            fi
-          fi
+          sudo apt-get install -y graphicsmagick pngquant
 
       - name: "Process boards & vendors in shard ${{ matrix.shard }}"
         run: |
@@ -288,7 +278,7 @@ jobs:
               OUT="output/images/${width}/${BOARD}.png"
               echo "Generating ${OUT}"
 
-              if ! convert "${ORIGINAL}" \
+              if ! gm convert "${ORIGINAL}" \
                     -resize "${width}>" \
                     -strip \
                     -quality 90 \
@@ -349,14 +339,14 @@ jobs:
 
               # Normalize original to PNG (SVG rendered with transparency)
               if [[ "${VORIG,,}" == *.svg ]]; then
-                if ! convert -background none -density 300 "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
+                if ! gm convert -background none -density 300 "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
                   echo "WARN: failed to render SVG for ${VENDOR}" >&2
                   echo "${VENDOR}" >> shard-data/failed-vendors.txt
                   vidx=$((vidx + 1))
                   continue
                 fi
               else
-                if ! convert "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
+                if ! gm convert "${VORIG}" -strip "output/images/vendors/original/${out_name}"; then
                   echo "WARN: failed to normalize logo for ${VENDOR}" >&2
                   echo "${VENDOR}" >> shard-data/failed-vendors.txt
                   vidx=$((vidx + 1))
@@ -369,8 +359,7 @@ jobs:
                 OUT="output/images/vendors/${width}/${out_name}"
                 echo "Generating ${OUT}"
 
-                if ! convert "output/images/vendors/original/${out_name}" \
-                      -alpha set \
+                if ! gm convert "output/images/vendors/original/${out_name}" \
                       -background none \
                       -resize "${width}>" \
                       -strip \
@@ -383,6 +372,44 @@ jobs:
                 if command -v pngquant >/dev/null 2>&1; then
                   pngquant --quality=65-85 --speed 1 --force --output "${OUT}" "${OUT}" || \
                     echo "WARN: pngquant failed for vendor ${VENDOR} width ${width}" >&2
+                fi
+
+                # Generate version with 1px grey border
+                OUT_BORDER="output/images/vendors/${width}/${out_name%.png}-border.png"
+                echo "Generating ${OUT_BORDER}"
+
+                # Get image dimensions after resize
+                dimensions=$(gm identify -format "%w %h" "${OUT}" 2>/dev/null || echo "0 0")
+                read -r img_w img_h <<< "${dimensions}"
+
+                if [[ "${img_w}" -eq 0 ]] || [[ "${img_h}" -eq 0 ]]; then
+                  echo "WARN: failed to get dimensions for vendor ${VENDOR} width ${width}" >&2
+                  continue
+                fi
+
+                # Border settings
+                border_px=1
+                iw=$((img_w - 2 * border_px))
+                ih=$((img_h - 2 * border_px))
+
+                if ! gm convert "output/images/vendors/original/${out_name}" \
+                      -resize "${img_w}x${img_h}" \
+                      -background transparent -gravity center -extent "${img_w}x${img_h}" \
+                      -matte \
+                      -fill none \
+                      -stroke gray50 \
+                      -strokewidth ${border_px} \
+                      -draw "rectangle 0,0 $((img_w - 1)),$((img_h - 1))" \
+                      -strip \
+                      -define png:compression-level=9 \
+                      "${OUT_BORDER}"; then
+                  echo "WARN: convert failed for vendor ${VENDOR} border width ${width}" >&2
+                  continue
+                fi
+
+                if command -v pngquant >/dev/null 2>&1; then
+                  pngquant --quality=65-85 --speed 1 --force --output "${OUT_BORDER}" "${OUT_BORDER}" || \
+                    echo "WARN: pngquant failed for vendor ${VENDOR} border width ${width}" >&2
                 fi
               done
 
