@@ -1,9 +1,11 @@
-name: "Data: Update partners data"
+name: "Data: Update partners and maintainers"
 
 on:
   repository_dispatch:
-    types: ["Data: Update partners data"]
+    types: ["Data: Update partners and maintainers"]
   workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * *'
 concurrency:
   group: redirector
   cancel-in-progress: false
@@ -41,20 +43,57 @@ jobs:
 
           echo "Access token obtained."
 
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:Platinum%20Partner)and(Promoted:equals:true))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description}' > platinum-partner.json
+          # Fetch all partners and combine into single JSON file
+          > partners.json
 
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Gold%20Partner)and(Promoted:equals:true))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description}' > gold-partner.json
+          for partner_type in Platinum Gold Silver; do
+            curl --silent --request GET \
+              --url "https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Company_slug,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:${partner_type}%20Partner)and(Promoted:equals:true))" \
+              --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+              | jq -c ".data[] | select(.Company_slug != null and .Company_slug != \"\") | {
+                  Account_Name,
+                  logo_url: (\"https://cache.armbian.com/images/vendors/150/\(.Company_slug)-border.png\"),
+                  Website,
+                  Description,
+                  Partnership_Status: .Partnership_Status
+                }" >> partners.json
+          done
 
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Silver%20Partner)and(Promoted:equals:true))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description}' > silver-partner.json
+          # Format the JSON array
+          jq -s . < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
+          jq . -S < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
+
+          # Display content in step summary as markdown sections
+          echo "# Partners" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Platinum Partners
+          echo "## Platinum" >> $GITHUB_STEP_SUMMARY
+          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
+          TIMESTAMP=$(date +%s)
+          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Platinum Partner") |
+            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''150'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
+          echo '</p>' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Gold Partners
+          echo "## Gold" >> $GITHUB_STEP_SUMMARY
+          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
+          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Gold Partner") |
+            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''105'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
+          echo '</p>' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Silver Partners
+          echo "## Silver" >> $GITHUB_STEP_SUMMARY
+          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
+          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Silver Partner") |
+            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''75'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
+          echo '</p>' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
           # Create a temporary file for maintainers_with_avatars.json
           temp_file=$(mktemp)
@@ -110,15 +149,16 @@ jobs:
           cd armbian.github.io
           git checkout data
           mkdir -p data/
-          cp ${{ github.workspace }}/*.json data/
+          cp ${{ github.workspace }}/partners.json data/
+          cp ${{ github.workspace }}/maintainers.json data/
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/platinum-partner.json data/gold-partner.json data/silver-partner.json data/maintainers.json
+          git add data/partners.json data/maintainers.json
           git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
           git push
 
-      - name: "Run base-files update action"
+      - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "Data: Update base-files info"
+          event-type: "Web: Directory listing"
