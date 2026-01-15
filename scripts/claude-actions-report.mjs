@@ -5,6 +5,12 @@
  *
  * Can scan a single repository or entire organization.
  *
+ * CACHING:
+ * This script uses file hashing to cache AI descriptions and avoid redundant API calls.
+ * Cache files are stored in .ai-cache/ directory. To enable GitHub Actions caching,
+ * add cache steps before and after this script using actions/cache@v4 with path: .ai-cache
+ * and a unique key based on hashFiles of your YAML files.
+ *
  * Output JSON structure:
  * {
  *   "organization": string,
@@ -47,6 +53,7 @@ import path from "node:path";
 import process from "node:process";
 import fg from "fast-glob";
 import yaml from "js-yaml";
+import crypto from "node:crypto";
 
 // Retry with exponential backoff for rate limiting
 async function fetchWithRetry(fetchFn, maxRetries = 5) {
@@ -75,6 +82,89 @@ async function fetchWithRetry(fetchFn, maxRetries = 5) {
 const ZAI_API_URL = "https://api.z.ai/api/paas/v4/chat/completions";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const OPENAI_API_URL = "https://models.inference.ai.azure.com/chat/completions";
+
+// Cache configuration
+const CACHE_DIR = ".ai-cache";
+const CACHE_VERSION = "v1";
+
+/**
+ * Compute SHA-256 hash of file content
+ */
+function computeFileHash(content) {
+  return crypto.createHash("sha256").update(content).digest("hex");
+}
+
+/**
+ * Get cache file path for a given workflow file
+ */
+function getCachePath(relPath) {
+  const safeName = relPath.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return path.resolve(process.cwd(), CACHE_DIR, `${safeName}.json`);
+}
+
+/**
+ * Load cached AI description if available and valid
+ */
+async function loadCachedDescription(relPath, content) {
+  const cachePath = getCachePath(relPath);
+
+  try {
+    const cacheData = JSON.parse(await fs.readFile(cachePath, "utf8"));
+
+    // Verify cache version
+    if (cacheData.version !== CACHE_VERSION) {
+      return null;
+    }
+
+    // Verify file content hash
+    const currentHash = computeFileHash(content);
+    if (cacheData.content_hash !== currentHash) {
+      return null;
+    }
+
+    // Verify AI model hasn't changed (optional, can be useful)
+    const currentModel = process.env.AI_MODEL || "default";
+    if (cacheData.ai_model && cacheData.ai_model !== currentModel) {
+      return null;
+    }
+
+    return {
+      description: cacheData.description,
+      execution_method: cacheData.execution_method,
+    };
+  } catch (error) {
+    // Cache file doesn't exist or is invalid
+    return null;
+  }
+}
+
+/**
+ * Save AI description to cache
+ */
+async function saveCachedDescription(relPath, content, description, execution_method) {
+  const cachePath = getCachePath(relPath);
+
+  try {
+    // Ensure cache directory exists
+    const cacheDir = path.dirname(cachePath);
+    await fs.mkdir(cacheDir, { recursive: true });
+
+    const cacheData = {
+      version: CACHE_VERSION,
+      content_hash: computeFileHash(content),
+      ai_model: process.env.AI_MODEL || "default",
+      relPath,
+      description,
+      execution_method,
+      cached_at: new Date().toISOString(),
+    };
+
+    await fs.writeFile(cachePath, JSON.stringify(cacheData, null, 2) + "\n", "utf8");
+  } catch (error) {
+    console.warn(`Warning: Failed to cache description for ${relPath}: ${error.message}`);
+    // Don't fail the entire process if caching fails
+  }
+}
 
 function requiredEnv(name) {
   const v = process.env[name];
@@ -257,7 +347,9 @@ async function callZai({ apiKey, model, fileKind, relPath, content, parsedExecut
     "",
     "Rules:",
     "- Be concise but specific (1–4 sentences for description).",
-    "- For description: Focus ONLY on what the workflow/action DOES - its purpose, operations, and outcomes. DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions. Focus on the actual work performed.",
+    "- Start description directly with what the workflow DOES (e.g., \"Builds and deploys\", \"Runs tests on\", \"Generates report for\"). DO NOT start with \"This workflow\", \"The workflow\", or similar.",
+    "- Focus on the actual work performed: purpose, operations, and outcomes.",
+    "- DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions.",
     "- For execution_method: List concrete triggers/entrypoints (events, workflow_dispatch inputs, schedule cron, reusable workflow calls, composite steps, docker/js, etc.).",
     "- Do not invent URLs or file paths; only describe behavior based on content.",
   ].join("\n");
@@ -329,7 +421,9 @@ async function callOpenAI({ apiKey, model, fileKind, relPath, content, parsedExe
     "",
     "Rules:",
     "- Be concise but specific (1–4 sentences for description).",
-    "- For description: Focus ONLY on what the workflow/action DOES - its purpose, operations, and outcomes. DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions. Focus on the actual work performed.",
+    "- Start description directly with what the workflow DOES (e.g., \"Builds and deploys\", \"Runs tests on\", \"Generates report for\"). DO NOT start with \"This workflow\", \"The workflow\", or similar.",
+    "- Focus on the actual work performed: purpose, operations, and outcomes.",
+    "- DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions.",
     "- For execution_method: List concrete triggers/entrypoints (events, workflow_dispatch inputs, schedule cron, reusable workflow calls, composite steps, docker/js, etc.).",
     "- Do not invent URLs or file paths; only describe behavior based on content.",
   ].join("\n");
@@ -400,7 +494,9 @@ async function callAnthropic({ apiKey, model, fileKind, relPath, content, parsed
     "",
     "Rules:",
     "- Be concise but specific (1–4 sentences for description).",
-    "- For description: Focus ONLY on what the workflow/action DOES - its purpose, operations, and outcomes. DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions. Focus on the actual work performed.",
+    "- Start description directly with what the workflow DOES (e.g., \"Builds and deploys\", \"Runs tests on\", \"Generates report for\"). DO NOT start with \"This workflow\", \"The workflow\", or similar.",
+    "- Focus on the actual work performed: purpose, operations, and outcomes.",
+    "- DO NOT mention: triggers/events, how it's invoked, repository owner restrictions, or permissions/conditions.",
     "- For execution_method: List concrete triggers/entrypoints (events, workflow_dispatch inputs, schedule cron, reusable workflow calls, composite steps, docker/js, etc.).",
     "- Do not invent URLs or file paths; only describe behavior based on content.",
   ].join("\n");
@@ -481,6 +577,9 @@ async function main() {
   const files = await fg(patterns, { dot: true, onlyFiles: true, unique: true });
 
   const actions = [];
+  let cacheHits = 0;
+  let cacheMisses = 0;
+
   for (const file of files) {
     const relPath = file.replaceAll("\\", "/");
     const filename = path.basename(relPath);
@@ -517,18 +616,41 @@ async function main() {
 
     let ai;
     try {
-      const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
-      ai = await callAI({
-        apiKey,
-        model,
-        fileKind,
-        relPath,
-        content: raw.slice(0, 20000), // avoid huge payloads
-        parsedExecution,
-      });
+      // Try to load from cache first
+      const cached = await loadCachedDescription(relPath, raw);
+
+      if (cached) {
+        // Use cached description
+        ai = cached;
+        cacheHits++;
+      } else {
+        // Generate new description with AI
+        const callAI = provider === "zai" ? callZai : provider === "anthropic" ? callAnthropic : callOpenAI;
+
+        try {
+          ai = await callAI({
+            apiKey,
+            model,
+            fileKind,
+            relPath,
+            content: raw.slice(0, 20000), // avoid huge payloads
+            parsedExecution,
+          });
+        } catch (aiError) {
+          // AI call failed, use fallback
+          ai = {
+            description: `AI description failed: ${aiError.message}`,
+            execution_method: parsedExecution,
+          };
+        }
+
+        // Save to cache for future runs (even if AI failed)
+        await saveCachedDescription(relPath, raw, ai.description, ai.execution_method);
+        cacheMisses++;
+      }
     } catch (e) {
       ai = {
-        description: `AI description failed: ${e.message}`,
+        description: `Processing failed: ${e.message}`,
         execution_method: parsedExecution,
       };
     }
@@ -589,6 +711,11 @@ async function main() {
   const outPath = path.resolve(process.cwd(), "actions-report.json");
   await fs.writeFile(outPath, JSON.stringify(report, null, 2) + "\n", "utf8");
   console.log(`Wrote ${actions.length} entries to ${outPath}`);
+
+  // Print cache statistics (only if there were any files processed)
+  if (actions.length > 0 && (cacheHits > 0 || cacheMisses > 0)) {
+    console.log(`Cache: ${cacheHits} hits, ${cacheMisses} misses (${Math.round((cacheHits / actions.length) * 100)}% hit rate)`);
+  }
 }
 
 main().catch((err) => {

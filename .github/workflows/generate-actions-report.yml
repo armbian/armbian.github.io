@@ -62,7 +62,7 @@ jobs:
         with:
           repository: armbian/armbian.github.io
           path: script-repo
-          ref: ai
+          ref: feature/ai-cache-optimization
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -74,6 +74,15 @@ jobs:
           npm init -y
           npm i fast-glob js-yaml
 
+      - name: Restore AI description cache
+        uses: actions/cache@v4
+        with:
+          path: repo-source/.ai-cache
+          key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
+          restore-keys: |
+            ai-descriptions-${{ matrix.repo }}-
+            ai-descriptions-
+
       - name: Generate report for ${{ matrix.repo }}
         run: |
           cd repo-source
@@ -84,6 +93,12 @@ jobs:
           AI_PROVIDER: openai
           AI_MODEL: gpt-4o-mini
           REPO_DEFAULT_BRANCH: ${{ inputs.default_branch }}
+
+      - name: Save AI description cache
+        uses: actions/cache@v4
+        with:
+          path: repo-source/.ai-cache
+          key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -114,6 +129,25 @@ jobs:
           mkdir -p data-branch/data/actions
           cp artifacts/actions-report-*/*.json data-branch/data/actions/ 2>/dev/null || true
           ls -la data-branch/data/actions/
+
+      - name: Generate index
+        run: |
+          cd data-branch/data/actions
+          # Create list of all JSON files
+          files=$(ls actions-report-*.json 2>/dev/null | sort)
+          # Generate index.json
+          echo "{\"generated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"files\":[" > index.json
+          first=true
+          for f in $files; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo "," >> index.json
+            fi
+            echo -n "\"$f\"" >> index.json
+          done
+          echo "]}" >> index.json
+          cat index.json
 
       - name: Commit to data branch
         run: |
