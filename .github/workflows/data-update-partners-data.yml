@@ -41,20 +41,40 @@ jobs:
 
           echo "Access token obtained."
 
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:Platinum%20Partner)and(Promoted:equals:true))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description}' > platinum-partner.json
+          # Fetch all partners and combine into single JSON file
+          echo "[" > partners.json
+          first=1
 
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Gold%20Partner)and(Promoted:equals:true))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description}' > gold-partner.json
+          for partner_type in Platinum Gold Silver; do
+            curl --silent --request GET \
+              --url "https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Company_slug,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:${partner_type}%20Partner)and(Promoted:equals:true))" \
+              --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+              | jq -c ".data[] | {
+                  Account_Name,
+                  logo_url: (\"https://imola.armbian.com/cache/images/vendors/300/\(.Company_slug).png\"),
+                  Website,
+                  Description,
+                  Partnership_Status: .Partnership_Status
+                }" | while read -r partner; do
+                  if [ $first -eq 1 ]; then
+                    first=0
+                  else
+                    echo "," >> partners.json
+                  fi
+                  echo "$partner" >> partners.json
+                done
+          done
 
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Logo,Description,Account_Name,Email,Partnership_Status&criteria=((Partnership_Status:equals:Silver%20Partner)and(Promoted:equals:true))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-            | jq '.data[] | {Account_Name, Logo, Website, Description}' > silver-partner.json
+          echo "]" >> partners.json
+
+          # Format the JSON
+          jq . -S < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
+
+          # Display content in step summary as markdown table
+          echo "## Partners Data" >> $GITHUB_STEP_SUMMARY
+          echo "| Account Name | Partnership Status | Website | Description | Logo URL |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------------|-------------------|---------|-------------|----------|" >> $GITHUB_STEP_SUMMARY
+          jq -r '.[] | "| \(.Account_Name) | \(.Partnership_Status) | \(.Website // "N/A") | \(.Description // "N/A") | \(.logo_url) |"' partners.json >> $GITHUB_STEP_SUMMARY
 
           # Create a temporary file for maintainers_with_avatars.json
           temp_file=$(mktemp)
@@ -110,10 +130,11 @@ jobs:
           cd armbian.github.io
           git checkout data
           mkdir -p data/
-          cp ${{ github.workspace }}/*.json data/
+          cp ${{ github.workspace }}/partners.json data/
+          cp ${{ github.workspace }}/maintainers.json data/
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/platinum-partner.json data/gold-partner.json data/silver-partner.json data/maintainers.json
+          git add data/partners.json data/maintainers.json
           git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
           git push
 
