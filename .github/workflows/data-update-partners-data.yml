@@ -61,36 +61,84 @@ jobs:
           jq -s . < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
           jq . -S < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
 
-          # Display content in step summary as organized sections
-          echo "# Partners" >> $GITHUB_STEP_SUMMARY
+          # Display content in step summary as HTML table
+          echo "<h1>Partners</h1>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Platinum Partners
-          echo "## Platinum" >> $GITHUB_STEP_SUMMARY
-          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Partnership_Status == "Platinum Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)'\'' width='\''150'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
-            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
-          echo '</p>' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          # Function to generate partner table row
+          generate_table_row() {
+            local partner_status=$1
+            local img_width=$2
+            local partners_per_row=$3
 
-          # Gold Partners
-          echo "## Gold" >> $GITHUB_STEP_SUMMARY
-          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Partnership_Status == "Gold Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)'\'' width='\''105'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
-            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
-          echo '</p>' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            local partners=$(jq -c ".[] | select(.Partnership_Status == \"$partner_status\")" partners.json)
+            local partner_count=$(echo "$partners" | jq -s 'length')
 
-          # Silver Partners
-          echo "## Silver" >> $GITHUB_STEP_SUMMARY
-          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r '.[] | select(.Partnership_Status == "Silver Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)'\'' width='\''75'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
-            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
-          echo '</p>' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+            if [ $partner_count -eq 0 ]; then
+              return
+            fi
+
+            echo '<table role="presentation" cellspacing="0" cellpadding="10" border="0" bgcolor="#ffffff">' >> $GITHUB_STEP_SUMMARY
+            echo "  <tr>" >> $GITHUB_STEP_SUMMARY
+            echo "    <td colspan=\"$((partners_per_row * 2 - 1))\" align=\"left\"><strong>$partner_status</strong></td>" >> $GITHUB_STEP_SUMMARY
+            echo "  </tr>" >> $GITHUB_STEP_SUMMARY
+
+            local row=0
+            local col=0
+
+            echo "$partners" | while read -r partner; do
+              if [ $col -eq 0 ]; then
+                echo "  <tr>" >> $GITHUB_STEP_SUMMARY
+              fi
+
+              local website=$(echo "$partner" | jq -r '.Website')
+              local logo_url=$(echo "$partner" | jq -r '.logo_url')
+              local account_name=$(echo "$partner" | jq -r '.Account_Name')
+
+              echo "    <td align=\"center\" valign=\"middle\" bgcolor=\"#ffffff\">" >> $GITHUB_STEP_SUMMARY
+              echo "      <a href=\"$website\"><img src=\"$logo_url\" width=\"$img_width\" alt=\"$account_name\"></a>" >> $GITHUB_STEP_SUMMARY
+              echo "    </td>" >> $GITHUB_STEP_SUMMARY
+
+              if [ $col -lt $((partners_per_row - 1)) ]; then
+                echo "    <td width=\"20\">&nbsp;</td>" >> $GITHUB_STEP_SUMMARY
+              fi
+
+              col=$((col + 1))
+
+              if [ $col -eq $partners_per_row ]; then
+                # Fill remaining cells if needed
+                for ((i=col; i<partners_per_row; i++)); do
+                  echo "    <td>&nbsp;</td>" >> $GITHUB_STEP_SUMMARY
+                  if [ $i -lt $((partners_per_row - 1)) ]; then
+                    echo "    <td width=\"20\">&nbsp;</td>" >> $GITHUB_STEP_SUMMARY
+                  fi
+                done
+                echo "  </tr>" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "  <tr><td colspan=\"$((partners_per_row * 2 - 1))\" height=\"16\">&nbsp;</td></tr>" >> $GITHUB_STEP_SUMMARY
+                col=0
+              fi
+            done
+
+            # Close row if incomplete
+            if [ $col -ne 0 ]; then
+              for ((i=col; i<partners_per_row; i++)); do
+                echo "    <td>&nbsp;</td>" >> $GITHUB_STEP_SUMMARY
+                if [ $i -lt $((partners_per_row - 1)) ]; then
+                  echo "    <td width=\"20\">&nbsp;</td>" >> $GITHUB_STEP_SUMMARY
+                fi
+              done
+              echo "  </tr>" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "</table>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          }
+
+          # Generate tables for each partner tier
+          generate_table_row "Platinum Partner" 150 4
+          generate_table_row "Gold Partner" 105 6
+          generate_table_row "Silver Partner" 75 8
 
           # Create a temporary file for maintainers_with_avatars.json
           temp_file=$(mktemp)
