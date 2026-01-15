@@ -5,18 +5,10 @@ on:
     - cron: '0 1 */2 * *'
   workflow_dispatch:
     inputs:
-      repositories:
-        description: "Comma-separated list of repositories to scan"
-        required: false
-        default: "armbian.github.io,build"
       scan_root:
         description: "Folder to scan (default .github)"
         required: false
         default: ".github"
-      default_branch:
-        description: "Default branch for links (default main)"
-        required: false
-        default: "main"
 
 jobs:
   setup:
@@ -28,10 +20,7 @@ jobs:
       - name: Set repository matrix
         id: set_repos
         run: |
-          REPOS="${{ inputs.repositories }}"
-          if [ -z "$REPOS" ]; then
-            REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
-          fi
+          REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
           # Convert comma-separated to JSON array using python for simpler parsing
           MATRIX=$(python3 -c "import json,sys; repos=[r.strip() for r in '$REPOS'.split(',') if r.strip()]; print(json.dumps(repos))")
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
@@ -93,7 +82,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           AI_PROVIDER: openai
           AI_MODEL: gpt-4o-mini
-          REPO_DEFAULT_BRANCH: ${{ inputs.default_branch }}
 
       - name: Save AI description cache
         uses: actions/cache@v4
