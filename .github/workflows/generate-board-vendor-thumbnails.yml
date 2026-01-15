@@ -384,6 +384,31 @@ jobs:
                   pngquant --quality=65-85 --speed 1 --force --output "${OUT}" "${OUT}" || \
                     echo "WARN: pngquant failed for vendor ${VENDOR} width ${width}" >&2
                 fi
+
+                # Generate version with 1px grey border (only around non-transparent content)
+                OUT_BORDER="output/images/vendors/${width}/${out_name%.png}-border.png"
+                echo "Generating ${OUT_BORDER}"
+
+                if ! convert "output/images/vendors/original/${out_name}" \
+                      -alpha set \
+                      -background none \
+                      -resize "${width}>" \
+                      \( +clone -threshold -1 \
+                         -fill grey -colorize 100% \
+                         -morphology EdgeOut Octagon:1 \
+                         -alpha set -channel A -evaluate set 100% \) \
+                      -compose Over -composite \
+                      -strip \
+                      -define png:compression-level=9 \
+                      "${OUT_BORDER}"; then
+                  echo "WARN: convert failed for vendor ${VENDOR} border width ${width}" >&2
+                  continue
+                fi
+
+                if command -v pngquant >/dev/null 2>&1; then
+                  pngquant --quality=65-85 --speed 1 --force --output "${OUT_BORDER}" "${OUT_BORDER}" || \
+                    echo "WARN: pngquant failed for vendor ${VENDOR} border width ${width}" >&2
+                fi
               done
 
               echo "${VENDOR}" >> shard-data/processed-vendors.txt
