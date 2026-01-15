@@ -1,11 +1,24 @@
-name: "Fetch Armbian kernel package versions"
+# This workflow fetches the latest Armbian kernel versions from the Armbian APT repository
+# and updates SVG badges and JSON data in the 'data' branch.
+#
+# Requirements:
+#   - A 'data' branch must exist in the repository (will be created if missing)
+#   - Templates: armbian-badge-current.svg and armbian-badge-edge.svg must exist in templates/
+#
+# Outputs:
+#   - data/current.svg: Badge for CURRENT kernel version
+#   - data/edge.svg: Badge for EDGE kernel version
+#   - data/kernel-versions.json: JSON with CURRENT and EDGE version strings
+
+name: "Data: Fetch Armbian kernel versions"
 on:
-  push:
-  repository_dispatch:
-    types: ["Repository status"]
+  schedule:
+    # Run at 2:15 AM daily (UTC)
+    - cron: '15 2 * * *'
+  workflow_dispatch:
 
 concurrency:
-  group: redirector
+  group: repository-status
   cancel-in-progress: false
 
 jobs:
@@ -28,8 +41,26 @@ jobs:
           KEYRING="/usr/share/keyrings/armbian.gpg"
           LIST="/etc/apt/sources.list.d/armbian.list"
 
+          # Retry function for network operations
+          retry() {
+            local max_attempts=3
+            local attempt=1
+            local delay=5
+            while [ $attempt -le $max_attempts ]; do
+              if "$@"; then
+                return 0
+              fi
+              echo "Attempt $attempt failed, retrying in ${delay}s..." >&2
+              sleep $delay
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+            echo "All $max_attempts attempts failed" >&2
+            return 1
+          }
+
           # Import Armbian APT key
-          curl -fsSL https://apt.armbian.com/armbian.key | sudo gpg --dearmor -o "$KEYRING"
+          retry curl -fsSL https://apt.armbian.com/armbian.key | sudo gpg --dearmor -o "$KEYRING"
           sudo chmod go+r "$KEYRING"
 
           # Detect release codename (Ubuntu/Debian)
@@ -41,39 +72,97 @@ jobs:
           echo "deb [arch=$ARCH signed-by=$KEYRING] https://beta.armbian.com $RELEASE main ${RELEASE}-utils ${RELEASE}-desktop" \
             | sudo tee "$LIST" > /dev/null
 
-          sudo apt-get update -qq
+          retry sudo apt-get update -qq
 
-          CURRENT=$(apt search --names-only 'linux-image-current-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
-          EDGE=$(apt search --names-only 'linux-image-edge-x86' 2> /dev/null | grep Armbian | grep -oE "(\w*[.]\w*)*" | head -1)
+          # Extract kernel versions with improved validation
+          CURRENT=$(apt search --names-only 'linux-image-current-x86' 2> /dev/null | grep Armbian | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          EDGE=$(apt search --names-only 'linux-image-edge-x86' 2> /dev/null | grep Armbian | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+          # Validate versions
           if [[ -z "${CURRENT}" || -z "${EDGE}" ]]; then
             echo "Failed to determine CURRENT/EDGE versions" >&2
+            echo "CURRENT: '${CURRENT:-MISSING}', EDGE: '${EDGE:-MISSING}'" >&2
             exit 1
           fi
+
+          # Verify versions match semver pattern
+          if ! [[ "${CURRENT}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || ! [[ "${EDGE}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format detected" >&2
+            exit 1
+          fi
+
+          echo "Detected versions - CURRENT: ${CURRENT}, EDGE: ${EDGE}"
+
           # Generate badges
           sed "s/{{VERSION}}/$CURRENT/g" armbian.github.io/templates/armbian-badge-current.svg > current.svg
           sed "s/{{VERSION}}/$EDGE/g"   armbian.github.io/templates/armbian-badge-edge.svg    > edge.svg
 
           # Write JSON for other usage
-          printf '{\n  "CURRENT": "%s",\n  "EDGE": "%s"\n}\n' "${CURRENT:-}" "${EDGE:-}" > kernel-versions.json
+          printf '{\n  "CURRENT": "%s",\n  "EDGE": "%s"\n}\n' "${CURRENT}" "${EDGE}" > kernel-versions.json
 
       - name: Commit changes if any
         run: |
 
           cd armbian.github.io
-          git fetch origin data || true
-          git checkout data
+
+          # Fetch the data branch with proper error handling
+          if ! git fetch origin data; then
+            echo "Error: Failed to fetch 'data' branch from origin" >&2
+            echo "Please ensure the 'data' branch exists in the repository" >&2
+            exit 1
+          fi
+
+          # Checkout or create the data branch
+          if git rev-parse --verify origin/data >/dev/null 2>&1; then
+            git checkout data
+          else
+            echo "Creating new 'data' branch from origin/main" >&2
+            git checkout --orphan data
+            git rm -rf . || true
+          fi
+
+          # Ensure data directory exists
           mkdir -p data/
+
+          # Move generated files to data directory
           mv ${{ github.workspace }}/current.svg data/
           mv ${{ github.workspace }}/edge.svg data/
           mv ${{ github.workspace }}/kernel-versions.json data/
+
+          # Configure git
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add data/.
-          git diff --cached --quiet || git commit -m "Update repository data"
-          git push
 
-      - name: "Run Bigin update action"
+          # Commit and push changes with proper error handling
+          git add data/.
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update repository data"
+
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
+          fi
+
+      - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: "MOTD update"
+          event-type: "Web: Directory listing"
