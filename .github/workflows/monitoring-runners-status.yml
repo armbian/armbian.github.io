@@ -1,14 +1,13 @@
 name: "Monitoring: Runners status"
 
 on:
-  push:
   schedule:
-    - cron: '0 * * * *'   # Run every hour
+    - cron: '0 6 * * *'   # Run daily at 6 AM UTC
   workflow_dispatch:   # Manually triggered via GitHub Actions UI
 
-#concurrency:
-#  group: redirector
-#  cancel-in-progress: false
+concurrency:
+  group: runners-status
+  cancel-in-progress: true
 
 jobs:
 
@@ -42,11 +41,10 @@ jobs:
       - name: "Get runners from ORG"
         env:
           GH_TOKEN: ${{ secrets.RUNNERS }}
+          NETBOX_TOKEN: ${{ secrets.NETBOX_TOKEN }}
+          NETBOX_API: ${{ secrets.NETBOX_API }}
         run: |
-
-          GH_TOKEN=${{ secrets.RUNNERS }}
-          NETBOX_TOKEN=${{ secrets.NETBOX_TOKEN }}
-          NETBOX_API=${{ secrets.NETBOX_API }}
+          set -euo pipefail
 
           tmp="$(mktemp -d)"
           trap 'rm -rf "$tmp"' EXIT
@@ -57,18 +55,29 @@ jobs:
 
           # Fetch ALL GitHub org runners (prefer gh; fallback to curl)
           if command -v gh >/dev/null 2>&1; then
-            gh api \
+            if ! gh api \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               --paginate /orgs/armbian/actions/runners \
-              -q '.runners[]' > "$runners_nd"
+              -q '.runners[]' > "$runners_nd"; then
+              echo "Error: Failed to fetch runners from GitHub API"
+              exit 1
+            fi
           else
-            curl -fsSL \
+            if ! curl -fsSL \
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${GH_TOKEN}" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               "https://api.github.com/orgs/armbian/actions/runners?per_page=100" \
-              | jq -c '.runners[]' > "$runners_nd"
+              | jq -c '.runners[]' > "$runners_nd"; then
+              echo "Error: Failed to fetch runners from GitHub API via curl"
+              exit 1
+            fi
+          fi
+
+          if [ ! -s "$runners_nd" ]; then
+            echo "Error: No runners data received"
+            exit 1
           fi
 
           # Build lookup maps
@@ -81,11 +90,19 @@ jobs:
           # Fetch NetBox VMs
           nb_json="$tmp/netbox.json"
 
-          curl -s \
+          if ! curl -fsS \
             -H "Authorization: Token ${NETBOX_TOKEN}" \
             -H "Accept: application/json; indent=4" \
             "${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&tag=github-runner&status=active" \
-            > "$nb_json"
+            > "$nb_json"; then
+            echo "Error: Failed to fetch VMs from NetBox API"
+            exit 1
+          fi
+
+          if [ ! -s "$nb_json" ]; then
+            echo "Error: No NetBox data received"
+            exit 1
+          fi
 
           # Render to stdout and to HTML file
           echo "<table border=0>"  >> $GITHUB_STEP_SUMMARY
@@ -106,7 +123,9 @@ jobs:
             if [[ "$RUNNERS" -gt 0 ]]; then
               for i in $(seq -f "%02g" 1 "$RUNNERS"); do
                 rn="${LABELS}-${i}"
-                if [[ -n "${RUNNER_STATUS[$rn]:-}" || "$LABELS" == "github" ]]; then
+                runner_status="${RUNNER_STATUS[$rn]:-}"
+                # Check if runner exists and is online
+                if [[ -n "$runner_status" && "$runner_status" == "online" ]]; then
                   printf "🟢" >> $GITHUB_STEP_SUMMARY
                 else
                   printf "🔴 <small>(%s)</small> " "$i" >> $GITHUB_STEP_SUMMARY
