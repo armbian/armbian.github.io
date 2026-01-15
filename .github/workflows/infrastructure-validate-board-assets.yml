@@ -1,10 +1,13 @@
-name: Validate board images & vendor logos
+name: "Infrastructure: Validate board images & vendor logos"
 
 on:
   pull_request:
     paths:
       - "board-images/**"
       - "board-vendor-logos/**"
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'  # Monthly on the 1st at 00:00 UTC
 
 jobs:
   validate:
