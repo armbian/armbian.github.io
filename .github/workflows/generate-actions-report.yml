@@ -1,0 +1,137 @@
+name: "Infrastructure: AI actions summary generator"
+
+on:  
+  schedule:
+    - cron: '0 1 */2 * *'
+  workflow_dispatch:
+    inputs:
+      scan_root:
+        description: "Folder to scan (default .github)"
+        required: false
+        default: ".github"
+
+jobs:
+  scan-repositories:
+    name: "Scan"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      models: read
+
+    strategy:
+      matrix:
+        repo: ["armbian.github.io", "build", "imager", "os", "sdk", "documentation", "shallow", "docker-armbian-build", "configng"]
+      fail-fast: false
+      max-parallel: 1 # free api is very limited
+
+    steps:
+      - name: Checkout ${{ matrix.repo }}
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/${{ matrix.repo }}
+          path: repo-source
+
+      - name: Checkout script repo
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/armbian.github.io
+          path: script-repo
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: |
+          npm init -y
+          npm i fast-glob js-yaml
+
+      - name: Restore AI description cache
+        uses: actions/cache@v4
+        with:
+          path: repo-source/.ai-cache
+          key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
+          restore-keys: |
+            ai-descriptions-${{ matrix.repo }}-
+            ai-descriptions-
+
+      - name: Generate report for ${{ matrix.repo }}
+        run: |
+          cd repo-source
+          GITHUB_REPOSITORY=armbian/${{ matrix.repo }} SCAN_ROOT=${{ inputs.scan_root }} node ../script-repo/scripts/generate-actions-report.mjs
+          mv actions-report.json ../actions-report-${{ matrix.repo }}.json
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AI_PROVIDER: openai
+          AI_MODEL: gpt-4o-mini
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: actions-report-${{ matrix.repo }}
+          path: actions-report-${{ matrix.repo }}.json
+
+  merge-and-commit:
+    needs: scan-repositories
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data-branch
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Merge reports
+        run: |
+          mkdir -p data-branch/data/actions
+          cp artifacts/actions-report-*/*.json data-branch/data/actions/ 2>/dev/null || true
+          ls -la data-branch/data/actions/
+
+      - name: Generate index
+        run: |
+          cd data-branch/data/actions
+          # Create list of all JSON files
+          files=$(ls actions-report-*.json 2>/dev/null | sort)
+          # Generate index.json
+          echo "{\"generated\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"files\":[" > index.json
+          first=true
+          for f in $files; do
+            if [ "$first" = true ]; then
+              first=false
+            else
+              echo "," >> index.json
+            fi
+            echo -n "\"$f\"" >> index.json
+          done
+          echo "]}" >> index.json
+          cat index.json
+
+      - name: Commit to data branch
+        run: |
+          cd data-branch
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add data/actions/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update actions reports [skip ci]"
+            git push
+          fi
+
+      # Run website generation
+      - name: "Generate website actions.armbian.com"
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.DISPATCH }}
+          repository: armbian/actions
+          event-type: "Generate website"
