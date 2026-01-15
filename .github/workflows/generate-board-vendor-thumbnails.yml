@@ -379,7 +379,7 @@ jobs:
                 echo "Generating ${OUT_BORDER}"
 
                 # Get image dimensions after resize
-                dimensions=$(gm identify -format "%w %h" "output/images/vendors/original/${out_name}"  2>/dev/null || echo "0 0")
+                dimensions=$(gm identify -format "%w %h" "${OUT}" 2>/dev/null || echo "0 0")
                 read -r img_w img_h <<< "${dimensions}"
 
                 if [[ "${img_w}" -eq 0 ]] || [[ "${img_h}" -eq 0 ]]; then
