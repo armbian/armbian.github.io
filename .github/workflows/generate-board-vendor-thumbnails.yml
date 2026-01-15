@@ -1,4 +1,4 @@
-name: "Assets: Generate board thumbnails"
+name: "Assets: Generate board and vendor thumbnails"
 
 on:
   push:
