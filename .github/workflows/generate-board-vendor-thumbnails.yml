@@ -393,13 +393,13 @@ jobs:
                 ih=$((img_h - 2 * border_px))
 
                 if ! gm convert "output/images/vendors/original/${out_name}" \
-                      -resize "${iw}x${ih}" \
-                      -background transparent -gravity center -extent "${iw}x${ih}" \
+                      -resize "${img_w}x${img_h}" \
+                      -background transparent -gravity center -extent "${img_w}x${img_h}" \
                       -matte \
                       -fill none \
                       -stroke gray50 \
                       -strokewidth ${border_px} \
-                      -draw "rectangle 0,0 $((iw - 1)),$((ih - 1))" \
+                      -draw "rectangle 0,0 $((img_w - 1)),$((img_h - 1))" \
                       -strip \
                       -define png:compression-level=9 \
                       "${OUT_BORDER}"; then
