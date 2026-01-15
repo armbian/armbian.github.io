@@ -1,6 +1,6 @@
 name: "Infrastructure: AI actions summary generator"
 
-on:
+on:  
   schedule:
     - cron: '0 1 */2 * *'
   workflow_dispatch:
@@ -11,24 +11,8 @@ on:
         default: ".github"
 
 jobs:
-  setup:
-    runs-on: ubuntu-latest
-    name: "Matrix"
-    outputs:
-      repo_matrix: ${{ steps.set_repos.outputs.matrix }}
-    steps:
-      - name: Set repository matrix
-        id: set_repos
-        run: |
-          REPOS="armbian.github.io,build,imager,os,sdk,documentation,shallow,docker-armbian-build,configng"
-          # Convert comma-separated to JSON array using python for simpler parsing
-          MATRIX=$(python3 -c "import json,sys; repos=[r.strip() for r in '$REPOS'.split(',') if r.strip()]; print(json.dumps(repos))")
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-          echo "Repositories to scan: $REPOS"
-
   scan-repositories:
     name: "Scan"
-    needs: setup
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        repo: ${{ fromJson(needs.setup.outputs.repo_matrix) }}
+        repo: ["armbian.github.io", "build", "imager", "os", "sdk", "documentation", "shallow", "docker-armbian-build", "configng"]
       fail-fast: false
       max-parallel: 1 # free api is very limited
 
@@ -83,12 +67,6 @@ jobs:
           AI_PROVIDER: openai
           AI_MODEL: gpt-4o-mini
 
-      - name: Save AI description cache
-        uses: actions/cache@v4
-        with:
-          path: repo-source/.ai-cache
-          key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -96,7 +74,7 @@ jobs:
           path: actions-report-${{ matrix.repo }}.json
 
   merge-and-commit:
-    needs: [setup, scan-repositories]
+    needs: scan-repositories
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -151,7 +129,7 @@ jobs:
             git push
           fi
 
-      # Run websire generation
+      # Run website generation
       - name: "Generate website actions.armbian.com"
         uses: peter-evans/repository-dispatch@v4
         with:
