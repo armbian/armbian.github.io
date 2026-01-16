@@ -31,7 +31,8 @@
  *       "retry_count": number (number of re-run attempts on last workflow),
  *       "total_run_time_seconds": number (total execution time including retries),
  *       "last_run_duration_seconds": number (duration of last run attempt),
- *       "total_runs": number (total number of runs recorded)
+ *       "total_runs": number (total number of runs recorded),
+ *       "cron_schedule": string | null (human-readable cron schedule, e.g., "at 0:00, on Sun")
  *     }
  *   ]
  * }
@@ -257,6 +258,93 @@ function summarizeExecutionMethod(relPath, doc) {
   }
 
   return "Unknown";
+}
+
+/**
+ * Extract cron schedule from workflow and format it in human-readable form
+ * Returns null if no cron schedule is found
+ */
+function getCronSchedule(doc) {
+  const onBlock = doc?.on ?? doc?.["on"];
+  if (!onBlock || typeof onBlock !== "object") return null;
+
+  const schedule = onBlock?.schedule;
+  if (!schedule || !Array.isArray(schedule)) return null;
+
+  // Get the first cron expression
+  const cron = schedule[0]?.cron;
+  if (!cron) return null;
+
+  // Parse cron expression: minute hour day month day_of_week
+  const parts = cron.split(/\s+/);
+  if (parts.length !== 5) return cron; // Return as-is if not standard format
+
+  const [minute, hour, day, month, dayOfWeek] = parts;
+
+  // Build human-readable description
+  const components = [];
+
+  // Minute
+  if (minute === "*") {
+    components.push("every minute");
+  } else if (minute.includes("/")) {
+    const interval = minute.split("/")[1];
+    components.push(`every ${interval} minutes`);
+  } else {
+    components.push(`at ${minute} minutes past the hour`);
+  }
+
+  // Hour
+  if (hour === "*") {
+    // "every minute" already covers this
+  } else if (hour.includes("/")) {
+    const interval = hour.split("/")[1];
+    components.push(`every ${interval} hours`);
+  } else {
+    components.push(`at ${hour}:00`);
+  }
+
+  // Day of month
+  if (day !== "*") {
+    if (day.includes("/")) {
+      const interval = day.split("/")[1];
+      components.push(`every ${interval} days`);
+    } else {
+      components.push(`on day ${day}`);
+    }
+  }
+
+  // Month
+  if (month !== "*") {
+    const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    if (month.includes("/")) {
+      const interval = month.split("/")[1];
+      components.push(`every ${interval} months`);
+    } else if (month.includes("-")) {
+      const range = month.split("-");
+      components.push(`${months[range[0]]} to ${months[range[1]]}`);
+    } else {
+      components.push(months[parseInt(month)] || month);
+    }
+  }
+
+  // Day of week
+  if (dayOfWeek !== "*") {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    if (dayOfWeek.includes("/")) {
+      const interval = dayOfWeek.split("/")[1];
+      components.push(`every ${interval} days of week`);
+    } else if (dayOfWeek.includes("-")) {
+      const range = dayOfWeek.split("-");
+      components.push(`${days[range[0]]} to ${days[range[1]]}`);
+    } else if (dayOfWeek.match(/^\d+$/)) {
+      components.push(`on ${days[parseInt(dayOfWeek)]}`);
+    } else {
+      components.push(`on ${dayOfWeek}`);
+    }
+  }
+
+  return components.length > 0 ? components.join(", ") : cron;
 }
 
 async function getFileEditTime(filePath) {
@@ -687,6 +775,9 @@ async function main() {
       }
     }
 
+    // Get cron schedule in human-readable format
+    const cron_schedule = getCronSchedule(doc);
+
     actions.push({
       name,
       filename,
@@ -703,6 +794,7 @@ async function main() {
       total_run_time_seconds,
       last_run_duration_seconds,
       total_runs,
+      cron_schedule,
     });
   }
 
