@@ -1,8 +1,8 @@
-name: "Infrastructure: AI actions summary generator"
+name: "Infrastructure: Update Armbian automation status"
 
-on:  
+on:
   schedule:
-    - cron: '0 1 */2 * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
     inputs:
       scan_root:

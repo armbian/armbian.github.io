@@ -1,4 +1,4 @@
-name: "Infrastructure: Repository update"
+name: "Infrastructure: APT repositories update"
 on:
   workflow_dispatch:
     inputs:

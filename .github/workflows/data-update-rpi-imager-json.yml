@@ -1,4 +1,4 @@
-name: "Data: Update RPI imager JSON"
+name: "Data: Update Raspberry Pi imager JSON"
 on:
   repository_dispatch:
     types: ["Data: Update RPI imager JSON"]

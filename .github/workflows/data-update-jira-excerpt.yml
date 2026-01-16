@@ -1,4 +1,4 @@
-name: "Data: Generate and publish Armbian Jira excerpts"
+name: "Data: Generate Armbian Jira excerpts"
 
 on:
   schedule:

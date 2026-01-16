@@ -1,5 +1,5 @@
 # .github/workflows/infrastructure-mirror-repository-artifacts.yml
-name: "Infrastructure: Mirror artifacts"
+name: "Infrastructure: Mirror artifacts to our CDN"
 on:
   workflow_dispatch:
   repository_dispatch:
@@ -74,7 +74,7 @@ jobs:
         run: |
             echo 'JSON_CONTENT<<EOF' >> $GITHUB_OUTPUT
             find * -name "part*.json" -type f -exec stat --format '{"latest": "'${{ env.LATEST }}'","cdn_tag": "'${{ env.CDN_TAG }}'","name": "%n"}' {} \; | jq -s . >> $GITHUB_OUTPUT
-            echo 'EOF' >> $GITHUB_OUTPUT            
+            echo 'EOF' >> $GITHUB_OUTPUT
   gradle:
     needs: prepare
     name: "JSON: ${{ matrix.name }}"
