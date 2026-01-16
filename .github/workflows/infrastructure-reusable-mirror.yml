@@ -1,5 +1,5 @@
 # .github/workflows/infrastructure-reusable-mirror.yml
-name: "Infrastructure: Reusable mirror"
+name: "Composite: Reusable mirror"
 on:
   workflow_call:
     inputs:

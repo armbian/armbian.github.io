@@ -1,4 +1,4 @@
-name: "Label: listen PR review"
+name: "Maintenance: Listen PR review and label it"
 on:
   pull_request_review:
     types: [submitted]

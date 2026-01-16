@@ -1,4 +1,4 @@
-name: "Web: Directory listing"
+name: "Web: Generate github.armbian.com content"
 
 on:
   push:

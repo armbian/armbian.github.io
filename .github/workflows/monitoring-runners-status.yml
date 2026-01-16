@@ -1,4 +1,4 @@
-name: "Monitoring: Runners status"
+name: "Infrastructure: Self hosted runners status"
 
 on:
   schedule:

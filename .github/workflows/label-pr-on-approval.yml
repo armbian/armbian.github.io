@@ -1,4 +1,4 @@
-name: "Label: on PR approval"
+name: "Maintenance: Set label on PR approval"
 on:
   workflow_run:
     workflows: ["Listen PR review"]
