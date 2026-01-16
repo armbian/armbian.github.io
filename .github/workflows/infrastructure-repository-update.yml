@@ -385,7 +385,11 @@ jobs:
           - name: debs-beta
     steps:
 
-      # Cleaning self hosted runners
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Runner clean
         uses: armbian/actions/runner-clean@main
 
@@ -704,6 +708,10 @@ jobs:
 
     steps:
 
+      - name: Fix workspace ownership
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Checkout
         uses: actions/checkout@v6
 
@@ -747,6 +755,10 @@ jobs:
         node: ${{fromJson(needs.Sync.outputs.matrix)}}
 
     steps:
+
+      - name: Fix workspace ownership
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout
         uses: actions/checkout@v6
