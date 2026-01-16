@@ -1,4 +1,4 @@
-name: Sync 3rd party packages
+name: "Composite: Sync 3rd party packages"
 on:
   workflow_dispatch:
   workflow_call:

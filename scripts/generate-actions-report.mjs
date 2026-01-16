@@ -606,6 +606,11 @@ async function main() {
       name = categoryMatch[2].trim();
     }
 
+    // Skip Composite category actions
+    if (category === "Composite") {
+      continue;
+    }
+
     const fileKind = isWorkflowFile(relPath)
       ? "workflow"
       : isActionFile(relPath)
