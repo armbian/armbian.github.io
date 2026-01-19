@@ -55,6 +55,7 @@ import process from "node:process";
 import fg from "fast-glob";
 import yaml from "js-yaml";
 import crypto from "node:crypto";
+import { execSync } from "node:child_process";
 
 // Retry with exponential backoff for rate limiting
 async function fetchWithRetry(fetchFn, maxRetries = 5) {
@@ -349,10 +350,41 @@ function getCronSchedule(doc) {
 
 async function getFileEditTime(filePath) {
   try {
+    // Get the last commit date that modified this file
+    // Using git log with format=%cI (committer date in ISO 8601 strict format)
+    // Query the default branch (main/master) to avoid regenerated data branches
+    const defaultBranch = process.env.REPO_DEFAULT_BRANCH || "main";
+
+    // Try origin/main first (works in GitHub Actions), then fall back to local main
+    let gitDate;
+    try {
+      gitDate = execSync(
+        `git log -1 --format=%cI origin/${defaultBranch} -- "${filePath}"`,
+        { encoding: "utf8", cwd: process.cwd(), stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+    } catch {
+      // origin/main doesn't exist or failed, try local main
+      gitDate = execSync(
+        `git log -1 --format=%cI ${defaultBranch} -- "${filePath}"`,
+        { encoding: "utf8", cwd: process.cwd(), stdio: ["ignore", "pipe", "ignore"] }
+      ).trim();
+    }
+
+    if (gitDate) {
+      return new Date(gitDate).toISOString();
+    }
+
+    // Fallback to filesystem mtime if not in git or git command fails
     const stats = await fs.stat(filePath);
     return stats.mtime.toISOString();
-  } catch {
-    return null;
+  } catch (gitError) {
+    // If git fails (not a git repo, git not available, etc.), fall back to filesystem mtime
+    try {
+      const stats = await fs.stat(filePath);
+      return stats.mtime.toISOString();
+    } catch {
+      return null;
+    }
   }
 }
 
