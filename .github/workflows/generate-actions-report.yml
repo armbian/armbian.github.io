@@ -49,7 +49,7 @@ jobs:
           npm i fast-glob js-yaml
 
       - name: Restore AI description cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: repo-source/.ai-cache
           key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
