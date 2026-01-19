@@ -30,6 +30,7 @@ jobs:
         with:
           repository: armbian/${{ matrix.repo }}
           path: repo-source
+          fetch-depth: 0
 
       - name: Checkout script repo
         uses: actions/checkout@v4

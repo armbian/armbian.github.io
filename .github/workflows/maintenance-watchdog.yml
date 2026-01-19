@@ -23,6 +23,7 @@ jobs:
         script:
           - infrastructure-update-redirector-config
           - data-update-base-files-info
+          - generate-actions-report
           - infrastructure-mirror-repository-artifacts
           - infrastructure-repository-update
           - generate-servers-jsons
