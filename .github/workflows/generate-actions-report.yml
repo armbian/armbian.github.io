@@ -26,14 +26,14 @@ jobs:
 
     steps:
       - name: Checkout ${{ matrix.repo }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: armbian/${{ matrix.repo }}
           path: repo-source
           fetch-depth: 0
 
       - name: Checkout script repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: armbian/armbian.github.io
           path: script-repo
@@ -81,7 +81,7 @@ jobs:
 
     steps:
       - name: Checkout data branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: data
           path: data-branch
