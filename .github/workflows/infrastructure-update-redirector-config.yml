@@ -601,6 +601,31 @@ jobs:
             dl
             archive
 
+    - name: Install SSH key + known_hosts (task two)
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.KEY_REDI_TASK_ONE }}
+        known_hosts: ${{ secrets.KNOWN_HOSTS_REDI }}
+        name: redi_task_one
+
+    - name: Reload redirector
+      shell: bash
+      env:
+        REDI_HOST: "redi@${{ secrets.HOST_REDI }}"   # e.g. user@host
+        REDI_PORT: 22   # optional
+      run: |
+        set -euo pipefail
+        PORT="${REDI_PORT:-22}"
+        : "${REDI_HOST:?Set vars.REDI_HOST (e.g. user@host)}"
+        ssh \
+          -i ~/.ssh/redi_task_one \
+          -p "$PORT" \
+          -o BatchMode=yes \
+          -o IdentitiesOnly=yes \
+          -o StrictHostKeyChecking=yes \
+          -o UserKnownHostsFile=~/.ssh/known_hosts \
+          "$REDI_HOST" </dev/null
+
     - name: "Run webindex update action"
       uses: peter-evans/repository-dispatch@v4
       with:
