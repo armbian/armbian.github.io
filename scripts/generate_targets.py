@@ -369,7 +369,7 @@ armbian-gha: &armbian-gha
       rootfs-armhf: [ "ubuntu-latest" ]
       rootfs-arm64: [ "ubuntu-24.04-arm" ]
       rootfs-amd64: [ "self-hosted", "Linux", "X64" ]
-      rootfs-riscv64: [ "self-hosted", "Linux", "X64" ]
+      rootfs-riscv64: [ "ubuntu-latest" ]
       rootfs-loong64: [ "self-hosted", "Linux", "X64" ]
       image-armhf: [ "self-hosted", "Linux", 'images', 'X64' ]
       image-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
