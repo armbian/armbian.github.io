@@ -852,7 +852,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
       - *nightly-riscv64
 """
@@ -1078,7 +1078,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
 """
         if current_riscv64:
