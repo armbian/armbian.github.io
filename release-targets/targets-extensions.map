@@ -1,0 +1,17 @@
+# Manual extensions mapping for specific boards
+# Format: BOARD_NAME:branch1:branch2:...:ENABLE_EXTENSIONS="extension1,extension2"
+
+# Example 1: Board with automatic RK35* extensions getting additional manual extension
+# 9tripod-x3568-v4 has RK3568, so it gets v4l2loopback-dkms,mesa-vpu automatically
+# We add image-output-oowow manually
+# 9tripod-x3568-v4:current::ENABLE_EXTENSIONS="image-output-oowow"
+# Example 2: Board without automatic extensions, adding manual extensions
+# khadas-vim1:current::ENABLE_EXTENSIONS="image-output-oowow"
+# Example 3: Multiple manual extensions
+# nanopi-r4s:::ENABLE_EXTENSIONS="ext1,ext2,ext3"
+
+khadas-edge2:::ENABLE_EXTENSIONS="image-output-oowow"
+khadas-vim1s:::ENABLE_EXTENSIONS="image-output-oowow"
+khadas-vim3:::ENABLE_EXTENSIONS="image-output-oowow"
+khadas-vim3l:::ENABLE_EXTENSIONS="image-output-oowow"
+khadas-vim4:::ENABLE_EXTENSIONS="image-output-oowow"

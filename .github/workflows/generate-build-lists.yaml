@@ -1,0 +1,103 @@
+name: "Infrastructure: Generate image build lists"
+
+on:
+  workflow_dispatch:  # Manually triggered via GitHub Actions UI
+  repository_dispatch:
+    types: ["Generate lists"]
+  push:
+    paths:
+      - 'release-targets/**'
+
+env:
+  IMAGE_INFO_URL: "https://github.armbian.com/image-info.json"
+
+jobs:
+
+  Check:
+    name: "Check permissions"
+    runs-on: "ubuntu-24.04"
+    if: ${{ github.repository_owner == 'Armbian' }}
+    steps:
+
+      - name: "Check membership"
+        uses: armbian/actions/team-check@main
+        with:
+          ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEAM: "Release manager"
+
+  generate:
+    name: "Generate target YAML files"
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
+    needs: Check
+    steps:
+
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download image-info.json
+        run: |
+          curl -fL -o image-info.json "${{ env.IMAGE_INFO_URL }}"
+
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+
+      - name: Run generate_targets.py
+        run: |
+          python3 scripts/generate_targets.py image-info.json release-targets 2>&1 | tee -a generation.log
+
+      - name: Generate kernel descriptions
+        run: |
+          python3 scripts/generate_kernel_descriptions.py image-info.json release-targets/kernel-description.json
+
+      - name: Show generation summary
+        run: |
+          echo "### Generated files summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          for yaml_file in release-targets/targets-release-*.yaml; do
+            if [[ -f "$yaml_file" ]]; then
+              base_name=$(basename "$yaml_file" .yaml)
+              count=$(grep -c '^ *- { BOARD:' "$yaml_file" || echo "0")
+              echo "- **$base_name**: $count boards" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Checkout data branch
+        uses: actions/checkout@v6
+        with:
+          ref: data
+          path: data-branch
+          fetch-depth: 0
+
+      - name: Copy YAML files to data branch
+        run: |
+          mkdir -p data-branch/data/release-targets
+          cp release-targets/targets-release-*.yaml data-branch/data/release-targets/
+          cp release-targets/exposed.map data-branch/data/release-targets/
+          cp release-targets/kernel-description.json data-branch/data/release-targets/
+
+      - name: Commit to data branch
+        run: |
+          cd data-branch
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add data/release-targets/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update release targets and kernel descriptions [skip ci]"
+            git push
+          fi
+
+      - name: Trigger website generation
+        if: success()
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.DISPATCH }}
+          repository: armbian/actions
+          event-type: "Web: Directory listing"
