@@ -1286,9 +1286,10 @@ def main():
     print(f"  Written {community_path}", file=sys.stderr)
 
     # exposed.map
-    # Generate from stable boards (conf/wip only)
+    # Generate from stable + community boards (exclude nightly targets)
     exposed_map_path = output_dir / 'exposed.map'
-    exposed_map = generate_exposed_map(conf_wip_boards_stable)
+    exposed_map_boards = conf_wip_boards_stable + csc_tvb_boards_community
+    exposed_map = generate_exposed_map(exposed_map_boards)
     exposed_map_path.write_text(exposed_map)
     print(f"  Written {exposed_map_path}", file=sys.stderr)
 
