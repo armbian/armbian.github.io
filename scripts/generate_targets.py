@@ -421,7 +421,7 @@ targets:
   # Images with app-specific extensions
   apps-ha:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-apps ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -437,7 +437,7 @@ targets:
 
   apps-openhab:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-apps ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -453,7 +453,7 @@ targets:
 
   apps-kali:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-apps ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -986,7 +986,7 @@ targets:
   # Debian forky minimal CLI for all community boards
   community-forky-all:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-community ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -1021,7 +1021,7 @@ targets:
   # Ubuntu noble GNOME desktop for fast HDMI community boards
   community-noble-gnome:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-community ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -1044,7 +1044,7 @@ targets:
   # Ubuntu noble XFCE desktop for slow HDMI community boards
   community-noble-xfce:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-community ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -1068,7 +1068,7 @@ targets:
   # Ubuntu noble XFCE desktop for RISC-V community boards
   community-noble-riscv64-xfce:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-community ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
@@ -1092,7 +1092,7 @@ targets:
   # Ubuntu noble minimal CLI for headless community boards
   community-noble-minimal:
     enabled: yes
-    configs: [ armbian-images ]
+    configs: [ armbian-community ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
