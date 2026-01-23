@@ -47,7 +47,6 @@ jobs:
           repository: armbian/armbian.github.io
           fetch-depth: 0
           clean: false
-          ref: data
           path: armbian.github.io
 
       - name: Checkout this repo (script)
