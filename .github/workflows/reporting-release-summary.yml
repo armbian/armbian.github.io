@@ -33,7 +33,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.AI_MODELS }}
-      SCOPE: ${{ inputs.scope || 'armbian/build,armbian/configng' }}
+      SCOPE: ${{ inputs.scope || 'org:armbian' }}
       TZ: ${{ inputs.tz || 'Europe/Ljubljana' }}
       PERIOD: ${{ inputs.period || 'weekly' }}
       RELEASE_ENABLED: ${{ inputs.publish_release || 'true' }}

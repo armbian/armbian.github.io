@@ -47,6 +47,7 @@ jobs:
           repository: armbian/armbian.github.io
           fetch-depth: 0
           clean: false
+          ref: data
           path: armbian.github.io
 
       - name: Checkout this repo (script)
@@ -61,6 +62,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jq jc rsync curl
 
+      - name: Get exposed.map
+        run: |
+          curl -fsSL -o "${GITHUB_WORKSPACE}/exposed.map" https://github.armbian.com/release-targets/exposed.map
+
       - name: Generate armbian-images.json (with Bigin company enrichment)
         working-directory: runner
         env:
@@ -73,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           OUT="armbian-images.json" \
-          OS_DIR="${GITHUB_WORKSPACE}/os" \
+          OS_DIR="${GITHUB_WORKSPACE}" \
           BOARD_DIR="${GITHUB_WORKSPACE}/build/config/boards" \
           SOURCE_OF_TRUTH="${SOURCE_OF_TRUTH}" \
           ./scripts/generate-armbian-images-json.sh
@@ -127,5 +132,5 @@ jobs:
       - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.DISPATCH }}
           event-type: "Infrastructure: Update redirector"
