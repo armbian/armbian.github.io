@@ -1126,7 +1126,7 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
     """
     Generate exposed.map with regex patterns for recommended images.
     For each board, generates 2 patterns:
-    1. Minimal: Debian bookworm + current branch
+    1. Minimal: Debian trixie + current branch
     2. For boards with video: Ubuntu noble + desktop (gnome/xfce)
        For headless: Ubuntu noble + minimal
        For riscv64: Ubuntu noble + xfce desktop
@@ -1179,12 +1179,18 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
         # Capitalize board name for pattern
         board_pattern = capitalize_board_name(board)
 
-        # 1. Minimal: Debian bookworm + current/vendor branch (all boards)
+        # 1. Minimal: Debian trixie + current/vendor branch (all boards)
         #    Generate two patterns: one with dir prefix (for dl.armbian.com), one without (for GitHub releases)
-        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_bookworm_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_bookworm_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_trixie_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_trixie_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
         lines.append(minimal_pattern)
         lines.append(minimal_pattern_no_prefix)
+
+        # Also add forky as fallback alternative
+        minimal_pattern_forky = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_forky_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        minimal_pattern_no_prefix_forky = f"Armbian_{community_prefix}[0-9].*{board_pattern}_forky_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        lines.append(minimal_pattern_forky)
+        lines.append(minimal_pattern_no_prefix_forky)
 
         # 2. Second pattern: depends on board type
         # For loongarch: only bookworm minimal (no noble)
