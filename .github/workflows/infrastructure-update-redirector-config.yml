@@ -75,7 +75,7 @@ jobs:
           elif [[ "$platform" == "cache" ]]; then
               # Mirror cache root directory directly
               pushd destination >/dev/null
-              lftp -e "mirror --parallel=64; quit" "${source_of_truth}/${platform}"
+              lftp -e "mirror --parallel=64; quit" "${source_of_truth}/${platform}/artifacts"
               popd >/dev/null
           else
               # Mirror dists directly into ./destination
@@ -458,8 +458,8 @@ jobs:
           SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
           mkdir -p compare; cd compare
-          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/cache/"; then
-              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/cache/ || exit_status=$?
+          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/cache/artifacts"; then
+              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/cache/artifacts || exit_status=$?
           fi
           cd ..
           OUT=$(diff -rq compare cache || true)
