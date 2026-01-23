@@ -385,6 +385,9 @@ is_promoted_candidate() {
 is_promoted() {
   local image_name="$1" board_slug="$2" url="$3"
 
+  # Never promote trunk builds unless from community
+  [[ "$image_name" == *trunk* && "$image_name" != Armbian_community*trunk* ]] && return 1
+
   local rel_dl="${url#https://dl.armbian.com/}"
   local rel_cache="${url#https://cache.armbian.com/artifacts/}"
   local rel_github="${url#https://github.com/armbian/}"
