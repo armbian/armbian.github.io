@@ -93,13 +93,13 @@ jobs:
 
       - name: Merge reports
         run: |
-          mkdir -p data-branch/data/actions
-          cp artifacts/actions-report-*/*.json data-branch/data/actions/ 2>/dev/null || true
-          ls -la data-branch/data/actions/
+          mkdir -p data-branch/data/actions-report
+          cp artifacts/actions-report-*/*.json data-branch/data/actions-report/ 2>/dev/null || true
+          ls -la data-branch/data/actions-report/
 
       - name: Generate index
         run: |
-          cd data-branch/data/actions
+          cd data-branch/data/actions-report
           # Create list of all JSON files
           files=$(ls actions-report-*.json 2>/dev/null | sort)
           # Generate index.json
@@ -121,7 +121,7 @@ jobs:
           cd data-branch
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add data/actions/
+          git add data/actions-report/
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
@@ -135,4 +135,4 @@ jobs:
         with:
           token: ${{ secrets.DISPATCH }}
           repository: armbian/actions
-          event-type: "Generate website"
+          event-type: "Web: Directory listing"
