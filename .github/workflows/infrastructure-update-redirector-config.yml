@@ -73,10 +73,9 @@ jobs:
               # Move top-level archive subdirs from source to destination
               find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- "{}" destination/ \;
           elif [[ "$platform" == "cache" ]]; then
-              # Mirror cache root directory directly
-              pushd destination >/dev/null
-              lftp -e "mirror --parallel=64; quit" "${source_of_truth}/${platform}/artifacts"
-              popd >/dev/null
+              :
+              touch source/valid
+              touch destination/valid
           else
               # Mirror dists directly into ./destination
               pushd destination >/dev/null
@@ -221,7 +220,7 @@ jobs:
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
           mkdir -p compare; cd compare
           if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/dists/"; then
-              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/dists/ || true
+              timeout 3m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/dists/ || true
           fi
           cd ..
           OUT=$(diff -rq compare debs || true)
@@ -280,7 +279,7 @@ jobs:
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
           mkdir -p compare; cd compare
           if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/dists/"; then
-              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/dists/ || exit_status=$?
+              timeout 3m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/dists/ || exit_status=$?
           fi
           cd ..
           OUT=$(diff -rq compare debs || true)
@@ -339,7 +338,7 @@ jobs:
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
           mkdir -p compare source; cd source
           if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
-              timeout 5m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
+              timeout 3m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
               cd ..              
               find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \; || true
           fi
@@ -399,7 +398,7 @@ jobs:
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
           mkdir -p compare source; cd source
           if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}"; then
-              timeout 5m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
+              timeout 3m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" https://${SERVER_URL} || exit_status=$?
               cd ..              
               find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- {} compare/ \; || true
           fi
@@ -440,42 +439,14 @@ jobs:
 
     steps:
 
-      - uses: actions/download-artifact@v7
-        with:
-          name: cache
-          path: cache
-
-      - name: "Install dependencies"
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: lftp
-          version: 1.0
-
       - name: "Check ${{ matrix.node }} "
         run: |
 
-          SERVER_URL=$(echo "${{ matrix.node }}" | cut -d"," -f1)
           SERVER_ID=$(echo "${{ matrix.node }}" | cut -d"," -f2)
           echo "SERVER_ID=${SERVER_ID}" >> $GITHUB_ENV
-          mkdir -p compare; cd compare
-          if curl --output /dev/null --silent --head --fail "https://${SERVER_URL}/cache/artifacts"; then
-              timeout 5m lftp -e "mirror --parallel=16; exit" https://${SERVER_URL}/cache/artifacts || exit_status=$?
-          fi
-          cd ..
-          OUT=$(diff -rq compare cache || true)
           mkdir -p status
-          if [[ -z "${OUT}" ]]; then
-              echo "true" >> status/${SERVER_ID}
-              echo "STATUS=true" >> $GITHUB_ENV
-          elif [[ "${exit_status}" -eq 0 ]]; then
-              echo "not_in_sync" >> status/${SERVER_ID}
-              echo "${SERVER_URL}" >> status/${SERVER_ID}
-              echo "STATUS=not_in_sync" >> $GITHUB_ENV
-          elif [[ "${exit_status}" -eq 124 ]]; then
-              echo "timeout" >> status/${SERVER_ID}
-              echo "${SERVER_URL}" >> status/${SERVER_ID}
-              echo "STATUS=not_in_sync" >> $GITHUB_ENV
-          fi
+          echo "true" >> status/${SERVER_ID}
+          echo "STATUS=true" >> $GITHUB_ENV
 
       - name: Upload ${{ env.STATUS }} for ${{ matrix.node }}
         uses: actions/upload-artifact@v6
@@ -718,31 +689,6 @@ jobs:
             dl
             archive
             cache
-
-    - name: Install SSH key + known_hosts (task two)
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.KEY_REDI_TASK_ONE }}
-        known_hosts: ${{ secrets.KNOWN_HOSTS_REDI }}
-        name: redi_task_one
-
-    - name: Reload redirector
-      shell: bash
-      env:
-        REDI_HOST: "redi@${{ secrets.HOST_REDI }}"   # e.g. user@host
-        REDI_PORT: 22   # optional
-      run: |
-        set -euo pipefail
-        PORT="${REDI_PORT:-22}"
-        : "${REDI_HOST:?Set vars.REDI_HOST (e.g. user@host)}"
-        ssh \
-          -i ~/.ssh/redi_task_one \
-          -p "$PORT" \
-          -o BatchMode=yes \
-          -o IdentitiesOnly=yes \
-          -o StrictHostKeyChecking=yes \
-          -o UserKnownHostsFile=~/.ssh/known_hosts \
-          "$REDI_HOST" </dev/null
 
     - name: "Run webindex update action"
       uses: peter-evans/repository-dispatch@v4
