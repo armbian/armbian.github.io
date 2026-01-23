@@ -1122,7 +1122,7 @@ def capitalize_board_name(board):
     return board.capitalize()
 
 
-def generate_exposed_map(conf_wip_boards):
+def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
     """
     Generate exposed.map with regex patterns for recommended images.
     For each board, generates 2 patterns:
@@ -1130,20 +1130,31 @@ def generate_exposed_map(conf_wip_boards):
     2. For boards with video: Ubuntu noble + desktop (gnome/xfce)
        For headless: Ubuntu noble + minimal
        For riscv64: Ubuntu noble + xfce desktop
+
+    conf_wip_boards: stable boards (conf/wip support level) - images have no 'community_' prefix
+    csc_tvb_boards: community boards (csc/tvb support level) - images have 'community_' prefix
     """
+    if csc_tvb_boards is None:
+        csc_tvb_boards = []
+
     lines = []
     single_image_boards = []  # Track boards with only minimal image (loongarch only)
 
-    # Select one branch per board, prefer current then vendor
-    boards = select_one_branch_per_board(conf_wip_boards)
+    # Mark boards with their type (stable vs community)
+    stable_boards = [{**board, 'board_type': 'stable'} for board in conf_wip_boards]
+    community_boards = [{**board, 'board_type': 'community'} for board in csc_tvb_boards]
+
+    # Combine and select one branch per board
+    all_boards = select_one_branch_per_board(stable_boards + community_boards)
 
     # Sort by board name
-    boards.sort(key=lambda x: x['board'])
+    all_boards.sort(key=lambda x: x['board'])
 
-    for board_data in boards:
+    for board_data in all_boards:
         board = board_data['board']
         branch = board_data['branch']
         is_fast = board_data['is_fast']
+        board_type = board_data.get('board_type', 'stable')  # 'stable' or 'community'
         entry = board_data['entry']
         extensions = board_data.get('extensions', '')
 
@@ -1162,12 +1173,18 @@ def generate_exposed_map(conf_wip_boards):
         dir_prefix = f"{board}/archive/"
 
         # Pattern format: Armbian_[0-9].*BoardName_Release_Branch_[0-9]*.[0-9]*.[0-9]*_Type.ext
+        # Community images have 'community_' prefix, stable images don't
+        # This excludes nightly images (which come from armbian/os repo without 'community_' prefix)
+        community_prefix = '(community_)?' if board_type == 'community' else ''
         # Capitalize board name for pattern
         board_pattern = capitalize_board_name(board)
 
         # 1. Minimal: Debian bookworm + current/vendor branch (all boards)
-        minimal_pattern = f"{dir_prefix}Armbian_[0-9].*{board_pattern}_bookworm_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        #    Generate two patterns: one with dir prefix (for dl.armbian.com), one without (for GitHub releases)
+        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_bookworm_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_bookworm_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
         lines.append(minimal_pattern)
+        lines.append(minimal_pattern_no_prefix)
 
         # 2. Second pattern: depends on board type
         # For loongarch: only bookworm minimal (no noble)
@@ -1177,8 +1194,10 @@ def generate_exposed_map(conf_wip_boards):
 
         # For riscv64: noble xfce desktop
         if is_fast == 'riscv64':
-            riscv64_pattern = f"{dir_prefix}Armbian_[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
+            riscv64_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
+            riscv64_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
             lines.append(riscv64_pattern)
+            lines.append(riscv64_pattern_no_prefix)
             continue
 
         # For boards with video: Ubuntu noble + desktop
@@ -1189,12 +1208,16 @@ def generate_exposed_map(conf_wip_boards):
             else:  # is_fast is False (slow hardware)
                 desktop_type = 'xfce_desktop'
 
-            desktop_pattern = f"{dir_prefix}Armbian_[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+            desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+            desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
             lines.append(desktop_pattern)
+            lines.append(desktop_pattern_no_prefix)
         else:
             # Headless boards: Ubuntu noble minimal
-            noble_minimal_pattern = f"{dir_prefix}Armbian_[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+            noble_minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+            noble_minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
             lines.append(noble_minimal_pattern)
+            lines.append(noble_minimal_pattern_no_prefix)
 
     # Display warning for boards with only one image (loongarch only)
     if single_image_boards:
@@ -1288,8 +1311,7 @@ def main():
     # exposed.map
     # Generate from stable + community boards (exclude nightly targets)
     exposed_map_path = output_dir / 'exposed.map'
-    exposed_map_boards = conf_wip_boards_stable + csc_tvb_boards_community
-    exposed_map = generate_exposed_map(exposed_map_boards)
+    exposed_map = generate_exposed_map(conf_wip_boards_stable, csc_tvb_boards_community)
     exposed_map_path.write_text(exposed_map)
     print(f"  Written {exposed_map_path}", file=sys.stderr)
 
