@@ -1,0 +1,104 @@
+name: "Infrastructure: Enable 16 Hetzner ARM64 runners"
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: hetzner-runner
+  cancel-in-progress: false
+
+jobs:
+  # Main jobs
+  Teamcheck:
+    permissions:
+      actions: write
+    if: |
+      github.repository_owner == 'Armbian' &&
+      github.actor == 'igorpecovnik'
+    runs-on: Linux
+    steps:
+
+    - name: "Check membership"
+      uses: armbian/actions/team-check@main
+      with:
+        ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TEAM: "Release manager"
+
+  Prepare:
+    needs: Teamcheck
+    name: "Prepare matrix"
+    outputs:
+      matrix: ${{steps.matrix.outputs.matrix}}
+    runs-on: Linux
+    steps:
+
+      - name: Generate matrix
+        id: matrix
+        run: |
+          count=${{ env.MACHINE_COUNT || '4' }}
+          echo "Generating matrix for ${count} server(s)"
+          matrix=$(seq 0 $(( count - 1 )) | jq -cnR '[inputs | tonumber]')
+          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "Matrix: ${matrix}"
+
+  Create:
+    name: "Server ${{ matrix.index }}"
+    runs-on: ubuntu-latest
+    needs: Prepare
+    if: |
+      github.repository_owner == 'Armbian' &&
+      github.actor == 'igorpecovnik'
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        index: ${{fromJson(needs.Prepare.outputs.matrix)}}
+    steps:
+
+      - name: Create Hetzner server
+        uses: armbian/actions/hetzner@main
+        with:
+          action: create
+          server-type: "${{ env.MACHINE || 'cax41' }}"
+          index: "${{ matrix.index }}"
+          delete-existing: "true"
+          ssh-key: "UPLOAD"
+          hetzner-token: ${{ secrets.HETZNER_ONE }}
+          github-token: ${{ secrets.HETZNER_RUNNER }}
+          runner-count: "${{ env.RUNNER_COUNT || '4' }}"
+
+  Work:
+    name: "Work ${{ matrix.index }}"
+    runs-on: Linux
+    needs: [Prepare, Create]
+    if: |
+      github.repository_owner == 'Armbian' &&
+      github.actor == 'igorpecovnik'
+    strategy:
+      fail-fast: false
+      matrix:
+        index: ${{fromJson(needs.Prepare.outputs.matrix)}}
+    steps:
+      - name: Sleep until cleanup
+        run: sleep "${{ env.PERIOD || '60m' }}"
+
+  Cleaning:
+    name: "Cleanup ${{ matrix.index }}"
+    runs-on: ubuntu-latest
+    needs: [Prepare, Create, Work]
+    if: |
+      always() &&
+      github.repository_owner == 'Armbian' &&
+      github.actor == 'igorpecovnik'
+    strategy:
+      fail-fast: false
+      matrix:
+        index: ${{fromJson(needs.Prepare.outputs.matrix)}}
+    steps:
+      - name: Delete Hetzner server
+        uses: armbian/actions/hetzner@main
+        with:
+          action: delete
+          server-type: "${{ env.MACHINE || 'cax41' }}"
+          index: "${{ matrix.index }}"
+          hetzner-token: ${{ secrets.HETZNER_ONE }}
