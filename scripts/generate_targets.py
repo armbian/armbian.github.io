@@ -907,6 +907,16 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
     vendor_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] == 'riscv64']
     vendor_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] == 'loongarch']
 
+    # Build set of boards that have current branch (to exclude from edge)
+    current_boards = {b['board'] for b in csc_tvb_boards if b['branch'] == 'current'}
+
+    # Only include edge boards for boards that don't have current branch
+    edge_fast = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] is True and b['board'] not in current_boards]
+    edge_slow = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] is False and b['board'] not in current_boards]
+    edge_headless = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] is None and b['board'] not in current_boards]
+    edge_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] == 'riscv64' and b['board'] not in current_boards]
+    edge_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] == 'loongarch' and b['board'] not in current_boards]
+
     yaml += """# Community builds - fast HDMI (current branch)
   community-current-fast-hdmi: &community-current-fast-hdmi
   # auto generated section
@@ -980,6 +990,42 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    # Edge branch lists
+    if edge_fast:
+        yaml += '  community-edge-fast-hdmi: &community-edge-fast-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_fast, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_slow:
+        yaml += '  community-edge-slow-hdmi: &community-edge-slow-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_slow, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_headless:
+        yaml += '  community-edge-headless: &community-edge-headless\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_headless, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_riscv64:
+        yaml += '  community-edge-riscv64: &community-edge-riscv64\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_riscv64, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_loongarch:
+        yaml += '  community-edge-loongarch: &community-edge-loongarch\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_loongarch, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
     yaml += """# automated lists stop
 
 targets:
@@ -1016,6 +1062,16 @@ targets:
         yaml += '      - *community-vendor-riscv64\n'
     if vendor_loongarch:
         yaml += '      - *community-vendor-loongarch\n'
+    if edge_fast:
+        yaml += '      - *community-edge-fast-hdmi\n'
+    if edge_slow:
+        yaml += '      - *community-edge-slow-hdmi\n'
+    if edge_headless:
+        yaml += '      - *community-edge-headless\n'
+    if edge_riscv64:
+        yaml += '      - *community-edge-riscv64\n'
+    if edge_loongarch:
+        yaml += '      - *community-edge-loongarch\n'
 
     yaml += """
   # Ubuntu noble GNOME desktop for fast HDMI community boards
@@ -1037,9 +1093,11 @@ targets:
 """
     if vendor_fast:
         yaml += '      - *community-vendor-fast-hdmi\n'
+    if edge_fast:
+        yaml += '      - *community-edge-fast-hdmi\n'
 
     # Ubuntu noble XFCE desktop for slow HDMI community boards
-    if current_slow or vendor_slow:
+    if current_slow or vendor_slow or edge_slow:
         yaml += """
   # Ubuntu noble XFCE desktop for slow HDMI community boards
   community-noble-xfce:
@@ -1061,9 +1119,11 @@ targets:
             yaml += '      - *community-current-slow-hdmi\n'
         if vendor_slow:
             yaml += '      - *community-vendor-slow-hdmi\n'
+        if edge_slow:
+            yaml += '      - *community-edge-slow-hdmi\n'
 
     # Ubuntu noble XFCE desktop for RISC-V community boards
-    if current_riscv64 or vendor_riscv64:
+    if current_riscv64 or vendor_riscv64 or edge_riscv64:
         yaml += """
   # Ubuntu noble XFCE desktop for RISC-V community boards
   community-noble-riscv64-xfce:
@@ -1085,9 +1145,11 @@ targets:
             yaml += '      - *community-current-riscv64\n'
         if vendor_riscv64:
             yaml += '      - *community-vendor-riscv64\n'
+        if edge_riscv64:
+            yaml += '      - *community-edge-riscv64\n'
 
     # Ubuntu noble minimal CLI for headless community boards
-    if current_headless or vendor_headless:
+    if current_headless or vendor_headless or edge_headless:
         yaml += """
   # Ubuntu noble minimal CLI for headless community boards
   community-noble-minimal:
@@ -1106,6 +1168,8 @@ targets:
             yaml += '      - *community-current-headless\n'
         if vendor_headless:
             yaml += '      - *community-vendor-headless\n'
+        if edge_headless:
+            yaml += '      - *community-edge-headless\n'
 
     # Note: loongarch boards don't get noble images, only bookworm minimal
 
