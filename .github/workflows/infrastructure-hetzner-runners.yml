@@ -61,10 +61,10 @@ jobs:
           action: create
           server-type: "${{ env.MACHINE || 'cax41' }}"
           index: "${{ matrix.index }}"
-          delete-existing: "true"
+          delete-existing: "false"
           ssh-key: "UPLOAD"
           hetzner-token: ${{ secrets.HETZNER_ONE }}
-          github-token: ${{ secrets.GITHUB_RUNNER }}
+          github-token: ${{ secrets.HETZNER_RUNNER }}
           runner-count: "${{ env.RUNNER_COUNT || '4' }}"
 
   Work:
