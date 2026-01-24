@@ -64,7 +64,7 @@ jobs:
           delete-existing: "true"
           ssh-key: "UPLOAD"
           hetzner-token: ${{ secrets.HETZNER_ONE }}
-          github-token: ${{ secrets.HETZNER_RUNNER }}
+          github-token: ${{ secrets.GITHUB_RUNNER }}
           runner-count: "${{ env.RUNNER_COUNT || '4' }}"
 
   Work:
