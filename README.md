@@ -12,12 +12,12 @@ It also produces [data exchange files](https://github.armbian.com/) used for aut
 
 ### Workflow Status & Monitoring
 
-**[Actions Dashboard](https://actions.armbian.com/?repo=armbian.github.io)**
+**[GitHub actions dashboard](https://actions.armbian.com/?repo=armbian.github.io)**
 
 Monitor all automation workflows with real-time status tracking:
 
-- **Execution History** — Complete log of past workflow runs with timestamps and outcomes
-- **Performance Metrics** — Runtime duration, resource usage, and success/failure rates
-- **Live Status** — Current state of running CI/CD pipelines and scheduled tasks
-- **Debugging Tools** — Detailed logs and error traces for failed workflows
+- **Execution history** — Complete log of past workflow runs with timestamps and outcomes
+- **Performance metrics** — Runtime duration, resource usage, and success/failure rates
+- **Live status** — Current state of running CI/CD pipelines and scheduled tasks
+- **Debugging tools** — Detailed logs and error traces for failed workflows
 
