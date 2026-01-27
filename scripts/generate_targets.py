@@ -638,9 +638,11 @@ targets:
     if vendor_headless:
         yaml += '      - *stable-vendor-headless\n'
 
-    yaml += """
-  # Ubuntu stable XFCE desktop (fast HDMI only)
-  desktop-stable-ubuntu:
+    # Ubuntu stable XFCE desktop (slow HDMI only)
+    if current_slow:
+        yaml += """
+  # Ubuntu stable XFCE desktop (slow HDMI only)
+  desktop-stable-ubuntu-xfce:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
@@ -654,10 +656,34 @@ targets:
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     items:
+      - *stable-current-slow-hdmi
+"""
+        if vendor_slow:
+            yaml += '      - *stable-vendor-slow-hdmi\n'
+
+    # Ubuntu stable GNOME desktop (fast HDMI only)
+    if current_fast:
+        yaml += """
+  # Ubuntu stable GNOME desktop (fast HDMI only)
+  desktop-stable-ubuntu-gnome:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "gnome"
+      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    items:
       - *stable-current-fast-hdmi
 """
-    if vendor_fast:
-        yaml += '      - *stable-vendor-fast-hdmi\n'
+        if vendor_fast:
+            yaml += '      - *stable-vendor-fast-hdmi\n'
+
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:
         indented_manual = '\n'.join('  ' + line if line.strip() else line for line in manual_content.split('\n'))
