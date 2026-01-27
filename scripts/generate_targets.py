@@ -652,6 +652,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     items:
       - *stable-current-fast-hdmi
 """
