@@ -1,0 +1,76 @@
+{
+  "os_list": [
+    {
+      "name": "Armbian OS noble gnome 25.11.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.11.1_Rpi4b_noble_current_6.12.58_gnome_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-11-22",
+      "extract_size": 7637827584,
+      "extract_sha256": "d91eed019d324628243626dc453b343aa8dde44b367f2f3232871d59902cf76e",
+      "image_download_size": 1276663320,
+      "image_download_sha256": "9f2c91cfec2e976b668f6c95f2854e1400eeff93f7257da5508f72c513dfec5e",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble minimal 25.11.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.11.1_Rpi4b_noble_current_6.12.58_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-11-22",
+      "extract_size": 1874853888,
+      "extract_sha256": "24489d70d73dc7a2619ce11115f207b76043b9a884ccb57493bca63795b807b5",
+      "image_download_size": 205604640,
+      "image_download_sha256": "e1946aa86ad5a5bb7b0e3255621c3e937269ebc15727d481390a16f78cc7495b",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS noble xfce 25.11.1",
+      "description": "Ultralight custom Ubuntu OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.11.1_Rpi4b_noble_current_6.12.58_xfce_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-11-22",
+      "extract_size": 8342470656,
+      "extract_sha256": "ef7e4f0ba0d0cde033bef9aee313376a1cadbad1fdbcaa0cd3ce3610c595e8a9",
+      "image_download_size": 1362765468,
+      "image_download_sha256": "d06f6760e2ddbd9eb252aa77f1f3df50506460349c03d54e5b750edd64ccde63",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian OS trixie minimal 25.11.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_25.11.1_Rpi4b_trixie_current_6.12.58_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2025-11-22",
+      "extract_size": 1950351360,
+      "extract_sha256": "21f019230d2259f12d4f83727ba7b2bfe4960fbf11e2e77af1e6b0fc15742136",
+      "image_download_size": 223985388,
+      "image_download_sha256": "ad42e1745e8c149decb26f4a44207b0f44d272bde1ae59dceecba5ec2f121cab",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    }
+  ]
+}
