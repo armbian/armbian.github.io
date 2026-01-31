@@ -124,7 +124,7 @@ boards:
 
     # The magic: reuse artifact set
     uses: "uefi-arm64"
-    branch: "current"
+    branch: "edge"
     file_extension: "img.xz"
 
   - board_slug: "khadasmind"
@@ -144,5 +144,5 @@ boards:
 
     # The magic: reuse artifact set
     uses: "uefi-arm64"
-    branch: "current"
+    branch: "edge"
     file_extension: "img.xz"
