@@ -8,6 +8,7 @@ IFS=$'\n\t'
 SOURCE_OF_TRUTH="${SOURCE_OF_TRUTH:-rsync://fi.mirror.armbian.de}"
 OS_DIR="${OS_DIR:-./os}"
 BOARD_DIR="${BOARD_DIR:-./build/config/boards}"
+REUSABLE_FILE="${REUSABLE_FILE:-./release-targets/reusable.yml}"
 OUT="${OUT:-armbian-images.json}"
 
 # -----------------------------------------------------------------------------
@@ -32,7 +33,7 @@ BIGIN_PLATINUM_FIELDS="${BIGIN_PLATINUM_STATUS_FIELD},${BIGIN_PLATINUM_UNTIL_FIE
 # Requirements
 # -----------------------------------------------------------------------------
 need() { command -v "$1" >/dev/null || { echo "ERROR: missing '$1'" >&2; exit 1; }; }
-need rsync gh jq jc find grep sed cut awk sort mktemp curl date
+need rsync gh jq jc python3 find grep sed cut awk sort mktemp curl date
 
 [[ -f "${OS_DIR}/exposed.map" ]] || { echo "ERROR: ${OS_DIR}/exposed.map not found" >&2; exit 1; }
 [[ -d "${BOARD_DIR}" ]] || { echo "ERROR: board directory not found: ${BOARD_DIR}" >&2; exit 1; }
@@ -87,6 +88,62 @@ done < <(
     \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
   | sort
 )
+
+# -----------------------------------------------------------------------------
+# Load virtual boards from reusable.yml
+# Boards that reuse artifact sets from other boards but with custom metadata
+# -----------------------------------------------------------------------------
+declare -A REUSABLE_BOARD_USES=()       # board_slug -> target_board_slug
+declare -A REUSABLE_BOARD_BRANCH=()     # board_slug -> branch_filter (optional)
+declare -A REUSABLE_BOARD_EXT=()        # board_slug -> file_extension_filter (optional)
+declare -A REUSABLE_BOARD_META=()       # board_slug -> "name|vendor|support"
+
+if [[ -f "$REUSABLE_FILE" ]]; then
+  echo "▶ Loading reusable board definitions from ${REUSABLE_FILE}…" >&2
+
+  while IFS=$'\t' read -r slug name vendor support uses branch ext; do
+    slug="${slug,,}"
+    [[ -z "$slug" ]] && continue
+
+    # Store the reusable board mapping
+    REUSABLE_BOARD_USES["$slug"]="${uses:-}"
+    REUSABLE_BOARD_BRANCH["$slug"]="${branch:-}"
+    REUSABLE_BOARD_EXT["$slug"]="${ext:-}"
+    REUSABLE_BOARD_META["$slug"]="${name:-}|${vendor:-}|${support:-}"
+
+    # Add to board maps (overwrites if exists)
+    [[ -n "$name" ]] && BOARD_NAME_MAP["$slug"]="$name"
+    [[ -n "$vendor" ]] && BOARD_VENDOR_MAP["$slug"]="$vendor"
+    [[ -n "$support" ]] && BOARD_SUPPORT_MAP["$slug"]="$support"
+
+    ext_msg="${ext:+ (ext: ${ext})}"
+    echo "  - ${slug} → ${uses}${branch:+ (branch: ${branch})}${ext_msg}" >&2
+  done < <(
+    python3 -c "
+import yaml, sys
+try:
+    with open('$REUSABLE_FILE') as f:
+        data = yaml.safe_load(f)
+    for b in data.get('boards', []):
+        print('\t'.join([
+            str(b.get('board_slug', '')),
+            str(b.get('board_name', '')),
+            str(b.get('board_vendor', '')),
+            str(b.get('board_support', '')),
+            str(b.get('uses', '')),
+            str(b.get('branch', '')),
+            str(b.get('file_extension', ''))
+        ]))
+except Exception as e:
+    sys.stderr.write(f'Error loading reusable.yml: {e}\n')
+    sys.exit(0)
+" 2>/dev/null || true
+  )
+
+  echo "  - Reusable boards loaded: ${#REUSABLE_BOARD_USES[@]}" >&2
+else
+  echo "ℹ️  Reusable board file not found: ${REUSABLE_FILE}" >&2
+fi
 
 # -----------------------------------------------------------------------------
 # Optional: Load company data from Bigin keyed by company_slug (matches board_vendor)
@@ -593,6 +650,87 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       fi
     fi
     echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+
+    # Check if this board is used by any reusable boards
+    for reusable_slug in "${!REUSABLE_BOARD_USES[@]}"; do
+      base_slug="${REUSABLE_BOARD_USES[$reusable_slug]}"
+
+      # Match if this board is the base board
+      if [[ "$BOARD_SLUG" == "$base_slug" ]]; then
+        branch_filter="${REUSABLE_BOARD_BRANCH[$reusable_slug]:-}"
+        ext_filter="${REUSABLE_BOARD_EXT[$reusable_slug]:-}"
+
+        # Apply branch filter if specified
+        if [[ -n "$branch_filter" && "$BRANCH" != "$branch_filter" ]]; then
+          continue
+        fi
+
+        # Apply file extension filter if specified
+        if [[ -n "$ext_filter" ]]; then
+          # Remove leading dot if present for matching
+          ext_filter="${ext_filter#.}"
+          current_ext="${FILE_EXTENSION#.}"
+          if [[ "$current_ext" != "$ext_filter" ]]; then
+            continue
+          fi
+        fi
+
+        # Get reusable board metadata
+        reusable_meta="${REUSABLE_BOARD_META[$reusable_slug]}"
+        IFS='|' read -r reusable_name reusable_vendor reusable_support <<< "$reusable_meta"
+
+        # Use reusable board's vendor for company lookup
+        reusable_company_key="${reusable_vendor,,}"
+        reusable_c_name=""
+        reusable_c_web=""
+        if [[ -n "$reusable_company_key" ]]; then
+          reusable_c_name="${COMPANY_NAME_BY_SLUG[$reusable_company_key]:-}"
+          reusable_c_web="${COMPANY_WEBSITE_BY_SLUG[$reusable_company_key]:-}"
+        fi
+
+        reusable_c_logo=""
+        if [[ -n "$reusable_vendor" ]]; then
+          reusable_c_logo="https://cache.armbian.com/images/vendors/150/${reusable_vendor}.png"
+        fi
+
+        # Get platinum support for reusable board
+        reusable_plat_until="${PLATINUM_UNTIL_BY_BOARD[$reusable_slug]:-}"
+        reusable_plat="false"
+        reusable_plat_expired="false"
+        if [[ -n "$reusable_plat_until" ]]; then
+          if [[ "$reusable_plat_until" < "$TODAY_UTC" ]]; then
+            reusable_plat="false"
+            reusable_plat_expired="true"
+          else
+            reusable_plat="true"
+            reusable_plat_expired="false"
+          fi
+        fi
+
+        # Update REDI URL with reusable board slug
+        reusable_redi_url="https://dl.armbian.com/${PREFIX}${reusable_slug}/${DISTRO^}_${REDI_BRANCH}_${REDI_VARIANT}"
+
+        # Update cache URLs for GitHub releases
+        reusable_asc="$ASC"
+        reusable_sha="$SHA"
+        reusable_tor="$TOR"
+        if [[ "$URL" == https://github.com/armbian/* ]]; then
+          reusable_cache="https://cache.armbian.com/artifacts/${reusable_slug}/archive/${IMAGE_NAME}"
+          reusable_asc="${reusable_cache}.asc"
+          reusable_sha="${reusable_cache}.sha"
+          reusable_tor="${reusable_cache}.torrent"
+        fi
+
+        # Check if reusable board image should be promoted
+        reusable_promoted=false
+        if is_promoted "$IMAGE_NAME" "$reusable_slug" "$URL"; then
+          reusable_promoted=true
+        fi
+
+        # Output for reusable board
+        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
+      fi
+    done
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
