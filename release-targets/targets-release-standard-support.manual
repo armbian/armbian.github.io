@@ -1,0 +1,35 @@
+# Manual target additions for standard support builds
+# This content will be appended to the auto-generated targets-release-standard-support.yaml
+
+# Debian trixie minimal - UEFI only
+minimal-stable-debian-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: trixie
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge }
+    - { BOARD: uefi-x86, BRANCH: edge }
+
+# Ubuntu noble GNOME desktop - UEFI only
+desktop-stable-ubuntu-gnome-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "gnome"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge }
+    - { BOARD: uefi-x86, BRANCH: edge }
