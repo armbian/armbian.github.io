@@ -1,0 +1,27 @@
+# Boards reference a target and override only identity metadata
+boards:
+  - board_slug: "minisforum-msr1"
+    board_name: "Minisforum MS-R1"
+    board_vendor: "minisforum"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "uefi-arm64"
+    branch: "current"
+
+  - board_slug: "khadasmind"
+    board_name: "Mind"
+    board_vendor: "khadas"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "uefi-x86"
+
+  - board_slug: "orangepi6"
+    board_name: "Orangepi 6"
+    board_vendor: "xunlong"
+    board_support: "csc"
+
+    # The magic: reuse artifact set
+    uses: "uefi-arm64"
+    branch: "current"
