@@ -1,0 +1,114 @@
+[
+  {
+    "Account_Name": "Khadas (Shenzhen Wesion Technology Co., Ltd.)",
+    "Description": null,
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.khadas.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/khadas-border.png"
+  },
+  {
+    "Account_Name": "Bananapi (Sinovoip Co.,Limited)",
+    "Description": "SinoVoip is a single board computer vendor who has many of their SBC's supported by Armbian! They are more commonly known by their moniker \"Banana Pi\" and have boards such as the Banana Pi M5 and Banana Pi M2 Pro which are supported by Armbian available for purchase now!",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.banana-pi.org/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/sinovoip-border.png"
+  },
+  {
+    "Account_Name": "Radxa Computer Co.,Limited",
+    "Description": null,
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://wiki.radxa.com",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/radxa-border.png"
+  },
+  {
+    "Account_Name": "Shenzhen FriendlyARM Technology Co., Ltd.",
+    "Description": null,
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.friendlyelec.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/friendlyelec-border.png"
+  },
+  {
+    "Account_Name": "SpacemiT (Zhuhai) Technology Co., Ltd.",
+    "Description": null,
+    "Partnership_Status": "Platinum Partner",
+    "Website": null,
+    "logo_url": "https://cache.armbian.com/images/vendors/150/spacemit-border.png"
+  },
+  {
+    "Account_Name": "Inovato LLC",
+    "Description": null,
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.inovato.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/inovato-border.png"
+  },
+  {
+    "Account_Name": "Mekotronics Co., Ltd",
+    "Description": "Digital Signage solutions",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.mekotronics.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/mekotronics-border.png"
+  },
+  {
+    "Account_Name": "Futo",
+    "Description": null,
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://futo.org",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/futo-border.png"
+  },
+  {
+    "Account_Name": "Alfred Smart Systems, S.L.",
+    "Description": null,
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://alfredsmart.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/alfredsmart-border.png"
+  },
+  {
+    "Account_Name": "Texas Instruments Inc",
+    "Description": null,
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://www.ti.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/ti-border.png"
+  },
+  {
+    "Account_Name": "toolcraft AG",
+    "Description": null,
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://www.toolcraft.de",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/toolcraft-border.png"
+  },
+  {
+    "Account_Name": "Maximumsettings Inc.",
+    "Description": null,
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://maximumsettings.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/maximumsettings-border.png"
+  },
+  {
+    "Account_Name": "AtomoNetworks",
+    "Description": null,
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://atomonetworks.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/atomonetworks-border.png"
+  },
+  {
+    "Account_Name": "NetCup",
+    "Description": null,
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://netcup.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/netcup-border.png"
+  },
+  {
+    "Account_Name": "Libre Computer (Imprecision Systems LLC)",
+    "Description": null,
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://libre.computer",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/libre-computer-border.png"
+  },
+  {
+    "Account_Name": "JetHome",
+    "Description": null,
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://jethome.ru",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/jethome-border.png"
+  }
+]
