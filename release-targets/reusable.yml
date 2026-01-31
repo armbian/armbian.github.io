@@ -1,0 +1,148 @@
+# ==============================================================================
+# Reusable Board Definitions
+# ==============================================================================
+#
+# This file defines "virtual boards" that reuse artifact sets from existing
+# boards but with custom identity metadata (name, vendor, support level).
+#
+# Purpose
+# -------
+# Allows boards without dedicated build configurations to appear in the
+# Armbian downloads interface with custom branding and filtered image sets.
+#
+# Use Cases
+# ---------
+# - OEM systems that use generic UEFI images (e.g., Minisforum MS-R1)
+# - Hardware integrators with custom board branding
+# - Hardware variants that share identical builds with different branding
+# - System on Module (SoM) boards that use carrier board images
+#
+# How It Works
+# ------------
+# 1. Define a virtual board with its own identity (slug, name, vendor, support)
+# 2. Specify which existing board's artifacts to reuse (uses field)
+# 3. Optionally filter by branch and/or file extension
+# 4. The JSON generator will create download entries for all matching images
+#    from the base board, but with the virtual board's metadata
+#
+# Field Reference
+# ---------------
+# Required Fields:
+#   board_slug      : Unique identifier for the virtual board (URL-friendly)
+#   board_name      : Human-readable display name
+#   board_vendor    : Vendor/company slug (must match Zoho Bigin company_slug)
+#   board_support   : Support level - "conf", "csc", "wip", or "tvb"
+#   uses            : Board slug to reuse artifacts from (e.g., "uefi-arm64")
+#
+# Optional Filters:
+#   branch          : Only include images from this branch (e.g., "current")
+#                     If omitted, all branches are included
+#   file_extension  : Only include images with this extension (e.g., "img.xz")
+#                     If omitted, all file types are included
+#
+# Support Levels:
+#   conf            : Configured - basic support, community maintained
+#   csc             : Community Supported - good community support
+#   wip             : Work In Progress - under active development
+#   tvb             : To Be Verified - not yet tested
+#
+# Common Base Boards:
+#   uefi-arm64       : Generic UEFI ARM 64-bit images
+#   uefi-x86         : Generic UEFI x86_64 images
+#   uefi-loong64     : Generic UEFI LoongArch 64-bit images
+#   uefi-riscv64     : Generic UEFI RISC-V 64-bit images
+#
+# Example 1: Simple OEM Board
+# -------------------------
+# Creates entries for all uefi-arm64 images with Minisforum branding:
+#
+#   - board_slug: "minisforum-msr1"
+#     board_name: "Minisforum MS-R1"
+#     board_vendor: "minisforum"
+#     board_support: "conf"
+#     uses: "uefi-arm64"
+#
+# Example 2: Filtered by Branch
+# ---------------------------
+# Only includes "current" branch images:
+#
+#   - board_slug: "khadasmind"
+#     board_name: "Mind"
+#     board_vendor: "khadas"
+#     board_support: "conf"
+#     uses: "uefi-x86"
+#     branch: "current"
+#
+# Example 3: Filtered by Branch and Extension
+# ---------------------------------------------
+# Only includes "current" branch .img.xz files (no .qcow2, .zip, etc.):
+#
+#   - board_slug: "orangepi6-plus"
+#     board_name: "Orangepi 6 Plus"
+#     board_vendor: "xunlong"
+#     board_support: "csc"
+#     uses: "uefi-arm64"
+#     branch: "current"
+#     file_extension: "img.xz"
+#
+# Important Notes
+# ---------------
+# - The 'uses' board MUST exist in the actual build/firmware infrastructure
+# - The board_vendor must match the company_slug in Zoho Bigin for company
+#   enrichment (name, website, logo) to work correctly
+# - Virtual boards inherit ALL image properties from the base board except:
+#   * board_slug, board_name, board_vendor, board_support (overridden)
+#   * REDI URLs (generated with virtual board slug)
+#   * Company information (looked up via virtual board's vendor)
+# - Platinum support tracking is independent per virtual board slug
+# - Promotion status is evaluated independently for each virtual board
+#
+# File Extension Filter
+# --------------------
+# The file_extension filter matches against the FILE_EXTENSION field in the
+# JSON output, which includes storage type prefixes. Examples:
+#   - "img.xz"        : Matches standard compressed images
+#   - "img.qcow2"     : Matches cloud images (QEMU/KVM format)
+#   - "u-boot.rom.xz" : Matches U-Boot ROM artifacts
+#   - "ufs.img.xz"    : Matches UFS filesystem images
+#
+# Testing
+# -------
+# After modifying this file, regenerate armbian-images.json and verify:
+# 1. Virtual board appears in the JSON: jq '.assets[] | select(.board_slug=="minisforum-msr1")'
+# 2. Correct number of images (filtering working)
+# 3. Metadata is correct (name, vendor, company info)
+# 4. REDI URLs point to the virtual board slug, not the base board
+#
+# ==============================================================================
+
+boards:
+  - board_slug: "minisforum-msr1"
+    board_name: "Minisforum MS-R1"
+    board_vendor: "minisforum"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "uefi-arm64"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "khadasmind"
+    board_name: "Khadas Mind Series"
+    board_vendor: "khadas"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "uefi-x86"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "orangepi6-plus"
+    board_name: "Orangepi 6 Plus"
+    board_vendor: "xunlong"
+    board_support: "csc"
+
+    # The magic: reuse artifact set
+    uses: "uefi-arm64"
+    branch: "current"
+    file_extension: "img.xz"
