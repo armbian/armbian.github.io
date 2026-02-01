@@ -539,7 +539,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"platinum"|"platinum_expired"|"platinum_until"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -548,6 +548,24 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     mapfile -t p < <(parse_image_name "$IMAGE_NAME")
     VER="${p[0]:-}"; BOARD="${p[1]:-}"; DISTRO="${p[2]:-}"; BRANCH="${p[3]:-}"
     VARIANT="${p[4]:-server}"; APP="${p[5]:-}"; STORAGE="${p[6]:-}"
+
+    # Extract kernel version by splitting filename and getting the appropriate field
+    # Standard: Armbian_24.11.1_Board_Distro_Branch_Kernel_... (kernel at index 5)
+    # Community: Armbian_community_Version_Board_Distro_Branch_Kernel_... (kernel at index 6)
+    KERNEL_VERSION=""
+    IFS='_' read -r -a f <<< "$IMAGE_NAME"
+    if [[ "${f[1]:-}" =~ ^[0-9]+\.[0-9] ]]; then
+      # Version token at position 1 (standard images)
+      KERNEL_VERSION="${f[5]:-}"
+    else
+      # Version token at position 2 (community images with prefix)
+      KERNEL_VERSION="${f[6]:-}"
+    fi
+    # Strip any suffixes: variants (e.g., "6.6.62-gnome" -> "6.6.62")
+    # and file extensions (e.g., "6.6.62.img.xz" -> "6.6.62")
+    KERNEL_VERSION="${KERNEL_VERSION%%-*}"
+    # Strip .img* suffix only if present (doesn't affect version numbers with dots)
+    KERNEL_VERSION="${KERNEL_VERSION%.img*}"
 
     [[ -z "$BOARD" ]] && continue
     BOARD_SLUG="${BOARD,,}"
@@ -649,7 +667,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         PLAT_EXPIRED="false"
       fi
     fi
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
 
     # Check if this board is used by any reusable boards
     for reusable_slug in "${!REUSABLE_BOARD_USES[@]}"; do
@@ -728,7 +746,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         fi
 
         # Output for reusable board
-        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
+        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
       fi
     done
   done <"$feed"
