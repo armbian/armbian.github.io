@@ -1,36 +1,150 @@
 {
   "entries": [
     {
+      "type": "service",
+      "id": "armbian-sponsors",
+      "name": "Support Armbian Development",
+      "url": "https://github.com/sponsors/armbian",
+      "title": "Become a Sponsor",
+      "summary": "Support continued Armbian development through sponsorship. Contributors get access to beta builds, priority support, and direct influence on project direction.",
+      "author": {
+        "name": "Armbian Project",
+        "handle": "@armbian"
+      },
+      "tags": [
+        "support",
+        "sponsorship",
+        "donate",
+        "community"
+      ],
+      "motd": {
+        "line": "Support Armbian: Become a sponsor",
+        "hint": "https://github.com/sponsors/armbian"
+      },
+      "manual": true
+    },
+    {
+      "type": "sponsor",
+      "id": "sponsor-4",
+      "name": "Sponsor: ahoneybun",
+      "url": "https://github.com/ahoneybun",
+      "title": "Aaron Honeycutt - Silver Sponsor",
+      "summary": "Sponsor of Armbian build",
+      "image": "https://avatars.githubusercontent.com/u/4884946?u=2fdb7e87d7a96c50f031762f20a946b48f73bcb2&v=4",
+      "author": {
+        "name": "Aaron Honeycutt",
+        "handle": "@ahoneybun"
+      },
+      "tags": [
+        "sponsor",
+        "silver",
+        "community"
+      ],
+      "motd": {
+        "line": "Silver level supporter"
+      }
+    },
+    {
       "type": "news",
-      "id": "ghost-697ac77a93dc320001185e1f",
+      "id": "ghost-696407e693dc320001185cd0",
+      "name": "Armbian",
+      "url": "http://blog.armbian.com/forget-third-party-utilities-meet-armbian-imager/",
+      "title": "Forget third-party utilities: meet Armbian Imager",
+      "summary": "Armbian Imager eliminates the guesswork from flashing SBC images. Real-time board detection, persistent caching, and built-in safety make installation fast, simple, and risk-free",
+      "published_at": "2026-01-17T14:43:51.000+01:00",
+      "image": "http://blog.armbian.com/content/images/2026/01/introducing-armbian-imager.png",
+      "author": {
+        "name": "Daniele Briguglio"
+      },
+      "tags": [
+        "Armbian",
+        "SBC",
+        "imager",
+        "linux"
+      ]
+    },
+    {
+      "type": "software",
+      "id": "ART001",
+      "name": "CDN router",
+      "url": "",
+      "title": "CDN router",
+      "summary": "Router for repository mirror automation",
+      "author": {
+        "name": "efectn",
+        "handle": "efectn"
+      },
+      "tags": [
+        "armbian"
+      ],
+      "motd": {
+        "line": "Featured: CDN router",
+        "hint": "armbian-config \u2192 Software"
+      }
+    },
+    {
+      "type": "contribution",
+      "id": "release-v26.2.0-trunk.146",
+      "name": "Weekly digest",
+      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.146",
+      "title": "Armbian Weekly digest Released",
+      "summary": "This week in Armbian development saw a series of refinements and maintenance updates across the build and configuration repositories. Contributors focused on workflow standardization, cosmetic improve...",
+      "published_at": "2025-12-29T06:49:33Z",
+      "highlights": [],
+      "tags": [
+        "release",
+        "update",
+        "armbian"
+      ]
+    },
+    {
+      "type": "contribution",
+      "id": "release-v26.2.0-trunk.278",
+      "name": "Weekly digest",
+      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.278",
+      "title": "Armbian Weekly digest Released",
+      "summary": "This week\u2019s Armbian development saw a major cleanup of legacy toolchain code, alongside numerous board-specific improvements and kernel updates. Support was added for the Nuvoton MA35D1 NuMaker IoT bo...",
+      "published_at": "2026-01-19T06:52:55Z",
+      "highlights": [],
+      "tags": [
+        "release",
+        "update",
+        "armbian"
+      ]
+    },
+    {
+      "type": "news",
+      "id": "ghost-69782e9693dc320001185e07",
       "name": "Armbian News",
-      "url": "http://blog.armbian.com/armbian-newsletter-2/",
-      "title": "Armbian Newsletter",
-      "summary": "Welcome to the latest Armbian Newsletter: your source for the latest developments, community highlights, and behind-the-scenes updates from the world of open-source ARM and RISC-V computing.\n\nJoin Armbian at embedded world 2026. Meet us in Hall 3, Booth 3-556 (Seeed Studio), where we\u2019ll be showcasing the Armbian build framework and how it powers reliable, production-ready Linux for ARM devices.\n\nFriendlyElec\u2019s NanoPC T6 Plus: The flagship edge computing powerhouse and media stationThe NanoPC T6 ",
-      "published_at": "2026-01-30T16:25:19.000+01:00",
-      "image": "http://blog.armbian.com/content/images/2026/01/coverleter.png",
+      "url": "http://blog.armbian.com/github-highlights-12/",
+      "title": "Github Highlights",
+      "summary": "This week\u2019s Armbian development saw a wide range of updates focused on automation, hardware support, and workflow improvements. Key highlights include the introduction of automatic YAML target generation, expanded support for Hetzner ARM64 runners, and enhancements to the redirector update workflow with cache mirror support. Several board-specific fixes and feature additions were made, including improved power cycle handling for meson-sm1 devices and new binary files for RK35 series components. ",
+      "published_at": "2026-01-27T04:20:04.000+01:00",
+      "image": "http://blog.armbian.com/content/images/2026/01/githubhighlights-2-2.webp",
       "author": {
         "name": "Michael Robinson"
       },
       "tags": []
     },
     {
-      "type": "software",
-      "id": "GIT001",
-      "name": "Git CLI",
-      "url": "",
-      "title": "Git CLI",
-      "summary": "Install tools for cloning and managing repositories (git)",
+      "type": "sponsor",
+      "id": "sponsor-9",
+      "name": "Sponsor: Nardol",
+      "url": "https://github.com/Nardol",
+      "title": "Patrick ZAJDA - Silver Sponsor",
+      "summary": "Sponsor of Armbian build",
+      "image": "https://avatars.githubusercontent.com/u/2864821?v=4",
       "author": {
-        "name": "armbian",
-        "handle": "armbian"
+        "name": "Patrick ZAJDA",
+        "handle": "@Nardol"
       },
       "tags": [
-        "devtools"
+        "sponsor",
+        "silver",
+        "community"
       ],
       "motd": {
-        "line": "Featured: Git CLI",
-        "hint": "armbian-config \u2192 Software"
+        "line": "Silver level supporter"
       }
     },
     {
@@ -57,131 +171,22 @@
       "manual": true
     },
     {
-      "type": "sponsor",
-      "id": "sponsor-3",
-      "name": "Sponsor: naltatis",
-      "url": "https://github.com/naltatis",
-      "title": "Michael Geers - Silver Sponsor",
-      "summary": "Sponsor of Armbian build",
-      "image": "https://avatars.githubusercontent.com/u/152287?v=4",
-      "author": {
-        "name": "Michael Geers",
-        "handle": "@naltatis"
-      },
-      "tags": [
-        "sponsor",
-        "silver",
-        "community"
-      ],
-      "motd": {
-        "line": "Silver level supporter"
-      }
-    },
-    {
-      "type": "news",
-      "id": "ghost-68f301cc6906210001c3dcac",
-      "name": "Armbian News",
-      "url": "http://blog.armbian.com/the-evolution-of-sbcs-nee/",
-      "title": "The Evolution of SBCs",
-      "summary": "The Evolution of SBCs: From Hobby Boards to Edge Computing\n\nOver the past two decades, single-board computers (SBCs) have transformed from experimental maker tools into the backbone of modern embedded and edge systems. What started as a handful of affordable hobby boards has grown into a diverse ecosystem powering automation, AI, and connected infrastructure around the world.\n\n\nFrom Prototypes to Possibility\n\nEarly SBCs were humble experiments \u2014 small circuit boards combining processor, memory, ",
-      "published_at": "2026-01-21T16:15:44.000+01:00",
-      "image": null,
-      "author": {
-        "name": "Michael Robinson"
-      },
-      "tags": []
-    },
-    {
       "type": "software",
-      "id": "STR001",
-      "name": "Stirling",
+      "id": "EMB001",
+      "name": "Emby",
       "url": "",
-      "title": "Stirling",
-      "summary": "Stirling PDF tools for viewing and editing PDF files",
+      "title": "Emby",
+      "summary": "Emby organizes video, music, live TV, and photos",
       "author": {
-        "name": "igorpecovnik",
-        "handle": "igorpecovnik"
+        "name": "schwar3kat",
+        "handle": "schwar3kat"
       },
       "tags": [
         "media"
       ],
       "motd": {
-        "line": "Featured: Stirling",
+        "line": "Featured: Emby",
         "hint": "armbian-config \u2192 Software"
-      }
-    },
-    {
-      "type": "service",
-      "id": "armbian-forum",
-      "name": "Armbian Community Forum",
-      "url": "https://forum.armbian.com/",
-      "title": "Community Support & Discussion",
-      "summary": "Join thousands of users discussing Armbian on SBCs. Get help, share projects, and stay updated with the latest developments.",
-      "author": {
-        "name": "Armbian Community",
-        "handle": "@armbian"
-      },
-      "tags": [
-        "community",
-        "support",
-        "forum",
-        "discussion"
-      ],
-      "motd": {
-        "line": "Armbian Forum: Community support",
-        "hint": "https://forum.armbian.com"
-      },
-      "manual": true
-    },
-    {
-      "type": "contribution",
-      "id": "release-v26.2.0-trunk.341",
-      "name": "Weekly digest",
-      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.341",
-      "title": "Armbian Weekly digest Released",
-      "summary": "This week\u2019s Armbian development saw a wide range of updates focused on automation, hardware support, and workflow improvements. Key highlights include the introduction of automatic YAML target generat...",
-      "published_at": "2026-01-26T06:52:27Z",
-      "highlights": [],
-      "tags": [
-        "release",
-        "update",
-        "armbian"
-      ]
-    },
-    {
-      "type": "contribution",
-      "id": "release-v26.2.0-trunk.278",
-      "name": "Weekly digest",
-      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.278",
-      "title": "Armbian Weekly digest Released",
-      "summary": "This week\u2019s Armbian development saw a major cleanup of legacy toolchain code, alongside numerous board-specific improvements and kernel updates. Support was added for the Nuvoton MA35D1 NuMaker IoT bo...",
-      "published_at": "2026-01-19T06:52:55Z",
-      "highlights": [],
-      "tags": [
-        "release",
-        "update",
-        "armbian"
-      ]
-    },
-    {
-      "type": "sponsor",
-      "id": "sponsor-6",
-      "name": "Sponsor: ilikeorangutans",
-      "url": "https://github.com/ilikeorangutans",
-      "title": "Jakob K\u00fclzer - Silver Sponsor",
-      "summary": "Sponsor of Armbian build",
-      "image": "https://avatars.githubusercontent.com/u/68387?u=5a7e4a6b793ef61869899d83e0d80d19b9452a4c&v=4",
-      "author": {
-        "name": "Jakob K\u00fclzer",
-        "handle": "@ilikeorangutans"
-      },
-      "tags": [
-        "sponsor",
-        "silver",
-        "community"
-      ],
-      "motd": {
-        "line": "Silver level supporter"
       }
     }
   ],
