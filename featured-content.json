@@ -1,0 +1,196 @@
+{
+  "entries": [
+    {
+      "type": "news",
+      "id": "ghost-697ac77a93dc320001185e1f",
+      "name": "Armbian News",
+      "url": "http://blog.armbian.com/armbian-newsletter-2/",
+      "title": "Armbian Newsletter",
+      "summary": "Welcome to the latest Armbian Newsletter: your source for the latest developments, community highlights, and behind-the-scenes updates from the world of open-source ARM and RISC-V computing.\n\nJoin Armbian at embedded world 2026. Meet us in Hall 3, Booth 3-556 (Seeed Studio), where we\u2019ll be showcasing the Armbian build framework and how it powers reliable, production-ready Linux for ARM devices.\n\nFriendlyElec\u2019s NanoPC T6 Plus: The flagship edge computing powerhouse and media stationThe NanoPC T6 ",
+      "published_at": "2026-01-30T16:25:19.000+01:00",
+      "image": "http://blog.armbian.com/content/images/2026/01/coverleter.png",
+      "author": {
+        "name": "Michael Robinson"
+      },
+      "tags": []
+    },
+    {
+      "type": "software",
+      "id": "GIT001",
+      "name": "Git CLI",
+      "url": "",
+      "title": "Git CLI",
+      "summary": "Install tools for cloning and managing repositories (git)",
+      "author": {
+        "name": "armbian",
+        "handle": "armbian"
+      },
+      "tags": [
+        "devtools"
+      ],
+      "motd": {
+        "line": "Featured: Git CLI",
+        "hint": "armbian-config \u2192 Software"
+      }
+    },
+    {
+      "type": "service",
+      "id": "armbian-actions",
+      "name": "Armbian Actions",
+      "url": "https://actions.armbian.com/",
+      "title": "Armbian CI/CD Infrastructure",
+      "summary": "Automated build and testing infrastructure for Armbian firmware. Check build status, download latest images, and track releases across all supported boards.",
+      "author": {
+        "name": "Armbian",
+        "handle": "@armbian"
+      },
+      "tags": [
+        "infrastructure",
+        "ci-cd",
+        "build",
+        "automation"
+      ],
+      "motd": {
+        "line": "Armbian Actions: Track builds and releases",
+        "hint": "https://actions.armbian.com"
+      },
+      "manual": true
+    },
+    {
+      "type": "sponsor",
+      "id": "sponsor-3",
+      "name": "Sponsor: naltatis",
+      "url": "https://github.com/naltatis",
+      "title": "Michael Geers - Silver Sponsor",
+      "summary": "Sponsor of Armbian build",
+      "image": "https://avatars.githubusercontent.com/u/152287?v=4",
+      "author": {
+        "name": "Michael Geers",
+        "handle": "@naltatis"
+      },
+      "tags": [
+        "sponsor",
+        "silver",
+        "community"
+      ],
+      "motd": {
+        "line": "Silver level supporter"
+      }
+    },
+    {
+      "type": "news",
+      "id": "ghost-68f301cc6906210001c3dcac",
+      "name": "Armbian News",
+      "url": "http://blog.armbian.com/the-evolution-of-sbcs-nee/",
+      "title": "The Evolution of SBCs",
+      "summary": "The Evolution of SBCs: From Hobby Boards to Edge Computing\n\nOver the past two decades, single-board computers (SBCs) have transformed from experimental maker tools into the backbone of modern embedded and edge systems. What started as a handful of affordable hobby boards has grown into a diverse ecosystem powering automation, AI, and connected infrastructure around the world.\n\n\nFrom Prototypes to Possibility\n\nEarly SBCs were humble experiments \u2014 small circuit boards combining processor, memory, ",
+      "published_at": "2026-01-21T16:15:44.000+01:00",
+      "image": null,
+      "author": {
+        "name": "Michael Robinson"
+      },
+      "tags": []
+    },
+    {
+      "type": "software",
+      "id": "STR001",
+      "name": "Stirling",
+      "url": "",
+      "title": "Stirling",
+      "summary": "Stirling PDF tools for viewing and editing PDF files",
+      "author": {
+        "name": "igorpecovnik",
+        "handle": "igorpecovnik"
+      },
+      "tags": [
+        "media"
+      ],
+      "motd": {
+        "line": "Featured: Stirling",
+        "hint": "armbian-config \u2192 Software"
+      }
+    },
+    {
+      "type": "service",
+      "id": "armbian-forum",
+      "name": "Armbian Community Forum",
+      "url": "https://forum.armbian.com/",
+      "title": "Community Support & Discussion",
+      "summary": "Join thousands of users discussing Armbian on SBCs. Get help, share projects, and stay updated with the latest developments.",
+      "author": {
+        "name": "Armbian Community",
+        "handle": "@armbian"
+      },
+      "tags": [
+        "community",
+        "support",
+        "forum",
+        "discussion"
+      ],
+      "motd": {
+        "line": "Armbian Forum: Community support",
+        "hint": "https://forum.armbian.com"
+      },
+      "manual": true
+    },
+    {
+      "type": "contribution",
+      "id": "release-v26.2.0-trunk.341",
+      "name": "Weekly digest",
+      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.341",
+      "title": "Armbian Weekly digest Released",
+      "summary": "This week\u2019s Armbian development saw a wide range of updates focused on automation, hardware support, and workflow improvements. Key highlights include the introduction of automatic YAML target generat...",
+      "published_at": "2026-01-26T06:52:27Z",
+      "highlights": [],
+      "tags": [
+        "release",
+        "update",
+        "armbian"
+      ]
+    },
+    {
+      "type": "contribution",
+      "id": "release-v26.2.0-trunk.278",
+      "name": "Weekly digest",
+      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.278",
+      "title": "Armbian Weekly digest Released",
+      "summary": "This week\u2019s Armbian development saw a major cleanup of legacy toolchain code, alongside numerous board-specific improvements and kernel updates. Support was added for the Nuvoton MA35D1 NuMaker IoT bo...",
+      "published_at": "2026-01-19T06:52:55Z",
+      "highlights": [],
+      "tags": [
+        "release",
+        "update",
+        "armbian"
+      ]
+    },
+    {
+      "type": "sponsor",
+      "id": "sponsor-6",
+      "name": "Sponsor: ilikeorangutans",
+      "url": "https://github.com/ilikeorangutans",
+      "title": "Jakob K\u00fclzer - Silver Sponsor",
+      "summary": "Sponsor of Armbian build",
+      "image": "https://avatars.githubusercontent.com/u/68387?u=5a7e4a6b793ef61869899d83e0d80d19b9452a4c&v=4",
+      "author": {
+        "name": "Jakob K\u00fclzer",
+        "handle": "@ilikeorangutans"
+      },
+      "tags": [
+        "sponsor",
+        "silver",
+        "community"
+      ],
+      "motd": {
+        "line": "Silver level supporter"
+      }
+    }
+  ],
+  "count": 10,
+  "sources": {
+    "contribution": 5,
+    "news": 5,
+    "sponsor": 10,
+    "software": 10,
+    "service": 6
+  }
+}
