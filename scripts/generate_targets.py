@@ -1056,20 +1056,20 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
     yaml += """# automated lists stop
 
 targets:
-  # Debian forky minimal CLI for all community boards
-  community-forky-all:
+  # Debian trixie minimal CLI for all community boards
+  community-trixie-all:
     enabled: yes
     configs: [ armbian-community ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: forky
+      RELEASE: trixie
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
 """
-    # Combine all lists for Debian Forky
+    # Combine all lists for Debian Trixie
     yaml += '      - *community-current-fast-hdmi\n'
     if current_slow:
         yaml += '      - *community-current-slow-hdmi\n'
@@ -1276,12 +1276,6 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
         minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_trixie_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
         lines.append(minimal_pattern)
         lines.append(minimal_pattern_no_prefix)
-
-        # Also add forky as fallback alternative
-        minimal_pattern_forky = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_forky_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-        minimal_pattern_no_prefix_forky = f"Armbian_{community_prefix}[0-9].*{board_pattern}_forky_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-        lines.append(minimal_pattern_forky)
-        lines.append(minimal_pattern_no_prefix_forky)
 
         # 2. Second pattern: depends on board type
         # For loongarch: only bookworm minimal (no noble)
