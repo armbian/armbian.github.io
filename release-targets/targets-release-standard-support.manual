@@ -46,8 +46,8 @@ desktop-stable-ubuntu-gnome-uefi:
     DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
 
 # Ubuntu noble Cinnamon desktop - UEFI only
 desktop-stable-ubuntu-cinnamon-uefi:
@@ -64,8 +64,9 @@ desktop-stable-ubuntu-cinnamon-uefi:
     DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
   items:
-    - { BOARD: uefi-arm64, BRANCH: current }
-    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
+
 
 # Ubuntu noble KDE Neon desktop - UEFI only
 desktop-stable-ubuntu-kdeneon-uefi:
@@ -82,5 +83,5 @@ desktop-stable-ubuntu-kdeneon-uefi:
     DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
   items:
-    - { BOARD: uefi-arm64, BRANCH: current }
-    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
