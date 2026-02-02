@@ -28,7 +28,7 @@ jobs:
           - generate-servers-jsons
 
     name: "${{ matrix.script }}"
-    runs-on: "${{ secrets.RUNNER }}"
+    runs-on: docker
     if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
