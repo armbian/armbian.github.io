@@ -28,7 +28,7 @@ jobs:
           - generate-servers-jsons
 
     name: "${{ matrix.script }}"
-    runs-on: ubuntu-24.04
+    runs-on: "${{ secrets.RUNNER }}"
     if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
