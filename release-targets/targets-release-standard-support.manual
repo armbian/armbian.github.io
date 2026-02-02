@@ -16,6 +16,21 @@ minimal-stable-debian-uefi:
     - { BOARD: uefi-arm64, BRANCH: edge }
     - { BOARD: uefi-x86, BRANCH: edge }
 
+# Ubuntu noble minimal with current kernel - UEFI only
+minimal-stable-ubuntu-current-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
+
 # Ubuntu noble GNOME desktop - UEFI only
 desktop-stable-ubuntu-gnome-uefi:
   enabled: yes
@@ -33,3 +48,39 @@ desktop-stable-ubuntu-gnome-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: edge }
     - { BOARD: uefi-x86, BRANCH: edge }
+
+# Ubuntu noble Cinnamon desktop - UEFI only
+desktop-stable-ubuntu-cinnamon-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "cinnamon"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
+
+# Ubuntu noble KDE Neon desktop - UEFI only
+desktop-stable-ubuntu-kdeneon-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "kde-neon"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
