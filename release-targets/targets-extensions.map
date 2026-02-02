@@ -15,4 +15,4 @@ khadas-vim1s:::ENABLE_EXTENSIONS="image-output-oowow"
 khadas-vim3:::ENABLE_EXTENSIONS="image-output-oowow"
 khadas-vim3l:::ENABLE_EXTENSIONS="image-output-oowow"
 khadas-vim4:::ENABLE_EXTENSIONS="image-output-oowow"
-uefi-x86:::ENABLE_EXTENSIONS="nvidia" # Rather use opensource driver for Nvidia on ARM64
+uefi-x86:::ENABLE_EXTENSIONS="nvidia"
