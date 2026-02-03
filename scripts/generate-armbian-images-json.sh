@@ -412,6 +412,16 @@ extract_file_extension() {
     return
   fi
 
+  # hyperv cloud images: minimal.hyperv.zip.xz -> hyperv.zip.xz
+  if [[ "$n" == *".hyperv.zip."* ]]; then
+    echo "hyperv.zip.${n##*.hyperv.zip.}"
+    return
+  fi
+  if [[ "$n" == *.hyperv.zip ]]; then
+    echo "hyperv.zip"
+    return
+  fi
+
   # fallback
   echo "${n##*.}"
 }
