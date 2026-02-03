@@ -654,7 +654,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
       - *stable-current-slow-hdmi
 """
@@ -677,19 +677,66 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
       - *stable-current-fast-hdmi
 """
         if vendor_fast:
             yaml += '      - *stable-vendor-fast-hdmi\n'
 
+    # Ubuntu stable KDE Neon desktop (fast HDMI only)
+    if current_fast:
+        yaml += """
+  # Ubuntu stable KDE Neon desktop (fast HDMI only)
+  desktop-stable-ubuntu-kde-neon:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "kde-neon"
+      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
+    items:
+      - *stable-current-fast-hdmi
+"""
+        if vendor_fast:
+            yaml += '      - *stable-vendor-fast-hdmi\n'
+
+    # Ubuntu stable XFCE desktop for RISC-V boards
+    if current_riscv64 or vendor_riscv64:
+        yaml += """
+  # Ubuntu stable XFCE desktop for RISC-V boards
+  desktop-stable-ubuntu-riscv64-xfce:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "xfce"
+      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: ""
+    items:
+"""
+        if current_riscv64:
+            yaml += '      - *stable-current-riscv64\n'
+        if vendor_riscv64:
+            yaml += '      - *stable-vendor-riscv64\n'
+
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:
         indented_manual = '\n'.join('  ' + line if line.strip() else line for line in manual_content.split('\n'))
         yaml += '\n' + indented_manual
 
-    # Add riscv64 target if any riscv64 boards exist
+    # Add riscv64 minimal target if any riscv64 boards exist
     if current_riscv64 or vendor_riscv64:
         yaml += """
   # Ubuntu stable minimal - RISC-V
@@ -837,7 +884,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
       - *nightly-fast-hdmi
 """
@@ -858,7 +905,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
       - *nightly-slow-hdmi
 """
@@ -1114,7 +1161,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
       - *community-current-fast-hdmi
 """
@@ -1122,6 +1169,31 @@ targets:
         yaml += '      - *community-vendor-fast-hdmi\n'
     if edge_fast:
         yaml += '      - *community-edge-fast-hdmi\n'
+
+    # Ubuntu noble KDE Neon desktop for fast HDMI community boards
+    if current_fast or vendor_fast or edge_fast:
+        yaml += """
+  # Ubuntu noble KDE Neon desktop for fast HDMI community boards
+  community-noble-kde-neon:
+    enabled: yes
+    configs: [ armbian-community ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "kde-neon"
+      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
+    items:
+      - *community-current-fast-hdmi
+"""
+        if vendor_fast:
+            yaml += '      - *community-vendor-fast-hdmi\n'
+        if edge_fast:
+            yaml += '      - *community-edge-fast-hdmi\n'
 
     # Ubuntu noble XFCE desktop for slow HDMI community boards
     if current_slow or vendor_slow or edge_slow:
@@ -1139,7 +1211,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
 """
         if current_slow:
@@ -1295,14 +1367,18 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
         if board_has_video and is_fast is not None:
             # Determine desktop type based on hardware speed
             if is_fast is True:
-                desktop_type = 'gnome_desktop'
+                # Fast boards get both GNOME and KDE Neon desktop patterns
+                for desktop_type in ['gnome_desktop', 'kde-neon_desktop']:
+                    desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+                    desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+                    lines.append(desktop_pattern)
+                    lines.append(desktop_pattern_no_prefix)
             else:  # is_fast is False (slow hardware)
                 desktop_type = 'xfce_desktop'
-
-            desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-            desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-            lines.append(desktop_pattern)
-            lines.append(desktop_pattern_no_prefix)
+                desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+                desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+                lines.append(desktop_pattern)
+                lines.append(desktop_pattern_no_prefix)
         else:
             # Headless boards: Ubuntu noble minimal
             noble_minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
