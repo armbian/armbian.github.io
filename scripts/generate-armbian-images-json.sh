@@ -622,6 +622,8 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 
     if [[ "$FILE_EXTENSION" == img.qcow2* ]]; then
       REDI_VARIANT="${VARIANT}-qcow2"
+    elif [[ "$FILE_EXTENSION" == hyperv.zip* ]]; then
+      REDI_VARIANT="${VARIANT}-hyperv"
     else
       # Append boot flavor for non-cloud images
       [[ -n "$BOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${BOOT_SUFFIX}"
