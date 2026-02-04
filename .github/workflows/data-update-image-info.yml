@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: "30 0 * * MON"
   workflow_dispatch:
+  repository_dispatch:
+    types: ["Data: Generate build engine inventory"]
 
 concurrency:
   group: update-image-info
