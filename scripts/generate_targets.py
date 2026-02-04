@@ -1446,12 +1446,12 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
         if board_has_video and is_fast is not None:
             # Determine desktop type based on hardware speed
             if is_fast is True:
-                # Fast boards get both GNOME and KDE Neon desktop patterns
-                for desktop_type in ['gnome_desktop', 'kde-neon_desktop']:
-                    desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-                    desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-                    lines.append(desktop_pattern)
-                    lines.append(desktop_pattern_no_prefix)
+                # Fast boards get GNOME desktop pattern only
+                desktop_type = 'gnome_desktop'
+                desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+                desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+                lines.append(desktop_pattern)
+                lines.append(desktop_pattern_no_prefix)
             else:  # is_fast is False (slow hardware)
                 desktop_type = 'xfce_desktop'
                 desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
