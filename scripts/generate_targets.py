@@ -77,6 +77,69 @@ def load_extensions_map(map_path):
     return extensions_map
 
 
+def load_remove_extensions_map(map_path):
+    """
+    Load remove extensions mapping file (blacklist).
+
+    Format: BOARD_NAME:branch1:branch2:...:REMOVE_EXTENSIONS="ext1,ext2"
+    Returns dict: {(BOARD, BRANCH): set(["ext1", "ext2"])}
+    If branches are empty (just ::), applies to all branches for that board.
+    Extensions in this set are removed from both auto-added and manual extensions.
+    """
+    remove_map = {}
+
+    if not Path(map_path).exists():
+        return remove_map
+
+    with open(map_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            # Skip comments and empty lines
+            if not line or line.startswith('#'):
+                continue
+
+            # Parse line: BOARD:branch1:branch2:...:REMOVE_EXTENSIONS="..."
+            if '::REMOVE_EXTENSIONS=' not in line:
+                continue
+
+            try:
+                # Split on REMOVE_EXTENSIONS
+                parts = line.split('REMOVE_EXTENSIONS=')
+                if len(parts) != 2:
+                    continue
+
+                # Parse board and branches
+                board_part = parts[0].rstrip(':')
+                extensions = parts[1].strip('"')
+
+                # Split by : to get board and branches
+                if ':' in board_part:
+                    board_branches = board_part.split(':')
+                    board = board_branches[0]
+                    branches = [b for b in board_branches[1:] if b]  # Filter empty strings
+                else:
+                    board = board_part
+                    branches = []
+
+                # Convert to set for easy removal
+                ext_set = {ext.strip() for ext in extensions.split(',') if ext.strip()}
+
+                # Store mapping
+                if branches:
+                    # Specific branches
+                    for branch in branches:
+                        remove_map[(board, branch)] = ext_set
+                else:
+                    # All branches - use empty branch as wildcard
+                    remove_map[(board, '')] = ext_set
+
+            except Exception as e:
+                print(f"Warning: Failed to parse line: {line} ({e})", file=sys.stderr)
+                continue
+
+    return remove_map
+
+
 def load_manual_overrides(base_path):
     """
     Load manual target overrides from .manual files.
@@ -203,11 +266,12 @@ def is_fast_hardware(entry):
         return True
 
 
-def get_soc_extensions(entry, extensions_map=None):
+def get_soc_extensions(entry, extensions_map=None, remove_extensions_map=None):
     """
     Determine if board needs v4l2loopback-dkms and mesa-vpu extensions.
     For fast HDMI boards, automatically adds these extensions.
     Also merges manual extensions from the extensions map.
+    Removes extensions specified in remove_extensions_map.
     Returns a comma-separated string of extensions or empty string.
     """
     inventory = entry.get('in', {}).get('inventory', {})
@@ -239,16 +303,31 @@ def get_soc_extensions(entry, extensions_map=None):
                 if ext and ext not in extensions:
                     extensions.append(ext)
 
+    # Remove extensions specified in remove_extensions_map
+    if remove_extensions_map:
+        remove_ext = None
+        # Check for specific (board, branch) match
+        if (board, branch) in remove_extensions_map:
+            remove_ext = remove_extensions_map[(board, branch)]
+        # Check for wildcard (board, '') match
+        elif (board, '') in remove_extensions_map:
+            remove_ext = remove_extensions_map[(board, '')]
+
+        if remove_ext:
+            # Filter out extensions in the remove list
+            extensions = [ext for ext in extensions if ext not in remove_ext]
+
     return ','.join(extensions) if extensions else ''
 
 
-def extract_boards_by_support_level(image_info, extensions_map=None, blacklist=None):
+def extract_boards_by_support_level(image_info, extensions_map=None, remove_extensions_map=None, blacklist=None):
     """
     Extract and categorize boards by support level.
 
     Args:
         image_info: Image information data
         extensions_map: Optional extensions mapping
+        remove_extensions_map: Optional remove extensions mapping
         blacklist: Optional set of board names to exclude
 
     Returns:
@@ -294,7 +373,7 @@ def extract_boards_by_support_level(image_info, extensions_map=None, blacklist=N
                 'arch': arch,
                 'entry': entry,
                 'has_desktop_variant': build_desktop == 'yes',
-                'extensions': get_soc_extensions(entry, extensions_map),
+                'extensions': get_soc_extensions(entry, extensions_map, remove_extensions_map),
                 'is_fast': is_fast_hardware(entry)
             }
         else:
@@ -1416,8 +1495,10 @@ def main():
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load extensions map (optional) - look in output directory first, then script directory
+    # Load extensions map (optional) - look in output directory, then release-targets, then script directory
     extensions_map_path = output_dir / 'targets-extensions.map'
+    if not extensions_map_path.exists():
+        extensions_map_path = Path(__file__).parent.parent / 'release-targets' / 'targets-extensions.map'
     if not extensions_map_path.exists():
         extensions_map_path = Path(__file__).parent / 'targets-extensions.map'
     print(f"Loading extensions map from {extensions_map_path}...", file=sys.stderr)
@@ -1426,6 +1507,19 @@ def main():
         print(f"  Loaded {len(extensions_map)} extension rules", file=sys.stderr)
     else:
         print("  No extensions map found or empty", file=sys.stderr)
+
+    # Load remove extensions map (optional) - look in output directory, then release-targets, then script directory
+    remove_extensions_map_path = output_dir / 'targets-extensions.map.blacklist'
+    if not remove_extensions_map_path.exists():
+        remove_extensions_map_path = Path(__file__).parent.parent / 'release-targets' / 'targets-extensions.map.blacklist'
+    if not remove_extensions_map_path.exists():
+        remove_extensions_map_path = Path(__file__).parent / 'targets-extensions.map.blacklist'
+    print(f"Loading remove extensions map from {remove_extensions_map_path}...", file=sys.stderr)
+    remove_extensions_map = load_remove_extensions_map(remove_extensions_map_path)
+    if remove_extensions_map:
+        print(f"  Loaded {len(remove_extensions_map)} remove extension rules", file=sys.stderr)
+    else:
+        print("  No remove extensions map found or empty", file=sys.stderr)
 
     # Load image info
     print(f"Loading {json_path}...", file=sys.stderr)
@@ -1439,7 +1533,7 @@ def main():
     apps_path = output_dir / 'targets-release-apps.yaml'
     blacklist_apps = load_blacklist(str(apps_path))
     manual_apps = load_manual_overrides(str(apps_path))
-    conf_wip_boards_apps, _ = extract_boards_by_support_level(image_info, extensions_map, blacklist_apps)
+    conf_wip_boards_apps, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_apps)
     print(f"  apps: {len(conf_wip_boards_apps)} boards after blacklist", file=sys.stderr)
     apps_yaml = generate_apps_yaml(conf_wip_boards_apps, manual_apps)
     apps_path.write_text(apps_yaml)
@@ -1449,7 +1543,7 @@ def main():
     stable_path = output_dir / 'targets-release-standard-support.yaml'
     blacklist_stable = load_blacklist(str(stable_path))
     manual_stable = load_manual_overrides(str(stable_path))
-    conf_wip_boards_stable, _ = extract_boards_by_support_level(image_info, extensions_map, blacklist_stable)
+    conf_wip_boards_stable, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable)
     print(f"  stable: {len(conf_wip_boards_stable)} boards after blacklist", file=sys.stderr)
     stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable)
     stable_path.write_text(stable_yaml)
@@ -1459,7 +1553,7 @@ def main():
     nightly_path = output_dir / 'targets-release-nightly.yaml'
     blacklist_nightly = load_blacklist(str(nightly_path))
     manual_nightly = load_manual_overrides(str(nightly_path))
-    conf_wip_boards_nightly, _ = extract_boards_by_support_level(image_info, extensions_map, blacklist_nightly)
+    conf_wip_boards_nightly, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_nightly)
     print(f"  nightly: {len(conf_wip_boards_nightly)} boards after blacklist", file=sys.stderr)
     nightly_yaml = generate_nightly_yaml(conf_wip_boards_nightly, manual_nightly)
     nightly_path.write_text(nightly_yaml)
@@ -1469,7 +1563,7 @@ def main():
     community_path = output_dir / 'targets-release-community-maintained.yaml'
     blacklist_community = load_blacklist(str(community_path))
     manual_community = load_manual_overrides(str(community_path))
-    _, csc_tvb_boards_community = extract_boards_by_support_level(image_info, extensions_map, blacklist_community)
+    _, csc_tvb_boards_community = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_community)
     print(f"  community: {len(csc_tvb_boards_community)} boards after blacklist", file=sys.stderr)
     community_yaml = generate_community_yaml(csc_tvb_boards_community, manual_community)
     community_path.write_text(community_yaml)

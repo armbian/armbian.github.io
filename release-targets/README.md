@@ -16,6 +16,7 @@ python3 scripts/generate_targets.py image-info.json release-targets/
 The script reads the following files from the output directory (same location as generated files):
 
 - **`targets-extensions.map`** - Manual extensions for specific boards/branches (optional)
+- **`targets-extensions.map.blacklist`** - Extensions to remove from specific boards/branches (optional)
 - **`targets-release-<type>.blacklist`** - Boards to exclude from each target type (optional)
 - **`targets-release-<type>.manual`** - Additional YAML to append to each target (optional)
 
@@ -107,6 +108,25 @@ nanopi-r4s:::ENABLE_EXTENSIONS="test-extension"
 board-name:current::ENABLE_EXTENSIONS="ext1,ext2,ext3"
 ```
 
+### targets-extensions.map.blacklist
+
+Remove extensions from specific boards (overrides automatic and manual extensions):
+
+```ini
+# Format: BOARD_NAME:branch1:branch2:...:REMOVE_EXTENSIONS="extension1,extension2"
+
+# Remove from all branches
+radxa-e54c:::REMOVE_EXTENSIONS="v4l2loopback-dkms,mesa-vpu"
+
+# Remove from specific branch only
+uefi-x86:current::REMOVE_EXTENSIONS="mesa-vpu"
+
+# Remove from multiple branches
+board-name:vendor:edge::REMOVE_EXTENSIONS="ext1,ext2"
+```
+
+**Note**: The REMOVE_EXTENSIONS blacklist takes precedence over both automatic extensions (like `mesa-vpu` for fast HDMI boards) AND manual extensions from `targets-extensions.map`. Extensions listed here will be removed even if they were added by either mechanism.
+
 ### targets-release-<type>.blacklist
 
 Exclude specific boards from a target type (one board name per line):
@@ -145,7 +165,10 @@ All fast HDMI boards (64-bit boards with video output) automatically get:
 - `v4l2loopback-dkms`
 - `mesa-vpu`
 
-**Note**: Manual extensions from `targets-extensions.map` are MERGED with automatic extensions.
+**Note**:
+- Manual extensions from `targets-extensions.map` are MERGED with automatic extensions.
+- Extensions in `targets-extensions.map.blacklist` are REMOVED from both automatic and manual extensions.
+- The blacklist takes precedence over all other extension sources.
 
 ## Usage
 
@@ -169,5 +192,7 @@ python3 scripts/generate_targets.py image-info.json release-targets/
 
 - Python 3.6+
 - image-info.json (from Armbian build framework or github.armbian.com)
-- targets-extensions.map (optional, but recommended in output directory)
-- .blacklist and .manual files (optional, per target type)
+- targets-extensions.map (optional, for adding manual extensions)
+- targets-extensions.map.blacklist (optional, for removing unwanted extensions)
+- targets-release-<type>.blacklist (optional, per target type)
+- targets-release-<type>.manual (optional, per target type)
