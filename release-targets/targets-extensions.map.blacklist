@@ -1,0 +1,19 @@
+# Extensions Blacklist
+# ------------------
+# This file defines extensions that should be REMOVED from specific boards,
+# overriding the auto-added extensions (like v4l2loopback-dkms, mesa-vpu for fast HDMI boards).
+#
+# Format: BOARD_NAME:branch1:branch2:...:REMOVE_EXTENSIONS="ext1,ext2"
+#
+# - BOARD_NAME: board identifier (must match BOARD in image-info.json)
+# - branch1:branch2: optional, specific kernel branches (current, vendor, edge)
+#   - If empty (::), applies to ALL branches for that board
+# - REMOVE_EXTENSIONS: comma-separated list of extensions to remove
+#
+# Examples:
+#   boardx:::REMOVE_EXTENSIONS="mesa-vpu"           # Remove mesa-vpu from all branches
+#   boardy:current::REMOVE_EXTENSIONS="mesa-vpu"     # Remove only from current branch
+#   boardz::vendor:edge:REMOVE_EXTENSIONS="ext1"     # Remove from vendor and edge only
+#
+# Boards listed below:
+radxa-e54c:::REMOVE_EXTENSIONS="v4l2loopback-dkms,mesa-vpu"
