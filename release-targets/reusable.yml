@@ -146,3 +146,13 @@ boards:
     uses: "uefi-arm64"
     branch: "current"
     file_extension: "img.xz"
+
+  - board_slug: "raspberrypizero2w"
+    board_name: "Raspberry Pi Zero 2W"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
