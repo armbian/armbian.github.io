@@ -1,0 +1,49 @@
+# Manual target additions for community maintained builds
+# This content will be appended to the auto-generated targets-release-community-maintained.yaml
+
+# Debian trixie cli
+cli-stable-debian:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: trixie
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: aml-s9xx-box, BRANCH: current }
+    - { BOARD: aml-s9xx-box, BRANCH: edge }
+
+# Ubuntu noble minimal with current kernel - UEFI only
+cli-stable-ubuntu:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: aml-s9xx-box, BRANCH: current }
+    - { BOARD: aml-s9xx-box, BRANCH: edge }
+
+# Debian stable XFCE desktop
+desktop-stable-debian-xfce:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: trixie
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "xfce"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "programming"
+  items:
+    - { BOARD: aml-s9xx-box, BRANCH: current }
