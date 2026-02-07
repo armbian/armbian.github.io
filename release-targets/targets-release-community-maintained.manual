@@ -16,7 +16,7 @@ cli-stable-debian:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: aml-s9xx-box, BRANCH: edge }
 
-# Ubuntu noble minimal with current kernel - UEFI only
+# Ubuntu noble cli
 cli-stable-ubuntu:
   enabled: yes
   configs: [ armbian-images ]
