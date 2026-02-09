@@ -206,3 +206,33 @@ boards:
     uses: "rpi4b"
     branch: "current"
     file_extension: "img.xz"
+
+  - board_slug: "raspberrypi400"
+    board_name: "Raspberry Pi 400"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "raspberrypi500"
+    board_name: "Raspberry Pi 500"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "raspberrypi500plus"
+    board_name: "Raspberry Pi 500+"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
