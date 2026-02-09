@@ -4,7 +4,7 @@
 # Debian trixie cli
 cli-stable-debian:
   enabled: yes
-  configs: [ armbian-images ]
+  configs: [ armbian-community ]
   pipeline:
     gha: *armbian-gha
   build-image: "yes"
@@ -19,7 +19,7 @@ cli-stable-debian:
 # Ubuntu noble cli
 cli-stable-ubuntu:
   enabled: yes
-  configs: [ armbian-images ]
+  configs: [ armbian-community ]
   pipeline:
     gha: *armbian-gha
   build-image: "yes"
@@ -34,7 +34,7 @@ cli-stable-ubuntu:
 # Debian stable XFCE desktop
 desktop-stable-debian-xfce:
   enabled: yes
-  configs: [ armbian-images ]
+  configs: [ armbian-community ]
   pipeline:
     gha: *armbian-gha
   build-image: "yes"
