@@ -391,7 +391,9 @@ def extract_boards_by_support_level(image_info, extensions_map=None, remove_exte
         # If set, only include branches that are in KERNEL_TEST_TARGET
         entry = data['entry']
         inventory = entry.get('in', {}).get('inventory', {})
-        kernel_test_target = inventory.get('KERNEL_TEST_TARGET', '')
+        # KERNEL_TEST_TARGET is in BOARD_TOP_LEVEL_VARS
+        toplevel_vars = inventory.get('BOARD_TOP_LEVEL_VARS', {})
+        kernel_test_target = toplevel_vars.get('KERNEL_TEST_TARGET', '')
 
         if kernel_test_target:
             # Parse KERNEL_TEST_TARGET - comma-separated list of branches
@@ -431,7 +433,9 @@ def select_one_branch_per_board(boards):
         branch = board_data['branch']
         entry = board_data['entry']
         inventory = entry.get('in', {}).get('inventory', {})
-        kernel_test_target = inventory.get('KERNEL_TEST_TARGET', '')
+        # KERNEL_TEST_TARGET is in BOARD_TOP_LEVEL_VARS
+        toplevel_vars = inventory.get('BOARD_TOP_LEVEL_VARS', {})
+        kernel_test_target = toplevel_vars.get('KERNEL_TEST_TARGET', '')
 
         # Determine branch priority for this board
         if kernel_test_target:
@@ -588,16 +592,22 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
     yaml = generate_yaml_header()
 
     # Separate by branch and performance/architecture
+    # Only separate by actual branch names, not by category
     current_fast = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] is True]
     current_slow = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] is False]
     current_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] == 'riscv64']
     current_loongarch = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] == 'loongarch']
     current_headless = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] is None]
-    vendor_fast = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is True]
-    vendor_slow = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is False]
-    vendor_riscv64 = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'riscv64']
-    vendor_loongarch = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'loongarch']
-    vendor_headless = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is None]
+    vendor_fast = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] is True]
+    vendor_slow = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] is False]
+    vendor_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] == 'riscv64']
+    vendor_loongarch = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] == 'loongarch']
+    vendor_headless = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] is None]
+    legacy_fast = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] is True]
+    legacy_slow = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] is False]
+    legacy_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] == 'riscv64']
+    legacy_loongarch = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] == 'loongarch']
+    legacy_headless = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] is None]
 
     # Current branch lists
     yaml += """# Stable builds - fast HDMI (quad-core+ or modern SoCs)
@@ -672,6 +682,42 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    # Legacy branch lists
+    if legacy_fast:
+        yaml += '  stable-legacy-fast-hdmi: &stable-legacy-fast-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(legacy_fast, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if legacy_slow:
+        yaml += '  stable-legacy-slow-hdmi: &stable-legacy-slow-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(legacy_slow, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if legacy_riscv64:
+        yaml += '  stable-legacy-riscv64: &stable-legacy-riscv64\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(legacy_riscv64, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if legacy_loongarch:
+        yaml += '  stable-legacy-loongarch: &stable-legacy-loongarch\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(legacy_loongarch, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if legacy_headless:
+        yaml += '  stable-legacy-headless: &stable-legacy-headless\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(legacy_headless, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
     yaml += """# automated lists stop
 
 targets:
@@ -707,6 +753,16 @@ targets:
         yaml += '      - *stable-vendor-loongarch\n'
     if vendor_headless:
         yaml += '      - *stable-vendor-headless\n'
+    if legacy_fast:
+        yaml += '      - *stable-legacy-fast-hdmi\n'
+    if legacy_slow:
+        yaml += '      - *stable-legacy-slow-hdmi\n'
+    if legacy_riscv64:
+        yaml += '      - *stable-legacy-riscv64\n'
+    if legacy_loongarch:
+        yaml += '      - *stable-legacy-loongarch\n'
+    if legacy_headless:
+        yaml += '      - *stable-legacy-headless\n'
 
     yaml += """
   # Ubuntu stable minimal
@@ -741,6 +797,16 @@ targets:
         yaml += '      - *stable-vendor-loongarch\n'
     if vendor_headless:
         yaml += '      - *stable-vendor-headless\n'
+    if legacy_fast:
+        yaml += '      - *stable-legacy-fast-hdmi\n'
+    if legacy_slow:
+        yaml += '      - *stable-legacy-slow-hdmi\n'
+    if legacy_riscv64:
+        yaml += '      - *stable-legacy-riscv64\n'
+    if legacy_loongarch:
+        yaml += '      - *stable-legacy-loongarch\n'
+    if legacy_headless:
+        yaml += '      - *stable-legacy-headless\n'
 
     # Ubuntu stable XFCE desktop (slow HDMI only)
     if current_slow:
@@ -1079,11 +1145,17 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
     current_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'current' and b['is_fast'] == 'riscv64']
     current_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'current' and b['is_fast'] == 'loongarch']
 
-    vendor_fast = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is True]
-    vendor_slow = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is False]
-    vendor_headless = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is None]
-    vendor_riscv64 = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'riscv64']
-    vendor_loongarch = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'loongarch']
+    vendor_fast = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] is True]
+    vendor_slow = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] is False]
+    vendor_headless = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] is None]
+    vendor_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] == 'riscv64']
+    vendor_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] == 'loongarch']
+
+    legacy_fast = [b for b in csc_tvb_boards if b['branch'] == 'legacy' and b['is_fast'] is True]
+    legacy_slow = [b for b in csc_tvb_boards if b['branch'] == 'legacy' and b['is_fast'] is False]
+    legacy_headless = [b for b in csc_tvb_boards if b['branch'] == 'legacy' and b['is_fast'] is None]
+    legacy_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'legacy' and b['is_fast'] == 'riscv64']
+    legacy_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'legacy' and b['is_fast'] == 'loongarch']
 
     # Build set of boards that have current branch (to exclude from edge)
     current_boards = {b['board'] for b in csc_tvb_boards if b['branch'] == 'current'}
