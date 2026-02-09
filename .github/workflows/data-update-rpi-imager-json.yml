@@ -47,6 +47,7 @@ jobs:
         run: |
 
           cd armbian.github.io
+          git fetch origin data:remotes/origin/data || true
           git checkout data || git checkout -b data
           mkdir -p data/
 
@@ -56,4 +57,4 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/.
           git diff --cached --quiet || git commit -m "Update WEB index files"
-          git push
+          git push origin data --force-with-lease
