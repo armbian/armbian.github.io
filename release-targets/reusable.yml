@@ -156,3 +156,53 @@ boards:
     uses: "rpi4b"
     branch: "current"
     file_extension: "img.xz"
+
+  - board_slug: "raspberrypi3aplus"
+    board_name: "Raspberry Pi 3A+"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "raspberrypi3bplus"
+    board_name: "Raspberry Pi 3B+"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "raspberrypi3b"
+    board_name: "Raspberry Pi 3B"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "raspberrypicm3"
+    board_name: "Raspberry Pi CM"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "raspberrypicm3plus"
+    board_name: "Raspberry Pi CM3+"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
