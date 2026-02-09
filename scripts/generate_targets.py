@@ -387,9 +387,21 @@ def extract_boards_by_support_level(image_info, extensions_map=None, remove_exte
     csc_tvb_boards = []
 
     for key, data in board_data.items():
-        # Filter branches: prefer current, vendor, and legacy
-        if data['branch'] not in ['current', 'vendor', 'legacy', 'edge']:
-            continue
+        # Get KERNEL_TEST_TARGET from the board's inventory
+        # If set, only include branches that are in KERNEL_TEST_TARGET
+        entry = data['entry']
+        inventory = entry.get('in', {}).get('inventory', {})
+        kernel_test_target = inventory.get('KERNEL_TEST_TARGET', '')
+
+        if kernel_test_target:
+            # Parse KERNEL_TEST_TARGET - comma-separated list of branches
+            allowed_branches = [b.strip() for b in kernel_test_target.split(',') if b.strip()]
+            if data['branch'] not in allowed_branches:
+                continue
+        else:
+            # Filter branches: prefer current, vendor, and legacy
+            if data['branch'] not in ['current', 'vendor', 'legacy', 'edge']:
+                continue
 
         if data['support_level'] in ['conf', 'wip']:
             conf_wip_boards.append(data)
@@ -402,10 +414,11 @@ def extract_boards_by_support_level(image_info, extensions_map=None, remove_exte
 def select_one_branch_per_board(boards):
     """
     Select one branch per board, preferring current over vendor over edge.
+    Respects KERNEL_TEST_TARGET if set on the board.
     Returns list of unique boards.
     """
     # Define branch preference priority (lower number = higher priority)
-    branch_priority = {
+    default_branch_priority = {
         'current': 1,
         'vendor': 2,
         'legacy': 2,
@@ -416,6 +429,17 @@ def select_one_branch_per_board(boards):
     for board_data in boards:
         board = board_data['board']
         branch = board_data['branch']
+        entry = board_data['entry']
+        inventory = entry.get('in', {}).get('inventory', {})
+        kernel_test_target = inventory.get('KERNEL_TEST_TARGET', '')
+
+        # Determine branch priority for this board
+        if kernel_test_target:
+            # Use KERNEL_TEST_TARGET order as priority
+            allowed_branches = [b.strip() for b in kernel_test_target.split(',') if b.strip()]
+            branch_priority = {branch: idx for idx, branch in enumerate(allowed_branches, 1)}
+        else:
+            branch_priority = default_branch_priority
 
         # Skip if branch is not in our priority list
         if branch not in branch_priority:
