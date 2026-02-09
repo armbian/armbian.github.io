@@ -387,8 +387,8 @@ def extract_boards_by_support_level(image_info, extensions_map=None, remove_exte
     csc_tvb_boards = []
 
     for key, data in board_data.items():
-        # Filter branches: prefer current and vendor
-        if data['branch'] not in ['current', 'vendor', 'edge']:
+        # Filter branches: prefer current, vendor, and legacy
+        if data['branch'] not in ['current', 'vendor', 'legacy', 'edge']:
             continue
 
         if data['support_level'] in ['conf', 'wip']:
@@ -408,6 +408,7 @@ def select_one_branch_per_board(boards):
     branch_priority = {
         'current': 1,
         'vendor': 2,
+        'legacy': 2,
         'edge': 3
     }
 
@@ -568,11 +569,11 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
     current_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] == 'riscv64']
     current_loongarch = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] == 'loongarch']
     current_headless = [b for b in conf_wip_boards if b['branch'] == 'current' and b['is_fast'] is None]
-    vendor_fast = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] is True]
-    vendor_slow = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] is False]
-    vendor_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] == 'riscv64']
-    vendor_loongarch = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] == 'loongarch']
-    vendor_headless = [b for b in conf_wip_boards if b['branch'] == 'vendor' and b['is_fast'] is None]
+    vendor_fast = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is True]
+    vendor_slow = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is False]
+    vendor_riscv64 = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'riscv64']
+    vendor_loongarch = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'loongarch']
+    vendor_headless = [b for b in conf_wip_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is None]
 
     # Current branch lists
     yaml += """# Stable builds - fast HDMI (quad-core+ or modern SoCs)
@@ -1054,11 +1055,11 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
     current_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'current' and b['is_fast'] == 'riscv64']
     current_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'current' and b['is_fast'] == 'loongarch']
 
-    vendor_fast = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] is True]
-    vendor_slow = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] is False]
-    vendor_headless = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] is None]
-    vendor_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] == 'riscv64']
-    vendor_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'vendor' and b['is_fast'] == 'loongarch']
+    vendor_fast = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is True]
+    vendor_slow = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is False]
+    vendor_headless = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] is None]
+    vendor_riscv64 = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'riscv64']
+    vendor_loongarch = [b for b in csc_tvb_boards if b['branch'] in ('vendor', 'legacy') and b['is_fast'] == 'loongarch']
 
     # Build set of boards that have current branch (to exclude from edge)
     current_boards = {b['board'] for b in csc_tvb_boards if b['branch'] == 'current'}
