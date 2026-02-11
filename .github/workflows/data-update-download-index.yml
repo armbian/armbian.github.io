@@ -123,9 +123,24 @@ jobs:
           git add data/armbian-images.json data/all-torrents.zip
           if ! git diff --cached --quiet; then
             git commit -m "Update armbian-images.json and all-torrents.zip"
-            # rebase once more right before push to reduce race window
-            git pull --rebase origin data
-            git push origin data
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
 
       - name: "Generate directory"

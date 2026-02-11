@@ -48,23 +48,41 @@ jobs:
           ./compile.sh inventory-boards
 
       - name: Commit changes if any
-        shell: bash
         run: |
-
-          cd armbian.github.io
           set -euo pipefail
+          cd armbian.github.io
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
           git checkout data
-          mv ${{ github.workspace }}/build/output/info/image-info.json data/
+          git pull --rebase origin data
 
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          mkdir -p data
+          mv "${{ github.workspace }}/build/output/info/image-info.json" data/
+
           git add data/image-info.json
-
           if ! git diff --cached --quiet; then
             git commit -m "Update image-info.json from build repository"
-            git push
-          else
-            echo "No changes to commit."
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
 
       - name: "Run Bigin update action"

@@ -134,21 +134,39 @@ jobs:
           popd >/dev/null
 
       - name: Commit changes if any
-        shell: bash
         run: |
           set -euo pipefail
           cd armbian.github.io
-          git checkout data
 
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
+          git checkout data
+          git pull --rebase origin data
+
           git add data/keyrings/
 
           if ! git diff --cached --quiet; then
             git commit -m "Update keyrings: downloaded and linked per-variant under data/keyrings/"
-            git push
-          else
-            echo "No changes to commit."
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
 
       - name: "Generate directory"

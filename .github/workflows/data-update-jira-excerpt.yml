@@ -150,18 +150,43 @@ jobs:
           PY
 
       - name: Commit changes if any
-        shell: bash
         run: |
+          set -euo pipefail
           cd armbian.github.io
-          git checkout data
-          mkdir -p data/
-          mv ${{ github.workspace }}/jira-current.html data/
-          mv ${{ github.workspace }}/jira-next.html data/
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/.
-          git diff --cached --quiet || git commit -m "Update WEB index files"
-          git push
+
+          git fetch origin data
+          git checkout data
+          git pull --rebase origin data
+
+          mkdir -p data
+          mv "${{ github.workspace }}/jira-current.html" data/
+          mv "${{ github.workspace }}/jira-next.html" data/
+
+          git add data/jira-current.html data/jira-next.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Update WEB index files"
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
+          fi
 
       - name: "Run pull from Repository action"
         uses: peter-evans/repository-dispatch@v4
