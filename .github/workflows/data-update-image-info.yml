@@ -76,7 +76,9 @@ jobs:
 
               # Pull with rebase to resolve conflicts
               echo "Push failed, attempting to pull and rebase..." >&2
-              git pull --rebase origin data
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
 
               attempt=$((attempt + 1))
             done
