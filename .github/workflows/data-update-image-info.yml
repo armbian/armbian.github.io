@@ -2,7 +2,7 @@ name: "Data: Generate build engine inventory"
 
 on:
   schedule:
-    - cron: "30 0 * * MON"
+    - cron: "0 */4 * * *"
   workflow_dispatch:
   repository_dispatch:
     types: ["Data: Generate build engine inventory"]
