@@ -137,7 +137,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           # Restore the generated files
           mkdir -p data/servers

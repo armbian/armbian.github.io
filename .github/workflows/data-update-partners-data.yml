@@ -153,7 +153,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           mkdir -p data
           cp "${{ github.workspace }}/partners.json" data/
