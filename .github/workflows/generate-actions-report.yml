@@ -130,7 +130,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           git add data/actions-report/
           if ! git diff --cached --quiet; then

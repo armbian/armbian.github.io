@@ -143,7 +143,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           git add data/keyrings/
 

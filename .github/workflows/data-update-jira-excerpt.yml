@@ -159,7 +159,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           mkdir -p data
           mv "${{ github.workspace }}/jira-current.html" data/
