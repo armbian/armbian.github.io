@@ -12,6 +12,10 @@ on:
 env:
   IMAGE_INFO_URL: "https://github.armbian.com/image-info.json"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
 
   Check:

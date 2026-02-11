@@ -13,7 +13,7 @@ env:
   SOURCE_OF_TRUTH: "https://armbian.atomonetworks.com"
 
 concurrency:
-  group: redirector
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:

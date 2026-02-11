@@ -4,7 +4,7 @@ on:
     types: ["MOTD update"]
 
 concurrency:
-  group: redirector
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:

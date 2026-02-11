@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: redirector
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 env:

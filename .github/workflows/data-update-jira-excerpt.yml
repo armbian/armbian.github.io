@@ -7,7 +7,7 @@ on:
     types: ["Data: Update Jira excerpt"]
 
 concurrency:
-  group: redirector
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:

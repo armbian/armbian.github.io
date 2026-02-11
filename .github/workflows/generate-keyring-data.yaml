@@ -6,7 +6,7 @@ on:
     - cron: '40 3 * * 3'
 
 concurrency:
-  group: redirector
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
