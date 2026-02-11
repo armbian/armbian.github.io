@@ -7,7 +7,7 @@ on:
   schedule:
     - cron: '30 5 * * *'
 concurrency:
-  group: redirector
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:

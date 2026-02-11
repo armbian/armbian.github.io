@@ -8,8 +8,8 @@ on:
     types: ["Data: Generate build engine inventory"]
 
 concurrency:
-  group: update-image-info
-  cancel-in-progress: true
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
