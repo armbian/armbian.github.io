@@ -145,17 +145,42 @@ jobs:
 
       - name: Commit and push JSON files
         run: |
-
+          set -euo pipefail
           cd armbian.github.io
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
           git checkout data
-          mkdir -p data/
-          cp ${{ github.workspace }}/partners.json data/
-          cp ${{ github.workspace }}/maintainers.json data/
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin data
+
+          mkdir -p data
+          cp "${{ github.workspace }}/partners.json" data/
+          cp "${{ github.workspace }}/maintainers.json" data/
+
           git add data/partners.json data/maintainers.json
-          git commit -m "Update of Bigin sourced JSON files" || echo "No changes to commit"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Update of Bigin sourced JSON files"
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
+          fi
 
       - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4

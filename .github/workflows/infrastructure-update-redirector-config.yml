@@ -665,17 +665,42 @@ jobs:
 
     - name: Commit changes if any
       run: |
-
+        set -euo pipefail
         cd armbian.github.io
+
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+
+        git fetch origin data
         git checkout data
-        mkdir -p data/
+        git pull --rebase origin data
+
+        mkdir -p data
         cp ${{ github.workspace }}/status/*.yaml data/
         cp ${{ github.workspace }}/*.mmdb data/
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add data/.
-        git diff --cached --quiet || git commit -m "Update Redirector YAML configuration"
-        git push
+
+        git add data/
+        if ! git diff --cached --quiet; then
+          git commit -m "Update Redirector YAML configuration"
+          # Push with retry logic
+          max_attempts=3
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if git push origin data; then
+              echo "Successfully pushed to data branch"
+              exit 0
+            fi
+
+            # Pull with rebase to resolve conflicts
+            echo "Push failed, attempting to pull and rebase..." >&2
+            git pull --rebase origin data
+
+            attempt=$((attempt + 1))
+          done
+
+          echo "Failed to push after $max_attempts attempts" >&2
+          exit 1
+        fi
 
     - uses: geekyeggo/delete-artifact@v5
       with:
