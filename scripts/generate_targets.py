@@ -1054,7 +1054,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
       - *nightly-fast-hdmi
 """
@@ -1075,7 +1075,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
       - *nightly-slow-hdmi
 """
@@ -1096,7 +1096,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
       - *nightly-riscv64
 """
