@@ -534,12 +534,24 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: trixie
       BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "gnome"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      ENABLE_EXTENSIONS: "home-assistant"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "ha"
+    items:
+      - *apps-builds
+
+  apps-omv:
+    enabled: yes
+    configs: [ armbian-apps ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: trixie
+      BUILD_MINIMAL: "yes"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "omv"
     items:
       - *apps-builds
 
@@ -550,11 +562,9 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: trixie
       BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "gnome"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      BUILD_DESKTOP: "no"
       ENABLE_EXTENSIONS: "openhab"
     items:
       - *apps-builds
@@ -566,11 +576,10 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: kali-rolling
+      RELEASE: sid
       BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "kali"
     items:
       - *apps-builds
 """
