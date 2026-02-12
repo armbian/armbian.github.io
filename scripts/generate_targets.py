@@ -511,6 +511,8 @@ def generate_apps_yaml(conf_wip_boards, manual_content=""):
 
     # Select one branch per board for apps
     boards = select_one_branch_per_board(conf_wip_boards)
+    # Exclude armhf, riscv64, and loongarch64 from apps builds
+    boards = [b for b in boards if b['arch'] not in ['armhf', 'riscv64', 'loongarch64']]
     boards.sort(key=lambda x: x['board'])
 
     yaml += """# Apps builds - one image per board with various extensions
