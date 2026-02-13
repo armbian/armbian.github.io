@@ -156,6 +156,276 @@ jobs:
                   <img src='https://img.shields.io/badge/Subscribe-blog.armbian.com-red?style=for-the-badge&logo=rss' alt='Subscribe to Blog'/></a>" >> summary.md
             echo "<p><br>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox." >> summary.md
 
+      - name: "Generate HTML digest table"
+        shell: bash
+        run: |
+          cat > out/digest.html <<'HTMLEOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${LABEL} - Armbian PR Digest</title>
+              <style>
+                  :root {
+                      --bg-primary: #0d1117;
+                      --bg-secondary: #161b22;
+                      --bg-tertiary: #21262d;
+                      --border-color: #30363d;
+                      --text-primary: #c9d1d9;
+                      --text-secondary: #8b949e;
+                      --text-muted: #6e7681;
+                      --accent: #58a6ff;
+                      --accent-hover: #79c0ff;
+                      --success: #3fb950;
+                      --armbian-orange: #f88a29;
+                      --armbian-blue: #007bff;
+                  }
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                      background: var(--bg-primary);
+                      color: var(--text-primary);
+                      line-height: 1.6;
+                      padding: 20px;
+                  }
+                  .container {
+                      max-width: 1200px;
+                      margin: 0 auto;
+                  }
+                  header {
+                      text-align: center;
+                      padding: 40px 20px;
+                      border-bottom: 1px solid var(--border-color);
+                      margin-bottom: 30px;
+                  }
+                  h1 {
+                      font-size: 2.5rem;
+                      margin-bottom: 10px;
+                      background: linear-gradient(135deg, var(--armbian-orange), var(--armbian-blue));
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      background-clip: text;
+                  }
+                  .subtitle {
+                      color: var(--text-secondary);
+                      font-size: 1.1rem;
+                  }
+                  .meta {
+                      display: flex;
+                      justify-content: center;
+                      gap: 20px;
+                      flex-wrap: wrap;
+                      margin-bottom: 20px;
+                  }
+                  .meta-item {
+                      background: var(--bg-secondary);
+                      padding: 8px 16px;
+                      border-radius: 6px;
+                      font-size: 0.9rem;
+                  }
+                  .table-container {
+                      background: var(--bg-secondary);
+                      border-radius: 12px;
+                      overflow: hidden;
+                      border: 1px solid var(--border-color);
+                      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                  }
+                  table {
+                      width: 100%;
+                      border-collapse: collapse;
+                  }
+                  thead {
+                      background: var(--bg-tertiary);
+                  }
+                  th {
+                      padding: 16px;
+                      text-align: left;
+                      font-weight: 600;
+                      color: var(--text-primary);
+                      border-bottom: 2px solid var(--border-color);
+                      font-size: 0.85rem;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                  }
+                  td {
+                      padding: 14px 16px;
+                      border-bottom: 1px solid var(--border-color);
+                      vertical-align: middle;
+                  }
+                  tr:last-child td {
+                      border-bottom: none;
+                  }
+                  tr:hover {
+                      background: var(--bg-tertiary);
+                  }
+                  .pr-title {
+                      font-weight: 500;
+                      color: var(--text-primary);
+                      margin-bottom: 6px;
+                  }
+                  .pr-meta {
+                      display: flex;
+                      gap: 8px;
+                      flex-wrap: wrap;
+                      align-items: center;
+                  }
+                  .badge {
+                      display: inline-block;
+                      padding: 3px 10px;
+                      border-radius: 12px;
+                      font-size: 0.75rem;
+                      font-weight: 500;
+                  }
+                  .badge-repo {
+                      background: rgba(88, 166, 255, 0.15);
+                      color: var(--accent);
+                      border: 1px solid rgba(88, 166, 255, 0.3);
+                  }
+                  .badge-author {
+                      background: rgba(248, 138, 41, 0.15);
+                      color: var(--armbian-orange);
+                      border: 1px solid rgba(248, 138, 41, 0.3);
+                  }
+                  .pr-link {
+                      color: var(--accent);
+                      text-decoration: none;
+                      font-size: 0.9rem;
+                      display: inline-flex;
+                      align-items: center;
+                  }
+                  .pr-link:hover {
+                      color: var(--accent-hover);
+                      text-decoration: underline;
+                  }
+                  .pr-link::before {
+                      content: "→";
+                      margin-right: 6px;
+                  }
+                  .no-prs {
+                      text-align: center;
+                      padding: 60px 20px;
+                      color: var(--text-muted);
+                      font-size: 1.1rem;
+                  }
+                  .no-prs-icon {
+                      font-size: 3rem;
+                      margin-bottom: 16px;
+                      opacity: 0.5;
+                  }
+                  footer {
+                      margin-top: 40px;
+                      text-align: center;
+                      padding: 30px 20px;
+                      border-top: 1px solid var(--border-color);
+                      color: var(--text-secondary);
+                  }
+                  .footer-link {
+                      color: var(--accent);
+                      text-decoration: none;
+                      font-weight: 500;
+                  }
+                  .footer-link:hover {
+                      text-decoration: underline;
+                  }
+                  .generated-time {
+                      margin-top: 10px;
+                      font-size: 0.85rem;
+                      color: var(--text-muted);
+                  }
+                  @media (max-width: 768px) {
+                      .meta {
+                          flex-direction: column;
+                      }
+                      .pr-meta {
+                          flex-direction: column;
+                          gap: 6px;
+                      }
+                      th, td {
+                          padding: 12px;
+                      }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <header>
+                      <h1>${LABEL}</h1>
+                      <p class="subtitle">Armbian Pull Request Digest</p>
+                      <div class="meta">
+                          <div class="meta-item">📅 Period: ${PERIOD}</div>
+                          <div class="meta-item">📅 From: ${SINCE_UTC}</div>
+                          <div class="meta-item">📅 Until: ${UNTIL_UTC}</div>
+                      </div>
+                  </header>
+          HTMLEOF
+
+          # Generate table rows
+          if [[ ! -s out/pr-digest.tsv ]]; then
+              cat >> out/digest.html <<'EOF'
+                  <div class="table-container">
+                      <div class="no-prs">
+                          <div class="no-prs-icon">📭</div>
+                          <p>No merged PRs in this period.</p>
+                      </div>
+                  </div>
+          EOF
+          else
+              cat >> out/digest.html <<'EOF'
+                  <div class="table-container">
+                      <table>
+                          <thead>
+                              <tr>
+                                  <th width="50%">Pull Request</th>
+                                  <th>Author</th>
+                                  <th>Repository</th>
+                                  <th>Link</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+          EOF
+
+              while IFS=$'\t' read -r title author repo num pr_url; do
+                  repo_name="${repo##*/}"
+                  cat >> out/digest.html <<EOF
+                              <tr>
+                                  <td>
+                                      <div class="pr-title">${title}</div>
+                                      <div class="pr-meta">
+                                          <span class="badge badge-repo">${repo_name}</span>
+                                      </div>
+                                  </td>
+                                  <td><span class="badge badge-author">@${author}</span></td>
+                                  <td>${repo_name}</td>
+                                  <td><a class="pr-link" href="${pr_url}" target="_blank">View PR #${num}</a></td>
+                              </tr>
+          EOF
+              done < out/pr-digest.tsv
+
+              cat >> out/digest.html <<'EOF'
+                          </tbody>
+                      </table>
+                  </div>
+          EOF
+          fi
+
+          cat >> out/digest.html <<'EOF'
+                  <footer>
+                      <a class="footer-link" href="https://blog.armbian.com/#/portal/signup" target="_blank">
+                          📬 Subscribe to Armbian Blog
+                      </a>
+                      <p style="margin-top: 15px; font-size: 0.9rem; color: var(--text-muted);">
+                          Stay up to date with the latest Armbian news, development highlights, and tips.
+                      </p>
+                      <div class="generated-time">
+                          Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+                      </div>
+                  </footer>
+              </div>
+          </body>
+          </html>
+          HTMLEOF
+
       - name: Upload raw data (artifacts)
         uses: actions/upload-artifact@v6
         with:
