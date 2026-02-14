@@ -17,7 +17,6 @@ minimal-cli-stable-ubuntu-cloud:
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
-    - { BOARD: uefi-x86, BRANCH: current }
 
 # Debian unstable minimal cloud
 minimal-cli-unstable-debian-cloud:
@@ -35,5 +34,4 @@ minimal-cli-unstable-debian-cloud:
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
-    - { BOARD: uefi-x86, BRANCH: current }
 
