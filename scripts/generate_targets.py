@@ -1348,7 +1348,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
       - *community-current-fast-hdmi
 """
@@ -1373,7 +1373,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "kde-neon"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
       - *community-current-fast-hdmi
 """
@@ -1398,7 +1398,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
 """
         if current_slow:
@@ -1424,7 +1424,7 @@ targets:
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_APPGROUPS_SELECTED: ""
     items:
 """
         if current_riscv64:
