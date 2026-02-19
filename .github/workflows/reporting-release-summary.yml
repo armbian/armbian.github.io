@@ -141,20 +141,25 @@ jobs:
       - name: "Write Markdown digest"
         shell: bash
         run: |
-
-            echo "" >> summary.md
-            echo "## " >> summary.md
+          {
+            echo "## Changes"
+            echo ""
             if [[ ! -s out/pr-digest.tsv ]]; then
-              echo "_No merged PRs in this period._" >> summary.md
+              echo "_No merged PRs in this period._"
             else
               while IFS=$'\t' read -r title author repo num pr_url; do
-                echo "* ${title}.  by @${author} in [${repo}#${num}](${pr_url})" >> summary.md
+                echo "* ${title}. by @${author} in [${repo}#${num}](${pr_url})"
               done < out/pr-digest.tsv
             fi
-            echo "# " >> summary.md
-            echo "<a href='https://blog.armbian.com/#/portal/signup' target='_blank'>
-                  <img src='https://img.shields.io/badge/Subscribe-blog.armbian.com-red?style=for-the-badge&logo=rss' alt='Subscribe to Blog'/></a>" >> summary.md
-            echo "<p><br>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox." >> summary.md
+            echo ""
+            echo "---"
+            echo ""
+            echo "<a href='https://blog.armbian.com/#/portal/signup' target='_blank'>"
+            echo "  <img src='https://img.shields.io/badge/Subscribe-blog.armbian.com-red?style=for-the-badge&logo=rss' alt='Subscribe to Blog'/>"
+            echo "</a>"
+            echo ""
+            echo "<p>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox.</p>"
+          } > summary.md
 
       - name: Upload raw data (artifacts)
         uses: actions/upload-artifact@v6
@@ -188,7 +193,6 @@ jobs:
           echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
 
       - name: "Write a short journalistic intro with AI"
-        if: ${{ env.PERIOD == 'weekly' }}
         run: |
           set -euo pipefail
           python3 <<'PY'
