@@ -241,7 +241,9 @@ jobs:
           print("Prepended AI intro:")
           print(intro)
           PY
-          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Output summary to step summary"
+        run: cat summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
