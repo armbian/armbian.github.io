@@ -12,13 +12,22 @@ on:
         required: false
         default: "Europe/Ljubljana"
       period:
-        description: "Digest period (weekly by default). Choose 'monthly' or 'quarterly' for larger windows."
+        description: "Digest period"
         required: false
         default: "weekly"
+        type: choice
+        options:
+          - weekly
+          - monthly
+          - quarterly
       publish_release:
-        description: "Publish a GitHub release (true/false)."
+        description: "Publish a GitHub release"
         required: false
         default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
   schedule:
     - cron: "5 6 * * MON"   # weekly, Mondays 06:05 UTC
