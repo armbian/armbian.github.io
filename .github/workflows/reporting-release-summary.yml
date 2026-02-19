@@ -193,6 +193,7 @@ jobs:
           echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
 
       - name: "Write a short journalistic intro with AI"
+        if: ${{ env.PERIOD == 'weekly' || env.PERIOD == 'monthly' }}
         run: |
           set -euo pipefail
           python3 <<'PY'
