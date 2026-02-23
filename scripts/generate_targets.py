@@ -843,7 +843,7 @@ targets:
             yaml += '      - *stable-vendor-slow-hdmi\n'
 
     # Ubuntu stable GNOME desktop (fast HDMI only)
-    if current_fast:
+    if current_fast or legacy_fast:
         yaml += """
   # Ubuntu stable GNOME desktop (fast HDMI only)
   desktop-stable-ubuntu-gnome:
@@ -860,10 +860,13 @@ targets:
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "programming"
     items:
-      - *stable-current-fast-hdmi
 """
+        if current_fast:
+            yaml += '      - *stable-current-fast-hdmi\n'
         if vendor_fast:
             yaml += '      - *stable-vendor-fast-hdmi\n'
+        if legacy_fast:
+            yaml += '      - *stable-legacy-fast-hdmi\n'
 
     # Ubuntu stable KDE Neon desktop (fast HDMI only)
     if current_fast:
@@ -887,6 +890,27 @@ targets:
 """
         if vendor_fast:
             yaml += '      - *stable-vendor-fast-hdmi\n'
+
+    # Ubuntu stable XFCE desktop for legacy fast HDMI boards
+    if legacy_fast:
+        yaml += """
+  # Ubuntu stable XFCE desktop for legacy fast HDMI boards
+  desktop-stable-ubuntu-legacy-xfce:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "xfce"
+      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: "programming"
+    items:
+      - *stable-legacy-fast-hdmi
+"""
 
     # Ubuntu stable XFCE desktop for RISC-V boards
     if current_riscv64 or vendor_riscv64:
