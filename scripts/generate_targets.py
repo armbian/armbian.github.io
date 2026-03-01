@@ -620,6 +620,16 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
     legacy_loongarch = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] == 'loongarch']
     legacy_headless = [b for b in conf_wip_boards if b['branch'] == 'legacy' and b['is_fast'] is None]
 
+    # Build set of boards that have current branch (to exclude from edge)
+    current_boards = {b['board'] for b in conf_wip_boards if b['branch'] == 'current'}
+
+    # Only include edge boards for boards that don't have current branch
+    edge_fast = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] is True and b['board'] not in current_boards]
+    edge_slow = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] is False and b['board'] not in current_boards]
+    edge_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] == 'riscv64' and b['board'] not in current_boards]
+    edge_loongarch = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] == 'loongarch' and b['board'] not in current_boards]
+    edge_headless = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] is None and b['board'] not in current_boards]
+
     # Current branch lists
     yaml += """# Stable builds - fast HDMI (quad-core+ or modern SoCs)
   stable-current-fast-hdmi: &stable-current-fast-hdmi
@@ -729,6 +739,42 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    # Edge branch lists
+    if edge_fast:
+        yaml += '  stable-edge-fast-hdmi: &stable-edge-fast-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_fast, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_slow:
+        yaml += '  stable-edge-slow-hdmi: &stable-edge-slow-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_slow, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_riscv64:
+        yaml += '  stable-edge-riscv64: &stable-edge-riscv64\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_riscv64, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_loongarch:
+        yaml += '  stable-edge-loongarch: &stable-edge-loongarch\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_loongarch, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    if edge_headless:
+        yaml += '  stable-edge-headless: &stable-edge-headless\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(edge_headless, key=lambda x: x['board']):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
     yaml += """# automated lists stop
 
 targets:
@@ -774,6 +820,16 @@ targets:
         yaml += '      - *stable-legacy-loongarch\n'
     if legacy_headless:
         yaml += '      - *stable-legacy-headless\n'
+    if edge_fast:
+        yaml += '      - *stable-edge-fast-hdmi\n'
+    if edge_slow:
+        yaml += '      - *stable-edge-slow-hdmi\n'
+    if edge_riscv64:
+        yaml += '      - *stable-edge-riscv64\n'
+    if edge_loongarch:
+        yaml += '      - *stable-edge-loongarch\n'
+    if edge_headless:
+        yaml += '      - *stable-edge-headless\n'
 
     yaml += """
   # Ubuntu stable minimal
@@ -818,9 +874,19 @@ targets:
         yaml += '      - *stable-legacy-loongarch\n'
     if legacy_headless:
         yaml += '      - *stable-legacy-headless\n'
+    if edge_fast:
+        yaml += '      - *stable-edge-fast-hdmi\n'
+    if edge_slow:
+        yaml += '      - *stable-edge-slow-hdmi\n'
+    if edge_riscv64:
+        yaml += '      - *stable-edge-riscv64\n'
+    if edge_loongarch:
+        yaml += '      - *stable-edge-loongarch\n'
+    if edge_headless:
+        yaml += '      - *stable-edge-headless\n'
 
     # Ubuntu stable XFCE desktop (slow HDMI only)
-    if current_slow:
+    if current_slow or edge_slow:
         yaml += """
   # Ubuntu stable XFCE desktop (slow HDMI only)
   desktop-stable-ubuntu-xfce:
@@ -841,9 +907,11 @@ targets:
 """
         if vendor_slow:
             yaml += '      - *stable-vendor-slow-hdmi\n'
+        if edge_slow:
+            yaml += '      - *stable-edge-slow-hdmi\n'
 
     # Ubuntu stable GNOME desktop (fast HDMI only)
-    if current_fast or legacy_fast:
+    if current_fast or legacy_fast or edge_fast:
         yaml += """
   # Ubuntu stable GNOME desktop (fast HDMI only)
   desktop-stable-ubuntu-gnome:
@@ -867,9 +935,11 @@ targets:
             yaml += '      - *stable-vendor-fast-hdmi\n'
         if legacy_fast:
             yaml += '      - *stable-legacy-fast-hdmi\n'
+        if edge_fast:
+            yaml += '      - *stable-edge-fast-hdmi\n'
 
     # Ubuntu stable KDE Neon desktop (fast HDMI only)
-    if current_fast:
+    if current_fast or edge_fast:
         yaml += """
   # Ubuntu stable KDE Neon desktop (fast HDMI only)
   desktop-stable-ubuntu-kde-neon:
@@ -890,6 +960,8 @@ targets:
 """
         if vendor_fast:
             yaml += '      - *stable-vendor-fast-hdmi\n'
+        if edge_fast:
+            yaml += '      - *stable-edge-fast-hdmi\n'
 
     # Ubuntu stable XFCE desktop for legacy fast HDMI boards
     if legacy_fast:
@@ -913,7 +985,7 @@ targets:
 """
 
     # Ubuntu stable XFCE desktop for RISC-V boards
-    if current_riscv64 or vendor_riscv64:
+    if current_riscv64 or vendor_riscv64 or edge_riscv64:
         yaml += """
   # Ubuntu stable XFCE desktop for RISC-V boards
   desktop-stable-ubuntu-riscv64-xfce:
@@ -935,6 +1007,8 @@ targets:
             yaml += '      - *stable-current-riscv64\n'
         if vendor_riscv64:
             yaml += '      - *stable-vendor-riscv64\n'
+        if edge_riscv64:
+            yaml += '      - *stable-edge-riscv64\n'
 
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:
@@ -942,7 +1016,7 @@ targets:
         yaml += '\n' + indented_manual
 
     # Add riscv64 minimal target if any riscv64 boards exist
-    if current_riscv64 or vendor_riscv64:
+    if current_riscv64 or vendor_riscv64 or edge_riscv64:
         yaml += """
   # Ubuntu stable minimal - RISC-V
   minimal-stable-ubuntu-riscv:
@@ -961,10 +1035,12 @@ targets:
             yaml += '      - *stable-current-riscv64\n'
         if vendor_riscv64:
             yaml += '      - *stable-vendor-riscv64\n'
+        if edge_riscv64:
+            yaml += '      - *stable-edge-riscv64\n'
         yaml += '\n'
 
     # Add loongarch target if any loongarch boards exist
-    if current_loongarch or vendor_loongarch:
+    if current_loongarch or vendor_loongarch or edge_loongarch:
         yaml += """
   # Ubuntu stable minimal - LoongArch
   minimal-stable-ubuntu-loongarch:
@@ -983,6 +1059,8 @@ targets:
             yaml += '      - *stable-current-loongarch\n'
         if vendor_loongarch:
             yaml += '      - *stable-vendor-loongarch\n'
+        if edge_loongarch:
+            yaml += '      - *stable-edge-loongarch\n'
         yaml += '\n'
 
     return yaml
