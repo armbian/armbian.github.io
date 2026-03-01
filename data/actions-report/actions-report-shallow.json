@@ -1,0 +1,42 @@
+{
+  "organization": "armbian",
+  "repository": "shallow",
+  "actions": [
+    {
+      "name": "Generate shallow Linux kernel bundles",
+      "filename": "maintenance-git-trees-oras.yml",
+      "category": "Maintenance",
+      "description": "Generates and uploads shallow Linux kernel bundles to GitHub Container Registry using ORAS. Prepares git trees, manages disk space, and performs necessary tests and uploads for multiple kernel versions. Handles both shallow and complete tree uploads efficiently.",
+      "execution_method": "schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/shallow/actions/workflows/maintenance-git-trees-oras.yml",
+      "script_link": "https://github.com/armbian/shallow/blob/main/.github/workflows/maintenance-git-trees-oras.yml",
+      "filelength": 2848,
+      "edited": "2026-01-16T16:02:02.000Z",
+      "executed": "2026-03-01T04:06:17Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 1669,
+      "last_run_duration_seconds": 1669,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 1:00"
+    },
+    {
+      "name": "Watchdog",
+      "filename": "maintenance-watchdog.yml",
+      "category": "Maintenance",
+      "description": "Monitors and reruns failed jobs for specified GitHub Actions workflows. It checks the latest run status of the workflow and triggers a rerun if the previous attempt failed and the maximum retry limit has not been reached. This ensures that transient issues do not cause permanent failures in the CI/CD pipeline.",
+      "execution_method": "schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/shallow/actions/workflows/maintenance-watchdog.yml",
+      "script_link": "https://github.com/armbian/shallow/blob/main/.github/workflows/maintenance-watchdog.yml",
+      "filelength": 3096,
+      "edited": "2026-01-17T07:27:55.000Z",
+      "executed": "2026-03-01T04:57:31Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 9,
+      "last_run_duration_seconds": 9,
+      "total_runs": 10,
+      "cron_schedule": "every 30 minutes"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "organization": "armbian",
+  "repository": "docker-armbian-build",
+  "actions": [
+    {
+      "name": "Docker Images For Repo Handling",
+      "filename": "build-docker-images.yml",
+      "category": "generic",
+      "description": "Builds and pushes Docker images for various Armbian distributions and architectures to GitHub Container Registry. Generates a build matrix from supported distributions, creates Dockerfiles, and executes the build process using Docker Buildx. Summarizes the built images in a report after the build process completes.",
+      "execution_method": "push, workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/build-docker-images.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/build-docker-images.yml",
+      "filelength": 11373,
+      "edited": "2026-02-12T00:06:55.000Z",
+      "executed": "2026-03-01T05:13:02Z",
+      "last_run_status": "failure",
+      "retry_count": 0,
+      "total_run_time_seconds": 454,
+      "last_run_duration_seconds": 454,
+      "total_runs": 10,
+      "cron_schedule": "at 30 minutes past the hour, at 3:00"
+    },
+    {
+      "name": "Docker Images for Framework",
+      "filename": "update_docker.yml",
+      "category": "generic",
+      "description": "Updates Docker images used for building CI by generating Dockerfiles and building multi-architecture images for various OS releases. It builds and pushes images to the GitHub Container Registry, and creates multi-arch manifests to consolidate them. The process includes retries for failed builds and utilizes QEMU and Docker Buildx for cross-platform support.",
+      "execution_method": "workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/update_docker.yml",
+      "filelength": 9121,
+      "edited": "2025-12-28T15:48:47.000Z",
+      "executed": "2026-03-01T04:55:53Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 429,
+      "last_run_duration_seconds": 429,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 3:00"
+    }
+  ]
+}

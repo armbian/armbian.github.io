@@ -1,0 +1,60 @@
+#
+# cache.armbian.com
+#
+geodb: /scripts/redirect-config/GeoLite2-City.mmdb
+asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
+dl_map: /scripts/redirect-config/all-images.json
+certDataPath: /scripts/redirect-config/certdata.txt
+bind: ':8084'
+
+# Reload authorization key
+reloadKey: b951c53e84fb422c907eaea2fa34cc29
+
+# LRU Cache Size (in items)
+cacheSize: 2048
+
+# Documentation: https://github.com/armbian/armbian-router
+
+specialExtensions:
+  - boot-sms.img.xz: -boot-sms
+  - boot-boe.img.xz: -boot-boe
+  - boot-csot.img.xz: -boot-csot
+  - rootfs.img.xz: -rootfs
+  - img.qcow2: -qcow2
+  - img.qcow2.xz: -qcow2
+  - boot.bin.xz: -boot
+  - u-boot.rom.xz: -u-boot-rom
+  - hyperv.zip: -hyperv
+  - hyperv.img.xz: -hyperv
+
+servers:
+
+  # America/Los_Angeles - 10000 Mbit/s
+  - server: armbian.lv.auroradev.org/cache/
+    latitude: 36.18811
+    longitude: -115.176468
+    weight: 10
+
+  # Europe/Berlin - 1000 Mbit/s
+  - server: fi.mirror.armbian.de/cache/
+    latitude: 51.2993
+    longitude: 9.491
+    weight: 10
+
+  # Europe/Ljubljana - 200 Mbit/s
+  - server: imola.armbian.com/cache/
+    latitude: 46.081638
+    longitude: 14.526054
+    weight: 10
+
+  # Europe/Berlin - 2500 Mbit/s
+  - server: netcup-01.armbian.com/cache/
+    latitude: 49.4478
+    longitude: 11.0683
+    weight: 10
+
+  # Europe/Berlin - 2500 Mbit/s
+  - server: netcup-03.armbian.com/cache/
+    latitude: 49.4478
+    longitude: 11.0683
+    weight: 10

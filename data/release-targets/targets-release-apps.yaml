@@ -1,0 +1,188 @@
+#
+# Armbian release template. Auto-generated from image-info.json
+#
+common-gha-configs:
+armbian-gha: &armbian-gha
+  runners:
+    default: "ubuntu-latest"
+    by-name:
+      kernel: [ "self-hosted", "Linux", "alfa" ]
+      uboot: [ "self-hosted", "Linux", "fast", "X64" ]
+      armbian-bsp-cli: [ "X64" ]
+    by-name-and-arch:
+      rootfs-armhf: [ "ubuntu-latest" ]
+      rootfs-arm64: [ "ubuntu-24.04-arm" ]
+      rootfs-amd64: [ "self-hosted", "Linux", "X64" ]
+      rootfs-riscv64: [ "ubuntu-latest" ]
+      rootfs-loong64: [ "self-hosted", "Linux", "X64" ]
+      image-armhf: [ "self-hosted", "Linux", 'images', 'X64' ]
+      image-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
+      image-amd64: [ "self-hosted", "Linux", 'images', "X64" ]
+      image-riscv64: [ "self-hosted", "Linux", 'images', "X64" ]
+      image-loong64: [ "self-hosted", "Linux", 'images', "X64" ]
+
+lists:
+# Apps builds - one image per board with various extensions
+  apps-builds: &apps-builds
+  # auto generated section
+    - { BOARD: aml-a311d-cc, BRANCH: edge }
+    - { BOARD: aml-c400-plus, BRANCH: current }
+    - { BOARD: aml-s905d3-cc, BRANCH: current }
+    - { BOARD: bananapicm4io, BRANCH: current }
+    - { BOARD: bananapim2pro, BRANCH: current }
+    - { BOARD: bananapim2s, BRANCH: current }
+    - { BOARD: bananapim4berry, BRANCH: current }
+    - { BOARD: bananapim4zero, BRANCH: current }
+    - { BOARD: bananapim5, BRANCH: current }
+    - { BOARD: bananapim5pro, BRANCH: vendor }
+    - { BOARD: bananapim7, BRANCH: vendor }
+    - { BOARD: beaglebone-ai64, BRANCH: vendor }
+    - { BOARD: beagleplay, BRANCH: vendor }
+    - { BOARD: beagley-ai, BRANCH: vendor }
+    - { BOARD: bigtreetech-cb1, BRANCH: current }
+    - { BOARD: bigtreetech-cb2, BRANCH: current }
+    - { BOARD: espressobin, BRANCH: current }
+    - { BOARD: helios64, BRANCH: current }
+    - { BOARD: imb3588, BRANCH: vendor }
+    - { BOARD: inovato-quadra, BRANCH: current }
+    - { BOARD: jethubj100, BRANCH: current }
+    - { BOARD: jethubj200, BRANCH: current }
+    - { BOARD: jethubj80, BRANCH: current }
+    - { BOARD: khadas-edge2, BRANCH: vendor }
+    - { BOARD: khadas-vim1, BRANCH: current }
+    - { BOARD: khadas-vim1s, BRANCH: legacy }
+    - { BOARD: khadas-vim2, BRANCH: current }
+    - { BOARD: khadas-vim3, BRANCH: current }
+    - { BOARD: khadas-vim3l, BRANCH: current }
+    - { BOARD: khadas-vim4, BRANCH: legacy }
+    - { BOARD: lafrite, BRANCH: current }
+    - { BOARD: lepotato, BRANCH: current }
+    - { BOARD: mba8mpxl, BRANCH: current }
+    - { BOARD: mba8mpxl-ras314, BRANCH: current }
+    - { BOARD: mekotronics-r58-4x4, BRANCH: vendor }
+    - { BOARD: mekotronics-r58hd, BRANCH: vendor }
+    - { BOARD: mksklipad50, BRANCH: current }
+    - { BOARD: nanopct6, BRANCH: vendor }
+    - { BOARD: nanopct6-lts, BRANCH: vendor }
+    - { BOARD: nanopi-m5, BRANCH: vendor }
+    - { BOARD: nanopi-m6, BRANCH: vendor }
+    - { BOARD: nanopi-r3s-lts, BRANCH: current }
+    - { BOARD: nanopi-r4s, BRANCH: current }
+    - { BOARD: nanopi-r6s, BRANCH: vendor }
+    - { BOARD: nanopi-r76s, BRANCH: vendor }
+    - { BOARD: nanopik1plus, BRANCH: current }
+    - { BOARD: nanopik2-s905, BRANCH: current }
+    - { BOARD: nanopim4v2, BRANCH: current }
+    - { BOARD: odroidc2, BRANCH: current }
+    - { BOARD: odroidc4, BRANCH: current }
+    - { BOARD: odroidhc4, BRANCH: current }
+    - { BOARD: odroidm1, BRANCH: current }
+    - { BOARD: odroidm2, BRANCH: current }
+    - { BOARD: odroidn2, BRANCH: current }
+    - { BOARD: orangepi3-lts, BRANCH: current }
+    - { BOARD: orangepi4-lts, BRANCH: current }
+    - { BOARD: orangepi5, BRANCH: vendor }
+    - { BOARD: orangepi5-plus, BRANCH: vendor }
+    - { BOARD: orangepipc2, BRANCH: current }
+    - { BOARD: phytiumpi, BRANCH: current }
+    - { BOARD: pine64, BRANCH: current }
+    - { BOARD: pocketbeagle2, BRANCH: vendor }
+    - { BOARD: radxa-cm4-io, BRANCH: vendor }
+    - { BOARD: radxa-cm5-io, BRANCH: vendor }
+    - { BOARD: radxa-dragon-q6a, BRANCH: edge }
+    - { BOARD: radxa-e24c, BRANCH: vendor }
+    - { BOARD: radxa-e25, BRANCH: current }
+    - { BOARD: radxa-e52c, BRANCH: current }
+    - { BOARD: radxa-e54c, BRANCH: vendor }
+    - { BOARD: radxa-nio-12l, BRANCH: collabora }
+    - { BOARD: radxa-rock-4d, BRANCH: edge }
+    - { BOARD: radxa-zero, BRANCH: current }
+    - { BOARD: radxa-zero3, BRANCH: vendor }
+    - { BOARD: renegade, BRANCH: current }
+    - { BOARD: rock-2a, BRANCH: vendor }
+    - { BOARD: rock-2f, BRANCH: vendor }
+    - { BOARD: rock-3a, BRANCH: current }
+    - { BOARD: rock-5-itx, BRANCH: vendor }
+    - { BOARD: rock-5a, BRANCH: vendor }
+    - { BOARD: rock-5b, BRANCH: vendor }
+    - { BOARD: rock-5b-plus, BRANCH: vendor }
+    - { BOARD: rock-5c, BRANCH: vendor }
+    - { BOARD: rock-5t, BRANCH: vendor }
+    - { BOARD: rock-s0, BRANCH: current }
+    - { BOARD: rockpi-e, BRANCH: current }
+    - { BOARD: rockpi-s, BRANCH: current }
+    - { BOARD: rpi4b, BRANCH: current }
+    - { BOARD: sk-am62-lp, BRANCH: vendor }
+    - { BOARD: sk-am62-sip, BRANCH: vendor }
+    - { BOARD: sk-am62b, BRANCH: vendor }
+    - { BOARD: sk-am62p, BRANCH: vendor }
+    - { BOARD: sk-am64b, BRANCH: vendor }
+    - { BOARD: sk-am68, BRANCH: vendor }
+    - { BOARD: sk-am69, BRANCH: vendor }
+    - { BOARD: sk-tda4vm, BRANCH: vendor }
+    - { BOARD: sweet-potato, BRANCH: current }
+    - { BOARD: tmds62levm, BRANCH: vendor }
+    - { BOARD: tritium-h5, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
+  # end of auto generated section
+
+# automated lists stop
+
+targets:
+  # Images with app-specific extensions
+  apps-ha:
+    enabled: yes
+    configs: [ armbian-apps ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: trixie
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "ha"
+    items:
+      - *apps-builds
+
+  apps-omv:
+    enabled: yes
+    configs: [ armbian-apps ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: trixie
+      BUILD_MINIMAL: "yes"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "omv"
+    items:
+      - *apps-builds
+
+  apps-openhab:
+    enabled: yes
+    configs: [ armbian-apps ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: trixie
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "openhab"
+    items:
+      - *apps-builds
+
+  apps-kali:
+    enabled: yes
+    configs: [ armbian-apps ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: sid
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "no"
+      ENABLE_EXTENSIONS: "kali"
+    items:
+      - *apps-builds

@@ -1,0 +1,42 @@
+{
+  "organization": "armbian",
+  "repository": "sdk",
+  "actions": [
+    {
+      "name": "Build Armbian SDK",
+      "filename": "action.yml",
+      "category": "generic",
+      "description": "Builds the Armbian SDK for specified boards and operating systems, generating virtual images for x86 and arm64 architectures. It includes a keep-alive job to prevent GitHub from suspending the cron job and utilizes a matrix strategy to build for multiple configurations. The build process incorporates various parameters such as release titles, tags, and optional extensions.",
+      "execution_method": "workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/sdk/actions/workflows/action.yml",
+      "script_link": "https://github.com/armbian/sdk/blob/main/.github/workflows/action.yml",
+      "filelength": 2031,
+      "edited": "2026-01-16T15:57:43.000Z",
+      "executed": "2026-03-01T04:50:18Z",
+      "last_run_status": "in_progress",
+      "retry_count": 0,
+      "total_run_time_seconds": 15,
+      "last_run_duration_seconds": 15,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 3:00"
+    },
+    {
+      "name": "Delete Old Releases",
+      "filename": "delete-old-releases.yml",
+      "category": "generic",
+      "description": "Deletes old releases from the repository by identifying and removing both full and pre-releases that exceed a specified limit. It processes releases based on their creation date and removes the oldest ones, ensuring only the most recent releases are retained.",
+      "execution_method": "schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/sdk/actions/workflows/delete-old-releases.yml",
+      "script_link": "https://github.com/armbian/sdk/blob/main/.github/workflows/delete-old-releases.yml",
+      "filelength": 1267,
+      "edited": "2025-09-29T03:35:30.000Z",
+      "executed": "2026-03-01T04:50:31Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 8,
+      "last_run_duration_seconds": 8,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 3:00"
+    }
+  ]
+}
