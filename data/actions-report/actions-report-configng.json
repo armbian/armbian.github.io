@@ -246,11 +246,11 @@
       "script_link": "https://github.com/armbian/configng/blob/main/.github/workflows/maintenance-watchdog.yml",
       "filelength": 1501,
       "edited": "2026-01-16T15:54:14.000Z",
-      "executed": "2026-03-01T04:45:16Z",
+      "executed": "2026-03-01T05:54:13Z",
       "last_run_status": "success",
       "retry_count": 0,
-      "total_run_time_seconds": 7,
-      "last_run_duration_seconds": 7,
+      "total_run_time_seconds": 19,
+      "last_run_duration_seconds": 19,
       "total_runs": 10,
       "cron_schedule": "every 15 minutes"
     }
