@@ -72,7 +72,7 @@ jobs:
           AI_MODEL: gpt-4o-mini
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: actions-report-${{ matrix.repo }}
           path: actions-report-${{ matrix.repo }}.json
