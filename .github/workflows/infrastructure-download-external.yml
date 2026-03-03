@@ -397,7 +397,7 @@ jobs:
           if_key_exists: replace
 
       - name: Import GPG key 1
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         env:
           HOME: /root
           GNUPGHOME: /root/.gnupg
@@ -405,7 +405,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_KEY1 }}
 
       - name: Import GPG key 2
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_KEY2 }}
 
