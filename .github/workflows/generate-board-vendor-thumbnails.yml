@@ -464,7 +464,7 @@ jobs:
     needs: [Boards-index, Vendors-index, Generate-images]
     steps:
       - name: "Download all shard data"
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: shard-data
 

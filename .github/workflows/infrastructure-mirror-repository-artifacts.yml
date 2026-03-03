@@ -104,7 +104,7 @@ jobs:
           known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
           if_key_exists: replace
       - name: Download ${{ matrix.name }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: parts
           pattern: part*
