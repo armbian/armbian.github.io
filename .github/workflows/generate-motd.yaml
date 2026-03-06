@@ -2,6 +2,9 @@ name: "Generate motd for Linux OS"
 on:
   repository_dispatch:
     types: ["MOTD update"]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * *'  # Daily at 4 AM UTC
 
 concurrency:
   group: ${{ github.workflow }}
