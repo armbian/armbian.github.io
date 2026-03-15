@@ -162,4 +162,4 @@ jobs:
         with:
           token: ${{ secrets.DISPATCH }}
           repository: armbian/actions
-          event-type: "Web: Directory listing"
+          event-type: "Generate website"
