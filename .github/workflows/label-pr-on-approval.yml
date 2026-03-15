@@ -1,7 +1,7 @@
 name: "Maintenance: Set label on PR approval"
 on:
   workflow_run:
-    workflows: ["Listen PR review"]
+    workflows: ["Maintenance: Listen PR review and label it"]
     types: [completed]
 
 jobs:
