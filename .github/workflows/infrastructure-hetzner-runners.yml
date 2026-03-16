@@ -56,7 +56,7 @@ jobs:
     steps:
 
       - name: Create Hetzner server
-        uses: armbian/actions/hetzner@main
+        uses: armbian/actions/hetzner@feature/hetzner-fallback-server-types
         with:
           action: create
           server-type: "${{ env.MACHINE || 'cax41' }}"
@@ -96,7 +96,7 @@ jobs:
         index: ${{fromJson(needs.Prepare.outputs.matrix)}}
     steps:
       - name: Delete Hetzner server
-        uses: armbian/actions/hetzner@main
+        uses: armbian/actions/hetzner@feature/hetzner-fallback-server-types
         with:
           action: delete
           server-type: "${{ env.MACHINE || 'cax41' }}"
