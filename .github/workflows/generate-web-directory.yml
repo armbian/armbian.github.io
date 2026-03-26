@@ -103,7 +103,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Install SSH key + known_hosts (task two)
         uses: shimataro/ssh-key-action@v2
