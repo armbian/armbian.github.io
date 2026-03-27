@@ -248,12 +248,12 @@ boards:
     file_extension: "img.xz"
     
     - board_slug: "qidi-x4"
-    board_name: "Qidi X4"
-    board_vendor: "makerbase"
-    board_support: "csc"
+      board_name: "Qidi X4"
+      board_vendor: "makerbase"
+      board_support: "csc"
 
-    # The magic: reuse artifact set
-    uses: "qidi-x6"
-    branch: "current"
-    file_extension: "img.xz"
+      # The magic: reuse artifact set
+      uses: "qidi-x6"
+      branch: "current"
+      file_extension: "img.xz"
     
