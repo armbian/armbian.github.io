@@ -24,9 +24,43 @@ minimal-cli-unstable-debian-cloud:
   configs: [ armbian-cloud ]
   pipeline:
     gha: *armbian-gha
-    build-image: "yes"
+  build-image: "yes"
   vars:
     RELEASE: forky
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
+# Debian stable minimal cloud (trixie)
+minimal-cli-stable-debian-cloud-trixie:
+  enabled: yes
+  configs: [ armbian-cloud ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: trixie
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
+# Ubuntu LTS minimal cloud (noble)
+minimal-cli-stable-ubuntu-cloud-noble:
+  enabled: yes
+  configs: [ armbian-cloud ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
