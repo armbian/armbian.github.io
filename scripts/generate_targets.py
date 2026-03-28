@@ -985,7 +985,7 @@ targets:
 """
 
     # Ubuntu stable XFCE desktop for RISC-V boards
-    if current_riscv64 or vendor_riscv64 or edge_riscv64:
+    if current_riscv64 or vendor_riscv64 or legacy_riscv64 or edge_riscv64:
         yaml += """
   # Ubuntu stable XFCE desktop for RISC-V boards
   desktop-stable-ubuntu-riscv64-xfce:
@@ -1007,6 +1007,8 @@ targets:
             yaml += '      - *stable-current-riscv64\n'
         if vendor_riscv64:
             yaml += '      - *stable-vendor-riscv64\n'
+        if legacy_riscv64:
+            yaml += '      - *stable-legacy-riscv64\n'
         if edge_riscv64:
             yaml += '      - *stable-edge-riscv64\n'
 
