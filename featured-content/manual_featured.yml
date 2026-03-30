@@ -1,0 +1,94 @@
+armbian_featured_software:
+  cadence: weekly
+  source_url: https://docs.armbian.com/
+
+  entries:
+    - id: armbian-actions
+      week: 1
+      type: service
+      name: "Armbian Actions"
+      url: https://actions.armbian.com/
+      title: "Armbian CI/CD Infrastructure"
+      summary: "Automated build and testing infrastructure for Armbian firmware. Check build status, download latest images, and track releases across all supported boards."
+      author:
+        name: "Armbian"
+        handle: "@armbian"
+      tags: [infrastructure, ci-cd, build, automation]
+      motd:
+        line: "Armbian Actions: Track builds and releases"
+        hint: "https://actions.armbian.com"
+
+    - id: armbian-mirrors
+      week: 2
+      type: service
+      name: "Armbian Mirror Network"
+      url: https://docs.armbian.com/Mirrors/
+      title: "Global Mirror Infrastructure"
+      summary: "Access Armbian repositories from mirrors worldwide for faster downloads and reduced latency. Learn how to host your own mirror or find the nearest one to you."
+      author:
+        name: "Armbian"
+        handle: "@armbian"
+      tags: [infrastructure, network, mirrors, download]
+      motd:
+        line: "Armbian Mirrors: Fast downloads worldwide"
+        hint: "https://docs.armbian.com/Mirrors/"
+
+    - id: armbian-documentation
+      week: 3
+      type: service
+      name: "Armbian Documentation"
+      url: https://docs.armbian.com/
+      title: "Comprehensive User Guides"
+      summary: "Complete documentation covering installation, configuration, hardware support, troubleshooting, and advanced topics for all Armbian users."
+      author:
+        name: "Armbian"
+        handle: "@armbian"
+      tags: [documentation, guides, support, learning]
+      motd:
+        line: "Armbian Docs: Your complete guide"
+        hint: "https://docs.armbian.com"
+
+    - id: armbian-forum
+      week: 4
+      type: service
+      name: "Armbian Community Forum"
+      url: https://forum.armbian.com/
+      title: "Community Support & Discussion"
+      summary: "Join thousands of users discussing Armbian on SBCs. Get help, share projects, and stay updated with the latest developments."
+      author:
+        name: "Armbian Community"
+        handle: "@armbian"
+      tags: [community, support, forum, discussion]
+      motd:
+        line: "Armbian Forum: Community support"
+        hint: "https://forum.armbian.com"
+
+    - id: armbian-github
+      week: 5
+      type: service
+      name: "Armbian on GitHub"
+      url: https://github.com/armbian/
+      title: "Open Source Development"
+      summary: "Explore Armbian's repositories including build framework, documentation, tools, and board configurations. Contribute and star our projects."
+      author:
+        name: "Armbian"
+        handle: "@armbian"
+      tags: [development, github, open-source, contribute]
+      motd:
+        line: "Armbian on GitHub: Open development"
+        hint: "https://github.com/armbian/"
+
+    - id: armbian-sponsors
+      week: 6
+      type: service
+      name: "Support Armbian Development"
+      url: https://github.com/sponsors/armbian
+      title: "Become a Sponsor"
+      summary: "Support continued Armbian development through sponsorship. Contributors get access to beta builds, priority support, and direct influence on project direction."
+      author:
+        name: "Armbian Project"
+        handle: "@armbian"
+      tags: [support, sponsorship, donate, community]
+      motd:
+        line: "Support Armbian: Become a sponsor"
+        hint: "https://github.com/sponsors/armbian"
