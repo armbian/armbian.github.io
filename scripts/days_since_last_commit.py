@@ -48,17 +48,6 @@ def get_latest_issue_date(org, user, headers):
     return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
 
-def get_latest_comment_date(org, user, headers):
-    data = search_with_retry(
-        f"{API}/search/issues", headers,
-        {"q": f"commenter:{user} org:{org}", "sort": "updated", "order": "desc", "per_page": 1},
-    )
-    if not data or data.get("total_count", 0) == 0:
-        return None
-    date_str = data["items"][0]["updated_at"]
-    return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-
-
 def days_since_last_activity(org, user, token):
     headers = {
         "Accept": "application/vnd.github+json",
@@ -67,7 +56,7 @@ def days_since_last_activity(org, user, token):
     }
 
     dates = []
-    for fetch in (get_latest_commit_date, get_latest_issue_date, get_latest_comment_date):
+    for fetch in (get_latest_commit_date, get_latest_issue_date):
         dt = fetch(org, user, headers)
         if dt:
             dates.append(dt)
