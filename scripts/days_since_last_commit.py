@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import time
 import requests
 from datetime import datetime, timezone
 
@@ -8,25 +9,42 @@ API = "https://api.github.com"
 
 def days_since_last_commit(org, user, token):
     headers = {
-        "Accept": "application/vnd.github.cloak-preview+json",
+        "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {token}",
         "User-Agent": "org-last-commit-check",
     }
-    r = requests.get(
-        f"{API}/search/commits",
-        headers=headers,
-        params={"q": f"author:{user} org:{org}", "sort": "author-date", "order": "desc", "per_page": 1},
-        timeout=30,
-    )
-    r.raise_for_status()
-    data = r.json()
 
-    if data.get("total_count", 0) == 0:
-        return None
+    for attempt in range(3):
+        r = requests.get(
+            f"{API}/search/commits",
+            headers=headers,
+            params={"q": f"author:{user} org:{org}", "sort": "author-date", "order": "desc", "per_page": 1},
+            timeout=30,
+        )
 
-    date_str = data["items"][0]["commit"]["author"]["date"]
-    dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-    return (datetime.now(timezone.utc) - dt).days
+        if r.status_code == 403:
+            # Secondary rate limit - wait and retry
+            retry_after = int(r.headers.get("Retry-After", 2 ** (attempt + 1)))
+            print(f"Rate limited for {user}, retrying in {retry_after}s...", file=sys.stderr)
+            time.sleep(retry_after)
+            continue
+
+        if r.status_code == 422:
+            # Validation error (e.g. user not found)
+            return None
+
+        r.raise_for_status()
+        data = r.json()
+
+        if data.get("total_count", 0) == 0:
+            return None
+
+        date_str = data["items"][0]["commit"]["author"]["date"]
+        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        return (datetime.now(timezone.utc) - dt).days
+
+    # All retries exhausted
+    return None
 
 
 def main():
