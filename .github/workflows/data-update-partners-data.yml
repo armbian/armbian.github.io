@@ -54,11 +54,9 @@ jobs:
           > partners.json
 
           for partner_type in Platinum Gold Silver; do
-            response=$(curl --silent --fail --request GET \
+            if ! response=$(curl --silent --fail --request GET \
               --url "https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Company_slug,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:${partner_type}%20Partner)and(Promoted:equals:true))" \
-              --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN")
-
-            if [ $? -ne 0 ]; then
+              --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN"); then
               echo "::warning::Failed to fetch ${partner_type} partners"
               continue
             fi
