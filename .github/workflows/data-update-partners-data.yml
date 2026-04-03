@@ -125,9 +125,17 @@ jobs:
               # Extract GitHub username from the URL
               github_url=$(echo "$row" | jq -r '.Github')
               username=$(basename "$github_url")
+              first_name=$(echo "$row" | jq -r '.First_Name // empty')
+              last_name=$(echo "$row" | jq -r '.Last_Name // empty')
+
+              # Skip entries without a valid GitHub username
+              if [ -z "$username" ] || [ "$username" = "null" ] || [ "$username" = "." ]; then
+                echo "::warning::Skipping maintainer '${first_name} ${last_name}' - no GitHub profile set"
+                continue
+              fi
 
               # Fetch GitHub profile for avatar URL
-              echo "Processing maintainer: $username"
+              echo "Processing maintainer: $username (${first_name} ${last_name})"
               avatar_url=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/users/$username" | jq -r '.avatar_url')
 
               # Fall back to empty string if avatar fetch failed
