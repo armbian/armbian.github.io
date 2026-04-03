@@ -1,94 +1,32 @@
 #!/usr/bin/env python3
 import sys
-import time
 import requests
 from datetime import datetime, timezone
 
 API = "https://api.github.com"
 
 
-def gh_get(url, token, params=None):
+def days_since_last_commit(org, user, token):
     headers = {
-        "Accept": "application/vnd.github+json",
+        "Accept": "application/vnd.github.cloak-preview+json",
         "Authorization": f"Bearer {token}",
         "User-Agent": "org-last-commit-check",
     }
-    r = requests.get(url, headers=headers, params=params, timeout=30)
-    r.raise_for_status()
-    return r.json()
-
-
-def get_pinned_repos(org, token):
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-    }
-    query = """
-    query($org: String!) {
-      organization(login: $org) {
-        pinnedItems(first: 6, types: REPOSITORY) {
-          nodes {
-            ... on Repository {
-              name
-            }
-          }
-        }
-      }
-    }
-    """
-    r = requests.post(
-        "https://api.github.com/graphql",
+    r = requests.get(
+        f"{API}/search/commits",
         headers=headers,
-        json={"query": query, "variables": {"org": org}},
+        params={"q": f"author:{user} org:{org}", "sort": "author-date", "order": "desc", "per_page": 1},
         timeout=30,
     )
     r.raise_for_status()
     data = r.json()
-    nodes = data["data"]["organization"]["pinnedItems"]["nodes"]
-    return [{"name": n["name"]} for n in nodes]
 
+    if data.get("total_count", 0) == 0:
+        return None
 
-def get_latest_commit_date(org, repo, user, token, retries=3):
-    for attempt in range(retries):
-        try:
-            commits = gh_get(
-                f"{API}/repos/{org}/{repo}/commits",
-                token,
-                params={"author": user, "per_page": 1},
-            )
-            if not commits:
-                return None
-            return commits[0]["commit"]["author"]["date"]
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code >= 500 and attempt < retries - 1:
-                time.sleep(2 ** attempt)
-                continue
-            return None
-
-
-def days_since_last_commit(org, user, token):
-    repos = get_pinned_repos(org, token)
-
-    latest_date = None
-    latest_repo = None
-
-    for repo in repos:
-        name = repo["name"]
-        try:
-            date_str = get_latest_commit_date(org, name, user, token)
-            if date_str:
-                dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-                if not latest_date or dt > latest_date:
-                    latest_date = dt
-                    latest_repo = name
-        except Exception as e:
-            print(f"[WARN] {name}: {e}", file=sys.stderr)
-
-    if not latest_date:
-        return None, None
-
-    now = datetime.now(timezone.utc)
-    return (now - latest_date).days, latest_repo
+    date_str = data["items"][0]["commit"]["author"]["date"]
+    dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    return (datetime.now(timezone.utc) - dt).days
 
 
 def main():
@@ -100,7 +38,7 @@ def main():
         sys.exit(1)
 
     org, user, token = args[0], args[1], args[2]
-    delta_days, latest_repo = days_since_last_commit(org, user, token)
+    delta_days = days_since_last_commit(org, user, token)
 
     if delta_days is None:
         if days_only:
@@ -112,7 +50,6 @@ def main():
     if days_only:
         print(delta_days)
     else:
-        print(f"Repository: {org}/{latest_repo}")
         print(f"Days since last commit: {delta_days}")
 
 
