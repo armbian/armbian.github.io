@@ -14,7 +14,7 @@ def days_since_last_commit(org, user, token):
         "User-Agent": "org-last-commit-check",
     }
 
-    for attempt in range(3):
+    for attempt in range(5):
         r = requests.get(
             f"{API}/search/commits",
             headers=headers,
@@ -23,9 +23,9 @@ def days_since_last_commit(org, user, token):
         )
 
         if r.status_code == 403:
-            # Secondary rate limit - wait and retry
-            retry_after = int(r.headers.get("Retry-After", 2 ** (attempt + 1)))
-            print(f"Rate limited for {user}, retrying in {retry_after}s...", file=sys.stderr)
+            # Secondary rate limit - use Retry-After or exponential backoff (10s, 20s, 40s, 80s, 160s)
+            retry_after = int(r.headers.get("Retry-After", 10 * (2 ** attempt)))
+            print(f"Rate limited for {user}, retrying in {retry_after}s (attempt {attempt + 1}/5)...", file=sys.stderr)
             time.sleep(retry_after)
             continue
 
