@@ -104,6 +104,9 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
           done
 
+          # Install Python dependencies for days_since_last_commit script
+          pip install --quiet requests
+
           # Create a temporary file for maintainers_with_avatars.json
           temp_file=$(mktemp)
 
@@ -132,9 +135,12 @@ jobs:
                 avatar_url=""
               fi
 
-              # Enrich Zoho data with GitHub avatar, use Last_Name as First_Name if First_Name is empty
-              enriched=$(echo "$row" | jq --arg avatar "$avatar_url" '
-                . + {Avatar: $avatar}
+              # Get days since last commit to Armbian org
+              days_since=$(python3 armbian.github.io/scripts/days_since_last_commit.py --days-only armbian "$username" "$GH_TOKEN")
+
+              # Enrich Zoho data with GitHub avatar, days since last commit, and Last_Name fallback
+              enriched=$(echo "$row" | jq --arg avatar "$avatar_url" --arg days "$days_since" '
+                . + {Avatar: $avatar, Days_since_last_commit: ($days | tonumber)}
                 | if (.First_Name == null or .First_Name == "") and (.Last_Name != null and .Last_Name != "")
                   then .First_Name = .Last_Name
                   else . end
