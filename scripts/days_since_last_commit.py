@@ -7,44 +7,77 @@ from datetime import datetime, timezone
 API = "https://api.github.com"
 
 
-def days_since_last_commit(org, user, token):
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "Authorization": f"Bearer {token}",
-        "User-Agent": "org-last-commit-check",
-    }
-
-    for attempt in range(5):
-        r = requests.get(
-            f"{API}/search/commits",
-            headers=headers,
-            params={"q": f"author:{user} org:{org}", "sort": "author-date", "order": "desc", "per_page": 1},
-            timeout=30,
-        )
+def search_with_retry(url, headers, params, retries=5):
+    for attempt in range(retries):
+        r = requests.get(url, headers=headers, params=params, timeout=30)
 
         if r.status_code == 403:
-            # Secondary rate limit - use Retry-After or exponential backoff (10s, 20s, 40s, 80s, 160s)
             retry_after = int(r.headers.get("Retry-After", 10 * (2 ** attempt)))
-            print(f"Rate limited for {user}, retrying in {retry_after}s (attempt {attempt + 1}/5)...", file=sys.stderr)
+            print(f"Rate limited, retrying in {retry_after}s (attempt {attempt + 1}/{retries})...", file=sys.stderr)
             time.sleep(retry_after)
             continue
 
         if r.status_code == 422:
-            # Validation error (e.g. user not found)
             return None
 
         r.raise_for_status()
-        data = r.json()
+        return r.json()
 
-        if data.get("total_count", 0) == 0:
-            return None
-
-        date_str = data["items"][0]["commit"]["author"]["date"]
-        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        return (datetime.now(timezone.utc) - dt).days
-
-    # All retries exhausted
     return None
+
+
+def get_latest_commit_date(org, user, headers):
+    data = search_with_retry(
+        f"{API}/search/commits", headers,
+        {"q": f"author:{user} org:{org}", "sort": "author-date", "order": "desc", "per_page": 1},
+    )
+    if not data or data.get("total_count", 0) == 0:
+        return None
+    date_str = data["items"][0]["commit"]["author"]["date"]
+    return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+
+
+def get_latest_issue_date(org, user, headers):
+    data = search_with_retry(
+        f"{API}/search/issues", headers,
+        {"q": f"author:{user} org:{org}", "sort": "created", "order": "desc", "per_page": 1},
+    )
+    if not data or data.get("total_count", 0) == 0:
+        return None
+    date_str = data["items"][0]["created_at"]
+    return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+
+
+def get_latest_comment_date(org, user, headers):
+    data = search_with_retry(
+        f"{API}/search/issues", headers,
+        {"q": f"commenter:{user} org:{org}", "sort": "updated", "order": "desc", "per_page": 1},
+    )
+    if not data or data.get("total_count", 0) == 0:
+        return None
+    date_str = data["items"][0]["updated_at"]
+    return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+
+
+def days_since_last_activity(org, user, token):
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "org-activity-check",
+    }
+
+    dates = []
+    for fetch in (get_latest_commit_date, get_latest_issue_date, get_latest_comment_date):
+        dt = fetch(org, user, headers)
+        if dt:
+            dates.append(dt)
+        time.sleep(1)
+
+    if not dates:
+        return None
+
+    latest = max(dates)
+    return (datetime.now(timezone.utc) - latest).days
 
 
 def main():
@@ -56,19 +89,19 @@ def main():
         sys.exit(1)
 
     org, user, token = args[0], args[1], args[2]
-    delta_days = days_since_last_commit(org, user, token)
+    delta_days = days_since_last_activity(org, user, token)
 
     if delta_days is None:
         if days_only:
             print(-1)
         else:
-            print(f"No commits found for {user} in org {org}")
+            print(f"No activity found for {user} in org {org}")
         sys.exit(0)
 
     if days_only:
         print(delta_days)
     else:
-        print(f"Days since last commit: {delta_days}")
+        print(f"Days since last activity: {delta_days}")
 
 
 if __name__ == "__main__":

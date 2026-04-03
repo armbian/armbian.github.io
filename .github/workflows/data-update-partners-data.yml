@@ -144,19 +144,18 @@ jobs:
                 avatar_url=""
               fi
 
-              # Get days since last commit to Armbian org (with delay to avoid search API rate limits)
-              sleep 2
-              echo "Fetching days since last commit for $username..."
+              # Get days since last activity in Armbian org (commits, issues, comments)
+              echo "Fetching days since last activity for $username..."
               days_since=$(python3 armbian.github.io/scripts/days_since_last_commit.py --days-only armbian "$username" "$GH_TOKEN")
               if [ "$days_since" = "-1" ]; then
-                echo "  -> $username: no commits found in org"
+                echo "  -> $username: no activity found in org"
               else
-                echo "  -> $username: ${days_since} days since last commit"
+                echo "  -> $username: ${days_since} days since last activity"
               fi
 
-              # Enrich Zoho data with GitHub avatar, days since last commit, and Last_Name fallback
+              # Enrich Zoho data with GitHub avatar, days since last activity, and Last_Name fallback
               enriched=$(echo "$row" | jq --arg avatar "$avatar_url" --arg days "$days_since" '
-                . + {Avatar: $avatar, Days_since_last_commit: ($days | tonumber)}
+                . + {Avatar: $avatar, Days_since_last_activity: ($days | tonumber)}
                 | if (.First_Name == null or .First_Name == "") and (.Last_Name != null and .Last_Name != "")
                   then .First_Name = .Last_Name
                   else . end
