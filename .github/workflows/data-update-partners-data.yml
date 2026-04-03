@@ -141,7 +141,7 @@ jobs:
 
               # Fetch GitHub profile for avatar URL
               echo "Processing maintainer: $username (${first_name} ${last_name})"
-              avatar_url=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/users/$username" | jq -r '.avatar_url')
+              avatar_url=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/users/$username" | jq -r '.avatar_url' || true)
 
               # Fall back to empty string if avatar fetch failed
               if [ "$avatar_url" = "null" ] || [ -z "$avatar_url" ]; then
