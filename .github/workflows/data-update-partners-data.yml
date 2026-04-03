@@ -149,10 +149,13 @@ jobs:
                 avatar_url=""
               fi
 
-              # Get days since last activity in Armbian org (commits, issues, comments)
+              # Get days since last activity in Armbian org (commits, issues)
               echo "Fetching days since last activity for $username..."
-              days_since=$(python3 armbian.github.io/scripts/days_since_last_commit.py --days-only armbian "$username" "$GH_TOKEN")
-              if [ "$days_since" = "-1" ]; then
+              days_since=$(python3 armbian.github.io/scripts/days_since_last_commit.py --days-only armbian "$username" "$GH_TOKEN" || true)
+              if [ "$days_since" = "ERROR" ] || [ -z "$days_since" ]; then
+                echo "::warning::Lookup failed for $username, skipping activity data"
+                days_since="-1"
+              elif [ "$days_since" = "-1" ]; then
                 echo "  -> $username: no activity found in org"
               else
                 echo "  -> $username: ${days_since} days since last activity"

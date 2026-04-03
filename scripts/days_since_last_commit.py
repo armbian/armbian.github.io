@@ -7,9 +7,16 @@ from datetime import datetime, timezone
 API = "https://api.github.com"
 
 
+class LookupError(Exception):
+    pass
+
+
 def search_with_retry(url, headers, params, retries=5):
     for attempt in range(retries):
-        r = requests.get(url, headers=headers, params=params, timeout=30)
+        try:
+            r = requests.get(url, headers=headers, params=params, timeout=30)
+        except requests.exceptions.RequestException as e:
+            raise LookupError(f"Request failed: {e}")
 
         if r.status_code == 403:
             retry_after = int(r.headers.get("Retry-After", 10 * (2 ** attempt)))
@@ -20,10 +27,12 @@ def search_with_retry(url, headers, params, retries=5):
         if r.status_code == 422:
             return None
 
-        r.raise_for_status()
+        if not r.ok:
+            raise LookupError(f"HTTP {r.status_code}")
+
         return r.json()
 
-    return None
+    raise LookupError("Rate limit retries exhausted")
 
 
 def get_latest_commit_date(org, user, headers):
@@ -57,7 +66,7 @@ def days_since_last_activity(org, user, token):
 
     dates = []
     for fetch in (get_latest_commit_date, get_latest_issue_date):
-        dt = fetch(org, user, headers)
+        dt = fetch(org, user, headers)  # raises LookupError on failure
         if dt:
             dates.append(dt)
         time.sleep(1)
@@ -78,7 +87,15 @@ def main():
         sys.exit(1)
 
     org, user, token = args[0], args[1], args[2]
-    delta_days = days_since_last_activity(org, user, token)
+
+    try:
+        delta_days = days_since_last_activity(org, user, token)
+    except LookupError as e:
+        if days_only:
+            print("ERROR")
+        else:
+            print(f"Lookup failed for {user}: {e}")
+        sys.exit(1)
 
     if delta_days is None:
         if days_only:
