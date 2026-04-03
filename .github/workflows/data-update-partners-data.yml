@@ -116,10 +116,15 @@ jobs:
           # Flag for commas between records
           first=1
 
-          # Fetch the maintainers from Zoho Bigin
-          curl --silent --fail --request GET \
+          # Fetch the maintainers from Zoho Bigin (fail fast on error, same as partners fetch)
+          if ! maintainers_response=$(curl --silent --fail --request GET \
             --url 'https://www.zohoapis.eu/bigin/v2/Contacts/search?fields=Team,First_Name,Last_Name,Github,Maintaining,Your_core_competences&criteria=((Tag:equals:maintainer)and(Inactive:equals:false))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN"); then
+            echo "::error::Failed to fetch maintainers from Zoho"
+            exit 1
+          fi
+
+          echo "$maintainers_response" \
           | jq -c '.data[] | {First_Name, Last_Name, Github, Team, Maintaining, Your_core_competences}' \
           | while read -r row; do
               # Extract GitHub username from the URL
