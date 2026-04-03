@@ -147,7 +147,11 @@ jobs:
               # Get days since last commit to Armbian org
               echo "Fetching days since last commit for $username..."
               days_since=$(python3 armbian.github.io/scripts/days_since_last_commit.py --days-only armbian "$username" "$GH_TOKEN")
-              echo "  -> $username: ${days_since} days"
+              if [ "$days_since" = "-1" ]; then
+                echo "  -> $username: no commits found in org"
+              else
+                echo "  -> $username: ${days_since} days since last commit"
+              fi
 
               # Enrich Zoho data with GitHub avatar, days since last commit, and Last_Name fallback
               enriched=$(echo "$row" | jq --arg avatar "$avatar_url" --arg days "$days_since" '
