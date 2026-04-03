@@ -17,20 +17,34 @@ def gh_get(url, token, params=None):
     return r.json()
 
 
-def get_all_repos(org, token):
-    repos = []
-    page = 1
-    while True:
-        batch = gh_get(
-            f"{API}/orgs/{org}/repos",
-            token,
-            params={"per_page": 100, "page": page, "type": "all"},
-        )
-        if not batch:
-            break
-        repos.extend(batch)
-        page += 1
-    return repos
+def get_pinned_repos(org, token):
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    query = """
+    query($org: String!) {
+      organization(login: $org) {
+        pinnedItems(first: 6, types: REPOSITORY) {
+          nodes {
+            ... on Repository {
+              name
+            }
+          }
+        }
+      }
+    }
+    """
+    r = requests.post(
+        "https://api.github.com/graphql",
+        headers=headers,
+        json={"query": query, "variables": {"org": org}},
+        timeout=30,
+    )
+    r.raise_for_status()
+    data = r.json()
+    nodes = data["data"]["organization"]["pinnedItems"]["nodes"]
+    return [{"name": n["name"]} for n in nodes]
 
 
 def get_latest_commit_date(org, repo, user, token):
@@ -47,7 +61,7 @@ def get_latest_commit_date(org, repo, user, token):
 
 
 def days_since_last_commit(org, user, token):
-    repos = get_all_repos(org, token)
+    repos = get_pinned_repos(org, token)
 
     latest_date = None
     latest_repo = None
