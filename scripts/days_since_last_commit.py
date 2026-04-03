@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import time
 import requests
 from datetime import datetime, timezone
 
@@ -47,17 +48,22 @@ def get_pinned_repos(org, token):
     return [{"name": n["name"]} for n in nodes]
 
 
-def get_latest_commit_date(org, repo, user, token):
-    commits = gh_get(
-        f"{API}/repos/{org}/{repo}/commits",
-        token,
-        params={"author": user, "per_page": 1},
-    )
-    if not commits:
-        return None
-
-    # commit.author.date is ISO8601
-    return commits[0]["commit"]["author"]["date"]
+def get_latest_commit_date(org, repo, user, token, retries=3):
+    for attempt in range(retries):
+        try:
+            commits = gh_get(
+                f"{API}/repos/{org}/{repo}/commits",
+                token,
+                params={"author": user, "per_page": 1},
+            )
+            if not commits:
+                return None
+            return commits[0]["commit"]["author"]["date"]
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code >= 500 and attempt < retries - 1:
+                time.sleep(2 ** attempt)
+                continue
+            return None
 
 
 def days_since_last_commit(org, user, token):
