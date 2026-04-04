@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: armbian/armbian.github.io
-          fetch-depth: 0
+          fetch-depth: 1
           clean: false
           path: armbian.github.io
 
@@ -33,13 +33,20 @@ jobs:
           REFRESH_TOKEN: ${{ secrets.ZOHO_REFRESH_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+
           ACCESS_TOKEN=$(curl -sH "Content-type: multipart/form-data" \
-            -F refresh_token=$REFRESH_TOKEN \
-            -F client_id=$CLIENT_ID \
-            -F client_secret=$CLIENT_SECRET \
+            -F "refresh_token=$REFRESH_TOKEN" \
+            -F "client_id=$CLIENT_ID" \
+            -F "client_secret=$CLIENT_SECRET" \
             -F grant_type=refresh_token \
             -X POST https://accounts.zoho.eu/oauth/v2/token \
             | jq -r '.access_token')
+
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "::error::Failed to obtain Zoho access token"
+            exit 1
+          fi
 
           echo "Access token obtained."
 
@@ -47,12 +54,17 @@ jobs:
           > partners.json
 
           for partner_type in Platinum Gold Silver; do
-            curl --silent --request GET \
+            if ! response=$(curl --silent --fail --request GET \
               --url "https://www.zohoapis.eu/bigin/v2/Accounts/search?fields=Website,Company_slug,Description,Account_Name,Email,Partnership_Status,Promoted&criteria=((Partnership_Status:equals:${partner_type}%20Partner)and(Promoted:equals:true))" \
-              --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
+              --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN"); then
+              echo "::error::Failed to fetch ${partner_type} partners"
+              exit 1
+            fi
+
+            echo "$response" \
               | jq -c ".data[] | select(.Company_slug != null and .Company_slug != \"\") | {
                   Account_Name,
-                  logo_url: (\"https://cache.armbian.com/images/vendors/150/\(.Company_slug)-border.png\"),
+                  logo_url: (\"https://cache.armbian.com/images/vendors/150/\(.Company_slug).png\"),
                   Website,
                   Description,
                   Partnership_Status: .Partnership_Status
@@ -63,37 +75,37 @@ jobs:
           jq -s . < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
           jq . -S < partners.json > partners.json.tmp && mv partners.json.tmp partners.json
 
+          # Validate partners data
+          partner_count=$(jq 'length' partners.json)
+          if [ "$partner_count" -lt 1 ]; then
+            echo "::error::Partners JSON is empty, refusing to commit"
+            exit 1
+          fi
+          echo "Fetched $partner_count partners."
+
           # Display content in step summary as markdown sections
           echo "# Partners" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Platinum Partners
-          echo "## Platinum" >> $GITHUB_STEP_SUMMARY
-          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
           TIMESTAMP=$(date +%s)
-          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Platinum Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''150'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
-            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
-          echo '</p>' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          for level in Platinum Gold Silver; do
+            case $level in
+              Platinum) width=150 ;;
+              Gold)     width=105 ;;
+              Silver)   width=75 ;;
+            esac
+            echo "## ${level}" >> $GITHUB_STEP_SUMMARY
+            echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
+            jq -r --arg ts "$TIMESTAMP" --arg status "${level} Partner" --arg w "$width" \
+              '.[] | select(.Partnership_Status == $status) |
+              "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''\($w)'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
+              partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
+            echo '</p>' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
 
-          # Gold Partners
-          echo "## Gold" >> $GITHUB_STEP_SUMMARY
-          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Gold Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''105'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
-            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
-          echo '</p>' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Silver Partners
-          echo "## Silver" >> $GITHUB_STEP_SUMMARY
-          echo '<p align=left>' >> $GITHUB_STEP_SUMMARY
-          jq -r --arg ts "$TIMESTAMP" '.[] | select(.Partnership_Status == "Silver Partner") |
-            "<a href='\''\(.Website)'\''><img src='\''\(.logo_url)?v=\($ts)'\'' width='\''75'\'' alt='\''\(.Account_Name)'\'' style=\"display:block; border:0; height:auto;\"></a>"' \
-            partners.json | tr '\n' ' ' >> $GITHUB_STEP_SUMMARY
-          echo '</p>' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          # Install Python dependencies for days_since_last_commit script
+          pip install --quiet requests
 
           # Create a temporary file for maintainers_with_avatars.json
           temp_file=$(mktemp)
@@ -104,24 +116,59 @@ jobs:
           # Flag for commas between records
           first=1
 
-          # Fetch the maintainers from Zoho Bigin
-          curl --silent --request GET \
-            --url 'https://www.zohoapis.eu/bigin/v2/Contacts/search?fields=Team,First_Name,Github,Maintaining,Your_core_competences&criteria=((Tag:equals:maintainer)and(Inactive:equals:false))' \
-            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN" \
-          | jq -c '.data[] | {First_Name, Github, Team, Maintaining, Your_core_competences}' \
+          # Fetch the maintainers from Zoho Bigin (fail fast on error, same as partners fetch)
+          if ! maintainers_response=$(curl --silent --fail --request GET \
+            --url 'https://www.zohoapis.eu/bigin/v2/Contacts/search?fields=Team,First_Name,Last_Name,Github,Maintaining,Your_core_competences&criteria=((Tag:equals:maintainer)and(Inactive:equals:false))' \
+            --header "Authorization: Zoho-oauthtoken $ACCESS_TOKEN"); then
+            echo "::error::Failed to fetch maintainers from Zoho"
+            exit 1
+          fi
+
+          echo "$maintainers_response" \
+          | jq -c '.data[] | {First_Name, Last_Name, Github, Team, Maintaining, Your_core_competences}' \
           | while read -r row; do
               # Extract GitHub username from the URL
               github_url=$(echo "$row" | jq -r '.Github')
               username=$(basename "$github_url")
+              first_name=$(echo "$row" | jq -r '.First_Name // empty')
+              last_name=$(echo "$row" | jq -r '.Last_Name // empty')
 
-              # Assume GH_TOKEN is exported as env var or injected from GitHub Actions secrets
-              auth_header="Authorization: token $GH_TOKEN"
+              # Skip entries without a valid GitHub username
+              if [ -z "$username" ] || [ "$username" = "null" ] || [ "$username" = "." ]; then
+                echo "::warning::Skipping maintainer '${first_name} ${last_name}' - no GitHub profile set"
+                continue
+              fi
 
               # Fetch GitHub profile for avatar URL
-              avatar_url=$(curl -s -H "$auth_header" "https://api.github.com/users/$username" | jq -r '.avatar_url')
+              echo "Processing maintainer: $username (${first_name} ${last_name})"
+              avatar_url=$(curl -s -H "Authorization: token $GH_TOKEN" "https://api.github.com/users/$username" | jq -r '.avatar_url' || true)
 
-              # Enrich Zoho data with GitHub avatar
-              enriched=$(echo "$row" | jq --arg avatar "$avatar_url" '. + {Avatar: $avatar}')
+              # Fall back to empty string if avatar fetch failed
+              if [ "$avatar_url" = "null" ] || [ -z "$avatar_url" ]; then
+                echo "::warning::Could not fetch avatar for $username"
+                avatar_url=""
+              fi
+
+              # Get days since last activity in Armbian org (commits, issues)
+              echo "Fetching days since last activity for $username..."
+              days_since=$(python3 armbian.github.io/scripts/days_since_last_commit.py --days-only armbian "$username" "$GH_TOKEN" || true)
+              if [ "$days_since" = "ERROR" ] || [ -z "$days_since" ]; then
+                echo "::warning::Lookup failed for $username, skipping activity data"
+                days_since="-1"
+              elif [ "$days_since" = "-1" ]; then
+                echo "  -> $username: no activity found in org"
+              else
+                echo "  -> $username: ${days_since} days since last activity"
+              fi
+
+              # Enrich Zoho data with GitHub avatar, days since last activity, and Last_Name fallback
+              enriched=$(echo "$row" | jq --arg avatar "$avatar_url" --arg days "$days_since" '
+                . + {Avatar: $avatar, Days_since_last_activity: ($days | tonumber)}
+                | if (.First_Name == null or .First_Name == "") and (.Last_Name != null and .Last_Name != "")
+                  then .First_Name = .Last_Name
+                  else . end
+                | del(.Last_Name)
+              ')
 
               # Manage commas between JSON objects
               if [ $first -eq 1 ]; then
@@ -137,8 +184,16 @@ jobs:
           # Close the JSON array
           echo "]" >> "$temp_file"
 
-          # Format and save the final output to fixed.json
-          cat "$temp_file" | jq . > maintainers.json
+          # Format and save the final output
+          jq . "$temp_file" > maintainers.json
+
+          # Validate maintainers data
+          maintainer_count=$(jq 'length' maintainers.json)
+          if [ "$maintainer_count" -lt 1 ]; then
+            echo "::error::Maintainers JSON is empty, refusing to commit"
+            exit 1
+          fi
+          echo "Fetched $maintainer_count maintainers."
 
           # Clean up the temporary file
           rm "$temp_file"
