@@ -1,0 +1,114 @@
+[
+  {
+    "Account_Name": "Inovato",
+    "Description": "Inovato makes the popular Quadra HamPC, a ready-to-run computer featuring HamClock, a beautiful gray line map with many features for amateur radio. Based on Armbian pre-flashed into eMMC, the Quadra includes everything needed to run out of the box - just add your favorite TV or monitor and keyboard/mouse. Also includes many other ham radio apps including WSJT-X, flDigi, JS8Call, and GridTracker, with an installer for more.",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.inovato.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/inovato.png"
+  },
+  {
+    "Account_Name": "FriendlyElec",
+    "Description": "FriendlyElec (formerly FriendlyARM) is a long-standing developer of ARM-based embedded hardware, recognized for its focus on reliability and practical deployment, and an active supporter of open-source and Linux ecosystems, with its collaboration with Armbian helping ensure stable, production-ready system support.",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.friendlyelec.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/friendlyelec.png"
+  },
+  {
+    "Account_Name": "SpacemiT",
+    "Description": "SpacemiT is a Hangzhou-based RISC-V computing chip company building next-generation processors and SoCs for AI and advanced computing, aiming to drive open and high-performance computing solutions globally.",
+    "Partnership_Status": "Platinum Partner",
+    "Website": null,
+    "logo_url": "https://cache.armbian.com/images/vendors/150/spacemit.png"
+  },
+  {
+    "Account_Name": "Mekotronics",
+    "Description": "Single board computers - Media players - Digital signages",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.mekotronics.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/mekotronics.png"
+  },
+  {
+    "Account_Name": "Radxa",
+    "Description": "As a leader in open-source hardware and software, Radxa's mission is to provide innovative, high-quality, and reliable computer products and services to help people achieve their dreams and pursuits. We are dedicated to building an open, collaborative, and inclusive community, providing rich resources and support for our users to unleash their creativity, and driving the progress of technology and the development of society together.",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.radxa.com",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/radxa.png"
+  },
+  {
+    "Account_Name": "Khadas",
+    "Description": "Khadas offers top-quality single board computers for makers and developers, with cutting-edge technology, open-source philosophy, and professional technical support. Join their global community for the ultimate tinkering experience.",
+    "Partnership_Status": "Platinum Partner",
+    "Website": "https://www.khadas.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/khadas.png"
+  },
+  {
+    "Account_Name": "Texas Instruments",
+    "Description": "Texas Instruments is a leading global semiconductor designer and manufacturer of analog and embedded processing chips. Their AM6x and J7 series of Industrial and Automotive SoCs are available as part of a scalable portfolio with open documentation and an upstream-first contribution model in the open source community.",
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://www.ti.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/ti.png"
+  },
+  {
+    "Account_Name": "Alfred Smart Systems",
+    "Description": "Alfred Smart is a technology company focused on digitalising buildings through an AI-powered platform that combines IoT, real-time monitoring, and automation to improve efficiency, sustainability, and user experience. By integrating data-driven insights and smart control systems, Alfred Smart helps transform residential and commercial spaces into connected, energy-efficient environments while reducing operational costs and supporting ESG goals.",
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://alfredsmart.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/alfredsmart.png"
+  },
+  {
+    "Account_Name": "Futo",
+    "Description": "FUTO is an organization focused on developing and funding technologies that restore user control, privacy, and independence in computing. With a strong emphasis on ethical, user-first software, FUTO supports and builds open technologies that resist centralization and promote sustainable development models, ensuring that users—not corporations—remain in control of their digital experience.",
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://futo.org",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/futo.png"
+  },
+  {
+    "Account_Name": "mediamix",
+    "Description": "Mediamix GmbH is a technology-focused company specializing in embedded and digital solutions, with an emphasis on reliable system integration and long-term usability. Through its collaboration with Armbian, Mediamix GmbH contributes to delivering stable, production-ready Linux-based platforms for embedded and edge use cases.",
+    "Partnership_Status": "Gold Partner",
+    "Website": "https://mdmx-studio.at/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/mediamix.png"
+  },
+  {
+    "Account_Name": "Libre Computer",
+    "Description": "Libre Computer is a single-board computer vendor focused on open hardware platforms, with strong upstream Linux support and multiple devices supported by Armbian.",
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://libre.computer",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/libre-computer.png"
+  },
+  {
+    "Account_Name": "netcup",
+    "Description": "netcup is a hosting provider offering high-performance web hosting, virtual private servers (VPS), and domain services. Known for its reliability and cost-effective solutions, netcup supports businesses, developers, and individuals with powerful infrastructure for websites, applications, and cloud computing.",
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://netcup.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/netcup.png"
+  },
+  {
+    "Account_Name": "Maximumsettings",
+    "Description": "Maximum Settings is a cloud gaming provider specializing in dedicated, high-performance gaming PCs delivered from the cloud, enabling users to play demanding titles on virtually any device without owning expensive hardware. By leveraging bare-metal infrastructure and a no–resource-sharing approach, the platform focuses on consistent performance, low latency, and a customizable gaming experience, making high-end PC gaming accessible anywhere.",
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://maximumsettings.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/maximumsettings.png"
+  },
+  {
+    "Account_Name": "JetHome",
+    "Description": "JetHome is manufacturer of automation equipment focused into Linux-based open source home automation controllers.",
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://jethome.ru",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/jethome.png"
+  },
+  {
+    "Account_Name": "toolcraft AG",
+    "Description": "As a partner for complete solutions, toolcraft offers the entire process chain from the idea to production to the qualified precision component in the areas of machining, additive manufacturing, injection moulding and mould making. The company implements customised automation solutions through to fully programmed applications.",
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://www.toolcraft.de",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/toolcraft.png"
+  },
+  {
+    "Account_Name": "AtomoNetworks",
+    "Description": "AtomoNetworks is a Sicilian-based connectivity provider with a growing presence across Italy. The company offers high-speed internet and a wide range of network services, including housing and colocation, dark fiber, delivery points, IP transit, and cloud infrastructure. Combining its own network with strategic national partnerships, AtomoNetworks delivers reliable, scalable, and flexible connectivity solutions for businesses, service providers, and enterprise clients.",
+    "Partnership_Status": "Silver Partner",
+    "Website": "https://atomonetworks.com/",
+    "logo_url": "https://cache.armbian.com/images/vendors/150/atomonetworks.png"
+  }
+]
