@@ -85,7 +85,7 @@ while IFS= read -r cfg; do
   fi
 done < <(
   find "$BOARD_DIR" -maxdepth 1 -type f \
-    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" -o -name "*.eos" \) \
   | sort
 )
 
@@ -580,6 +580,9 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     [[ -z "$BOARD" ]] && continue
     BOARD_SLUG="${BOARD,,}"
 
+    # Skip end-of-support boards
+    [[ "${BOARD_SUPPORT_MAP[$BOARD_SLUG]:-}" == "eos" ]] && continue
+
     REPO="$(get_download_repository "$URL")"
     [[ -z "$REPO" ]] && continue
 
@@ -755,6 +758,11 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         reusable_promoted=false
         if is_promoted "$IMAGE_NAME" "$reusable_slug" "$URL"; then
           reusable_promoted=true
+        fi
+
+        # Skip end-of-support reusable boards
+        if [[ "${reusable_support,,}" == "eos" ]]; then
+          continue
         fi
 
         # Output for reusable board
