@@ -63,6 +63,7 @@ extract_cfg_var() {
 declare -A BOARD_NAME_MAP=()
 declare -A BOARD_VENDOR_MAP=()
 declare -A BOARD_SUPPORT_MAP=()
+declare -A BOARD_INTRODUCED_MAP=()
 
 MISSING_META_FILE="$(mktemp)"
 trap 'rm -f "$MISSING_META_FILE"' EXIT
@@ -73,12 +74,14 @@ while IFS= read -r cfg; do
 
   name="$(extract_cfg_var "$cfg" BOARD_NAME)"
   vendor="$(extract_cfg_var "$cfg" BOARD_VENDOR)"
+  introduced="$(extract_cfg_var "$cfg" INTRODUCED)"
   support="${cfg##*.}"; support="${support,,}"
 
 
   [[ -n "$name" ]]   && BOARD_NAME_MAP["$slug"]="$name"
   [[ -n "$vendor" ]] && BOARD_VENDOR_MAP["$slug"]="$vendor"
   [[ -n "$support" ]] && BOARD_SUPPORT_MAP["$slug"]="$support"
+  [[ -n "$introduced" ]] && BOARD_INTRODUCED_MAP["$slug"]="$introduced"
 
   if [[ -z "$name" || -z "$vendor" ]]; then
     printf '%s\n' "$slug" >>"$MISSING_META_FILE"
@@ -101,7 +104,7 @@ declare -A REUSABLE_BOARD_META=()       # board_slug -> "name|vendor|support"
 if [[ -f "$REUSABLE_FILE" ]]; then
   echo "▶ Loading reusable board definitions from ${REUSABLE_FILE}…" >&2
 
-  while IFS=$'\t' read -r slug name vendor support uses branch ext; do
+  while IFS=$'\t' read -r slug name vendor support uses branch ext introduced; do
     slug="${slug,,}"
     [[ -z "$slug" ]] && continue
 
@@ -115,6 +118,7 @@ if [[ -f "$REUSABLE_FILE" ]]; then
     [[ -n "$name" ]] && BOARD_NAME_MAP["$slug"]="$name"
     [[ -n "$vendor" ]] && BOARD_VENDOR_MAP["$slug"]="$vendor"
     [[ -n "$support" ]] && BOARD_SUPPORT_MAP["$slug"]="$support"
+    [[ -n "$introduced" ]] && BOARD_INTRODUCED_MAP["$slug"]="$introduced"
 
     ext_msg="${ext:+ (ext: ${ext})}"
     echo "  - ${slug} → ${uses}${branch:+ (branch: ${branch})}${ext_msg}" >&2
@@ -132,7 +136,8 @@ try:
             str(b.get('board_support', '')),
             str(b.get('uses', '')),
             str(b.get('branch', '')),
-            str(b.get('file_extension', ''))
+            str(b.get('file_extension', '')),
+            str(b.get('board_introduced', ''))
         ]))
 except Exception as e:
     sys.stderr.write(f'Error loading reusable.yml: {e}\n')
@@ -549,7 +554,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"board_introduced"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -682,7 +687,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         PLAT_EXPIRED="false"
       fi
     fi
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
 
     # Check if this board is used by any reusable boards
     for reusable_slug in "${!REUSABLE_BOARD_USES[@]}"; do
@@ -766,7 +771,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         fi
 
         # Output for reusable board
-        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
+        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${BOARD_INTRODUCED_MAP[$reusable_slug]:-}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
       fi
     done
   done <"$feed"
