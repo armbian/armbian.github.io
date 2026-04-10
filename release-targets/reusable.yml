@@ -270,4 +270,13 @@ boards:
     # The magic: reuse artifact set
     uses: "qidi-x6"
     branch: "current"
-    file_extension: "img.xz" 
+    file_extension: "img.xz"
+
+  - board_slug: "nanopct6-lts-plus"
+    board_name: "NanoPC T6 LTS Plus"
+    board_vendor: "friendlyelec"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "nanopct6-lts"
+    file_extension: "img.xz"
