@@ -342,6 +342,24 @@ is_preinstalled_app() {
   case "$1" in kali|homeassistant|openhab|omv) return 0 ;; *) return 1 ;; esac
 }
 
+split_desktop_tail() {
+  local tail="$1"
+  local variant="$tail" app=""
+
+  case "$tail" in
+    *-backported-mesa)
+      variant="${tail%-backported-mesa}"
+      app="backported-mesa"
+      ;;
+    *-ufs)
+      variant="${tail%-ufs}"
+      app="ufs"
+      ;;
+  esac
+
+  printf '%s\n' "$variant" "$app"
+}
+
 strip_img_ext() {
   sed -E 's/(\.img(\.(xz|zst|gz))?)$//' <<<"$1"
 }
@@ -373,9 +391,31 @@ extract_file_extension() {
     return
   fi
 
+  # LK bootloader artifacts
+  #   ...minimal.lk.bin.xz  -> lk.bin.xz
+  #   ...minimal.lk.bin     -> lk.bin
+  if [[ "$n" == *".lk.bin" ]] || [[ "$n" == *".lk.bin."* ]]; then
+    if [[ "$n" == *".lk.bin."* ]]; then
+      echo "lk.bin.${n##*.lk.bin.}"
+    else
+      echo "lk.bin"
+    fi
+    return
+  fi
+
   # rootfs images
   if [[ "$n" == *".rootfs.img."* ]]; then
     echo "rootfs.img.${n##*.rootfs.img.}"
+    return
+  fi
+
+  # fip images
+  if [[ "$n" == *".fip.img."* ]]; then
+    echo "fip.img.${n##*.fip.img.}"
+    return
+  fi
+  if [[ "$n" == *.fip.img ]]; then
+    echo "fip.img"
     return
   fi
 
@@ -485,6 +525,7 @@ parse_image_name() {
 
   local ver="" board="" distro="" branch="" kernel="" tail=""
   local variant="server" app="" storage=""
+  local desktop_variant="" desktop_app=""
 
   if is_version_token "${p[1]:-}"; then
     ver="${p[1]}"; board="${p[2]}"; distro="${p[3]}"
@@ -499,12 +540,18 @@ parse_image_name() {
     if is_preinstalled_app "$suffix"; then
       app="$suffix"
     else
-      [[ "${suffix##*-}" == "ufs" ]] && storage="ufs"
+      [[ "${suffix##*-}" == "ufs" ]] && app="ufs"
     fi
   fi
 
   [[ "$tail" == minimal* ]] && variant="minimal"
-  [[ "$name" == *_desktop.img.* ]] && variant="$tail"
+  if [[ "$name" == *_desktop* ]]; then
+    mapfile -t desktop_parts < <(split_desktop_tail "$tail")
+    desktop_variant="${desktop_parts[0]:-$tail}"
+    desktop_app="${desktop_parts[1]:-}"
+    variant="$desktop_variant"
+    app="$desktop_app"
+  fi
 
   printf '%s\n' "$ver" "$board" "$distro" "$branch" "$variant" "$app" "$storage"
 }
@@ -610,7 +657,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     esac
     # ignore non-boot pseudo prefixes
     case "$BOOT_SUFFIX" in
-      ""|img|oowow) BOOT_SUFFIX="";;
+      ""|img|oowow|fip) BOOT_SUFFIX="";;
     esac
 
     # U-Boot ROM suffix
@@ -627,6 +674,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       REDI_VARIANT="${VARIANT}-qcow2"
     elif [[ "$FILE_EXTENSION" == hyperv.zip* ]]; then
       REDI_VARIANT="${VARIANT}-hyperv"
+    elif [[ "$FILE_EXTENSION" == fip.img* ]]; then
+      REDI_VARIANT="${REDI_VARIANT}-fip"
+    elif [[ "$FILE_EXTENSION" == lk.bin* ]]; then
+      REDI_VARIANT="${REDI_VARIANT}-lk-bin"
     else
       # Append boot flavor for non-cloud images
       [[ -n "$BOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${BOOT_SUFFIX}"
