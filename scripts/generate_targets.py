@@ -1072,9 +1072,9 @@ def generate_nightly_yaml(conf_wip_boards, manual_content=""):
     """
     Generate nightly.yml with:
     - One minimal Debian Forky CLI image for all boards
-    - For fast HDMI: Ubuntu Noble GNOME desktop
-    - For slow HDMI: Ubuntu Noble XFCE desktop
-    - For headless and exotics (riscv64, loongarch): Ubuntu Noble minimal CLI
+    - For fast HDMI: Ubuntu Resolute GNOME desktop
+    - For slow HDMI: Ubuntu Resolute XFCE desktop
+    - For headless and exotics (riscv64, loongarch): Ubuntu Resolute minimal CLI
     One image per board for conf/wip boards.
     Separates fast, slow, riscv64, loongarch, and headless boards based on CPU performance.
     manual_content: Additional YAML to append inside the targets section
@@ -1156,15 +1156,15 @@ targets:
         yaml += '      - *nightly-loongarch\n'
 
     yaml += """
-  # Ubuntu noble GNOME desktop for fast HDMI boards
-  nightly-noble-gnome:
+  # Ubuntu resolute GNOME desktop for fast HDMI boards
+  nightly-resolute-gnome:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: resolute
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
@@ -1174,18 +1174,18 @@ targets:
       - *nightly-fast-hdmi
 """
 
-    # Ubuntu noble XFCE desktop for slow HDMI boards
+    # Ubuntu resolute XFCE desktop for slow HDMI boards
     if slow_boards:
         yaml += """
-  # Ubuntu noble XFCE desktop for slow HDMI boards
-  nightly-noble-xfce:
+  # Ubuntu resolute XFCE desktop for slow HDMI boards
+  nightly-resolute-xfce:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: resolute
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1195,18 +1195,18 @@ targets:
       - *nightly-slow-hdmi
 """
 
-    # Ubuntu noble XFCE desktop for RISC-V boards
+    # Ubuntu resolute XFCE desktop for RISC-V boards
     if riscv64_boards:
         yaml += """
-  # Ubuntu noble XFCE desktop for RISC-V boards
-  nightly-noble-riscv64-xfce:
+  # Ubuntu resolute XFCE desktop for RISC-V boards
+  nightly-resolute-riscv64-xfce:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: resolute
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1216,25 +1216,25 @@ targets:
       - *nightly-riscv64
 """
 
-    # Ubuntu noble minimal CLI for headless boards only
+    # Ubuntu resolute minimal CLI for headless boards only
     if headless_boards:
         yaml += """
-  # Ubuntu noble minimal CLI for headless boards
-  nightly-noble-minimal:
+  # Ubuntu resolute minimal CLI for headless boards
+  nightly-resolute-minimal:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: resolute
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
       - *nightly-headless
 """
 
-    # Note: loongarch boards don't get noble images, only bookworm minimal
+    # Note: loongarch boards don't get resolute images, only bookworm minimal
 
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:

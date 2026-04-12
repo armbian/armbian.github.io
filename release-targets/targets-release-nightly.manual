@@ -9,7 +9,7 @@ minimal-cli-stable-ubuntu-cloud:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: plucky
+    RELEASE: resolute
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
