@@ -366,7 +366,7 @@ split_desktop_tail() {
 }
 
 strip_img_ext() {
-  sed -E 's/(\.img(\.(xz|zst|gz))?)$//' <<<"$1"
+  sed -E 's/(\.img(\.(xz|zst|gz))?|\.tar\.(xz|zst|gz))$//' <<<"$1"
 }
 
 extract_file_extension() {
