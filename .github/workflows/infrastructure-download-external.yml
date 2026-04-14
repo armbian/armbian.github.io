@@ -42,6 +42,18 @@ on:
         required: false
         type: boolean
         default: false
+      CHUNK_INDEX:
+        # Which slice of the matrix this invocation processes (0..CHUNK_COUNT-1).
+        # Used to keep strategy.matrix under GitHub Actions' 256-entry cap when
+        # the number of packages × arches × releases grows past that. Defaults
+        # to 0/1 so the workflow still works when called un-chunked.
+        required: false
+        type: number
+        default: 0
+      CHUNK_COUNT:
+        required: false
+        type: number
+        default: 1
     secrets:
       GPG_KEY1:
         required: true
@@ -209,7 +221,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: assets-for-download
+          name: assets-for-download-${{ inputs.CHUNK_INDEX }}
           path: downloads
           overwrite: true
           retention-days: 5
@@ -360,11 +372,36 @@ jobs:
             echo "::warning::No matrix entries generated, adding placeholder" >&2
             MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
           else
-            # Debug: Show raw matrix JSON
-            echo "::debug::Raw matrix JSON: ${MATRIX_JSON}" >&2
+            # Chunk the matrix so each invocation keeps strategy.matrix
+            # below GitHub Actions' 256-entry cap. Callers that don't
+            # know about chunking get CHUNK_COUNT=1 and pass the whole
+            # thing through (legacy behavior).
+            CHUNK_INDEX="${{ inputs.CHUNK_INDEX }}"
+            CHUNK_COUNT="${{ inputs.CHUNK_COUNT }}"
+            if [[ "${CHUNK_COUNT}" -lt 1 ]]; then CHUNK_COUNT=1; fi
+            if [[ "${CHUNK_INDEX}" -ge "${CHUNK_COUNT}" ]]; then
+              echo "::error::CHUNK_INDEX=${CHUNK_INDEX} must be < CHUNK_COUNT=${CHUNK_COUNT}" >&2
+              exit 1
+            fi
 
-            # Compact the JSON for GitHub Actions
-            MATRIX_JSON_COMPACTED=$(echo "${MATRIX_JSON}" | jq -c)
+            # Slice jq: split includes into CHUNK_COUNT roughly-equal
+            # groups by modular index (not contiguous ranges) so a
+            # slow package type doesn't cluster into one chunk.
+            SLICED=$(echo "${MATRIX_JSON}" | jq -c \
+              --argjson idx "${CHUNK_INDEX}" \
+              --argjson cnt "${CHUNK_COUNT}" \
+              '{include: [.include | to_entries[] | select(.key % $cnt == $idx) | .value]}')
+
+            SLICE_COUNT=$(echo "${SLICED}" | jq '.include | length')
+            echo "::notice::chunk ${CHUNK_INDEX}/${CHUNK_COUNT}: ${SLICE_COUNT} of ${MATRIX_COUNT} entries" >&2
+
+            # Empty slice needs a placeholder for the downstream job to
+            # run at all — it'll skip entries with name=none.
+            if [[ "${SLICE_COUNT}" -eq 0 ]]; then
+              MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+            else
+              MATRIX_JSON_COMPACTED="${SLICED}"
+            fi
             echo "::debug::Compacted matrix JSON: ${MATRIX_JSON_COMPACTED}" >&2
           fi
 
@@ -897,5 +934,5 @@ jobs:
       - name: Clean artifacts
         uses: geekyeggo/delete-artifact@v6
         with:
-          name: assets-for-download
+          name: assets-for-download-${{ inputs.CHUNK_INDEX }}
           failOnError: false
