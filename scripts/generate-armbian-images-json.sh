@@ -467,6 +467,20 @@ extract_file_extension() {
     return
   fi
 
+  # tar archives (e.g. Arduino UNO Q images): *.tar.xz / *.tar.gz / *.tar.zst
+  if [[ "$n" == *.tar.xz ]]; then
+    echo "tar.xz"
+    return
+  fi
+  if [[ "$n" == *.tar.gz ]]; then
+    echo "tar.gz"
+    return
+  fi
+  if [[ "$n" == *.tar.zst ]]; then
+    echo "tar.zst"
+    return
+  fi
+
   # fallback
   echo "${n##*.}"
 }
