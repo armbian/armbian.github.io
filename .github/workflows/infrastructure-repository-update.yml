@@ -41,8 +41,18 @@ jobs:
           TEAM: "Release manager"
 
   external:
-    name: "Download external"
+    name: "Download external (chunk ${{ matrix.chunk_index }}/4)"
     needs: Check
+    # Fan out across 4 chunks. The child workflow filters its matrix to
+    # only entries where `index % CHUNK_COUNT == CHUNK_INDEX`, so each
+    # invocation stays under GitHub Actions' 256-entry strategy.matrix
+    # cap. Effective concurrency is 4 × max-parallel (180) = 720.
+    # Bump `chunk_index` and `CHUNK_COUNT` together when total packages
+    # × arches × releases approaches 4 × 256 = 1024.
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk_index: [0, 1, 2, 3]
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
@@ -51,6 +61,8 @@ jobs:
       BUILD_RUNNER: "docker"
       HOST_DEPLOY: "repo.armbian.com"
       PURGE: ${{ inputs.purge_external || false }}
+      CHUNK_INDEX: ${{ matrix.chunk_index }}
+      CHUNK_COUNT: 4
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
       GPG_KEY2: ${{ secrets.GPG_KEY4 }}
