@@ -178,7 +178,6 @@ boards:
     board_vendor: "rpi-foundation"
     board_support: "conf"
     board_introduced: "2018"
-
     # The magic: reuse artifact set
     uses: "rpi4b"
     branch: "current"
@@ -279,4 +278,5 @@ boards:
 
     # The magic: reuse artifact set
     uses: "nanopct6-lts"
+    branch: "current"
     file_extension: "img.xz"
