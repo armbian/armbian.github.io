@@ -196,6 +196,13 @@ jobs:
     name: "Mirror"
     outputs:
       matrix: ${{steps.lists.outputs.matrix}}
+      # 'true' when the matrix has real work; 'false' when start
+      # only emitted the {name:none,...} placeholder (empty slice
+      # for this chunk, or no actionable changes at all). The
+      # download job gates on this via a job-level `if:` so an
+      # empty chunk skips the entire matrix expansion instead of
+      # trying to source os/external/none.conf.
+      has_work: ${{steps.lists.outputs.has_work}}
     steps:
 
       - name: Fix workspace ownership
@@ -367,10 +374,19 @@ jobs:
           # Check if matrix is valid
           MATRIX_COUNT=$(echo "${MATRIX_JSON}" | jq '.include | length')
 
+          # has_work tracks whether the resulting matrix has any real
+          # entries vs the {name:none,...} placeholder. The download
+          # job's job-level `if:` reads this output and skips the
+          # whole matrix expansion when has_work='false', avoiding the
+          # source of os/external/none.conf that would otherwise hard-
+          # fail on the placeholder entry.
+          HAS_WORK="true"
+
           # Handle empty matrix - add a dummy entry that will be skipped
           if [[ "${MATRIX_COUNT}" -eq 0 ]]; then
             echo "::warning::No matrix entries generated, adding placeholder" >&2
             MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+            HAS_WORK="false"
           else
             # Chunk the matrix so each invocation keeps strategy.matrix
             # below GitHub Actions' 256-entry cap. Callers that don't
@@ -415,10 +431,13 @@ jobs:
             SLICE_COUNT=$(echo "${SLICED}" | jq '.include | length')
             echo "::notice::chunk ${CHUNK_INDEX}/${CHUNK_COUNT}: ${SLICE_COUNT} of ${MATRIX_COUNT} entries" >&2
 
-            # Empty slice needs a placeholder for the downstream job to
-            # run at all — it'll skip entries with name=none.
+            # Empty slice still needs a placeholder so strategy.matrix
+            # is a valid (non-empty) value — but we set HAS_WORK=false
+            # so the download job's job-level `if:` skips it before
+            # the matrix even expands.
             if [[ "${SLICE_COUNT}" -eq 0 ]]; then
               MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+              HAS_WORK="false"
             else
               MATRIX_JSON_COMPACTED="${SLICED}"
             fi
@@ -426,9 +445,16 @@ jobs:
           fi
 
           echo "matrix=${MATRIX_JSON_COMPACTED}" >> $GITHUB_OUTPUT
+          echo "has_work=${HAS_WORK}" >> $GITHUB_OUTPUT
 
   download:
     needs: [start]
+    # Skip the whole job when start emitted a placeholder matrix
+    # (no work for this chunk, or no actionable changes at all).
+    # Job-level `if:` cannot reference `matrix.*` because matrix
+    # is expanded after if-evaluation; using a needs.* output works
+    # because those resolve at job-graph time.
+    if: needs.start.outputs.has_work == 'true'
     outputs:
       project: ${{steps.make.outputs.project}}
     strategy:
