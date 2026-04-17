@@ -271,8 +271,8 @@ boards:
     branch: "current"
     file_extension: "img.xz"
 
-  - board_slug: "nanopct6-lts-plus"
-    board_name: "NanoPC T6 LTS Plus"
+  - board_slug: "nanopct6-plus"
+    board_name: "NanoPC T6 Plus"
     board_vendor: "friendlyelec"
     board_support: "conf"
 
