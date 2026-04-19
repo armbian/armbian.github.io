@@ -78,6 +78,20 @@ jobs:
     runs-on: repository
     steps:
 
+      # Reclaim workspace before the later actions/checkout@v6 runs
+      # with clean: true. The self-hosted `repository` runner pool is
+      # shared across workflows, and any previous run that left
+      # root-owned files under $GITHUB_WORKSPACE (e.g. the reusable
+      # download-external workflow's postclean, which runs sudo
+      # operations on the repo tree) would trip checkout's unlink
+      # with EACCES on files like build/.coderabbit.yaml. Same
+      # defensive chown the update-repository / Sync / Index jobs
+      # already do as their first step.
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Delete empty folders in INCOMING_PATH
         run: |
 
@@ -193,6 +207,12 @@ jobs:
     needs: Copying
     runs-on: repository
     steps:
+      # See Copying's identical step for rationale.
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Checkout build repository
         uses: actions/checkout@v6
         with:
