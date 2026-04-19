@@ -152,6 +152,18 @@ jobs:
     runs-on: repository
     steps:
 
+      # Pre-chown before checkout. The Purge step below runs sudo
+      # against /publishing/repository-debs and against the runner's
+      # workspace-relative tools/repository/repo.sh output — both can
+      # leave root-owned files under $GITHUB_WORKSPACE, so a later
+      # non-root actions/checkout@v6 with clean: true (in the caller
+      # workflow's Copying job) fails with EACCES. Reclaim ownership
+      # first so the workspace is always deletable by the runner user.
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Checkout build repository
         uses: actions/checkout@v6
         with:
