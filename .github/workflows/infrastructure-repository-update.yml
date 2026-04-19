@@ -53,7 +53,7 @@ jobs:
       fail-fast: false
       matrix:
         chunk_index: [0, 1, 2, 3]
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
+    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@purge-chunk-gate
     with:
       ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
       SKIP_VERSION_CHECK: false
