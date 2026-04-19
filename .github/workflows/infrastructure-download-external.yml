@@ -93,7 +93,18 @@ jobs:
   preclean:
     name: "Purge"
     needs: perm
-    if: ${{ inputs.PURGE == true }}
+    # Purge only in chunk 0. The preclean/postclean pair doesn't use
+    # CHUNK_INDEX to filter its matrix — it builds the same
+    # (release × package) list on every chunk and runs repo.sh -c delete
+    # against /publishing/repository-debs. With 4 chunks that meant 4
+    # parallel invocations of aptly's delete op racing on the same
+    # repository state; aptly serialises via its own lockfile but the
+    # fanout is still pure waste at best and a corruption hazard when a
+    # held lock times out. Package download IS parallel-friendly (each
+    # chunk fetches its own slice of debs into /incoming/debs/external),
+    # but the repo-side purge is a single-threaded operation on shared
+    # state. Gate it to chunk 0 so it runs exactly once per workflow.
+    if: ${{ inputs.PURGE == true && inputs.CHUNK_INDEX == 0 }}
     runs-on: ubuntu-latest
     outputs:
       matrix:  ${{steps.json.outputs.JSON_CONTENT}}
@@ -124,7 +135,12 @@ jobs:
 
   postclean:
     needs: preclean
-    if: ${{ inputs.PURGE == true }}
+    # Same chunk-0 gate as preclean (see its comment): this is the
+    # repo.sh -c delete pass, which mutates shared aptly state and
+    # MUST run single-threaded. The inner matrix already has
+    # max-parallel: 1; the chunk gate here prevents 4 parallel
+    # copies of that same serialised matrix from racing each other.
+    if: ${{ inputs.PURGE == true && inputs.CHUNK_INDEX == 0 }}
     strategy:
       fail-fast: false
       max-parallel: 1
