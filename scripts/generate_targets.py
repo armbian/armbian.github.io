@@ -902,6 +902,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_TIER: "mid"
     items:
       - *stable-current-slow-hdmi
 """
@@ -927,6 +928,7 @@ targets:
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_TIER: "mid"
     items:
 """
         if current_fast:
@@ -955,6 +957,7 @@ targets:
       DESKTOP_ENVIRONMENT: "kde-neon"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_TIER: "mid"
     items:
       - *stable-current-fast-hdmi
 """
@@ -980,6 +983,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "programming"
+      DESKTOP_TIER: "mid"
     items:
       - *stable-legacy-fast-hdmi
 """
@@ -1001,6 +1005,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
 """
         if current_riscv64:
@@ -1170,6 +1175,7 @@ targets:
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
       - *nightly-fast-hdmi
 """
@@ -1191,6 +1197,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
       - *nightly-slow-hdmi
 """
@@ -1212,6 +1219,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
       - *nightly-riscv64
 """
@@ -1453,6 +1461,7 @@ targets:
       DESKTOP_ENVIRONMENT: "gnome"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
       - *community-current-fast-hdmi
 """
@@ -1478,6 +1487,7 @@ targets:
       DESKTOP_ENVIRONMENT: "kde-neon"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
       - *community-current-fast-hdmi
 """
@@ -1503,6 +1513,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
 """
         if current_slow:
@@ -1529,6 +1540,7 @@ targets:
       DESKTOP_ENVIRONMENT: "xfce"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "minimal"
     items:
 """
         if current_riscv64:
