@@ -56,6 +56,7 @@ desktop-stable-ubuntu-gnome-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
+    - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
 
 # Ubuntu noble Cinnamon desktop - UEFI only
 desktop-stable-ubuntu-cinnamon-uefi:
@@ -74,3 +75,4 @@ desktop-stable-ubuntu-cinnamon-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
     - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
+    - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
