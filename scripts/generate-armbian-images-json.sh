@@ -555,11 +555,22 @@ parse_image_name() {
   fi
 
   if [[ "$kernel" == *-* ]]; then
-    suffix="$(strip_img_ext "${kernel#*-}")"
+    # Use longest match from left (`##*-`) so that kernel fields with
+    # rc / beta / snapshot markers in the middle still pick up the
+    # *last* dash-separated token. Examples:
+    #   6.19.0-rc5-omv   → "omv"   (not "rc5-omv", which the shortest
+    #                               match would produce and which then
+    #                               fails the whole-string
+    #                               is_preinstalled_app case match)
+    #   6.6.62-omv       → "omv"
+    #   6.6.62-current   → "current" (not a preinstalled app, no ufs,
+    #                                 app stays empty)
+    #   6.19.0-rc5-ufs   → "ufs"
+    suffix="$(strip_img_ext "${kernel##*-}")"
     if is_preinstalled_app "$suffix"; then
       app="$suffix"
     else
-      [[ "${suffix##*-}" == "ufs" ]] && app="ufs"
+      [[ "$suffix" == "ufs" ]] && app="ufs"
     fi
   fi
 
