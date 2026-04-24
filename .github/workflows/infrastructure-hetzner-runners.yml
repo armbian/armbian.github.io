@@ -81,7 +81,7 @@ jobs:
     steps:
 
       - name: Create Hetzner server
-        uses: armbian/actions/hetzner@hetzner-validate-github-token
+        uses: armbian/actions/hetzner@main
         with:
           action: create
           server-type: "${{ inputs.server_type || 'cax41' }}"
