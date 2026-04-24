@@ -1,6 +1,27 @@
-name: "Infrastructure: Enable 16 Hetzner ARM64 runners"
+name: "Infrastructure: Enable Hetzner ARM64 runners"
 on:
   workflow_dispatch:
+    inputs:
+      machine_count:
+        description: "Number of Hetzner VMs to provision"
+        required: false
+        type: choice
+        default: "4"
+        options:
+          - "1"
+          - "2"
+          - "4"
+          - "8"
+          - "16"
+      server_type:
+        description: "Hetzner server type (auto-falls back on capacity shortage)"
+        required: false
+        type: choice
+        default: "cax41"
+        options:
+          - "cax41"
+          - "cax31"
+          - "cax21"
 
 concurrency:
   group: hetzner-runner
@@ -35,7 +56,11 @@ jobs:
       - name: Generate matrix
         id: matrix
         run: |
-          count=${{ env.MACHINE_COUNT || '4' }}
+          # inputs.* is populated on workflow_dispatch (UI / gh workflow run);
+          # empty when the workflow is triggered any other way (repository_dispatch,
+          # API without inputs, etc.). Fall back to 4 so the legacy "no args"
+          # call shape keeps working.
+          count=${{ inputs.machine_count || '4' }}
           echo "Generating matrix for ${count} server(s)"
           matrix=$(seq 0 $(( count - 1 )) | jq -cnR '[inputs | tonumber]')
           echo "matrix=${matrix}" >> $GITHUB_OUTPUT
@@ -59,7 +84,7 @@ jobs:
         uses: armbian/actions/hetzner@main
         with:
           action: create
-          server-type: "${{ env.MACHINE || 'cax41' }}"
+          server-type: "${{ inputs.server_type || 'cax41' }}"
           index: "${{ matrix.index }}"
           delete-existing: "true"
           ssh-key: "UPLOAD"
@@ -99,6 +124,6 @@ jobs:
         uses: armbian/actions/hetzner@main
         with:
           action: delete
-          server-type: "${{ env.MACHINE || 'cax41' }}"
+          server-type: "${{ inputs.server_type || 'cax41' }}"
           index: "${{ matrix.index }}"
           hetzner-token: ${{ secrets.HETZNER_ONE }}
