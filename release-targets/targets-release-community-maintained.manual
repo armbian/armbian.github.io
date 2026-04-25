@@ -1,7 +1,7 @@
 # Manual target additions for community maintained builds
 # This content will be appended to the auto-generated targets-release-community-maintained.yaml
 
-# Debian trixie cli
+# Debian cli
 cli-stable-debian:
   enabled: yes
   configs: [ armbian-community ]
@@ -9,14 +9,14 @@ cli-stable-debian:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: trixie
+    RELEASE: DEBIAN
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "no"
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: aml-s9xx-box, BRANCH: edge }
 
-# Ubuntu noble cli
+# Ubuntu cli
 cli-stable-ubuntu:
   enabled: yes
   configs: [ armbian-community ]
@@ -24,14 +24,14 @@ cli-stable-ubuntu:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: noble
+    RELEASE: UBUNTU
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "no"
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: aml-s9xx-box, BRANCH: edge }
 
-# Debian stable XFCE desktop
+# Debian XFCE desktop
 desktop-stable-debian-xfce:
   enabled: yes
   configs: [ armbian-community ]
@@ -39,7 +39,7 @@ desktop-stable-debian-xfce:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: trixie
+    RELEASE: DEBIAN
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "xfce"
