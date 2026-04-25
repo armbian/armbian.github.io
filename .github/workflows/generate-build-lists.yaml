@@ -1,7 +1,45 @@
 name: "Infrastructure: Generate image build lists"
 
 on:
-  workflow_dispatch:  # Manually triggered via GitHub Actions UI
+  workflow_dispatch:
+    # Per-output-file release codename overrides. Defaults match
+    # scripts/generate_targets.py SCOPE_DEFAULTS, so dispatching with
+    # all defaults reproduces the previous literal-pin behaviour.
+    # Set any of these to a different codename to promote that
+    # release line without touching the script or release-targets/*.
+    inputs:
+      debian_standard:
+        description: "Debian codename for standard-support builds"
+        required: false
+        default: "trixie"
+      ubuntu_standard:
+        description: "Ubuntu codename for standard-support builds"
+        required: false
+        default: "noble"
+      debian_nightly:
+        description: "Debian codename for nightly builds"
+        required: false
+        default: "forky"
+      ubuntu_nightly:
+        description: "Ubuntu codename for nightly builds"
+        required: false
+        default: "resolute"
+      debian_community:
+        description: "Debian codename for community-maintained builds"
+        required: false
+        default: "trixie"
+      ubuntu_community:
+        description: "Ubuntu codename for community-maintained builds"
+        required: false
+        default: "noble"
+      debian_apps:
+        description: "Debian codename for apps builds (HA / OMV / OpenHAB; not Kali, which stays sid)"
+        required: false
+        default: "trixie"
+      ubuntu_apps:
+        description: "Ubuntu codename for apps builds"
+        required: false
+        default: "noble"
   repository_dispatch:
     types: ["Generate lists"]
   push:
@@ -54,8 +92,22 @@ jobs:
           python3 -m pip install --upgrade pip
 
       - name: Run generate_targets.py
+        # `inputs.*` is only populated on workflow_dispatch; push /
+        # repository_dispatch fire with empty inputs, so each `||`
+        # falls back to the same default the script's argparse uses.
+        # Net effect: codename promotion is a workflow_dispatch knob;
+        # automatic re-runs use the script's pinned defaults.
         run: |
-          python3 scripts/generate_targets.py image-info.json release-targets 2>&1 | tee -a generation.log
+          python3 scripts/generate_targets.py image-info.json release-targets \
+            --debian-standard  "${{ inputs.debian_standard  || 'trixie'   }}" \
+            --ubuntu-standard  "${{ inputs.ubuntu_standard  || 'noble'    }}" \
+            --debian-nightly   "${{ inputs.debian_nightly   || 'forky'    }}" \
+            --ubuntu-nightly   "${{ inputs.ubuntu_nightly   || 'resolute' }}" \
+            --debian-community "${{ inputs.debian_community || 'trixie'   }}" \
+            --ubuntu-community "${{ inputs.ubuntu_community || 'noble'    }}" \
+            --debian-apps      "${{ inputs.debian_apps      || 'trixie'   }}" \
+            --ubuntu-apps      "${{ inputs.ubuntu_apps      || 'noble'    }}" \
+            2>&1 | tee -a generation.log
 
       - name: Generate kernel descriptions
         run: |

@@ -6,10 +6,71 @@ This script reads image-info.json and generates multiple YAML files for differen
 release types based on board support levels and use cases.
 """
 
+import argparse
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+
+
+# Release-codename substitution tokens. Both the manual override files
+# (release-targets/*.manual) and this generator's own hardcoded YAML
+# stanzas use these symbolic names instead of pinning a specific
+# Debian/Ubuntu codename. A pair of `--debian-<scope>` / `--ubuntu-<scope>`
+# CLI flags per output target decides what gets substituted just before
+# each YAML file is written. Promoting nightly to a new Debian (e.g.
+# moving from forky to whatever the next Debian testing is) becomes a
+# single flag flip, not a 30-place codename rename, and the four output
+# files (standard / nightly / community / apps) can each be on their
+# own (debian, ubuntu) pair — e.g. standard on trixie + noble while
+# nightly is on forky + resolute, which is exactly the current state
+# the defaults below preserve.
+RELEASE_TOKEN_DEBIAN = "DEBIAN"
+RELEASE_TOKEN_UBUNTU = "UBUNTU"
+
+# Per-output-file default codename pairs. Match the literal pins these
+# files used before the substitution refactor — running the generator
+# with no flags reproduces the previous behaviour exactly.
+SCOPE_DEFAULTS = {
+    "standard":  {"debian": "trixie", "ubuntu": "noble"},
+    "nightly":   {"debian": "forky",  "ubuntu": "resolute"},
+    "community": {"debian": "trixie", "ubuntu": "noble"},
+    "apps":      {"debian": "trixie", "ubuntu": "noble"},
+}
+
+
+def resolve_release_tokens(yaml_text: str, debian: str, ubuntu: str) -> str:
+    """
+    Substitute the symbolic RELEASE_TOKEN_* placeholders with real
+    Debian/Ubuntu codenames.
+
+    Anchored to start-of-line (with optional leading whitespace) so
+    only the literal `RELEASE:` YAML key is matched — a hypothetical
+    sibling key like `KERNEL_RELEASE: UBUNTU` would otherwise have
+    its `RELEASE: UBUNTU` substring matched and overwritten too,
+    leaving `KERNEL_RELEASE: noble` (corrupted value, `KERNEL_`
+    preserved). No such key exists today; the anchor forward-proofs
+    against future additions.
+
+    `\\b` word-boundary stays so a token that happens to be a
+    substring of an unrelated string isn't touched. Indentation is
+    captured and restored in the replacement so the YAML's leading
+    whitespace stays intact. Applied to the *fully-assembled* YAML,
+    so it covers both this generator's emit functions and any manual
+    content appended via load_manual_overrides().
+    """
+    yaml_text = re.sub(
+        r"(?m)^(\s*)RELEASE:\s*" + re.escape(RELEASE_TOKEN_DEBIAN) + r"\b",
+        lambda m: f"{m.group(1)}RELEASE: {debian}",
+        yaml_text,
+    )
+    yaml_text = re.sub(
+        r"(?m)^(\s*)RELEASE:\s*" + re.escape(RELEASE_TOKEN_UBUNTU) + r"\b",
+        lambda m: f"{m.group(1)}RELEASE: {ubuntu}",
+        yaml_text,
+    )
+    return yaml_text
 
 
 def load_image_info(json_path):
@@ -536,7 +597,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: trixie
+      RELEASE: DEBIAN
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "no"
       ENABLE_EXTENSIONS: "ha"
@@ -550,7 +611,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: trixie
+      RELEASE: DEBIAN
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
       ENABLE_EXTENSIONS: "omv"
@@ -564,7 +625,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: trixie
+      RELEASE: DEBIAN
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "no"
       ENABLE_EXTENSIONS: "openhab"
@@ -786,7 +847,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: trixie
+      RELEASE: DEBIAN
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -840,7 +901,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -896,7 +957,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -922,7 +983,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
@@ -951,7 +1012,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "kde-neon"
@@ -977,7 +1038,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -999,7 +1060,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1033,7 +1094,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1057,7 +1118,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1136,7 +1197,7 @@ def generate_nightly_yaml(conf_wip_boards, manual_content=""):
     yaml += """# automated lists stop
 
 targets:
-  # Debian forky minimal CLI for all boards
+  # Debian minimal CLI for all boards
   nightly-forky-all:
     enabled: yes
     configs: [ armbian-images ]
@@ -1144,7 +1205,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: forky
+      RELEASE: DEBIAN
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1161,7 +1222,7 @@ targets:
         yaml += '      - *nightly-loongarch\n'
 
     yaml += """
-  # Ubuntu resolute GNOME desktop for fast HDMI boards
+  # Ubuntu GNOME desktop for fast HDMI boards
   nightly-resolute-gnome:
     enabled: yes
     configs: [ armbian-images ]
@@ -1169,7 +1230,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: resolute
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
@@ -1180,10 +1241,10 @@ targets:
       - *nightly-fast-hdmi
 """
 
-    # Ubuntu resolute XFCE desktop for slow HDMI boards
+    # Ubuntu XFCE desktop for slow HDMI boards
     if slow_boards:
         yaml += """
-  # Ubuntu resolute XFCE desktop for slow HDMI boards
+  # Ubuntu XFCE desktop for slow HDMI boards
   nightly-resolute-xfce:
     enabled: yes
     configs: [ armbian-images ]
@@ -1191,7 +1252,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: resolute
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1202,10 +1263,10 @@ targets:
       - *nightly-slow-hdmi
 """
 
-    # Ubuntu resolute XFCE desktop for RISC-V boards
+    # Ubuntu XFCE desktop for RISC-V boards
     if riscv64_boards:
         yaml += """
-  # Ubuntu resolute XFCE desktop for RISC-V boards
+  # Ubuntu XFCE desktop for RISC-V boards
   nightly-resolute-riscv64-xfce:
     enabled: yes
     configs: [ armbian-images ]
@@ -1213,7 +1274,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: resolute
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1224,10 +1285,10 @@ targets:
       - *nightly-riscv64
 """
 
-    # Ubuntu resolute minimal CLI for headless boards only
+    # Ubuntu minimal CLI for headless boards only
     if headless_boards:
         yaml += """
-  # Ubuntu resolute minimal CLI for headless boards
+  # Ubuntu minimal CLI for headless boards
   nightly-resolute-minimal:
     enabled: yes
     configs: [ armbian-images ]
@@ -1235,7 +1296,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: resolute
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1402,7 +1463,7 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
     yaml += """# automated lists stop
 
 targets:
-  # Debian trixie minimal CLI for all community boards
+  # Debian minimal CLI for all community boards
   community-trixie-all:
     enabled: yes
     configs: [ armbian-community ]
@@ -1410,7 +1471,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: trixie
+      RELEASE: DEBIAN
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1447,7 +1508,7 @@ targets:
         yaml += '      - *community-edge-loongarch\n'
 
     yaml += """
-  # Ubuntu noble GNOME desktop for fast HDMI community boards
+  # Ubuntu GNOME desktop for fast HDMI community boards
   community-noble-gnome:
     enabled: yes
     configs: [ armbian-community ]
@@ -1455,7 +1516,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
@@ -1470,10 +1531,10 @@ targets:
     if edge_fast:
         yaml += '      - *community-edge-fast-hdmi\n'
 
-    # Ubuntu noble KDE Neon desktop for fast HDMI community boards
+    # Ubuntu KDE Neon desktop for fast HDMI community boards
     if current_fast or vendor_fast or edge_fast:
         yaml += """
-  # Ubuntu noble KDE Neon desktop for fast HDMI community boards
+  # Ubuntu KDE Neon desktop for fast HDMI community boards
   community-noble-kde-neon:
     enabled: yes
     configs: [ armbian-community ]
@@ -1481,7 +1542,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "kde-neon"
@@ -1496,10 +1557,10 @@ targets:
         if edge_fast:
             yaml += '      - *community-edge-fast-hdmi\n'
 
-    # Ubuntu noble XFCE desktop for slow HDMI community boards
+    # Ubuntu XFCE desktop for slow HDMI community boards
     if current_slow or vendor_slow or edge_slow:
         yaml += """
-  # Ubuntu noble XFCE desktop for slow HDMI community boards
+  # Ubuntu XFCE desktop for slow HDMI community boards
   community-noble-xfce:
     enabled: yes
     configs: [ armbian-community ]
@@ -1507,7 +1568,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1523,10 +1584,10 @@ targets:
         if edge_slow:
             yaml += '      - *community-edge-slow-hdmi\n'
 
-    # Ubuntu noble XFCE desktop for RISC-V community boards
+    # Ubuntu XFCE desktop for RISC-V community boards
     if current_riscv64 or vendor_riscv64 or edge_riscv64:
         yaml += """
-  # Ubuntu noble XFCE desktop for RISC-V community boards
+  # Ubuntu XFCE desktop for RISC-V community boards
   community-noble-riscv64-xfce:
     enabled: yes
     configs: [ armbian-community ]
@@ -1534,7 +1595,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1550,10 +1611,10 @@ targets:
         if edge_riscv64:
             yaml += '      - *community-edge-riscv64\n'
 
-    # Ubuntu noble minimal CLI for headless community boards
+    # Ubuntu minimal CLI for headless community boards
     if current_headless or vendor_headless or edge_headless:
         yaml += """
-  # Ubuntu noble minimal CLI for headless community boards
+  # Ubuntu minimal CLI for headless community boards
   community-noble-minimal:
     enabled: yes
     configs: [ armbian-community ]
@@ -1561,7 +1622,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: noble
+      RELEASE: UBUNTU
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1588,17 +1649,33 @@ def capitalize_board_name(board):
     return board.capitalize()
 
 
-def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
+def generate_exposed_map(
+    conf_wip_boards,
+    csc_tvb_boards=None,
+    *,
+    debian_standard,
+    ubuntu_standard,
+    debian_community,
+    ubuntu_community,
+):
     """
     Generate exposed.map with regex patterns for recommended images.
     For each board, generates 2 patterns:
-    1. Minimal: Debian trixie + current branch
-    2. For boards with video: Ubuntu noble + desktop (gnome/xfce)
-       For headless: Ubuntu noble + minimal
-       For riscv64: Ubuntu noble + xfce desktop
+    1. Minimal: Debian + current branch
+    2. For boards with video: Ubuntu + desktop (gnome/xfce)
+       For headless:   Ubuntu + minimal
+       For riscv64:    Ubuntu + xfce desktop
 
     conf_wip_boards: stable boards (conf/wip support level) - images have no 'community_' prefix
-    csc_tvb_boards: community boards (csc/tvb support level) - images have 'community_' prefix
+    csc_tvb_boards:  community boards (csc/tvb support level) - images have 'community_' prefix
+
+    The Debian/Ubuntu codenames baked into each generated regex are picked
+    per board based on its support tier — stable boards use the standard-
+    support codenames, community boards use the community codenames — so
+    the exposed.map patterns track whatever codename the YAML files were
+    last generated with. Without this, `generate_*_yaml` could be promoted
+    to a new release while exposed.map kept matching the old one and
+    "recommended images" would silently drop off the website.
     """
     if csc_tvb_boards is None:
         csc_tvb_boards = []
@@ -1645,49 +1722,57 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
         # Capitalize board name for pattern
         board_pattern = capitalize_board_name(board)
 
-        # 1. Minimal: Debian trixie + current/vendor branch (all boards)
+        # Per-board (debian, ubuntu) codename pair — stable boards
+        # follow the standard-support flags, community boards follow
+        # the community flags. Keeps exposed.map regex patterns in
+        # lockstep with whatever codenames the YAML files were just
+        # generated against.
+        if board_type == 'community':
+            debian_codename = debian_community
+            ubuntu_codename = ubuntu_community
+        else:
+            debian_codename = debian_standard
+            ubuntu_codename = ubuntu_standard
+
+        # 1. Minimal: Debian + current/vendor branch (all boards)
         #    Generate two patterns: one with dir prefix (for dl.armbian.com), one without (for GitHub releases)
-        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_trixie_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_trixie_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{debian_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{debian_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
         lines.append(minimal_pattern)
         lines.append(minimal_pattern_no_prefix)
 
         # 2. Second pattern: depends on board type
-        # For loongarch: only bookworm minimal (no noble)
+        # loongarch: only the Debian minimal pattern above (no Ubuntu image)
         if is_fast == 'loongarch':
             single_image_boards.append(board)
             continue
 
-        # For riscv64: noble xfce desktop
+        # For riscv64: Ubuntu xfce desktop
         if is_fast == 'riscv64':
-            riscv64_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
-            riscv64_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
+            riscv64_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
+            riscv64_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
             lines.append(riscv64_pattern)
             lines.append(riscv64_pattern_no_prefix)
             continue
 
-        # For boards with video: Ubuntu noble + desktop
+        # For boards with video: Ubuntu + desktop
         if board_has_video and is_fast is not None:
             # Determine desktop type based on hardware speed
             if is_fast is True:
                 # Fast boards get GNOME desktop pattern only
                 desktop_type = 'gnome_desktop'
-                desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-                desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-                lines.append(desktop_pattern)
-                lines.append(desktop_pattern_no_prefix)
             else:  # is_fast is False (slow hardware)
                 desktop_type = 'xfce_desktop'
-                desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-                desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-                lines.append(desktop_pattern)
-                lines.append(desktop_pattern_no_prefix)
+            desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+            desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
+            lines.append(desktop_pattern)
+            lines.append(desktop_pattern_no_prefix)
         else:
-            # Headless boards: Ubuntu noble minimal
-            noble_minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-            noble_minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_noble_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-            lines.append(noble_minimal_pattern)
-            lines.append(noble_minimal_pattern_no_prefix)
+            # Headless boards: Ubuntu minimal
+            ubuntu_minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+            ubuntu_minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+            lines.append(ubuntu_minimal_pattern)
+            lines.append(ubuntu_minimal_pattern_no_prefix)
 
     # Display warning for boards with only one image (loongarch only)
     if single_image_boards:
@@ -1700,22 +1785,58 @@ def generate_exposed_map(conf_wip_boards, csc_tvb_boards=None):
 
 def main():
     """Main entry point."""
-    if len(sys.argv) < 2:
-        print("Usage: generate_targets.py <image-info.json> [output_dir]")
-        print("If output_dir is not specified, uses current directory")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Generate Armbian target YAML files. The emitted YAML carries "
+            "symbolic RELEASE tokens (DEBIAN / UBUNTU) that get substituted "
+            "with codenames passed via per-scope flags "
+            f"(--debian-<{'|'.join(SCOPE_DEFAULTS)}> / "
+            f"--ubuntu-<{'|'.join(SCOPE_DEFAULTS)}>) just before each output "
+            "file is written. Defaults preserve the previous literal pins, "
+            "so running with no flags reproduces the old behaviour exactly. "
+            "Promoting a release line is a flag flip, not a multi-place rename."
+        )
+    )
+    parser.add_argument(
+        "json_path",
+        type=Path,
+        help="Path to image-info.json",
+    )
+    parser.add_argument(
+        "output_dir",
+        type=Path,
+        nargs="?",
+        default=Path.cwd(),
+        help="Where to write the generated YAML files (default: cwd)",
+    )
+    # One pair of (--debian-<scope>, --ubuntu-<scope>) flags per output
+    # file, registered in a loop so adding a new scope is a one-line
+    # change to SCOPE_DEFAULTS.
+    for scope, defaults in SCOPE_DEFAULTS.items():
+        parser.add_argument(
+            f"--debian-{scope}",
+            default=defaults["debian"],
+            metavar="CODENAME",
+            dest=f"debian_{scope}",
+            help=f"Debian codename used in the {scope} output file "
+                 f"(default: {defaults['debian']})",
+        )
+        parser.add_argument(
+            f"--ubuntu-{scope}",
+            default=defaults["ubuntu"],
+            metavar="CODENAME",
+            dest=f"ubuntu_{scope}",
+            help=f"Ubuntu codename used in the {scope} output file "
+                 f"(default: {defaults['ubuntu']})",
+        )
+    args = parser.parse_args()
 
-    json_path = Path(sys.argv[1])
+    json_path = args.json_path
+    output_dir = args.output_dir
 
     if not json_path.exists():
         print(f"Error: {json_path} does not exist")
         sys.exit(1)
-
-    # Determine output directory
-    if len(sys.argv) >= 3:
-        output_dir = Path(sys.argv[2])
-    else:
-        output_dir = Path.cwd()
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1760,7 +1881,7 @@ def main():
     conf_wip_boards_apps, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_apps)
     print(f"  apps: {len(conf_wip_boards_apps)} boards after blacklist", file=sys.stderr)
     apps_yaml = generate_apps_yaml(conf_wip_boards_apps, manual_apps)
-    apps_path.write_text(apps_yaml)
+    apps_path.write_text(resolve_release_tokens(apps_yaml, args.debian_apps, args.ubuntu_apps))
     print(f"  Written {apps_path}", file=sys.stderr)
 
     # targets-release-standard-support.yaml
@@ -1770,7 +1891,7 @@ def main():
     conf_wip_boards_stable, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable)
     print(f"  stable: {len(conf_wip_boards_stable)} boards after blacklist", file=sys.stderr)
     stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable)
-    stable_path.write_text(stable_yaml)
+    stable_path.write_text(resolve_release_tokens(stable_yaml, args.debian_standard, args.ubuntu_standard))
     print(f"  Written {stable_path}", file=sys.stderr)
 
     # targets-release-nightly.yaml
@@ -1780,7 +1901,7 @@ def main():
     conf_wip_boards_nightly, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_nightly)
     print(f"  nightly: {len(conf_wip_boards_nightly)} boards after blacklist", file=sys.stderr)
     nightly_yaml = generate_nightly_yaml(conf_wip_boards_nightly, manual_nightly)
-    nightly_path.write_text(nightly_yaml)
+    nightly_path.write_text(resolve_release_tokens(nightly_yaml, args.debian_nightly, args.ubuntu_nightly))
     print(f"  Written {nightly_path}", file=sys.stderr)
 
     # targets-release-community-maintained.yaml
@@ -1790,13 +1911,20 @@ def main():
     _, csc_tvb_boards_community = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_community)
     print(f"  community: {len(csc_tvb_boards_community)} boards after blacklist", file=sys.stderr)
     community_yaml = generate_community_yaml(csc_tvb_boards_community, manual_community)
-    community_path.write_text(community_yaml)
+    community_path.write_text(resolve_release_tokens(community_yaml, args.debian_community, args.ubuntu_community))
     print(f"  Written {community_path}", file=sys.stderr)
 
     # exposed.map
     # Generate from stable + community boards (exclude nightly targets)
     exposed_map_path = output_dir / 'exposed.map'
-    exposed_map = generate_exposed_map(conf_wip_boards_stable, csc_tvb_boards_community)
+    exposed_map = generate_exposed_map(
+        conf_wip_boards_stable,
+        csc_tvb_boards_community,
+        debian_standard=args.debian_standard,
+        ubuntu_standard=args.ubuntu_standard,
+        debian_community=args.debian_community,
+        ubuntu_community=args.ubuntu_community,
+    )
     exposed_map_path.write_text(exposed_map)
     print(f"  Written {exposed_map_path}", file=sys.stderr)
 

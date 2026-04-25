@@ -1,7 +1,7 @@
 # Manual target additions for nightly builds
 # This content will be appended to the auto-generated targets-release-nightly.yaml
 
-# Ubuntu stable minimal cloud
+# Ubuntu minimal cloud
 minimal-cli-stable-ubuntu-cloud:
   enabled: yes
   configs: [ armbian-cloud ]
@@ -9,7 +9,7 @@ minimal-cli-stable-ubuntu-cloud:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: resolute
+    RELEASE: UBUNTU
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
@@ -18,7 +18,7 @@ minimal-cli-stable-ubuntu-cloud:
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
 
-# Debian unstable minimal cloud
+# Debian minimal cloud
 minimal-cli-unstable-debian-cloud:
   enabled: yes
   configs: [ armbian-cloud ]
@@ -26,7 +26,7 @@ minimal-cli-unstable-debian-cloud:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: forky
+    RELEASE: DEBIAN
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
@@ -35,7 +35,11 @@ minimal-cli-unstable-debian-cloud:
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
 
-# Debian stable minimal cloud (trixie)
+# Debian minimal cloud (legacy duplicate of minimal-cli-unstable-debian-cloud
+# above — both blocks resolve to RELEASE: DEBIAN under the substitution
+# model, so they build the same image. Kept for now until a follow-up
+# decides whether to drop, or to introduce a second per-scope token to
+# carry an explicit "stable vs testing" Debian split inside nightly.)
 minimal-cli-stable-debian-cloud-trixie:
   enabled: yes
   configs: [ armbian-cloud ]
@@ -43,7 +47,7 @@ minimal-cli-stable-debian-cloud-trixie:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: trixie
+    RELEASE: DEBIAN
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
@@ -52,7 +56,10 @@ minimal-cli-stable-debian-cloud-trixie:
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
 
-# Ubuntu LTS minimal cloud (noble)
+# Ubuntu minimal cloud (legacy duplicate of minimal-cli-stable-ubuntu-cloud
+# above — same caveat as the trixie/forky pair: both Ubuntu blocks now
+# resolve to RELEASE: UBUNTU under the substitution model, so they build
+# the same image.)
 minimal-cli-stable-ubuntu-cloud-noble:
   enabled: yes
   configs: [ armbian-cloud ]
@@ -60,7 +67,7 @@ minimal-cli-stable-ubuntu-cloud-noble:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: noble
+    RELEASE: UBUNTU
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:

@@ -144,7 +144,7 @@ bananapim5
 Additional YAML that gets appended to the auto-generated targets section:
 
 ```yaml
-# Ubuntu stable minimal cloud
+# Ubuntu minimal cloud
 minimal-cli-stable-ubuntu-cloud:
   enabled: yes
   configs: [ armbian-cloud ]
@@ -152,7 +152,12 @@ minimal-cli-stable-ubuntu-cloud:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: noble
+    # Symbolic codename token — substituted with the actual codename
+    # by scripts/generate_targets.py (defaults to whatever
+    # --ubuntu-<scope> flag the workflow was dispatched with).
+    # Use literal codenames only when a block must pin to a specific
+    # codename regardless of the per-scope flag.
+    RELEASE: UBUNTU
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
@@ -170,13 +175,68 @@ All fast HDMI boards (64-bit boards with video output) automatically get:
 - Extensions in `targets-extensions.map.blacklist` are REMOVED from both automatic and manual extensions.
 - The blacklist takes precedence over all other extension sources.
 
+## Release codename substitution
+
+Both this generator's hardcoded YAML stanzas and every `*.manual`
+override file use **two symbolic release tokens** instead of literal
+Debian/Ubuntu codenames:
+
+| Token    | Substituted with                    |
+|----------|-------------------------------------|
+| `DEBIAN` | the codename passed via `--debian-<scope>` |
+| `UBUNTU` | the codename passed via `--ubuntu-<scope>` |
+
+Each output file (`apps`, `standard`, `nightly`, `community`) gets its
+own (debian, ubuntu) flag pair, so promoting one release line is
+independent of the others.
+
+**Promoting a release** is now a flag flip on the workflow dispatch
+inputs — no script edit, no manual-file edit:
+
+```bash
+# Standard support stays on noble; nightly moves Ubuntu to oracular
+python3 scripts/generate_targets.py image-info.json release-targets/ \
+    --ubuntu-nightly oracular
+```
+
+`apps-kali` keeps `RELEASE: sid` literal — Kali tracks Debian unstable
+forever, that's not a "current Debian stable" pin.
+
 ## Usage
 
 ```bash
-python3 scripts/generate_targets.py <image-info.json> <output_directory>
+python3 scripts/generate_targets.py <image-info.json> [output_directory] \
+    [--debian-standard CODENAME] [--ubuntu-standard CODENAME] \
+    [--debian-nightly  CODENAME] [--ubuntu-nightly  CODENAME] \
+    [--debian-community CODENAME] [--ubuntu-community CODENAME] \
+    [--debian-apps     CODENAME] [--ubuntu-apps     CODENAME]
 ```
 
-Both arguments are required. The output directory should contain `targets-extensions.map` and any `.blacklist`/`.manual` files.
+`image-info.json` is required. `output_directory` defaults to the
+current directory and should contain `targets-extensions.map` plus any
+`.blacklist` / `.manual` files.
+
+### Per-scope codename flags
+
+| Flag                  | Default    | Substitutes `RELEASE: …` in   |
+|-----------------------|------------|-------------------------------|
+| `--debian-standard`   | `trixie`   | `targets-release-standard-support.yaml` |
+| `--ubuntu-standard`   | `noble`    | `targets-release-standard-support.yaml` |
+| `--debian-nightly`    | `forky`    | `targets-release-nightly.yaml`          |
+| `--ubuntu-nightly`    | `resolute` | `targets-release-nightly.yaml`          |
+| `--debian-community`  | `trixie`   | `targets-release-community-maintained.yaml` |
+| `--ubuntu-community`  | `noble`    | `targets-release-community-maintained.yaml` |
+| `--debian-apps`       | `trixie`   | `targets-release-apps.yaml`             |
+| `--ubuntu-apps`       | `noble`    | `targets-release-apps.yaml`             |
+
+The same per-scope codenames also drive the regex patterns in
+`exposed.map`, so the build matrix and the "recommended images" filter
+on the website stay in lockstep — bumping `--ubuntu-standard` updates
+both atomically.
+
+Defaults reproduce the previous literal pins exactly; running with no
+flags is byte-identical to the pre-substitution behaviour (modulo the
+symbolic-token round-trip).
 
 ## Example
 
@@ -184,8 +244,12 @@ Both arguments are required. The output directory should contain `targets-extens
 # Download latest image-info.json
 curl -L -o image-info.json https://github.armbian.com/image-info.json
 
-# Generate target YAML files to https://github.armbian.com/release-targets/ directory
+# Generate target YAML files using all default codenames
 python3 scripts/generate_targets.py image-info.json release-targets/
+
+# Same, but build standard-support against the next Ubuntu LTS instead
+python3 scripts/generate_targets.py image-info.json release-targets/ \
+    --ubuntu-standard resolute
 ```
 
 ## Requirements
