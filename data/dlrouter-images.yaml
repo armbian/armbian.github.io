@@ -1,0 +1,49 @@
+#
+# images.armbian.com
+#
+geodb: /scripts/redirect-config/GeoLite2-City.mmdb
+asndb: /scripts/redirect-config/GeoLite2-ASN.mmdb
+dl_map: /scripts/redirect-config/all-images.json
+certDataPath: /scripts/redirect-config/certdata.txt
+bind: ':8081'
+enableProfiler: true
+
+# Reload authorization key
+reloadKey: b009b1676b657c213417a272cab9f5a8
+
+# LRU Cache Size (in items)
+cacheSize: 2048
+
+# Documentation: https://github.com/armbian/armbian-router
+
+specialExtensions:
+  - boot-sms.img.xz: -boot-sms
+  - boot-boe.img.xz: -boot-boe
+  - boot-csot.img.xz: -boot-csot
+  - rootfs.img.xz: -rootfs
+  - img.qcow2: -qcow2
+  - img.qcow2.xz: -qcow2
+  - boot.bin.xz: -boot
+  - u-boot.rom.xz: -u-boot-rom
+  - hyperv.zip: -hyperv
+  - hyperv.zip.xz: -hyperv
+  - hyperv.img.xz: -hyperv
+  - fip.img.xz: -fip
+  - lk.bin.xz: -lk-bin
+  - boe.img.xz: -boe
+  - csot.img.xz: -csot
+  - kebab.img.xz: -kebab
+  - recovery.img.xz: -recovery
+
+servers:
+  # Europe/Berlin - 1000 Mbit/s
+  - server: fi.mirror.armbian.de/dl/
+    latitude: 51.2993
+    longitude: 9.491
+    weight: 10
+
+  # Europe/Ljubljana - 200 Mbit/s
+  - server: imola.armbian.com/dl/
+    latitude: 46.081638
+    longitude: 14.526054
+    weight: 10
