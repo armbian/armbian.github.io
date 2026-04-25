@@ -7,7 +7,7 @@ dl_map: /scripts/redirect-config/all-images.json
 certDataPath: /scripts/redirect-config/certdata.txt
 
 # Reload authorization key
-reloadKey: 3387d1030022a931cc09e8ef9042a433
+reloadKey: 70ac2269a9845917b5d26b0f10c49e28
 
 # LRU Cache Size (in items)
 cacheSize: 2048
@@ -57,6 +57,12 @@ servers:
   - server: imola.armbian.com/apt/
     latitude: 46.081638
     longitude: 14.526054
+    weight: 10
+
+  # Asia/Shanghai - 10000 Mbit/s
+  - server: mirrors.bfsu.edu.cn/armbian/
+    latitude: 39.911
+    longitude: 116.395
     weight: 10
 
   # Europe/Moscow - 2000 Mbit/s
