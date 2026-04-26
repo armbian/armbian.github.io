@@ -33,9 +33,9 @@ RELEASE_TOKEN_UBUNTU = "UBUNTU"
 # files used before the substitution refactor — running the generator
 # with no flags reproduces the previous behaviour exactly.
 SCOPE_DEFAULTS = {
-    "standard":  {"debian": "trixie", "ubuntu": "noble"},
+    "standard":  {"debian": "trixie", "ubuntu": "resolute"},
     "nightly":   {"debian": "forky",  "ubuntu": "resolute"},
-    "community": {"debian": "trixie", "ubuntu": "noble"},
+    "community": {"debian": "trixie", "ubuntu": "resolute"},
     "apps":      {"debian": "trixie", "ubuntu": "noble"},
 }
 
