@@ -45,5 +45,6 @@ desktop-stable-debian-xfce:
     DESKTOP_ENVIRONMENT: "xfce"
     DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
     DESKTOP_APPGROUPS_SELECTED: ""
+    DESKTOP_TIER: "mid"
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }

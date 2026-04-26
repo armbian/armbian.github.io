@@ -57,6 +57,7 @@ desktop-stable-ubuntu-gnome-uefi:
     DESKTOP_ENVIRONMENT: "gnome"
     DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
@@ -78,6 +79,7 @@ desktop-stable-ubuntu-cinnamon-uefi:
     DESKTOP_ENVIRONMENT: "cinnamon"
     DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
     - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
