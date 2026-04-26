@@ -221,11 +221,11 @@ current directory and should contain `targets-extensions.map` plus any
 | Flag                  | Default    | Substitutes `RELEASE: …` in   |
 |-----------------------|------------|-------------------------------|
 | `--debian-standard`   | `trixie`   | `targets-release-standard-support.yaml` |
-| `--ubuntu-standard`   | `noble`    | `targets-release-standard-support.yaml` |
+| `--ubuntu-standard`   | `resolute` | `targets-release-standard-support.yaml` |
 | `--debian-nightly`    | `forky`    | `targets-release-nightly.yaml`          |
 | `--ubuntu-nightly`    | `resolute` | `targets-release-nightly.yaml`          |
 | `--debian-community`  | `trixie`   | `targets-release-community-maintained.yaml` |
-| `--ubuntu-community`  | `noble`    | `targets-release-community-maintained.yaml` |
+| `--ubuntu-community`  | `resolute` | `targets-release-community-maintained.yaml` |
 | `--debian-apps`       | `trixie`   | `targets-release-apps.yaml`             |
 | `--ubuntu-apps`       | `noble`    | `targets-release-apps.yaml`             |
 
@@ -247,9 +247,10 @@ curl -L -o image-info.json https://github.armbian.com/image-info.json
 # Generate target YAML files using all default codenames
 python3 scripts/generate_targets.py image-info.json release-targets/
 
-# Same, but build standard-support against the next Ubuntu LTS instead
+# Roll standard-support's Ubuntu line back to the previous LTS
+# (default is resolute; this pins to noble for one invocation)
 python3 scripts/generate_targets.py image-info.json release-targets/ \
-    --ubuntu-standard resolute
+    --ubuntu-standard noble
 ```
 
 ## Requirements

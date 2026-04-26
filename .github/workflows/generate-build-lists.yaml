@@ -15,7 +15,7 @@ on:
       ubuntu_standard:
         description: "Ubuntu codename for standard-support builds"
         required: false
-        default: "noble"
+        default: "resolute"
       debian_nightly:
         description: "Debian codename for nightly builds"
         required: false
@@ -31,7 +31,7 @@ on:
       ubuntu_community:
         description: "Ubuntu codename for community-maintained builds"
         required: false
-        default: "noble"
+        default: "resolute"
       debian_apps:
         description: "Debian codename for apps builds (HA / OMV / OpenHAB; not Kali, which stays sid)"
         required: false
@@ -100,11 +100,11 @@ jobs:
         run: |
           python3 scripts/generate_targets.py image-info.json release-targets \
             --debian-standard  "${{ inputs.debian_standard  || 'trixie'   }}" \
-            --ubuntu-standard  "${{ inputs.ubuntu_standard  || 'noble'    }}" \
+            --ubuntu-standard  "${{ inputs.ubuntu_standard  || 'resolute' }}" \
             --debian-nightly   "${{ inputs.debian_nightly   || 'forky'    }}" \
             --ubuntu-nightly   "${{ inputs.ubuntu_nightly   || 'resolute' }}" \
             --debian-community "${{ inputs.debian_community || 'trixie'   }}" \
-            --ubuntu-community "${{ inputs.ubuntu_community || 'noble'    }}" \
+            --ubuntu-community "${{ inputs.ubuntu_community || 'resolute' }}" \
             --debian-apps      "${{ inputs.debian_apps      || 'trixie'   }}" \
             --ubuntu-apps      "${{ inputs.ubuntu_apps      || 'noble'    }}" \
             2>&1 | tee -a generation.log
