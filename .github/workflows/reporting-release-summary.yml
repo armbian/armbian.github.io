@@ -385,6 +385,28 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Add cover image to workflow summary
+        if: steps.check_cover.outputs.exists == 'true'
+        run: |
+          {
+            echo "## 🎨 Generated Cover Image"
+            echo ""
+            echo "### Preview"
+            echo ""
+            echo "![Cover Image](cover.png)"
+            echo ""
+            echo "<details>"
+            echo "<summary>Image details</summary>"
+            echo ""
+            echo "- **File**: cover.png"
+            echo "- **Attached to release**: Yes"
+            echo "- **Model**: Gemini 3.1 Flash Image Preview"
+            echo "- **Resolution**: 2752x1536 (2K, 16:9)"
+            echo ""
+            echo "</details>"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
         with:
