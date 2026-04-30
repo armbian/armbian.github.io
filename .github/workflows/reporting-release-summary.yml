@@ -267,23 +267,65 @@ jobs:
 
           label = os.environ["LABEL"]
 
-          # Read the summary to create a context-aware prompt
+          # Get current date for subtitle
+          from datetime import datetime
+          current_date = datetime.now().strftime("%B %d, %Y")
+
+          # Read the summary to extract key themes
           with open("summary.md", "r", encoding="utf-8") as f:
               summary_content = f.read().strip()
 
-          # Create a prompt for cover image generation
-          # Focus on visual representation of the digest type
-          prompt = f"""Create a modern, minimalist cover image for an Armbian {label.lower()}.
+          # Extract tagline based on content
+          import re
+          pr_count = len(re.findall(r'^\*', summary_content, re.MULTILINE))
+          if pr_count > 20:
+              tagline = f"{pr_count} contributions • Community driven"
+          elif pr_count > 10:
+              tagline = f"{pr_count} updates • Open source"
+          else:
+              tagline = "Building the future"
 
-          Style guidelines:
-          - Clean, tech-focused aesthetic with subtle gradients
-          - Include Armbian branding elements (use blue tones)
-          - Add the text "{label}" in a modern, bold sans-serif font
-          - Include subtle circuit board or motherboard patterns in the background
-          - Aspect ratio: 16:9 (landscape)
-          - Resolution: 2K
-          - Professional software release style
-          - Leave some negative space for potential overlay text
+          # Determine digest type for title
+          digest_title = "Armbian Weekly" if "weekly" in label.lower() else "Armbian Monthly"
+
+          # Dynamic content focus based on PR themes
+          content_focus = """embedded Linux ecosystem, single-board computing, kernel development,
+          system infrastructure, and community-driven innovation"""
+
+          # Create a high-end, professional prompt
+          prompt = f"""Create a high-end, modern tech illustration in a consistent visual identity for {digest_title}.
+
+          STYLE:
+          - premium, minimalistic, futuristic
+          - dark background with soft gradients (navy, deep blue)
+          - strong orange accent highlights (Armbian identity)
+          - subtle glow, cinematic lighting
+          - isometric / semi-3D composition
+          - extremely clean, no clutter
+
+          BRANDING:
+          - inspired by embedded Linux, SBC boards, infrastructure
+          - abstract circuits, silicon, data flow, kernel layers
+          - DO NOT include any real logos
+          - consistent visual identity across weeks
+
+          CONTENT FOCUS:
+          {content_focus}
+
+          TEXT IN IMAGE:
+          - title: "{digest_title}"
+          - subtitle: "{current_date}"
+          - optional small caption: "{tagline}"
+
+          COMPOSITION:
+          - left or center weighted
+          - strong focal object (board / chip / abstract system)
+          - space for readable text overlay
+
+          QUALITY:
+          - ultra sharp, production-ready marketing image
+          - correct typography (no broken text)
+          - consistent style across all outputs
           """
 
           # Initialize the client
