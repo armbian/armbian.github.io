@@ -254,16 +254,23 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           set -euo pipefail
+          # NOTE: Gemini 3.1 Flash Image Preview requires PAID TIER
+          # Free tier does not support image generation (quota: 0)
+          # To enable: Add GEMINI_API_KEY secret with paid tier key
+          # Get key: https://aistudio.google.com/app/apikey
+          # Pricing: https://ai.google.dev/gemini-api/docs/pricing
           python3 <<'PY'
           import os
+          import sys
           from google import genai
           from google.genai import types
+          from google.genai.errors import ClientError
 
           # Check if API key is available
           token = os.environ.get("GEMINI_API_KEY")
           if not token:
               print("GEMINI_API_KEY not set - skipping image generation")
-              exit(0)
+              sys.exit(0)
 
           label = os.environ["LABEL"]
 
@@ -331,29 +338,52 @@ jobs:
           # Initialize the client
           client = genai.Client(api_key=token)
 
-          # Generate the image
-          response = client.models.generate_content(
-              model="gemini-3.1-flash-image-preview",
-              contents=[prompt],
-              config=types.GenerateContentConfig(
-                  response_modalities=['IMAGE'],
-                  image_config=types.ImageConfig(
-                      aspect_ratio="16:9",
-                      image_size="2K"
+          try:
+              # Generate the image
+              response = client.models.generate_content(
+                  model="gemini-3.1-flash-image-preview",
+                  contents=[prompt],
+                  config=types.GenerateContentConfig(
+                      response_modalities=['IMAGE'],
+                      image_config=types.ImageConfig(
+                          aspect_ratio="16:9",
+                          image_size="2K"
+                      )
                   )
               )
-          )
 
-          # Save the generated image
-          for part in response.parts:
-              if hasattr(part, 'inline_data') and part.inline_data is not None:
-                  image = part.as_image()
-                  image.save("cover.png")
-                  print("Cover image generated successfully: cover.png")
-                  break
-          else:
-              print("No image generated - this may indicate an API error")
+              # Save the generated image
+              for part in response.parts:
+                  if hasattr(part, 'inline_data') and part.inline_data is not None:
+                      image = part.as_image()
+                      image.save("cover.png")
+                      print("Cover image generated successfully: cover.png")
+                      break
+              else:
+                  print("No image generated - this may indicate an API error")
+                  sys.exit(0)
+
+          except ClientError as e:
+              if e.status_code == 429:
+                  print("Image generation skipped: Gemini image model requires paid tier (free tier quota exceeded)")
+                  print("To enable: https://ai.google.dev/gemini-api/docs/pricing")
+                  sys.exit(0)
+              else:
+                  print(f"API error: {e}")
+                  sys.exit(0)
+          except Exception as e:
+              print(f"Image generation failed: {e}")
+              sys.exit(0)
           PY
+
+      - name: Check if cover image exists
+        id: check_cover
+        run: |
+          if [ -f "cover.png" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
 
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
@@ -366,7 +396,7 @@ jobs:
           prerelease: "false"
           makeLatest: "true"
           bodyFile: "summary.md"
-          artifacts: "cover.png"
+          artifacts: ${{ steps.check_cover.outputs.exists == 'true' && 'cover.png' || '' }}
           allowUpdates: "true"
           skipIfReleaseExists: "true"
           token: ${{ secrets.RELEASE_TOKEN }}
