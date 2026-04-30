@@ -189,7 +189,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${PERIOD:-weekly}" == "monthly" || "${PERIOD:-weekly}" == "quarterly" ]]; then
+          if [[ "$PERIOD" == "monthly" || "$PERIOD" == "quarterly" ]]; then
             FILE="os/stable.json"
           else
             FILE="os/nightly.json"
