@@ -325,9 +325,11 @@ jobs:
           - optional small caption: "{tagline}"
 
           COMPOSITION:
+          - ultrawide cinematic format (21:9 aspect ratio)
           - left or center weighted
           - strong focal object (board / chip / abstract system)
-          - space for readable text overlay
+          - expansive negative space for text overlay
+          - panoramic, sweeping composition
 
           QUALITY:
           - ultra sharp, production-ready marketing image
@@ -346,7 +348,7 @@ jobs:
                   config=types.GenerateContentConfig(
                       response_modalities=['IMAGE'],
                       image_config=types.ImageConfig(
-                          aspect_ratio="16:9",
+                          aspect_ratio="21:9",
                           image_size="2K"
                       )
                   )
@@ -421,7 +423,7 @@ jobs:
               echo "| **File** | cover.png |"
               echo "| **Size** | ${IMAGE_SIZE} |"
               echo "| **Model** | Gemini 3.1 Flash Image Preview |"
-              echo "| **Resolution** | 2752×1536 (2K, 16:9) |"
+              echo "| **Resolution** | 3168×1344 (2K, 21:9 ultrawide) |"
               echo "| **Release Attachment** | ✅ Yes |"
               echo ""
               echo "<details>"
