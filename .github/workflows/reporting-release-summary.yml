@@ -285,10 +285,8 @@ jobs:
           # Extract tagline based on content
           import re
           pr_count = len(re.findall(r'^\*', summary_content, re.MULTILINE))
-          if pr_count > 20:
-              tagline = f"{pr_count} contributions • Community driven"
-          elif pr_count > 10:
-              tagline = f"{pr_count} updates • Open source"
+          if pr_count > 1:
+              tagline = f"{pr_count} Pull Requests Merged"
           else:
               tagline = "Building the future"
 
