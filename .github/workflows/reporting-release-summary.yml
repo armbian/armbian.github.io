@@ -57,6 +57,9 @@ jobs:
       - name: Install OpenAI SDK
         run: pip install 'openai>=1.0.0'
 
+      - name: Install Google Gen AI SDK
+        run: pip install 'google-genai>=1.0.0'
+
       - name: Ensure dependencies
         run: |
           sudo apt-get update
@@ -245,6 +248,71 @@ jobs:
       - name: "Output summary to step summary"
         run: cat summary.md >> "$GITHUB_STEP_SUMMARY"
 
+      - name: "Generate AI cover image"
+        if: ${{ env.PERIOD == 'weekly' || env.PERIOD == 'monthly' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import os
+          from google import genai
+          from google.genai import types
+
+          # Check if API key is available
+          token = os.environ.get("GEMINI_API_KEY")
+          if not token:
+              print("GEMINI_API_KEY not set - skipping image generation")
+              exit(0)
+
+          label = os.environ["LABEL"]
+
+          # Read the summary to create a context-aware prompt
+          with open("summary.md", "r", encoding="utf-8") as f:
+              summary_content = f.read().strip()
+
+          # Create a prompt for cover image generation
+          # Focus on visual representation of the digest type
+          prompt = f"""Create a modern, minimalist cover image for an Armbian {label.lower()}.
+
+          Style guidelines:
+          - Clean, tech-focused aesthetic with subtle gradients
+          - Include Armbian branding elements (use blue tones)
+          - Add the text "{label}" in a modern, bold sans-serif font
+          - Include subtle circuit board or motherboard patterns in the background
+          - Aspect ratio: 16:9 (landscape)
+          - Resolution: 2K
+          - Professional software release style
+          - Leave some negative space for potential overlay text
+          """
+
+          # Initialize the client
+          client = genai.Client(api_key=token)
+
+          # Generate the image
+          response = client.models.generate_content(
+              model="gemini-3.1-flash-image-preview",
+              contents=[prompt],
+              config=types.GenerateContentConfig(
+                  response_modalities=['IMAGE'],
+                  image_config=types.ImageConfig(
+                      aspect_ratio="16:9",
+                      image_size="2K"
+                  )
+              )
+          )
+
+          # Save the generated image
+          for part in response.parts:
+              if hasattr(part, 'inline_data') and part.inline_data is not None:
+                  image = part.as_image()
+                  image.save("cover.png")
+                  print("Cover image generated successfully: cover.png")
+                  break
+          else:
+              print("No image generated - this may indicate an API error")
+          PY
+
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
         with:
@@ -256,6 +324,7 @@ jobs:
           prerelease: "false"
           makeLatest: "true"
           bodyFile: "summary.md"
+          artifacts: "cover.png"
           allowUpdates: "true"
           skipIfReleaseExists: "true"
           token: ${{ secrets.RELEASE_TOKEN }}
