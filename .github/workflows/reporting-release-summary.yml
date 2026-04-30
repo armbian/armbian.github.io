@@ -376,6 +376,14 @@ jobs:
               sys.exit(0)
           PY
 
+      - name: Upload cover image as artifact
+        if: hashFiles('cover.png') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: cover-image
+          path: cover.png
+          if-no-files-found: ignore
+
       - name: Check if cover image exists
         id: check_cover
         run: |
@@ -388,24 +396,47 @@ jobs:
       - name: Add cover image to workflow summary
         if: steps.check_cover.outputs.exists == 'true'
         run: |
-          {
-            echo "## 🎨 Generated Cover Image"
-            echo ""
-            echo "### Preview"
-            echo ""
-            echo "![Cover Image](cover.png)"
-            echo ""
-            echo "<details>"
-            echo "<summary>Image details</summary>"
-            echo ""
-            echo "- **File**: cover.png"
-            echo "- **Attached to release**: Yes"
-            echo "- **Model**: Gemini 3.1 Flash Image Preview"
-            echo "- **Resolution**: 2752x1536 (2K, 16:9)"
-            echo ""
-            echo "</details>"
-            echo ""
-          } >> "$GITHUB_STEP_SUMMARY"
+          # Get absolute path for the image
+          IMAGE_PATH="${GITHUB_WORKSPACE}/cover.png"
+
+          # Verify image exists and get its size
+          if [ -f "$IMAGE_PATH" ]; then
+            IMAGE_SIZE=$(ls -lh "$IMAGE_PATH" | awk '{print $5}')
+            ARTIFACTS_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts"
+
+            # Add to workflow summary
+            {
+              echo "## 🎨 Generated Cover Image"
+              echo ""
+              echo "### 📥 Download & View"
+              echo ""
+              echo "🔽 **Download**: [cover.png](../../artifacts) (available in workflow artifacts)"
+              echo ""
+              echo "📦 **All artifacts**: [View artifacts](${ARTIFACTS_URL})"
+              echo ""
+              echo "### 📊 Image Details"
+              echo ""
+              echo "| Property | Value |"
+              echo "|----------|-------|"
+              echo "| **File** | cover.png |"
+              echo "| **Size** | ${IMAGE_SIZE} |"
+              echo "| **Model** | Gemini 3.1 Flash Image Preview |"
+              echo "| **Resolution** | 2752×1536 (2K, 16:9) |"
+              echo "| **Release Attachment** | ✅ Yes |"
+              echo ""
+              echo "<details>"
+              echo "<summary>Technical information</summary>"
+              echo ""
+              echo "- **Workspace path**: \`${IMAGE_PATH}\`"
+              echo "- **Artifact name**: \`cover-image\`"
+              echo "- **Workflow run**: \`${GITHUB_RUN_ID}\`"
+              echo ""
+              echo "</details>"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Cover image not found at ${IMAGE_PATH}" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
