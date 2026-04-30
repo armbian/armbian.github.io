@@ -293,9 +293,51 @@ jobs:
           # Determine digest type for title
           digest_title = "Armbian Weekly" if "weekly" in label.lower() else "Armbian Monthly"
 
+          # Generate variation seed based on date to ensure unique images
+          import hashlib
+          date_seed = int(hashlib.md5(current_date.encode()).hexdigest(), 16) % 1000
+
+          # Rotating visual themes for variety (cycles weekly)
+          visual_themes = [
+              "abstract circuit traces with glowing data flow",
+              "layered silicon wafers with kernel rings",
+              "geometric data streams in wave patterns",
+              "hexagonal chip architecture floating in space",
+              "branching code trees with syntax-highlighted nodes",
+              "interconnected server nodes with network topology",
+              "floating motherboard components in zero gravity",
+              "cylindrical data columns with holographic interfaces"
+          ]
+          theme_index = date_seed % len(visual_themes)
+          selected_theme = visual_themes[theme_index]
+
+          # Rotating composition styles
+          composition_styles = [
+              "center-weighted with symmetrical balance",
+              "left-weighted with diagonal leading lines",
+              "right-weighted with S-curve flow",
+              "cinematic rule-of-thirds placement"
+          ]
+          composition_index = (date_seed // 8) % len(composition_styles)
+          selected_composition = composition_styles[composition_index]
+
+          # Rotating lighting moods
+          lighting_moods = [
+              "soft rim lighting from top-left",
+              "dramatic side lighting with strong contrasts",
+              "even ambient glow with subtle highlights",
+              "backlit with forward glow emanating from center"
+          ]
+          lighting_index = (date_seed // 32) % len(lighting_moods)
+          selected_lighting = lighting_moods[lighting_index]
+
           # Dynamic content focus based on PR themes
-          content_focus = """embedded Linux ecosystem, single-board computing, kernel development,
-          system infrastructure, and community-driven innovation"""
+          content_focus = f"""embedded Linux ecosystem, single-board computing, kernel development,
+          system infrastructure, and community-driven innovation.
+
+          UNIQUE ELEMENT FOR THIS WEEK:
+          {selected_theme} as the primary visual anchor, {selected_composition},
+          with {selected_lighting}."""
 
           # Create a high-end, professional prompt
           prompt = f"""Create a high-end, modern tech illustration in a consistent visual identity for {digest_title}.
@@ -307,6 +349,7 @@ jobs:
           - subtle glow, cinematic lighting
           - isometric / semi-3D composition
           - extremely clean, no clutter
+          - UNIQUE VARIATION: Each week features different arrangement of brand elements
 
           BRANDING:
           - inspired by embedded Linux, SBC boards, infrastructure
@@ -324,15 +367,16 @@ jobs:
 
           COMPOSITION:
           - ultrawide cinematic format (21:9 aspect ratio)
-          - left or center weighted
-          - strong focal object (board / chip / abstract system)
+          - {selected_composition}
+          - strong focal object featuring {selected_theme}
+          - {selected_lighting}
           - expansive negative space for text overlay
           - panoramic, sweeping composition
 
           QUALITY:
           - ultra sharp, production-ready marketing image
           - correct typography (no broken text)
-          - consistent style across all outputs
+          - consistent style across all outputs but with unique weekly variations
           """
 
           # Initialize the client
