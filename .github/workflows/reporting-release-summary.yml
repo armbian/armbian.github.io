@@ -397,7 +397,7 @@ jobs:
                       response_modalities=['IMAGE'],
                       image_config=types.ImageConfig(
                           aspect_ratio="21:9",
-                          image_size="2K"
+                          image_size="1K"
                       )
                   )
               )
