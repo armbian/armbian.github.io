@@ -443,6 +443,21 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: "Prepend cover image to release notes"
+        if: ${{ steps.check_cover.outputs.exists == 'true' && env.RELEASE_ENABLED == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # URL is deterministic: ncipollo uploads cover.png to the same release
+          # in the same step, so the link resolves as soon as the release is live.
+          IMAGE_URL="https://github.com/armbian/build/releases/download/v${VERSION_OVERRIDE}/cover.png"
+          {
+            echo "![${LABEL}](${IMAGE_URL})"
+            echo ""
+            cat summary.md
+          } > summary.md.new
+          mv summary.md.new summary.md
+
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
         with:
