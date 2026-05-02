@@ -177,9 +177,23 @@ def get_debian_binary_package_filename(distro, release_name, package_name, archi
     Path(cache_dir).mkdir(exist_ok=True)
 
     # Build URLs for Packages file
+    #
+    # Per-release set of architectures that, *for this release*, live
+    # only in debian-ports/ rather than the main archive. loong64 was
+    # promoted to the main archive in forky and stays in debian-ports
+    # for sid; bookworm/trixie don't list loong64 at all so they never
+    # reach this branch via get_debian_architectures.
+    #
+    # When a future arch goes through the same promotion cycle, add it
+    # here per-release; when sid promotes loong64 to main, drop the
+    # entry entirely.
+    debian_ports_only = {
+        'sid': {'loong64'},
+    }.get(release_name, set())
+
     match distro:
         case 'debian':
-            if( architecture == 'loong64' ):
+            if architecture in debian_ports_only:
                 base_url = "http://ftp.ports.debian.org/debian-ports/"
             else:
                 base_url = "http://ftp.debian.org/debian/"
