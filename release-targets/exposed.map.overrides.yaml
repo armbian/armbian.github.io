@@ -1,0 +1,70 @@
+# Per-board / boardfamily overrides for the recommended-image regex
+# in exposed.map.
+#
+# generate_exposed_map emits TWO regex patterns per board:
+#
+#   1. "minimal" — Debian + board's selected branch + "minimal" suffix
+#   2. "desktop" — Ubuntu + board's selected branch + algorithmic suffix
+#                  (xfce_desktop / gnome_desktop for video boards,
+#                   minimal for headless, xfce_desktop for riscv64;
+#                   loongarch boards skip this pattern).
+#
+# When a vendor BSP doesn't follow these defaults — e.g. its minimal
+# image lives on a different release than upstream Debian, or its
+# desktop is a custom build like Bianbu — list the override here.
+#
+# Match keys per entry:
+#
+#   boardfamily: <name>          # apply to every board in this family
+#   boards:      [b1, b2, ...]   # apply to specific board slugs (must
+#                                # be a YAML list — `boards: a, b` is a
+#                                # string and gets dropped at load time)
+#
+# Per-pattern override blocks (both optional; both internal fields
+# are also optional and fall through to the algorithmic default):
+#
+#   minimal:
+#     release: <codename>        # literal codename (NOT a UBUNTU/DEBIAN token)
+#     branch:  <branch>          # e.g. legacy, vendor
+#     suffix:  <token>           # tail of the regex; default "minimal"
+#
+#   desktop:
+#     release: <codename>
+#     branch:  <branch>
+#     suffix:  <token>           # full literal tail, e.g. "bianbu_desktop"
+#
+# Merge rules: a per-board entry (`boards: [...]`) overlays the
+# boardfamily entry block-by-block, then field-by-field. So a
+# per-board entry that sets only `minimal:` keeps the family's
+# `desktop:` block intact, and a per-board `desktop: {suffix: x}`
+# keeps the family's `desktop.{release, branch}` while replacing
+# only `suffix`. Use this to carve a partial exception out of a
+# boardfamily rule without repeating its other blocks.
+
+overrides:
+  - boardfamily: spacemit
+    # SpacemiT K1 boards: desktop image lives on Ubuntu noble + legacy.
+    # Bianbu's PVR DRI Mesa fork (24.01bbx) only ships for noble on
+    # archive.spacemit.com, and the matching kernel BSP lives on the
+    # legacy branch. Build target for the desktop image is
+    # `desktop-stable-ubuntu-riscv64-bianbu`. Default minimal lines
+    # up with the same noble/legacy combo for boards that only ship
+    # legacy kernels (e.g. musebook). See armbian/configng#897 for
+    # archive pinning details.
+    minimal:
+      release: noble
+      branch: legacy
+    desktop:
+      release: noble
+      branch: legacy
+      suffix: bianbu_desktop
+
+  - boards: [bananapif3, musepipro]
+    # K1 boards that *do* ship a current-branch trixie minimal CLI
+    # image alongside the legacy/noble desktop. Override the family's
+    # minimal pattern (Debian trixie + current) for these two; the
+    # family's desktop block (noble/legacy/bianbu_desktop) stays in
+    # effect via the per-board overlay merge.
+    minimal:
+      release: trixie
+      branch: current

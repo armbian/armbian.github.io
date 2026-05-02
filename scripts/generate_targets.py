@@ -13,6 +13,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import yaml
+
 
 # Release-codename substitution tokens. Both the manual override files
 # (release-targets/*.manual) and this generator's own hardcoded YAML
@@ -221,6 +223,167 @@ def load_manual_overrides(base_path):
     except Exception as e:
         print(f"Warning: Failed to load {manual_path}: {e}", file=sys.stderr)
         return ""
+
+
+def load_exposed_overrides(path):
+    """
+    Load per-board(family) overrides for exposed.map regex generation.
+
+    The file (typically `<output_dir>/exposed.map.overrides.yaml`) lets a
+    vendor BSP redirect either of the two regex patterns
+    generate_exposed_map emits per board. Useful when, e.g., the SpacemiT
+    K1 boardfamily has a Bianbu desktop image on noble/legacy that the
+    generic riscv64 → xfce path doesn't reach, and the matching minimal
+    image lives on noble/legacy too rather than on the default Debian
+    codename.
+
+    Schema:
+
+        overrides:
+          - boardfamily: <name>          # match all boards in this family
+            # AND/OR (in a separate entry)
+            boards: [b1, b2, ...]        # specific board slugs
+
+            # Optional override for pattern 1 (the "minimal" image).
+            # Defaults to: debian_codename + board's selected branch + "minimal".
+            minimal:
+              release: <codename>        # literal codename (NOT a UBUNTU/DEBIAN token)
+              branch:  <branch>
+              suffix:  <token>           # tail of the regex; default "minimal"
+
+            # Optional override for pattern 2 (the "desktop" image).
+            # Defaults to: ubuntu_codename + board's selected branch +
+            # algorithmic suffix (xfce_desktop / gnome_desktop / minimal).
+            desktop:
+              release: <codename>
+              branch:  <branch>
+              suffix:  <token>           # full literal tail, e.g. "bianbu_desktop"
+
+    Either inner block may be omitted to leave that pattern untouched.
+    Inside each block, every field is optional and falls through to the
+    algorithmic default the generator would have used.
+
+    A per-board entry (`boards: [...]`) overlays the boardfamily entry,
+    block-by-block then field-by-field — so a per-board entry that only
+    sets `minimal:` keeps the family's `desktop:` block intact, and a
+    per-board `desktop: {suffix: x}` keeps the family's
+    `desktop.{release, branch}` while replacing only `suffix`. See
+    match_exposed_override() for the merge rules.
+
+    Missing file → []. Malformed entries (no match key, non-mapping
+    inner blocks) are dropped with a warning so a typo can't silently
+    rewrite the recommended-image set for every board in the world.
+    """
+    if not path.exists():
+        return []
+    try:
+        with open(path) as f:
+            data = yaml.safe_load(f) or {}
+    except (yaml.YAMLError, OSError) as e:
+        print(f"Warning: could not parse {path}: {e}", file=sys.stderr)
+        return []
+
+    raw = data.get('overrides', [])
+    if not isinstance(raw, list):
+        print(f"Warning: {path}: 'overrides' must be a list", file=sys.stderr)
+        return []
+
+    valid = []
+    for i, entry in enumerate(raw):
+        if not isinstance(entry, dict):
+            print(f"Warning: {path}: overrides[{i}] is not a mapping; skipped", file=sys.stderr)
+            continue
+        # An entry without any match key would silently match everything.
+        has_boards = isinstance(entry.get('boards'), list) and entry['boards']
+        has_family = isinstance(entry.get('boardfamily'), str) and entry['boardfamily']
+        if not (has_boards or has_family):
+            print(f"Warning: {path}: overrides[{i}] needs `boards` or `boardfamily`; skipped", file=sys.stderr)
+            continue
+        # Inner blocks must be mappings if present. A flat-schema typo
+        # (e.g. someone writing `release: noble` at the top level instead
+        # of nesting it under `desktop:`) silently has no effect, so we
+        # warn — that's the only way to catch a misplaced override.
+        ok = True
+        for block in ('minimal', 'desktop'):
+            if block in entry and not isinstance(entry[block], dict):
+                print(f"Warning: {path}: overrides[{i}].{block} must be a mapping; entry skipped", file=sys.stderr)
+                ok = False
+                break
+        if not ok:
+            continue
+        for top in entry.keys():
+            if top in ('boards', 'boardfamily', 'minimal', 'desktop'):
+                continue
+            print(f"Warning: {path}: overrides[{i}] has unknown top-level key {top!r}; ignored", file=sys.stderr)
+        valid.append(entry)
+    if valid:
+        print(f"  Loaded exposed.map overrides from {path.name}: {len(valid)} entries", file=sys.stderr)
+    return valid
+
+
+def match_exposed_override(overrides, *, board, boardfamily):
+    """
+    Pick the effective override for a given board, or None.
+
+    A per-board entry (`boards: [...]`) is overlaid on top of the
+    boardfamily entry (`boardfamily: ...`) — block by block, then
+    field by field within each block. Fields the per-board entry
+    sets win; fields it omits fall through to the family. This lets
+    a single board carve out a partial exception (e.g. different
+    minimal release) without having to repeat the rest of the
+    family's blocks.
+
+    Examples (with a family `{boardfamily: spacemit, minimal: {...}, desktop: {...}}`):
+
+      - boards: [musebook]                   → returns the family entry verbatim
+      - boards: [musepipro]
+        minimal: { release: trixie, branch: current }
+                                              → keeps family.desktop, replaces
+                                                family.minimal entirely
+      - boards: [bananapif3]
+        desktop: { suffix: xfce_desktop }    → keeps family.minimal, keeps
+                                                family.desktop.{release, branch},
+                                                replaces only desktop.suffix
+
+    With no per-board match the family entry is returned as-is; with
+    no family match the per-board entry is returned as-is; with neither,
+    None.
+    """
+    family_entry = None
+    if boardfamily:
+        for entry in overrides:
+            if entry.get('boardfamily') == boardfamily:
+                family_entry = entry
+                break
+
+    board_entry = None
+    for entry in overrides:
+        if board in (entry.get('boards') or []):
+            board_entry = entry
+            break
+
+    if board_entry is None and family_entry is None:
+        return None
+    if board_entry is None:
+        return family_entry
+    if family_entry is None:
+        return board_entry
+
+    # Both present — overlay board on family. Block-level: a missing
+    # block on the per-board entry leaves the family's block intact.
+    # Field-level: inside a block the per-board fields update the
+    # family's, leaving unset fields alone.
+    merged = {}
+    for block in ('minimal', 'desktop'):
+        family_block = family_entry.get(block) if isinstance(family_entry.get(block), dict) else None
+        board_block = board_entry.get(block) if isinstance(board_entry.get(block), dict) else None
+        if family_block is None and board_block is None:
+            continue
+        merged_block = dict(family_block) if family_block else {}
+        if board_block:
+            merged_block.update(board_block)
+        merged[block] = merged_block
+    return merged
 
 
 def load_blacklist(base_path):
@@ -1685,6 +1848,7 @@ def generate_exposed_map(
     ubuntu_standard,
     debian_community,
     ubuntu_community,
+    overrides=None,
 ):
     """
     Generate exposed.map with regex patterns for recommended images.
@@ -1704,9 +1868,18 @@ def generate_exposed_map(
     last generated with. Without this, `generate_*_yaml` could be promoted
     to a new release while exposed.map kept matching the old one and
     "recommended images" would silently drop off the website.
+
+    overrides: list returned by load_exposed_overrides(). Each entry
+    may carry a `minimal:` block (overrides pattern 1) and/or a
+    `desktop:` block (overrides pattern 2). Each block can swap in a
+    custom (release, branch, suffix) tuple. Used by vendor BSPs whose
+    recommended images live off the algorithmic default — see
+    exposed.map.overrides.yaml.
     """
     if csc_tvb_boards is None:
         csc_tvb_boards = []
+    if overrides is None:
+        overrides = []
 
     lines = []
     single_image_boards = []  # Track boards with only minimal image (loongarch only)
@@ -1732,6 +1905,14 @@ def generate_exposed_map(
         # Get inventory data for checking extensions
         inventory = entry.get('in', {}).get('inventory', {})
         board_has_video = inventory.get('BOARD_HAS_VIDEO', False)
+        # BOARDFAMILY for override matching — same fallback path as
+        # is_fast_hardware uses, since some boards only set it under
+        # BOARD_TOP_LEVEL_VARS rather than at the inventory root.
+        boardfamily = (
+            inventory.get('BOARDFAMILY', '')
+            or inventory.get('BOARD_TOP_LEVEL_VARS', {}).get('BOARDFAMILY', '')
+        )
+        override = match_exposed_override(overrides, board=board, boardfamily=boardfamily)
 
         # Determine file extension based on extensions
         # Check for special output formats
@@ -1762,45 +1943,62 @@ def generate_exposed_map(
             debian_codename = debian_standard
             ubuntu_codename = ubuntu_standard
 
-        # 1. Minimal: Debian + current/vendor branch (all boards)
-        #    Generate two patterns: one with dir prefix (for dl.armbian.com), one without (for GitHub releases)
-        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{debian_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{debian_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
+        # 1. Minimal: Debian + board's branch + "minimal" by default.
+        # Apply override.minimal (if any) — vendor BSPs whose minimal
+        # image lives off the default Debian release/branch combination
+        # can redirect both the release codename and the regex tail
+        # (e.g. spacemit's K1 boards have no Debian-trixie-legacy image
+        # but do have Ubuntu-noble-legacy minimal).
+        m_release = debian_codename
+        m_branch = branch
+        m_suffix = 'minimal'
+        if override and isinstance(override.get('minimal'), dict):
+            mb = override['minimal']
+            m_release = mb.get('release', m_release)
+            m_branch = mb.get('branch', m_branch)
+            m_suffix = mb.get('suffix', m_suffix)
+
+        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{m_release}_{m_branch}_[0-9]*.[0-9]*.[0-9]*_{m_suffix}{file_ext}"
+        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{m_release}_{m_branch}_[0-9]*.[0-9]*.[0-9]*_{m_suffix}{file_ext}"
         lines.append(minimal_pattern)
         lines.append(minimal_pattern_no_prefix)
 
-        # 2. Second pattern: depends on board type
-        # loongarch: only the Debian minimal pattern above (no Ubuntu image)
+        # 2. Second pattern: Ubuntu image, suffix depends on board type.
+        # loongarch is the exception — only the Debian minimal pattern
+        # above is emitted, no Ubuntu image exists for it yet.
         if is_fast == 'loongarch':
             single_image_boards.append(board)
             continue
 
-        # For riscv64: Ubuntu xfce desktop
+        # Default suffix (the `..._<suffix>{file_ext}` tail of the regex)
+        # mirrors the historical behaviour:
+        #   riscv64        → xfce_desktop
+        #   video + fast   → gnome_desktop
+        #   video + slow   → xfce_desktop
+        #   headless       → minimal
         if is_fast == 'riscv64':
-            riscv64_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
-            riscv64_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_xfce_desktop{file_ext}"
-            lines.append(riscv64_pattern)
-            lines.append(riscv64_pattern_no_prefix)
-            continue
-
-        # For boards with video: Ubuntu + desktop
-        if board_has_video and is_fast is not None:
-            # Determine desktop type based on hardware speed
-            if is_fast is True:
-                # Fast boards get GNOME desktop pattern only
-                desktop_type = 'gnome_desktop'
-            else:  # is_fast is False (slow hardware)
-                desktop_type = 'xfce_desktop'
-            desktop_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-            desktop_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_{desktop_type}{file_ext}"
-            lines.append(desktop_pattern)
-            lines.append(desktop_pattern_no_prefix)
+            default_suffix = 'xfce_desktop'
+        elif board_has_video and is_fast is not None:
+            default_suffix = 'gnome_desktop' if is_fast is True else 'xfce_desktop'
         else:
-            # Headless boards: Ubuntu minimal
-            ubuntu_minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-            ubuntu_minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{ubuntu_codename}_{branch}_[0-9]*.[0-9]*.[0-9]*_minimal{file_ext}"
-            lines.append(ubuntu_minimal_pattern)
-            lines.append(ubuntu_minimal_pattern_no_prefix)
+            default_suffix = 'minimal'
+
+        # Apply override.desktop (if any). suffix is the literal regex
+        # tail (e.g. "bianbu_desktop"), not just the desktop name —
+        # keeps the schema symmetric with the minimal block above.
+        d_release = ubuntu_codename
+        d_branch = branch
+        d_suffix = default_suffix
+        if override and isinstance(override.get('desktop'), dict):
+            db = override['desktop']
+            d_release = db.get('release', d_release)
+            d_branch = db.get('branch', d_branch)
+            d_suffix = db.get('suffix', d_suffix)
+
+        second_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{d_release}_{d_branch}_[0-9]*.[0-9]*.[0-9]*_{d_suffix}{file_ext}"
+        second_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{d_release}_{d_branch}_[0-9]*.[0-9]*.[0-9]*_{d_suffix}{file_ext}"
+        lines.append(second_pattern)
+        lines.append(second_pattern_no_prefix)
 
     # Display warning for boards with only one image (loongarch only)
     if single_image_boards:
@@ -1943,8 +2141,12 @@ def main():
     print(f"  Written {community_path}", file=sys.stderr)
 
     # exposed.map
-    # Generate from stable + community boards (exclude nightly targets)
+    # Generate from stable + community boards (exclude nightly targets).
+    # Per-board(family) overrides for the recommended-image regex (used
+    # by vendor BSPs whose desktop image lives on a non-default
+    # branch/release/desktop combo) live next to the output file.
     exposed_map_path = output_dir / 'exposed.map'
+    exposed_overrides = load_exposed_overrides(output_dir / 'exposed.map.overrides.yaml')
     exposed_map = generate_exposed_map(
         conf_wip_boards_stable,
         csc_tvb_boards_community,
@@ -1952,6 +2154,7 @@ def main():
         ubuntu_standard=args.ubuntu_standard,
         debian_community=args.debian_community,
         ubuntu_community=args.ubuntu_community,
+        overrides=exposed_overrides,
     )
     exposed_map_path.write_text(exposed_map)
     print(f"  Written {exposed_map_path}", file=sys.stderr)
