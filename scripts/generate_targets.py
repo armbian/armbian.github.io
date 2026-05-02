@@ -1078,6 +1078,34 @@ targets:
         if edge_riscv64:
             yaml += '      - *stable-edge-riscv64\n'
 
+    # Ubuntu noble Bianbu desktop for RISC-V (SpacemiT K1, legacy branch only).
+    # Bianbu's PVR-DRI userspace is tied to the SpacemiT BSP kernel that lives
+    # on the legacy branch, and the SpacemiT archive only ships its Mesa fork
+    # (24.01bbx, pinned via configng's bianbu.yaml) on noble — `RELEASE: noble`
+    # is therefore literal here, not the substitutable `UBUNTU` token.
+    # Tier=mid because bianbu-minimal is intentionally bare; mid is the
+    # canonical Bianbu desktop experience.
+    if legacy_riscv64:
+        yaml += """
+  # Ubuntu noble Bianbu desktop for SpacemiT K1 boards (legacy branch)
+  desktop-stable-ubuntu-riscv64-bianbu:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "bianbu"
+      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+      DESKTOP_APPGROUPS_SELECTED: ""
+      DESKTOP_TIER: "mid"
+    items:
+      - *stable-legacy-riscv64
+"""
+
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:
         indented_manual = '\n'.join('  ' + line if line.strip() else line for line in manual_content.split('\n'))
