@@ -1166,11 +1166,17 @@ targets:
         if edge_fast:
             yaml += '      - *stable-edge-fast-hdmi\n'
 
-    # Ubuntu stable KDE Neon desktop (fast HDMI only)
+    # Ubuntu stable KDE Plasma desktop (fast HDMI only).
+    # Was kde-neon; switched to kde-plasma when the standard scope
+    # promoted to resolute — KDE Neon is pinned to a specific Ubuntu
+    # LTS (currently noble) and doesn't have a resolute build, while
+    # kde-plasma tracks the distro and works on every release we
+    # ship to (configng kde-plasma.yaml advertises arm64+amd64 from
+    # bookworm through resolute).
     if current_fast or edge_fast:
         yaml += """
-  # Ubuntu stable KDE Neon desktop (fast HDMI only)
-  desktop-stable-ubuntu-kde-neon:
+  # Ubuntu stable KDE Plasma desktop (fast HDMI only)
+  desktop-stable-ubuntu-kde-plasma:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
@@ -1180,7 +1186,7 @@ targets:
       RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "kde-neon"
+      DESKTOP_ENVIRONMENT: "kde-plasma"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: "programming"
       DESKTOP_TIER: "mid"
@@ -1724,11 +1730,14 @@ targets:
     if edge_fast:
         yaml += '      - *community-edge-fast-hdmi\n'
 
-    # Ubuntu KDE Neon desktop for fast HDMI community boards
+    # Ubuntu KDE Plasma desktop for fast HDMI community boards.
+    # Was kde-neon; same reason as the standard-support block above —
+    # kde-neon is pinned to a specific Ubuntu LTS and the community
+    # scope tracks resolute now.
     if current_fast or vendor_fast or edge_fast:
         yaml += """
-  # Ubuntu KDE Neon desktop for fast HDMI community boards
-  community-noble-kde-neon:
+  # Ubuntu KDE Plasma desktop for fast HDMI community boards
+  community-noble-kde-plasma:
     enabled: yes
     configs: [ armbian-community ]
     pipeline:
@@ -1738,7 +1747,7 @@ targets:
       RELEASE: UBUNTU
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "kde-neon"
+      DESKTOP_ENVIRONMENT: "kde-plasma"
       DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
       DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
