@@ -492,8 +492,8 @@ def is_fast_hardware(entry):
 
 def get_soc_extensions(entry, extensions_map=None, remove_extensions_map=None):
     """
-    Determine if board needs v4l2loopback-dkms and mesa-vpu extensions.
-    For fast HDMI boards, automatically adds these extensions.
+    Determine which build extensions a board needs.
+    For fast HDMI boards, automatically adds v4l2loopback-dkms.
     Also merges manual extensions from the extensions map.
     Removes extensions specified in remove_extensions_map.
     Returns a comma-separated string of extensions or empty string.
@@ -505,10 +505,12 @@ def get_soc_extensions(entry, extensions_map=None, remove_extensions_map=None):
 
     extensions = []
 
-    # Add automatic extensions for all fast HDMI boards
+    # Add automatic extensions for all fast HDMI boards.
+    # mesa-vpu used to live here too; it was retired when its
+    # responsibilities moved to armbian-config's module_desktops
+    # (armbian/build PR #9683 deletes the extension itself).
     if is_fast_hardware(entry) is True:
         extensions.append('v4l2loopback-dkms')
-        extensions.append('mesa-vpu')
 
     # Then, add manual extensions (merges with automatic ones)
     if extensions_map:

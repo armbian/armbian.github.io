@@ -54,7 +54,7 @@ The exact codename each `RELEASE:` line resolves to depends on which `--<distro>
 
 ### By performance / arch (driven by `KERNEL_SRC_ARCH` and `BOARD_HAS_VIDEO`)
 
-- **Fast HDMI** — `arm64`, `x86` boards with video. Get `gnome_desktop` recommendation, automatic `mesa-vpu` + `v4l2loopback-dkms` extensions.
+- **Fast HDMI** — `arm64`, `x86` boards with video. Get `gnome_desktop` recommendation, automatic `v4l2loopback-dkms` extension.
 - **Slow HDMI** — `arm` (32-bit) boards with video. Get `xfce_desktop` recommendation.
 - **Headless** — `BOARD_HAS_VIDEO: false`. Get `minimal` (CLI) recommendation.
 - **RISC-V** — `riscv64`. Separate category, single XFCE desktop pattern (with the SpacemiT K1 family overridden to Bianbu via `exposed.map.overrides.yaml`).
@@ -78,15 +78,15 @@ rock-5b:current::ENABLE_EXTENSIONS="custom-extension"
 nanopi-r4s:::ENABLE_EXTENSIONS="test-extension"
 ```
 
-Manual entries are **merged** with the automatic fast-HDMI extensions (`mesa-vpu`, `v4l2loopback-dkms`).
+Manual entries are **merged** with the automatic fast-HDMI extension (`v4l2loopback-dkms`).
 
 ### `targets-extensions.map.blacklist`
 
 ```ini
 # Format: BOARD:branch1:branch2:...:REMOVE_EXTENSIONS="ext1,ext2"
 
-radxa-e54c:::REMOVE_EXTENSIONS="v4l2loopback-dkms,mesa-vpu"
-uefi-x86:current::REMOVE_EXTENSIONS="mesa-vpu"
+radxa-e54c:::REMOVE_EXTENSIONS="v4l2loopback-dkms"
+uefi-x86:current::REMOVE_EXTENSIONS="v4l2loopback-dkms"
 ```
 
 The blacklist takes precedence over both automatic and manual extensions.
@@ -195,7 +195,6 @@ The same per-scope codenames also drive the regex patterns in `exposed.map`, so 
 All fast-HDMI boards (64-bit boards with video output) automatically get:
 
 - `v4l2loopback-dkms`
-- `mesa-vpu`
 
 Manual entries from `targets-extensions.map` are merged with these; entries in `targets-extensions.map.blacklist` are removed from both automatic and manual sets. The blacklist wins.
 
