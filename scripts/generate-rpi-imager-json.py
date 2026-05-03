@@ -50,7 +50,8 @@ class RpiImagerGenerator:
         "gnome": "Gnome Desktop",
         "minimal": "Minimal",
         "xfce": "Xfce Desktop",
-        "kde-neon": "KDE Neon Desktop",
+        "kde-neon": "KDE Neon Desktop",      # legacy — kept for images still on the mirror
+        "kde-plasma": "KDE Plasma Desktop",
         "cinnamon": "Cinnamon Desktop",
         "mate": "Mate Desktop",
         "i3-wm": "I3 Window Manager",
