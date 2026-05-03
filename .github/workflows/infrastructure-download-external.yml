@@ -628,6 +628,29 @@ jobs:
           # Load configuration
           . os/external/${{ matrix.name }}.conf
 
+          # `warn_skip` — bail out of this matrix slot on a broken
+          # upstream (404, deleted release, dead mirror, …) without
+          # failing the slot. Emits a ::warning:: annotation visible
+          # on the run summary, appends a "skipped" row to the step
+          # summary so the failure is tracked alongside successful
+          # updates, then exits 0 so the matrix slot stays green and
+          # the workflow's other slots keep running.
+          #
+          # Using `exit 0` (rather than `continue-on-error: true` at
+          # the step level) because we also want the upload + repo
+          # publishing logic AFTER this script to be skipped — we
+          # have no .debs to push.
+          warn_skip() {
+            local reason="$*"
+            echo "::warning::skipping ${{ matrix.name }} ${{ matrix.release }}/${{ matrix.arch }}: ${reason}" >&2
+            {
+              echo '| name | method | arch | release | needs_qemu | target | before | after | updating |'
+              echo '|------|--------|------|---------|------------|--------|--------|-------|----------|'
+              echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | ${BEFORE_VERSION:-?} | — | ⚠️ skipped: ${reason} |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          }
+
           SOURCE="temp/"
           rm -rf ${SOURCE}
           mkdir -p ${SOURCE}
@@ -718,17 +741,17 @@ jobs:
 
             # Check if any .deb files were downloaded
             if ! ls "${SOURCE}"*.deb &> /dev/null; then
-              echo "::error::No .deb files were downloaded for ${{ matrix.name }} on ${{ matrix.arch }}" >&2
-              echo "Patterns tried: ${PATTERNS[*]}" >&2
-              exit 1
+              warn_skip "no .deb matched for arch ${{ matrix.arch }} (release ${TAG}, repo ${URL}, patterns: ${PATTERNS[*]})"
             fi
           elif [[ ${METHOD} == direct ]]; then
-            # Direct download method
-            wget -O ${SOURCE}${{ matrix.name }}.deb ${URL}
-            # Check if any .deb files were downloaded
+            # Direct download method — wget the URL into the source dir.
+            # `warn_skip` handles both transport failures (404, DNS,
+            # connection reset) and the rare "200 OK, empty body" case.
+            if ! wget -O "${SOURCE}${{ matrix.name }}.deb" "${URL}"; then
+              warn_skip "wget '${URL}' failed (transport / 404 / dead mirror)"
+            fi
             if ! ls "${SOURCE}"*.deb &> /dev/null; then
-              echo "::error::No .deb files were downloaded for ${{ matrix.name }} on ${{ matrix.arch }}" >&2
-              exit 1
+              warn_skip "${URL} produced no .deb"
             fi
           else
             # Aptly mirror method
@@ -813,16 +836,22 @@ jobs:
               echo "::debug::Mirror does not exist yet"
             fi
 
-            # Create mirror (distribution + optional components)
+            # Create mirror (distribution + optional components).
+            # `|| warn_skip` catches a missing/dead Release file at
+            # the URL — common cause of "broken source" — and skips
+            # the slot instead of letting `set -euo pipefail` fail
+            # the whole job.
             echo "::debug::Creating mirror..."
             if [[ -n "$COMPONENTS" ]]; then
               echo "::debug::aptly -config="$APTLY_CFG" -ignore-signatures ${FILTER_ARGS[*]} ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS"
               # shellcheck disable=SC2086
-              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS
+              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS \
+                || warn_skip "aptly mirror create failed (URL='$URL' DIST='$DIST' COMPONENTS='$COMPONENTS')"
             else
               echo "::debug::aptly -config="$APTLY_CFG" -ignore-signatures ${FILTER_ARGS[*]} ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST""
               # shellcheck disable=SC2086
-              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST"
+              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" \
+                || warn_skip "aptly mirror create failed (URL='$URL' DIST='$DIST')"
             fi
             echo "::debug::Mirror created successfully"
 
@@ -852,20 +881,23 @@ jobs:
                     aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST"
                   fi
                 else
-                  echo "::error::Mirror update failed after $MAX_RETRIES attempts"
-                  exit 1
+                  warn_skip "aptly mirror update failed after $MAX_RETRIES attempts (URL='$URL' DIST='$DIST')"
                 fi
               fi
             done
 
-            # Snapshot
+            # Snapshot. Failure here is rare (local aptly state op,
+            # not a remote fetch) but `set -e` would still kill the
+            # job, so route through warn_skip for consistency.
             echo "::debug::Creating snapshot..."
-            aptly -config="$APTLY_CFG" snapshot create "$MIRROR" from mirror "$MIRROR"
+            aptly -config="$APTLY_CFG" snapshot create "$MIRROR" from mirror "$MIRROR" \
+              || warn_skip "aptly snapshot create failed (MIRROR='$MIRROR')"
             echo "::debug::Snapshot created successfully"
 
-            # Publish
+            # Publish.
             echo "::debug::Publishing snapshot..."
-            aptly -config="$APTLY_CFG" publish -architectures="${{ matrix.arch }}" -batch=true snapshot "$MIRROR"
+            aptly -config="$APTLY_CFG" publish -architectures="${{ matrix.arch }}" -batch=true snapshot "$MIRROR" \
+              || warn_skip "aptly publish snapshot failed (MIRROR='$MIRROR')"
             echo "::debug::Snapshot published successfully"
 
             # Keep only latest version of each package
