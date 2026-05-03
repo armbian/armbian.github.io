@@ -1,0 +1,42 @@
+{
+  "organization": "armbian",
+  "repository": "docker-armbian-build",
+  "actions": [
+    {
+      "name": "Docker Images For Repo Handling",
+      "filename": "build-docker-images.yml",
+      "category": "generic",
+      "description": "Builds and pushes Docker images for various Armbian distributions based on a generated matrix of supported releases and architectures. It sets up the necessary environment, creates Dockerfiles, and utilizes Docker Buildx for multi-platform builds. Finally, it generates a summary of the built images and pushes them to the GitHub Container Registry.",
+      "execution_method": "push, workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/build-docker-images.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/build-docker-images.yml",
+      "filelength": 12184,
+      "edited": "2026-04-19T04:25:15.000Z",
+      "executed": "2026-05-02T06:00:02Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 495,
+      "last_run_duration_seconds": 495,
+      "total_runs": 10,
+      "cron_schedule": "at 30 minutes past the hour, at 3:00"
+    },
+    {
+      "name": "Docker Images for Framework",
+      "filename": "update_docker.yml",
+      "category": "generic",
+      "description": "Updates Docker images used for building CI by generating Dockerfiles and building multi-architecture images. Builds and pushes images for various OS and architecture combinations, then creates multi-arch manifests to consolidate them. Ensures images are up-to-date and accessible in the GitHub Container Registry.",
+      "execution_method": "workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/update_docker.yml",
+      "filelength": 9121,
+      "edited": "2026-04-18T15:49:31.000Z",
+      "executed": "2026-05-02T05:34:09Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 265,
+      "last_run_duration_seconds": 265,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 3:00"
+    }
+  ]
+}

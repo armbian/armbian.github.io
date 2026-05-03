@@ -1,0 +1,3 @@
+2028-30-09|Becoming a sponsor? https://github.com/sponsors/armbian
+2026-30-08|What’s new in Armbian v26.2? https://tinyurl.com/4a4ktj3u
+2026-30-08|Flash Armbian from macOS, Windows, and Linux https://tinyurl.com/mryujx5u
