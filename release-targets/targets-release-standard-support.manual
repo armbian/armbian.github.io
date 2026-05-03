@@ -59,8 +59,8 @@ desktop-stable-ubuntu-gnome-uefi:
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
     - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
@@ -81,8 +81,8 @@ desktop-stable-ubuntu-cinnamon-uefi:
     DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu" }
-    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,mesa-vpu,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
     - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
