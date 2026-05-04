@@ -63,7 +63,7 @@ jobs:
       - name: Ensure dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq pngquant
+          sudo apt-get install -y jq pngquant imagemagick
 
       - name: Compute time window (UTC) from period
         id: when
@@ -475,18 +475,40 @@ jobs:
               sys.exit(0)
 
           try:
-              # google.genai.types.Image is a raw-bytes wrapper, not a PIL.Image —
-              # only .save(path) is available. Save as PNG (Gemini's native format).
+              # google.genai.types.Image is a raw-bytes wrapper, not a PIL.Image:
+              # .save(path) writes the bytes verbatim, ignoring the extension. So
+              # if Gemini returns JPEG (which it sometimes does even when we ask
+              # for PNG), naming the file cover.png puts JPEG bytes in a PNG-named
+              # file and pngquant rejects it with "Not a PNG file (libpng failed)".
+              #
+              # Inspect the actual mime_type on inline_data and normalise to PNG
+              # via ImageMagick when needed, so cover.png is always a real PNG.
+              import subprocess
               for part in response.parts:
                   if hasattr(part, 'inline_data') and part.inline_data is not None:
+                      mime = (part.inline_data.mime_type or "").lower()
                       image = part.as_image()
-                      image.save("cover.png")
+                      ext_map = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
+                      src_ext = ext_map.get(mime)
+                      if src_ext is None:
+                          print(f"::warning title=Cover image::Unsupported mime_type '{mime}' from Gemini; skipping cover")
+                          sys.exit(0)
+                      if src_ext == "png":
+                          image.save("cover.png")
+                      else:
+                          src = f"cover.src.{src_ext}"
+                          image.save(src)
+                          subprocess.run(["convert", src, "cover.png"], check=True)
+                          os.remove(src)
                       size_kb = os.path.getsize("cover.png") // 1024
-                      print(f"Cover image generated successfully: cover.png ({size_kb} KB)")
+                      print(f"Cover image generated successfully: cover.png ({size_kb} KB, source mime={mime})")
                       break
               else:
                   print("::warning title=Cover image::No image returned by Gemini (API may have rejected the prompt)")
                   sys.exit(0)
+          except subprocess.CalledProcessError as e:
+              print(f"::warning title=Cover image::ImageMagick conversion failed: {e}")
+              sys.exit(0)
           except Exception as e:
               print(f"::warning title=Cover image::Failed to encode/save image: {e}")
               sys.exit(0)
