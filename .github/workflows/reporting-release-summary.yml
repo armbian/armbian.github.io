@@ -74,13 +74,13 @@ jobs:
           UNTIL_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           if [[ "$PERIOD" == "monthly" ]]; then
             SINCE_UTC="$(date -u -d '1 month ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Monthly digest"
+            LABEL="Armbian Monthly digest"
           elif [[ "$PERIOD" == "quarterly" ]]; then
             SINCE_UTC="$(date -u -d '3 months ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Quarterly digest"
+            LABEL="Armbian Quarterly digest"
           else
             SINCE_UTC="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Weekly digest"
+            LABEL="Armbian Weekly digest"
           fi
           echo "UNTIL_UTC=$UNTIL_UTC" >> "$GITHUB_ENV"
           echo "SINCE_UTC=$SINCE_UTC" >> "$GITHUB_ENV"
