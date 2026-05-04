@@ -45,6 +45,27 @@ minimal-stable-ubuntu-current-uefi:
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
 
+# Ubuntu minimal with current kernel - UEFI only - noble (LTS)
+minimal-stable-ubuntu-noble-current-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: noble
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: cloud }
+    - { BOARD: uefi-x86, BRANCH: cloud }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
 # Ubuntu GNOME desktop - UEFI only
 desktop-stable-ubuntu-gnome-uefi:
   enabled: yes
