@@ -36,6 +36,8 @@ minimal-stable-ubuntu-current-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: current }
     - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: cloud }
+    - { BOARD: uefi-x86, BRANCH: cloud }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
@@ -86,3 +88,79 @@ desktop-stable-ubuntu-cinnamon-uefi:
     - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
+
+# Ubuntu KDE Plasma desktop - UEFI only
+desktop-stable-ubuntu-kde-plasma-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "kde-plasma"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+
+# Ubuntu MATE desktop - UEFI only
+desktop-stable-ubuntu-mate-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "mate"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+
+# Ubuntu Xfce desktop - UEFI only
+desktop-stable-ubuntu-xfce-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "xfce"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+
+# Ubuntu i3 window-manager - UEFI only
+desktop-stable-ubuntu-i3-wm-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "i3-wm"
+    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
+    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
