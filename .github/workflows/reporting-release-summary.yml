@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.AI_MODELS }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SCOPE: ${{ inputs.scope || 'org:armbian' }}
       TZ: ${{ inputs.tz || 'Europe/Ljubljana' }}
       PERIOD: ${{ inputs.period || 'weekly' }}
@@ -54,8 +54,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install OpenAI SDK
-        run: pip install 'openai>=1.0.0'
+      - name: Install Anthropic SDK
+        run: pip install 'anthropic>=0.40.0'
 
       - name: Install Google Gen AI SDK
         run: pip install 'google-genai>=1.0.0'
@@ -210,33 +210,70 @@ jobs:
           set -euo pipefail
           python3 <<'PY'
           import os
-          from openai import OpenAI
+          from anthropic import Anthropic
 
-          token = os.environ["GITHUB_TOKEN"]
           label = os.environ["LABEL"]
 
           with open("summary.md", "r", encoding="utf-8") as f:
               content = f.read().strip()
 
-          client = OpenAI(base_url="https://models.github.ai/inference", api_key=token)
+          # Reads ANTHROPIC_API_KEY from the env. claude-opus-4-7 doesn't accept
+          # temperature/top_p/top_k (those 400 on this model). Adaptive thinking
+          # is enabled so Claude plans the thematic structure before drafting —
+          # noticeably better narrative flow than a one-shot completion.
+          client = Anthropic()
+
+          system = (
+              f"You are a professional technical editor writing the {label} for an "
+              "embedded Linux audience.\n\n"
+
+              "Priority:\n"
+              "1) Accuracy and signal over completeness\n"
+              "2) Clear thematic grouping\n"
+              "3) Professional tone\n\n"
+
+              "Voice:\n"
+              "Clear, precise, and business-professional. No slang or casual phrasing. "
+              "Avoid expressive or playful language (e.g., 'glow-up', 'shown the door'). "
+              "Do not use filler openings.\n\n"
+
+              "Style:\n"
+              "Use controlled rhetorical structure for clarity — parallelism and "
+              "rule-of-three phrasing are encouraged. Avoid metaphors and figurative language. "
+              "Use light contrast only where it improves understanding.\n\n"
+
+              "Content selection:\n"
+              "- Group changes into 2–3 dominant themes\n"
+              "- Highlight only the most impactful or representative changes\n"
+              "- Do not enumerate all items\n"
+              "- Prefer architectural, platform, and user-visible changes over minor fixes\n\n"
+
+              "Structure:\n"
+              "- First sentence names the main themes\n"
+              "- Then 2–3 short paragraphs, one per theme\n"
+              "- Each paragraph expands the theme with key examples\n"
+              "- Use **bold phrases (3–6 words)** for emphasis sparingly\n"
+              "- Separate paragraphs with a blank line\n"
+          )
 
           prompt = (
-              "Read the following Markdown changelog and write a short journalistic intro paragraph (5–7 sentences) "
-              "that summarizes the main activity. Be concise, professional, and factual. Output only the intro.\n\n"
+              "Below is a Markdown changelog of merged pull requests.\n\n"
+              "Write a concise professional summary following the system instructions. "
+              "Use 2–3 paragraphs, each covering one theme. End with a single line of "
+              "relevant hashtags after a blank line.\n\n"
+              "Output only the summary and hashtags.\n\n"
               f"{content}"
           )
 
-          resp = client.chat.completions.create(
-              model="openai/gpt-4.1",
-              messages=[
-                  {"role": "system", "content": "You are a " + label + "digest editor."},
-                  {"role": "user", "content": prompt},
-              ],
-              temperature=0.3,
-              top_p=1.0,
+          resp = client.messages.create(
+              model="claude-opus-4-7",
+              max_tokens=4096,
+              thinking={"type": "adaptive"},
+              system=system,
+              messages=[{"role": "user", "content": prompt}],
           )
 
-          intro = resp.choices[0].message.content.strip()
+          intro = next((b.text for b in resp.content if b.type == "text"), "").strip()
 
           with open("summary.md", "w", encoding="utf-8") as f:
               f.write(intro + "\n\n" + content)
