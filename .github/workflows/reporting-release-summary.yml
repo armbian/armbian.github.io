@@ -353,12 +353,14 @@ jobs:
           selected_theme = visual_themes[theme_index]
 
           # Rotating composition styles
-          # Compositions push the focal object off-center so the title can
-          # render as a single uninterrupted block in the opposite half.
+          # Title and subtitle render as a single centered text block; the
+          # focal theme acts as backdrop or vertical accent, never competing
+          # with the centered text for horizontal real estate.
           composition_styles = [
-              "left-weighted with diagonal leading lines, focal object in the left third",
-              "right-weighted with S-curve flow, focal object in the right third",
-              "cinematic rule-of-thirds placement, focal object off-center",
+              "centered text block; focal theme as full-frame backdrop / texture across the entire image",
+              "centered text block; focal element placed above the text, smaller and supporting",
+              "centered text block; focal element placed below the text, smaller and supporting",
+              "centered text block; focal motifs softly mirrored on the far left and far right margins, framing the text",
           ]
           composition_index = (date_seed // 8) % len(composition_styles)
           selected_composition = composition_styles[composition_index]
@@ -406,9 +408,10 @@ jobs:
           - title: "{digest_title}" — LARGE bold typography occupying ~14% of frame height, dominant in the layout
           - subtitle: "{current_date}" — supporting text at ~6% of frame height, clearly readable
           - optional small caption: "{tagline}" — supporting text at ~4% of frame height
-          - the title is a SINGLE CONTINUOUS BLOCK — one line, or stacked lines as a unit; never split or interrupted by graphics
-          - text and the visual theme occupy DISTINCT zones of the frame; do not place focal objects between title words
-          - all text must be highly readable at thumbnail size; treat typography as the second focal element after the visual theme
+          - title, subtitle, and caption render as ONE centered text block — stacked vertically, all lines horizontally centered, group as a whole centered horizontally and vertically in the frame
+          - the title itself is a SINGLE CONTINUOUS line — never split or interrupted by graphics
+          - graphics never overlap or pass through the centered text block; keep the text zone clean
+          - all text must be highly readable at thumbnail size; treat typography as the primary focal element
           - high contrast against background; no thin or condensed typefaces
 
           COMPOSITION:
@@ -416,7 +419,7 @@ jobs:
           - {selected_composition}
           - strong focal object featuring {selected_theme}
           - {selected_lighting}
-          - expansive negative space for text overlay
+          - clean negative space directly behind the centered text block (no busy graphics under the text)
           - panoramic, sweeping composition
 
           QUALITY:
