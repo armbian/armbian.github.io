@@ -1813,10 +1813,14 @@ targets:
         if edge_riscv64:
             yaml += '      - *community-edge-riscv64\n'
 
-    # Ubuntu minimal CLI for headless community boards
-    if current_headless or vendor_headless or edge_headless:
+    # Ubuntu minimal CLI for all community boards (excluding loongarch).
+    # Mirrors community-trixie-all on the Debian side so every csc/tvb
+    # board gets a CLI Ubuntu image too, not just the headless ones.
+    if (current_fast or current_slow or current_headless or current_riscv64 or
+        vendor_fast or vendor_slow or vendor_headless or vendor_riscv64 or
+        edge_fast or edge_slow or edge_headless or edge_riscv64):
         yaml += """
-  # Ubuntu minimal CLI for headless community boards
+  # Ubuntu minimal CLI for all community boards
   community-noble-minimal:
     enabled: yes
     configs: [ armbian-community ]
@@ -1829,12 +1833,30 @@ targets:
       BUILD_DESKTOP: "no"
     items:
 """
+        if current_fast:
+            yaml += '      - *community-current-fast-hdmi\n'
+        if current_slow:
+            yaml += '      - *community-current-slow-hdmi\n'
         if current_headless:
             yaml += '      - *community-current-headless\n'
+        if current_riscv64:
+            yaml += '      - *community-current-riscv64\n'
+        if vendor_fast:
+            yaml += '      - *community-vendor-fast-hdmi\n'
+        if vendor_slow:
+            yaml += '      - *community-vendor-slow-hdmi\n'
         if vendor_headless:
             yaml += '      - *community-vendor-headless\n'
+        if vendor_riscv64:
+            yaml += '      - *community-vendor-riscv64\n'
+        if edge_fast:
+            yaml += '      - *community-edge-fast-hdmi\n'
+        if edge_slow:
+            yaml += '      - *community-edge-slow-hdmi\n'
         if edge_headless:
             yaml += '      - *community-edge-headless\n'
+        if edge_riscv64:
+            yaml += '      - *community-edge-riscv64\n'
 
     # Note: loongarch boards don't get noble images, only bookworm minimal
 
