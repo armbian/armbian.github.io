@@ -9,6 +9,7 @@ SOURCE_OF_TRUTH="${SOURCE_OF_TRUTH:-rsync://fi.mirror.armbian.de}"
 OS_DIR="${OS_DIR:-./os}"
 BOARD_DIR="${BOARD_DIR:-./build/config/boards}"
 REUSABLE_FILE="${REUSABLE_FILE:-./release-targets/reusable.yml}"
+THIRD_PARTY_FILE="${THIRD_PARTY_FILE:-./release-targets/third-party.yml}"
 OUT="${OUT:-armbian-images.json}"
 
 # -----------------------------------------------------------------------------
@@ -853,6 +854,68 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
+
+# -----------------------------------------------------------------------------
+# Merge third-party manifests
+# -----------------------------------------------------------------------------
+# Each entry in THIRD_PARTY_FILE points at an external `armbian-images.json`
+# (already in canonical schema). Their `.assets` arrays are concatenated
+# onto $OUT — no enrichment or row rewriting is done. Failures are logged
+# but do not abort the run.
+if [[ -f "$THIRD_PARTY_FILE" ]]; then
+  echo "▶ Merging third-party manifests from ${THIRD_PARTY_FILE}…" >&2
+
+  added_total=0
+  while IFS= read -r src; do
+    src="${src#"${src%%[![:space:]]*}"}"  # ltrim
+    src="${src%"${src##*[![:space:]]}"}"  # rtrim
+    [[ -z "$src" ]] && continue
+
+    if [[ "$src" == http://* || "$src" == https://* ]]; then
+      url="$src"
+    else
+      url="https://github.com/${src}/releases/latest/download/armbian-images.json"
+    fi
+
+    echo "  - ${src} → ${url}" >&2
+
+    tp_json="$(mktemp)"
+    if ! curl -fsSL --retry 3 --connect-timeout 10 "$url" -o "$tp_json"; then
+      echo "    WARNING: failed to fetch ${url}, skipping" >&2
+      rm -f "$tp_json"
+      continue
+    fi
+
+    if ! jq -e '.assets | type == "array"' "$tp_json" >/dev/null 2>&1; then
+      echo "    WARNING: ${url} is not in the expected schema (.assets array missing), skipping" >&2
+      rm -f "$tp_json"
+      continue
+    fi
+
+    added="$(jq '.assets | length' "$tp_json")"
+    jq -s '{assets: (.[0].assets + .[1].assets)}' "$OUT" "$tp_json" > "${OUT}.merged"
+    mv "${OUT}.merged" "$OUT"
+    added_total=$((added_total + added))
+    echo "    + ${added} assets" >&2
+    rm -f "$tp_json"
+  done < <(
+    python3 -c "
+import yaml, sys
+try:
+    with open('$THIRD_PARTY_FILE') as f:
+        data = yaml.safe_load(f) or {}
+    for src in (data.get('sources') or []):
+        if src is not None and str(src).strip():
+            print(str(src).strip())
+except Exception as e:
+    sys.stderr.write(f'Error loading third-party.yml: {e}\n')
+" 2>/dev/null || true
+  )
+
+  echo "  - Third-party assets added: ${added_total}" >&2
+else
+  echo "ℹ️  Third-party source list not found: ${THIRD_PARTY_FILE}" >&2
+fi
 
 # -----------------------------------------------------------------------------
 # Emit warnings for incomplete board metadata (non-fatal)
