@@ -1,0 +1,22 @@
+# Third-party sources of armbian-images.json. Each entry's `assets`
+# array is appended to the main armbian-images.json that this repo
+# publishes at https://github.armbian.com/armbian-images.json.
+#
+# An entry is a single string and may be either:
+#
+#   - a GitHub `<owner>/<repo>` shorthand
+#       Resolved to:
+#         https://github.com/<owner>/<repo>/releases/latest/download/armbian-images.json
+#       (so the third-party repo just needs to publish that file as
+#       a release asset on its `latest` release)
+#
+#   - a full `https://…` URL pointing directly at an armbian-images.json
+#
+# The third-party manifest must already be in the canonical schema
+# (`{"assets": [ {…}, … ]}`); no enrichment or transformation is done
+# on the merged rows. Failures (network, missing file, malformed JSON)
+# are logged as warnings and the merge continues with the remaining
+# sources.
+
+sources:
+  - armbian/sdk
