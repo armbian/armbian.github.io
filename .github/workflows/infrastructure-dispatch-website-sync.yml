@@ -10,6 +10,10 @@ on:
   workflow_run:
     workflows: ["Web: Generate github.armbian.com content"]
     types: [completed]
+    # Only react to runs of the generator on the production branch.
+    # Without this filter, any feature/test-branch run of the
+    # generator could trigger a dispatch at armbian/website.
+    branches: [main]
   workflow_dispatch:
 
 permissions:
