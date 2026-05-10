@@ -716,14 +716,8 @@ jobs:
             archive
             cache
 
-    - name: "Run webindex update action"
+    - name: "Generate directory"
       uses: peter-evans/repository-dispatch@v4
       with:
-        # GITHUB_TOKEN here is intentional — it's suppressed by
-        # GitHub for same-repo dispatches, which is what breaks the
-        # would-be loop redirector → download-index → redirector
-        # (download-index now dispatches 'Infrastructure: Update
-        # redirector' via the org PAT). Don't switch to DISPATCH
-        # without first rewiring the chain elsewhere.
-        token: ${{ secrets.GITHUB_TOKEN }}
-        event-type: "Data: Update download index"
+        token: ${{ secrets.DISPATCH }}
+        event-type: "Web: Directory listing"
