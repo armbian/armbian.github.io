@@ -1,0 +1,48 @@
+name: "Infrastructure: Dispatch website sync"
+run-name: Dispatch armbian/website sync after ${{ github.event.workflow_run.name || github.workflow }}
+
+# Watches for the github.armbian.com content generator to finish,
+# then fires a repository_dispatch at armbian/website so the public
+# site rebuilds against the freshly published directory listing.
+# Mirrors the peter-evans/repository-dispatch pattern already used
+# for cross-repo dispatch from this repo (generate-actions-report.yml).
+on:
+  workflow_run:
+    workflows: ["Web: Generate github.armbian.com content"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    name: 📢 Trigger website sync
+    runs-on: ubuntu-latest
+    # Only fire from the canonical repo (skip forks) AND only when
+    # the upstream generator actually succeeded — partial / red runs
+    # would push incomplete data to production. Manual
+    # workflow_dispatch is always allowed for one-off retries.
+    if: >-
+      ${{ github.repository_owner == 'armbian'
+          && (github.event_name == 'workflow_dispatch'
+              || github.event.workflow_run.conclusion == 'success') }}
+    env:
+      DISPATCH: ${{ secrets.DISPATCH }}
+    steps:
+      - name: Fire repository_dispatch on armbian/website
+        # Soft-skip when the secret isn't configured rather than
+        # failing red.
+        if: ${{ env.DISPATCH != '' }}
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ env.DISPATCH }}
+          repository: armbian/website
+          event-type: sync
+          client-payload: >-
+            {
+              "source_workflow": "${{ github.event.workflow_run.name || github.workflow }}",
+              "source_run_id":   "${{ github.event.workflow_run.id   || github.run_id }}",
+              "source_repo":     "${{ github.repository }}",
+              "source_sha":      "${{ github.event.workflow_run.head_sha || github.sha }}"
+            }
