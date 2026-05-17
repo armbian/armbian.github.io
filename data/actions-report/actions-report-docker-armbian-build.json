@@ -1,0 +1,60 @@
+{
+  "organization": "armbian",
+  "repository": "docker-armbian-build",
+  "actions": [
+    {
+      "name": "Docker Images For Automation",
+      "filename": "build-docker-images.yml",
+      "category": "generic",
+      "description": "Builds and pushes Docker images for various Armbian distributions based on a generated build matrix. It sets up the necessary environment, creates Dockerfiles, and utilizes Docker Buildx to build images for specified architectures. A summary of the built images is generated and pushed to the GitHub Container Registry.",
+      "execution_method": "push, workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/build-docker-images.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/build-docker-images.yml",
+      "filelength": 12181,
+      "edited": "2026-05-05T11:11:55.000Z",
+      "executed": "2026-05-16T06:22:05Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 750,
+      "last_run_duration_seconds": 750,
+      "total_runs": 10,
+      "cron_schedule": "at 30 minutes past the hour, at 3:00"
+    },
+    {
+      "name": "Watchdog",
+      "filename": "maintenance-watchdog.yml",
+      "category": "Maintenance",
+      "description": "Monitors and manages the execution of specified Docker-related workflows by checking their status and rerunning failed jobs up to three times. It operates on a schedule or can be manually triggered, ensuring that critical workflows are maintained effectively. The process involves querying GitHub Actions for workflow runs and taking action based on their outcomes.",
+      "execution_method": "schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/maintenance-watchdog.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/maintenance-watchdog.yml",
+      "filelength": 2335,
+      "edited": "2026-05-05T11:11:43.000Z",
+      "executed": "2026-05-17T00:08:27Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 8,
+      "last_run_duration_seconds": 8,
+      "total_runs": 10,
+      "cron_schedule": "every 15 minutes"
+    },
+    {
+      "name": "Docker Images for Framework",
+      "filename": "update_docker.yml",
+      "category": "generic",
+      "description": "Updates Docker images for building CI by generating Dockerfiles and building multi-architecture images. Builds and pushes images for various OS and release combinations, then creates multi-arch manifests to consolidate them. Ensures the latest base images are used and retries builds if they fail.",
+      "execution_method": "workflow_dispatch, schedule",
+      "status_link": "https://github.com/armbian/docker-armbian-build/actions/workflows/update_docker.yml",
+      "script_link": "https://github.com/armbian/docker-armbian-build/blob/main/.github/workflows/update_docker.yml",
+      "filelength": 9798,
+      "edited": "2026-05-08T18:55:31.000Z",
+      "executed": "2026-05-16T05:55:12Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 476,
+      "last_run_duration_seconds": 476,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 3:00"
+    }
+  ]
+}
