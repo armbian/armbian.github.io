@@ -68,3 +68,17 @@ overrides:
     minimal:
       release: trixie
       branch: current
+
+  - boards: [uefi-x86, uefi-arm64]
+    # Generic UEFI x86_64 / aarch64 images: expose the GNOME desktop
+    # built against the edge kernel.
+    #   - uefi-x86 defaults to gnome_desktop already (amd64=fast+video),
+    #     so this entry's effective change is branch current → edge.
+    #   - uefi-arm64 defaults to xfce_desktop (arm64=slow+video), so
+    #     this entry switches both the suffix AND the branch — we
+    #     want GNOME exposed for arm64 UEFI, not XFCE.
+    # Release stays at the standard Ubuntu codename (resolute) via
+    # field-level fall-through.
+    desktop:
+      branch: edge
+      suffix: gnome_desktop
