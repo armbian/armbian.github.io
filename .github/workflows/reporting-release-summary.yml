@@ -205,7 +205,6 @@ jobs:
           echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
 
       - name: "Write a short journalistic intro with AI"
-        if: ${{ env.PERIOD == 'weekly' || env.PERIOD == 'monthly' }}
         run: |
           set -euo pipefail
           python3 <<'PY'
@@ -286,7 +285,6 @@ jobs:
         run: cat summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: "Generate AI cover image"
-        if: ${{ env.PERIOD == 'weekly' || env.PERIOD == 'monthly' }}
         # 10m ceiling = headroom for 2x 240s SDK timeout + 30s retry wait + buffer.
         timeout-minutes: 10
         continue-on-error: true
