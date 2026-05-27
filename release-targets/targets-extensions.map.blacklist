@@ -17,3 +17,5 @@
 #
 # Boards listed below:
 radxa-e54c:::REMOVE_EXTENSIONS="v4l2loopback-dkms"
+khadas-vim1s:::REMOVE_EXTENSIONS="v4l2loopback-dkms"
+khadas-vim4:::REMOVE_EXTENSIONS="v4l2loopback-dkms"
