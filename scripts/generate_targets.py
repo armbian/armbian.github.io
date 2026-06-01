@@ -31,6 +31,16 @@ import yaml
 RELEASE_TOKEN_DEBIAN = "DEBIAN"
 RELEASE_TOKEN_UBUNTU = "UBUNTU"
 
+# riscv64 is pinned to its own Ubuntu codename, independent of the
+# general UBUNTU token. The resolute riscv64 rootfs/images are currently
+# broken, so every riscv64 Ubuntu image (standard, nightly, community,
+# and the exposed.map recommended set) falls back to the last-good LTS,
+# noble, while the arm64/amd64 fleet keeps moving to resolute. When
+# resolute riscv64 builds again, set RISCV64_UBUNTU_CODENAME back to
+# "resolute" (or wire it to the per-scope ubuntu flag) in this one place.
+RELEASE_TOKEN_UBUNTU_RISCV64 = "UBUNTU_RISCV64"
+RISCV64_UBUNTU_CODENAME = "noble"
+
 # Per-output-file default codename pairs. Match the literal pins these
 # files used before the substitution refactor — running the generator
 # with no flags reproduces the previous behaviour exactly.
@@ -65,6 +75,17 @@ def resolve_release_tokens(yaml_text: str, debian: str, ubuntu: str) -> str:
     yaml_text = re.sub(
         r"(?m)^(\s*)RELEASE:\s*" + re.escape(RELEASE_TOKEN_DEBIAN) + r"\b",
         lambda m: f"{m.group(1)}RELEASE: {debian}",
+        yaml_text,
+    )
+    # riscv64-specific token first. Note `UBUNTU\b` below cannot match
+    # `UBUNTU_RISCV64` (no word boundary before `_`), so ordering is not
+    # strictly required — but substituting the more specific token first
+    # keeps the intent obvious. Resolves to the fixed noble pin regardless
+    # of the per-scope `ubuntu` codename, since resolute riscv64 is broken
+    # in every scope.
+    yaml_text = re.sub(
+        r"(?m)^(\s*)RELEASE:\s*" + re.escape(RELEASE_TOKEN_UBUNTU_RISCV64) + r"\b",
+        lambda m: f"{m.group(1)}RELEASE: {RISCV64_UBUNTU_CODENAME}",
         yaml_text,
     )
     yaml_text = re.sub(
@@ -1072,10 +1093,11 @@ targets:
     items:
       - *stable-current-fast-hdmi
 """
+    # riscv64 is deliberately NOT included here: this target is resolute
+    # and resolute riscv64 is broken. riscv64 minimal is emitted by the
+    # dedicated noble target minimal-stable-ubuntu-riscv below instead.
     if current_slow:
         yaml += '      - *stable-current-slow-hdmi\n'
-    if current_riscv64:
-        yaml += '      - *stable-current-riscv64\n'
     if current_loongarch:
         yaml += '      - *stable-current-loongarch\n'
     if current_headless:
@@ -1084,8 +1106,6 @@ targets:
         yaml += '      - *stable-vendor-fast-hdmi\n'
     if vendor_slow:
         yaml += '      - *stable-vendor-slow-hdmi\n'
-    if vendor_riscv64:
-        yaml += '      - *stable-vendor-riscv64\n'
     if vendor_loongarch:
         yaml += '      - *stable-vendor-loongarch\n'
     if vendor_headless:
@@ -1094,8 +1114,6 @@ targets:
         yaml += '      - *stable-legacy-fast-hdmi\n'
     if legacy_slow:
         yaml += '      - *stable-legacy-slow-hdmi\n'
-    if legacy_riscv64:
-        yaml += '      - *stable-legacy-riscv64\n'
     if legacy_loongarch:
         yaml += '      - *stable-legacy-loongarch\n'
     if legacy_headless:
@@ -1104,8 +1122,6 @@ targets:
         yaml += '      - *stable-edge-fast-hdmi\n'
     if edge_slow:
         yaml += '      - *stable-edge-slow-hdmi\n'
-    if edge_riscv64:
-        yaml += '      - *stable-edge-riscv64\n'
     if edge_loongarch:
         yaml += '      - *stable-edge-loongarch\n'
     if edge_headless:
@@ -1223,7 +1239,7 @@ targets:
     # Ubuntu stable XFCE desktop for RISC-V boards
     if current_riscv64 or vendor_riscv64 or legacy_riscv64 or edge_riscv64:
         yaml += """
-  # Ubuntu stable XFCE desktop for RISC-V boards
+  # Ubuntu XFCE desktop for RISC-V boards (noble; resolute riscv64 is broken)
   desktop-stable-ubuntu-riscv64-xfce:
     enabled: yes
     configs: [ armbian-images ]
@@ -1231,7 +1247,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: UBUNTU
+      RELEASE: UBUNTU_RISCV64
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1283,9 +1299,12 @@ targets:
         yaml += '\n' + indented_manual
 
     # Add riscv64 minimal target if any riscv64 boards exist
-    if current_riscv64 or vendor_riscv64 or edge_riscv64:
+    # Dedicated riscv64 minimal target, pinned to noble (resolute riscv64
+    # is broken). Carries legacy too — it used to ride the shared
+    # minimal-stable-ubuntu target, which is now resolute-only.
+    if current_riscv64 or vendor_riscv64 or legacy_riscv64 or edge_riscv64:
         yaml += """
-  # Ubuntu stable minimal - RISC-V
+  # Ubuntu stable minimal - RISC-V (noble; resolute riscv64 is broken)
   minimal-stable-ubuntu-riscv:
     enabled: yes
     configs: [ armbian-images ]
@@ -1293,7 +1312,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: UBUNTU
+      RELEASE: UBUNTU_RISCV64
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
@@ -1302,6 +1321,8 @@ targets:
             yaml += '      - *stable-current-riscv64\n'
         if vendor_riscv64:
             yaml += '      - *stable-vendor-riscv64\n'
+        if legacy_riscv64:
+            yaml += '      - *stable-legacy-riscv64\n'
         if edge_riscv64:
             yaml += '      - *stable-edge-riscv64\n'
         yaml += '\n'
@@ -1465,7 +1486,7 @@ targets:
     # Ubuntu XFCE desktop for RISC-V boards
     if riscv64_boards:
         yaml += """
-  # Ubuntu XFCE desktop for RISC-V boards
+  # Ubuntu XFCE desktop for RISC-V boards (noble; resolute riscv64 is broken)
   nightly-resolute-riscv64-xfce:
     enabled: yes
     configs: [ armbian-images ]
@@ -1473,7 +1494,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: UBUNTU
+      RELEASE: UBUNTU_RISCV64
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1789,7 +1810,7 @@ targets:
     # Ubuntu XFCE desktop for RISC-V community boards
     if current_riscv64 or vendor_riscv64 or edge_riscv64:
         yaml += """
-  # Ubuntu XFCE desktop for RISC-V community boards
+  # Ubuntu XFCE desktop for RISC-V community boards (noble; resolute riscv64 is broken)
   community-noble-riscv64-xfce:
     enabled: yes
     configs: [ armbian-community ]
@@ -1797,7 +1818,7 @@ targets:
       gha: *armbian-gha
     build-image: "yes"
     vars:
-      RELEASE: UBUNTU
+      RELEASE: UBUNTU_RISCV64
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
@@ -1839,22 +1860,41 @@ targets:
             yaml += '      - *community-current-slow-hdmi\n'
         if current_headless:
             yaml += '      - *community-current-headless\n'
-        if current_riscv64:
-            yaml += '      - *community-current-riscv64\n'
         if vendor_fast:
             yaml += '      - *community-vendor-fast-hdmi\n'
         if vendor_slow:
             yaml += '      - *community-vendor-slow-hdmi\n'
         if vendor_headless:
             yaml += '      - *community-vendor-headless\n'
-        if vendor_riscv64:
-            yaml += '      - *community-vendor-riscv64\n'
         if edge_fast:
             yaml += '      - *community-edge-fast-hdmi\n'
         if edge_slow:
             yaml += '      - *community-edge-slow-hdmi\n'
         if edge_headless:
             yaml += '      - *community-edge-headless\n'
+
+    # Ubuntu minimal CLI for RISC-V community boards. Pinned to noble
+    # (resolute riscv64 is broken) and split out of community-noble-minimal
+    # above so riscv64 stays on the last-good LTS while the rest move on.
+    if current_riscv64 or vendor_riscv64 or edge_riscv64:
+        yaml += """
+  # Ubuntu minimal CLI for RISC-V community boards (noble; resolute riscv64 is broken)
+  community-noble-riscv64-minimal:
+    enabled: yes
+    configs: [ armbian-community ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: UBUNTU_RISCV64
+      BUILD_MINIMAL: "yes"
+      BUILD_DESKTOP: "no"
+    items:
+"""
+        if current_riscv64:
+            yaml += '      - *community-current-riscv64\n'
+        if vendor_riscv64:
+            yaml += '      - *community-vendor-riscv64\n'
         if edge_riscv64:
             yaml += '      - *community-edge-riscv64\n'
 
@@ -2019,7 +2059,11 @@ def generate_exposed_map(
         # Apply override.desktop (if any). suffix is the literal regex
         # tail (e.g. "bianbu_desktop"), not just the desktop name —
         # keeps the schema symmetric with the minimal block above.
-        d_release = ubuntu_codename
+        # riscv64's Ubuntu image is pinned to noble (resolute riscv64 is
+        # broken), so the recommended-image regex must point at noble too —
+        # otherwise it would keep matching resolute and the riscv64
+        # "recommended" download would silently disappear from the site.
+        d_release = RISCV64_UBUNTU_CODENAME if is_fast == 'riscv64' else ubuntu_codename
         d_branch = branch
         d_suffix = default_suffix
         if override and isinstance(override.get('desktop'), dict):
