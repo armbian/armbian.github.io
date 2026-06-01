@@ -496,6 +496,12 @@ def is_fast_hardware(entry):
     if board_family == 'nuvoton-ma35d1':
         return False
 
+    # NXP i.MX93 has only a Vivante GC520L 2D accelerator — no OpenGL/3D
+    # GPU support; only software (pixman) rendering works reliably for
+    # desktop use, so classify as slow to get XFCE instead of GNOME.
+    if board_family == 'imx93':
+        return False
+
     # Rockchip RK3328, RK3399 and RK3399PRO are slow
     if boot_soc in ['rk3328', 'rk3399', 'rk3399pro']:
         return False
