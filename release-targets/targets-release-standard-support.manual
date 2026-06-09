@@ -34,6 +34,8 @@ minimal-stable-ubuntu-current-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
+    - { BOARD: uefi-arm64, BRANCH: edge }
+    - { BOARD: uefi-x86, BRANCH: edge }
     - { BOARD: uefi-arm64, BRANCH: current }
     - { BOARD: uefi-x86, BRANCH: current }
     - { BOARD: uefi-arm64, BRANCH: cloud }
