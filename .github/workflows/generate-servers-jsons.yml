@@ -91,13 +91,73 @@ jobs:
 
             echo "Generating $outfile from $url"
 
-            timeout 10 curl -s \
+            # Retry on transient failures; --fail turns HTTP 4xx/5xx into errors.
+            # -sS: quiet progress but still print the error reason on failure.
+            response="$(curl -sS --fail \
+              --connect-timeout 10 --max-time 60 \
+              --retry 5 --retry-delay 2 --retry-all-errors \
               -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
               -H "Accept: application/json; indent=4" \
-              "$url" \
-            | jq "$JQ_FILTER" > "$outfile"
+              "$url")"
+
+            echo "$response" | jq "$JQ_FILTER" > "$outfile"
+
+            # Guard against a valid-but-empty result set.
+            count="$(jq 'length' "$outfile")"
+            if [ "$count" -eq 0 ]; then
+              echo "::error::$outfile is empty (NetBox returned no '$kind' servers from $url)"
+              exit 1
+            fi
+            echo "  -> $count server(s)"
 
           done
+
+          # --- Self-hosted GitHub runners ---
+          # VMs with role "Userlevel runner"; cache host name and runner count.
+          # NetBox's virtual-machines endpoint ignores `device_role` (a Device
+          # filter), so we fetch all active VMs and filter on the role name in
+          # jq to avoid pulling in unrelated roles (e.g. "Virtual machine").
+          runners_url="$BASE_URL"
+          runners_outfile="github-runners.jq"
+
+          RUNNERS_JQ_FILTER='
+            .results
+            | map(
+                select(.name != null and ((.role.name? // "") == "Userlevel runner"))
+                | {
+                    host: .name,
+                    runners: (.custom_fields["runners"] // 0),
+                    vcpus: ((.vcpus // 0) | round),
+                    memory: (.memory // 0),
+                    apt_proxy: (.custom_fields["apt_proxy"] // ""),
+                    oci_cache: (.custom_fields["oci_cache"] // ""),
+                    redis_cache: (.custom_fields["redis_cache"] // "")
+                  }
+              )
+            | sort_by(.host)
+          '
+
+          echo "Generating $runners_outfile from $runners_url"
+
+          # Retry on transient failures; --fail turns HTTP 4xx/5xx into errors.
+          # -sS: quiet progress but still print the error reason on failure.
+          response="$(curl -sS --fail \
+            --connect-timeout 10 --max-time 60 \
+            --retry 5 --retry-delay 2 --retry-all-errors \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json; indent=4" \
+            "$runners_url")"
+
+          echo "$response" | jq "$RUNNERS_JQ_FILTER" > "$runners_outfile"
+
+          # Guard against a valid-but-empty result set: committing an empty
+          # runner list to the data branch would poison every downstream reader.
+          count="$(jq 'length' "$runners_outfile")"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::$runners_outfile is empty (NetBox returned no 'Userlevel runner' VMs from $runners_url)"
+            exit 1
+          fi
+          echo "  -> $count runner host(s)"
 
       - name: Display generated JSON files
         run: |
@@ -121,6 +181,14 @@ jobs:
             echo "### upload.jq"
             echo "\`\`\`json"
             cat upload.jq
+            echo "\`\`\`"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+          {
+            echo "### github-runners.jq"
+            echo "\`\`\`json"
+            cat github-runners.jq
             echo "\`\`\`"
           } >> $GITHUB_STEP_SUMMARY
 
