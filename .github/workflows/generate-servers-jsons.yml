@@ -125,7 +125,7 @@ jobs:
             | map(
                 select(.name != null and ((.role.name? // "") == "Userlevel runner"))
                 | {
-                    host: (.custom_fields["github_label"] // .name),
+                    host: ((.custom_fields["github_label"] // "" | gsub("^\\s+|\\s+$";"") | select(. != "")) // .name),
                     runners: (.custom_fields["runners"] // 0),
                     vcpus: ((.vcpus // 0) | round),
                     memory: (.memory // 0),
