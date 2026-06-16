@@ -4,13 +4,15 @@ set -euo pipefail
 # Validate images:
 # - board-images/: 16:9 AND either 1920x1080 or 3840x2160, TRANSPARENT background,
 #   and (optional) object not larger than MAX_OBJECT_PCT of the frame
-# - board-vendor-logos/: must be square (WxH equal)
+# - board-vendor-logos/: square (WxH equal), TRANSPARENT background, and object
+#   not larger than MAX_LOGO_OBJECT_PCT of the frame (default 80)
 #
 # On a PR only the changed assets are checked; on schedule/workflow_dispatch the
 # WHOLE set is checked. Requires ImageMagick's `identify`/`convert`.
 #
 # env: MAX_OBJECT_PCT (int) — if set, fail a board image whose opaque-pixel fill
 #      exceeds this %. Unset = report only (board images currently fill 5–48%).
+#      MAX_LOGO_OBJECT_PCT (int, default 80) — same cap for vendor logos.
 
 BASE_REF="${BASE_REF:-origin/${GITHUB_BASE_REF:-main}}"
 HEAD_REF="${HEAD_REF:-HEAD}"
@@ -129,7 +131,21 @@ check_vendor_logo() {
     return 1
   fi
 
-  echo "✅ $file: OK (${w}x${h})"
+  # Background must be transparent (logo on transparent canvas, not a backdrop).
+  if ! bg_transparent "$file"; then
+    echo "❌ $file: background must be transparent (no alpha channel or opaque corners)"
+    return 1
+  fi
+
+  # Object size: logos may fill more than a board photo — cap at MAX_LOGO_OBJECT_PCT.
+  local fill limit="${MAX_LOGO_OBJECT_PCT:-80}"
+  fill=$(object_fill_pct "$file")
+  if [[ "$fill" -gt "$limit" ]]; then
+    echo "❌ $file: object too large — fills ${fill}% of the frame (max ${limit}%)"
+    return 1
+  fi
+
+  echo "✅ $file: OK (${w}x${h}, transparent, object ${fill}%)"
   return 0
 }
 
