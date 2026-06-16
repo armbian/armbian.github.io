@@ -27,5 +27,7 @@ jobs:
         env:
           BASE_REF: "origin/${{ github.base_ref }}"
           HEAD_REF: "${{ github.sha }}"
+          # board image object must not fill more than this % of the frame
+          MAX_OBJECT_PCT: "50"
         run: |
           scripts/validate-board-assets.sh
