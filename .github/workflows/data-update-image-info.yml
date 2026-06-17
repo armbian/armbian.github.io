@@ -52,6 +52,13 @@ jobs:
           set -euo pipefail
           cd armbian.github.io
 
+          # The self-hosted 'super' runners rewrite github.com -> the read-only
+          # git cache proxy (git_proxy, 10.0.40.x) via a global insteadOf. That
+          # cache can't push ("could not read Username for 'http://...'"), so
+          # ignore global/system git config here and go DIRECT to github — the
+          # checkout auth token is in the repo-LOCAL config, so it still works.
+          export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
