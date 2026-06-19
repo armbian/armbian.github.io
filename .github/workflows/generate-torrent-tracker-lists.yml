@@ -19,13 +19,13 @@ jobs:
     steps:
       # Checkout YOUR repo
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       # Clone the torrent lists
       - name: "Checkout torrent lists"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: XIU2/TrackersListCollection
           clean: false

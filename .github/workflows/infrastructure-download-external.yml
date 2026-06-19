@@ -110,7 +110,7 @@ jobs:
       matrix:  ${{steps.json.outputs.JSON_CONTENT}}
     steps:
       - name: "Checkout Armbian build Framework"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           ref: ${{ inputs.REFERENCE || inputs.branch || 'main' }}
@@ -156,7 +156,7 @@ jobs:
       # against /publishing/repository-debs and against the runner's
       # workspace-relative tools/repository/repo.sh output — both can
       # leave root-owned files under $GITHUB_WORKSPACE, so a later
-      # non-root actions/checkout@v6 with clean: true (in the caller
+      # non-root actions/checkout@v7 with clean: true (in the caller
       # workflow's Copying job) fails with EACCES. Reclaim ownership
       # first so the workspace is always deletable by the runner user.
       - name: Fix workspace ownership
@@ -165,7 +165,7 @@ jobs:
           sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           fetch-depth: 1
@@ -269,7 +269,7 @@ jobs:
             "rm -rf ${UPLOAD_PATH}/artifacts/*"
 
       - name: Checkout Armbian OS repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/os
           path: os
@@ -521,7 +521,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_KEY2 }}
 
       - name: Checkout Armbian OS scripts
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/os
           path: os
@@ -530,7 +530,7 @@ jobs:
           clean: false
 
       - name: Checkout Armbian build script
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           path: build

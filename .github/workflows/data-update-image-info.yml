@@ -28,14 +28,14 @@ jobs:
           sudo chmod -R u+rwX "$GITHUB_WORKSPACE" || true
 
       - name: Checkout armbian.github.io
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/armbian.github.io
           fetch-depth: 0
           path: armbian.github.io
 
       - name: Checkout build
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           fetch-depth: 0
