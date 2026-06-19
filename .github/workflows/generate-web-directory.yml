@@ -27,14 +27,14 @@ jobs:
 
     steps:
       - name: Checkout data branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: data
           fetch-depth: 0
           path: data_wd
 
       - name: Checkout main branch (workflow source)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0

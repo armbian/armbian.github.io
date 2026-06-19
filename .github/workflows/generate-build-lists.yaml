@@ -79,7 +79,7 @@ jobs:
     steps:
 
       - name: Checkout armbian.github.io repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -127,7 +127,7 @@ jobs:
           done
 
       - name: Checkout data branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: data
           path: data-branch

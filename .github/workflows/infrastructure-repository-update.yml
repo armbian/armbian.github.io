@@ -78,7 +78,7 @@ jobs:
     runs-on: repository
     steps:
 
-      # Reclaim workspace before the later actions/checkout@v6 runs
+      # Reclaim workspace before the later actions/checkout@v7 runs
       # with clean: true. The self-hosted `repository` runner pool is
       # shared across workflows, and any previous run that left
       # root-owned files under $GITHUB_WORKSPACE (e.g. the reusable
@@ -124,7 +124,7 @@ jobs:
           done
 
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Copy operations
         run: |
@@ -214,14 +214,14 @@ jobs:
           sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           path: build
           clean: false
 
       - name: Checkout armbian.github.io repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/armbian.github.io
           path: armbian-github-io
@@ -436,7 +436,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_KEY4 }}
 
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           fetch-depth: 1
@@ -745,7 +745,7 @@ jobs:
           sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
@@ -793,7 +793,7 @@ jobs:
           sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2

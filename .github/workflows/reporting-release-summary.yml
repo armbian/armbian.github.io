@@ -181,7 +181,7 @@ jobs:
           if-no-files-found: warn
 
       - name: "Checkout OS repository to get version"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/os
           fetch-depth: 0
