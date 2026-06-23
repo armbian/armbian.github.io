@@ -53,7 +53,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import fg from "fast-glob";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml"; // namespace import: works for both CJS js-yaml (v4) and the ESM-only v5+ (no default export)
 import crypto from "node:crypto";
 import { execSync } from "node:child_process";
 
