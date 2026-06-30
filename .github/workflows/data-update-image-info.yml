@@ -48,6 +48,7 @@ jobs:
           ./compile.sh inventory-boards
 
       - name: Commit changes if any
+        id: commit
         run: |
           set -euo pipefail
           cd armbian.github.io
@@ -69,29 +70,52 @@ jobs:
           mv "${{ github.workspace }}/build/output/info/image-info.json" data/
 
           git add data/image-info.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Update image-info.json from build repository"
-            # Push with retry logic
-            max_attempts=3
-            attempt=1
-            while [ $attempt -le $max_attempts ]; do
-              if git push origin data; then
-                echo "Successfully pushed to data branch"
-                exit 0
-              fi
-
-              # Pull with rebase to resolve conflicts
-              echo "Push failed, attempting to pull and rebase..." >&2
-              if ! git pull --rebase origin data; then
-                echo "Pull/rebase failed, will retry push..." >&2
-              fi
-
-              attempt=$((attempt + 1))
-            done
-
-            echo "Failed to push after $max_attempts attempts" >&2
-            exit 1
+          # Expose whether the inventory actually changed, so the next step can
+          # nudge build-list regeneration only when there's something new.
+          if git diff --cached --quiet; then
+            echo "No image-info.json changes; nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          git commit -m "Update image-info.json from build repository"
+          # Push with retry logic
+          max_attempts=3
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            if git push origin data; then
+              echo "Successfully pushed to data branch"
+              echo "changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            # Pull with rebase to resolve conflicts
+            echo "Push failed, attempting to pull and rebase..." >&2
+            if ! git pull --rebase origin data; then
+              echo "Pull/rebase failed, will retry push..." >&2
+            fi
+
+            attempt=$((attempt + 1))
+          done
+
+          echo "Failed to push after $max_attempts attempts" >&2
+          exit 1
+
+      - name: "Regenerate build target lists"
+        # image-info.json is the input to the published build target lists
+        # (generate-build-lists.yaml -> release-targets/*.yaml on the data
+        # branch). That workflow has no schedule and does not watch
+        # data/image-info.json, so without this nudge a newly added board
+        # reaches image-info.json (refreshed every 4h here) but never the
+        # release-targets lists until someone regenerates them by hand.
+        # Only fire when the inventory actually changed. repository_dispatch
+        # is one of the two events that DO trigger downstream runs via the
+        # default GITHUB_TOKEN, so no PAT is needed (same as the step below).
+        if: ${{ steps.commit.outputs.changed == 'true' }}
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Generate lists"
 
       - name: "Run Bigin update action"
         uses: peter-evans/repository-dispatch@v4
