@@ -62,7 +62,12 @@ jobs:
     if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
+      # Only gate MANUAL runs on team membership. repository_dispatch is fired by
+      # a trusted Armbian workflow (actor = github-actions[bot], which team-check
+      # can't resolve as a user) and push already requires write access — neither
+      # should hit the human-authorization gate.
       - name: "Check membership"
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: armbian/actions/team-check@main
         with:
           ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
