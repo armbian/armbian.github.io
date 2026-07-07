@@ -41,7 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # Use z.ai's Anthropic-compatible endpoint (GLM models) instead of the
+      # Anthropic API. The anthropic SDK reads both of these from the env.
+      ANTHROPIC_BASE_URL: https://api.z.ai/api/anthropic
+      ANTHROPIC_API_KEY: ${{ secrets.ZAI_API_KEY }}
       SCOPE: ${{ inputs.scope || 'org:armbian' }}
       TZ: ${{ inputs.tz || 'Europe/Ljubljana' }}
       PERIOD: ${{ inputs.period || 'weekly' }}
@@ -216,10 +219,9 @@ jobs:
           with open("summary.md", "r", encoding="utf-8") as f:
               content = f.read().strip()
 
-          # Reads ANTHROPIC_API_KEY from the env. claude-opus-4-7 doesn't accept
-          # temperature/top_p/top_k (those 400 on this model). Adaptive thinking
-          # is enabled so Claude plans the thematic structure before drafting —
-          # noticeably better narrative flow than a one-shot completion.
+          # z.ai's Anthropic-compatible endpoint (ANTHROPIC_BASE_URL) serving a
+          # GLM model, authenticated with the z.ai key in ANTHROPIC_API_KEY —
+          # both picked up from the env by the SDK.
           client = Anthropic()
 
           system = (
@@ -265,9 +267,8 @@ jobs:
           )
 
           resp = client.messages.create(
-              model="claude-opus-4-7",
+              model="glm-4.6",
               max_tokens=4096,
-              thinking={"type": "adaptive"},
               system=system,
               messages=[{"role": "user", "content": prompt}],
           )
