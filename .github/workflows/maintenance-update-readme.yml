@@ -41,10 +41,12 @@ jobs:
       matrix: ${{ steps.set.outputs.matrix }}
     steps:
       - id: set
+        env:
+          # Route the dispatch input through env (not inline ${{ }}) to avoid shell injection.
+          REPOS: ${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation' }}
         run: |
           set -euo pipefail
-          repos="${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation' }}"
-          matrix="$(echo "$repos" | tr ',' '\n' | sed 's/[[:space:]]//g' | grep -v '^$' | jq -R . | jq -s -c .)"
+          matrix="$(echo "$REPOS" | tr ',' '\n' | sed 's/[[:space:]]//g' | grep -v '^$' | jq -R . | jq -s -c .)"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Targets: $matrix"
 
@@ -80,10 +82,12 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MODEL: ${{ github.event.inputs.model || 'claude-opus-4-7' }}
+          # Route matrix.repo through env (not inline ${{ }}) to avoid shell injection.
+          REPO_NAME: ${{ matrix.repo }}
         run: |
           python3 scripts/generate_readme.py \
             --repo-dir target \
-            --repo-name "${{ matrix.repo }}"
+            --repo-name "$REPO_NAME"
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7
