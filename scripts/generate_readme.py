@@ -184,14 +184,13 @@ def generate(repo_dir, repo_name, model, max_context):
     if not text:
         print("::error::model returned empty output", file=sys.stderr)
         sys.exit(1)
-    # Strip an accidental wrapping code fence if the model added one.
+    # Strip a code fence ONLY when the model wrapped the WHOLE document in one
+    # (opening fence on the first line, exact closing fence on the last). A doc
+    # that merely *starts* with a legit fenced block must be left intact.
     if text.startswith("```"):
         lines = text.splitlines()
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        text = "\n".join(lines).strip()
+        if len(lines) >= 2 and lines[-1].strip() == "```":
+            text = "\n".join(lines[1:-1]).strip()
     if not text.endswith("\n"):
         text += "\n"
     return text
