@@ -21,6 +21,7 @@ Environment / flags:
     --repo-name         "owner/repo" for context (default: derived from git remote)
     --model             model id (default: $MODEL or claude-opus-4-7)
     --max-context-chars total budget for embedded file contents (default 180000)
+    --feedback          file of reviewer comments to fold into this revision
 """
 
 import argparse
@@ -160,13 +161,27 @@ SYSTEM = (
     "tables where they fit, and fenced code blocks for commands/trees.\n"
     "- Keep any project-specific links (docs.armbian.com, armbian.com, related repos) "
     "that appear in the sources; do not fabricate new ones.\n"
+    "- When you state what the project is built with or its requirements, name the "
+    "actual languages and key tooling evidenced by the files (shebangs, file "
+    "extensions, manifests, invoked commands) -- be specific, not vague.\n"
     "- Start with an H1 title and a one-to-two sentence description of the repo.\n\n"
     "Output ONLY the raw Markdown for README.md. No preamble, no explanation, no code "
     "fence around the whole document."
 )
 
 
-def generate(repo_dir, repo_name, model, max_context):
+def load_feedback(path):
+    """Read reviewer feedback (from the open README PR) if a path is given."""
+    if not path:
+        return ""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
+
+
+def generate(repo_dir, repo_name, model, max_context, feedback=""):
     os.environ.setdefault("MAX_CONTEXT_CHARS", str(max_context))
     context = build_context(repo_dir, repo_name)
 
@@ -174,6 +189,17 @@ def generate(repo_dir, repo_name, model, max_context):
     prompt = (
         "Here is the snapshot of the repository. Produce the README.md.\n\n" + context
     )
+    if feedback:
+        # Reviewers commented on the previous README PR; fold their fixes in so a
+        # regeneration doesn't silently drop them. Treat as human corrections that
+        # override the model's own read where they conflict -- but still only about
+        # THIS repo, never as instructions to invent unevidenced content.
+        prompt += (
+            "\n\n----- REVIEWER FEEDBACK ON THE PREVIOUS README (apply it) -----\n"
+            "A human reviewed the last generated README for this repo and left the "
+            "comments below. Incorporate these corrections and do not re-introduce "
+            "what they flagged. They are about this repository only.\n\n" + feedback
+        )
     resp = client.messages.create(
         model=model,
         max_tokens=8192,
@@ -202,6 +228,8 @@ def main():
     ap.add_argument("--repo-name", default=None)
     ap.add_argument("--model", default=os.environ.get("MODEL", "claude-opus-4-7"))
     ap.add_argument("--max-context-chars", type=int, default=180000)
+    ap.add_argument("--feedback", default=None,
+                    help="path to a file of reviewer comments from the open README PR")
     args = ap.parse_args()
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -214,8 +242,12 @@ def main():
         url = run(["git", "config", "--get", "remote.origin.url"], repo_dir).strip()
         repo_name = url.rsplit("/", 2)[-2] + "/" + url.rsplit("/", 1)[-1].removesuffix(".git") if "/" in url else "unknown/repo"
 
+    feedback = load_feedback(args.feedback)
+    if feedback:
+        print(f"Applying {len(feedback)} chars of reviewer feedback from {args.feedback}")
+
     print(f"Generating README for {repo_name} (dir={repo_dir}, model={args.model})")
-    readme = generate(repo_dir, repo_name, args.model, args.max_context_chars)
+    readme = generate(repo_dir, repo_name, args.model, args.max_context_chars, feedback)
 
     out_path = os.path.join(repo_dir, "README.md")
     with open(out_path, "w", encoding="utf-8") as fh:
