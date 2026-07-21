@@ -82,8 +82,6 @@ desktop-stable-ubuntu-gnome-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "gnome"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
@@ -105,8 +103,6 @@ desktop-stable-ubuntu-cinnamon-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "cinnamon"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
@@ -128,8 +124,6 @@ desktop-stable-ubuntu-kde-plasma-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "kde-plasma"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
@@ -147,8 +141,6 @@ desktop-stable-ubuntu-mate-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "mate"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
@@ -166,8 +158,6 @@ desktop-stable-ubuntu-xfce-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "xfce"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
@@ -185,8 +175,6 @@ desktop-stable-ubuntu-i3-wm-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "i3-wm"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
