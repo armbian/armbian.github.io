@@ -82,8 +82,11 @@ jobs:
       - name: Install Anthropic SDK
         run: pip install 'anthropic>=0.40.0'
 
-      # If a previous "chore/update-readme" PR is still open, fold its human review
-      # comments back in, so regenerating doesn't silently drop reviewer fixes.
+      # If a previous "chore/update-readme" PR is still open, fold in review comments
+      # from TRUSTED reviewers so regenerating doesn't silently drop their fixes.
+      # Gated on author_association (OWNER/MEMBER/COLLABORATOR = write access) so a
+      # random commenter on the public PR cannot inject text into the prompt. Fails
+      # closed: any gh/API error aborts the run rather than proceeding feedback-less.
       - name: Collect reviewer feedback from the open README PR
         env:
           GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -95,10 +98,10 @@ jobs:
                   --json number --jq '.[0].number // empty')"
           if [ -n "$pr" ]; then
             gh api "repos/$REPO/pulls/$pr/comments" \
-              --jq '.[] | select((.user.login|test("\\[bot\\]|coderabbit";"i"))|not) | "- (\(.path):\(.line // .original_line)) \(.user.login): \(.body)"' >> feedback.txt || true
+              --jq '.[] | select((.user.login|test("\\[bot\\]|coderabbit";"i")|not) and (.author_association=="OWNER" or .author_association=="MEMBER" or .author_association=="COLLABORATOR")) | "- (\(.path):\(.line // .original_line)) \(.user.login): \(.body)"' >> feedback.txt
             gh api "repos/$REPO/issues/$pr/comments" \
-              --jq '.[] | select((.user.login|test("\\[bot\\]|coderabbit";"i"))|not) | "- \(.user.login): \(.body)"' >> feedback.txt || true
-            echo "Collected feedback from $REPO#$pr ($(wc -l < feedback.txt) line(s))"
+              --jq '.[] | select((.user.login|test("\\[bot\\]|coderabbit";"i")|not) and (.author_association=="OWNER" or .author_association=="MEMBER" or .author_association=="COLLABORATOR")) | "- \(.user.login): \(.body)"' >> feedback.txt
+            echo "Collected feedback from $REPO#$pr ($(wc -l < feedback.txt) trusted line(s))"
           else
             echo "No open README PR for $REPO"
           fi
