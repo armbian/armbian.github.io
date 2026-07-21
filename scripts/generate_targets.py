@@ -1148,8 +1148,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
       DESKTOP_TIER: "mid"
     items:
       - *stable-current-slow-hdmi
@@ -1174,8 +1172,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
       DESKTOP_TIER: "mid"
     items:
 """
@@ -1209,8 +1205,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "kde-plasma"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
       DESKTOP_TIER: "mid"
     items:
       - *stable-current-fast-hdmi
@@ -1235,8 +1229,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: "programming"
       DESKTOP_TIER: "mid"
     items:
       - *stable-legacy-fast-hdmi
@@ -1257,8 +1249,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
 """
@@ -1292,8 +1282,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "bianbu"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "mid"
     items:
       - *stable-legacy-riscv64
@@ -1460,8 +1448,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
       - *nightly-fast-hdmi
@@ -1482,8 +1468,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
       - *nightly-slow-hdmi
@@ -1504,8 +1488,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
       - *nightly-riscv64
@@ -1746,8 +1728,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "gnome"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
       - *community-current-fast-hdmi
@@ -1775,8 +1755,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "kde-plasma"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
       - *community-current-fast-hdmi
@@ -1801,8 +1779,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
 """
@@ -1828,8 +1804,6 @@ targets:
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "yes"
       DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-      DESKTOP_APPGROUPS_SELECTED: ""
       DESKTOP_TIER: "minimal"
     items:
 """

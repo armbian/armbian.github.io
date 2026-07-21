@@ -117,8 +117,6 @@ desktop-stable-ubuntu-cinnamon:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "cinnamon"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: ""
     DESKTOP_TIER: "mid"             # required for desktop blocks; armbian-config picks
                                     # minimal / mid / full from this when assembling
                                     # the rootfs

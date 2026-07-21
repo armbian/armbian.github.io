@@ -43,8 +43,6 @@ desktop-stable-debian-xfce:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "xfce"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: ""
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
