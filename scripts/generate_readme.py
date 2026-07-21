@@ -171,14 +171,20 @@ SYSTEM = (
 
 
 def load_feedback(path):
-    """Read reviewer feedback (from the open README PR) if a path is given."""
+    """Read reviewer feedback (from the open README PR) if a path is given.
+
+    Fail closed: if a --feedback path was explicitly passed but cannot be read,
+    error out instead of silently generating without it (which would re-drop the
+    reviewer's fixes). An empty file is fine -- it just means no feedback.
+    """
     if not path:
         return ""
     try:
         with open(path, "r", encoding="utf-8", errors="replace") as fh:
             return fh.read().strip()
-    except OSError:
-        return ""
+    except OSError as e:
+        print(f"::error::could not read feedback file {path}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def generate(repo_dir, repo_name, model, max_context, feedback=""):
