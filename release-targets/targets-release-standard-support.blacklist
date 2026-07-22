@@ -1,0 +1,3 @@
+# Boards excluded from standard-support (stable) release builds.
+# One board name per line; '#' comments and blank lines are ignored.
+sk-am62-lp
