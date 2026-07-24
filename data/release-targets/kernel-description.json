@@ -1,0 +1,300 @@
+{
+    "arm64": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Generic ARM64 platforms."
+        }
+    },
+    "bcm2711": {
+        "vendor": {
+            "fullname": "6.18 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.18. May include proprietary drivers and hardware-specific optimizations. Optimized for Raspberry Pi platforms."
+        }
+    },
+    "cix-p1": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18."
+        }
+    },
+    "filogic": {
+        "current": {
+            "fullname": "6.12 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.12."
+        }
+    },
+    "genio": {
+        "current": {
+            "fullname": "7.1 Kernel",
+            "description": "Stable mainline kernel based on Linux 7.1."
+        }
+    },
+    "imx6": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for NXP i.MX6 platforms."
+        }
+    },
+    "imx8m": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for NXP i.MX8M platforms."
+        }
+    },
+    "imx8ulp": {
+        "custom": {
+            "fullname": "Custom - Custom Kernel",
+            "description": "Custom kernel build: commit:78ce688d5a792c053827e1edd4a347807c63c06c"
+        }
+    },
+    "imx93": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18."
+        }
+    },
+    "k3": {
+        "current": {
+            "fullname": "12.00.00 Kernel",
+            "description": "Stable mainline kernel based on Linux 12.00.00. Optimized for Texas Instruments K3 platforms."
+        },
+        "vendor": {
+            "fullname": "6.18 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.18. May include proprietary drivers and hardware-specific optimizations. Optimized for Texas Instruments K3 platforms."
+        }
+    },
+    "k3-beagle": {
+        "current": {
+            "fullname": "6.12.49 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.12.49. Optimized for TI K3 (BeagleBone) platforms."
+        }
+    },
+    "loong64": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for LoongArch platforms."
+        }
+    },
+    "ls1046a-ask": {
+        "current": {
+            "fullname": "6.12.49 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.12.49."
+        }
+    },
+    "meson": {
+        "edge": {
+            "fullname": "6.12.28 - Edge Kernel",
+            "description": "Latest mainline kernel 6.12.28 with bleeding edge features. May not be as stable as current. Optimized for Amlogic (legacy) platforms."
+        }
+    },
+    "meson-s4t7": {
+        "vendor": {
+            "fullname": "5.15 - Vendor Kernel",
+            "description": "Vendor-provided kernel 5.15. May include proprietary drivers and hardware-specific optimizations."
+        }
+    },
+    "meson64": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Amlogic platforms."
+        }
+    },
+    "mt7623": {
+        "legacy": {
+            "fullname": "6.6 - Legacy Kernel",
+            "description": "Older kernel 6.6. Maintained for compatibility with older hardware."
+        }
+    },
+    "mvebu": {
+        "legacy": {
+            "fullname": "6.6 - Legacy Kernel",
+            "description": "Older kernel 6.6. Maintained for compatibility with older hardware. Optimized for Marvell platforms."
+        },
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Marvell platforms."
+        }
+    },
+    "mvebu64": {
+        "current": {
+            "fullname": "6.12 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.12. Optimized for Marvell (64-bit) platforms."
+        }
+    },
+    "nuvoton-ma35d1": {
+        "custom": {
+            "fullname": "Custom - Custom Kernel",
+            "description": "Custom kernel build: branch:master"
+        }
+    },
+    "odroidxu4": {
+        "vendor": {
+            "fullname": "6.6 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.6. May include proprietary drivers and hardware-specific optimizations."
+        },
+        "current": {
+            "fullname": "6.15 Kernel",
+            "description": "Stable mainline kernel based on Linux 6.15."
+        }
+    },
+    "phytium-embedded": {
+        "legacy": {
+            "fullname": "6.6 - Legacy Kernel",
+            "description": "Older kernel 6.6. Maintained for compatibility with older hardware."
+        }
+    },
+    "qcs6490": {
+        "current": {
+            "fullname": "6.18.2 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18.2."
+        }
+    },
+    "qrb2210": {
+        "current": {
+            "fullname": "7.1 Kernel",
+            "description": "Stable mainline kernel based on Linux 7.1."
+        }
+    },
+    "realtek-rtd1619b": {
+        "vendor": {
+            "fullname": "6.6.54 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.6.54. May include proprietary drivers and hardware-specific optimizations."
+        }
+    },
+    "riscv64": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for RISC-V platforms."
+        }
+    },
+    "rk35xx": {
+        "vendor": {
+            "fullname": "6.1 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.1. May include proprietary drivers and hardware-specific optimizations. Optimized for Rockchip (legacy) platforms."
+        }
+    },
+    "rockchip": {
+        "vendor": {
+            "fullname": "6.1 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.1. May include proprietary drivers and hardware-specific optimizations. Optimized for Rockchip platforms."
+        },
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Rockchip platforms."
+        }
+    },
+    "rockchip-rv1106": {
+        "vendor": {
+            "fullname": "6.1 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.1. May include proprietary drivers and hardware-specific optimizations."
+        }
+    },
+    "rockchip-rv1126": {
+        "vendor": {
+            "fullname": "6.1 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.1. May include proprietary drivers and hardware-specific optimizations."
+        }
+    },
+    "rockchip64": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Rockchip (64-bit) platforms."
+        }
+    },
+    "sc8280xp": {
+        "current": {
+            "fullname": "7.0.11 Kernel",
+            "description": "Stable mainline kernel based on Linux 7.0.11."
+        }
+    },
+    "seeed-rk3576": {
+        "vendor": {
+            "fullname": "6.1 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.1. May include proprietary drivers and hardware-specific optimizations."
+        }
+    },
+    "seeed-rk3588": {
+        "vendor": {
+            "fullname": "6.1 - Vendor Kernel",
+            "description": "Vendor-provided kernel 6.1. May include proprietary drivers and hardware-specific optimizations."
+        }
+    },
+    "sm8250": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18."
+        }
+    },
+    "sm8550": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18."
+        }
+    },
+    "spacemit": {
+        "legacy": {
+            "fullname": "6.6 - Legacy Kernel",
+            "description": "Older kernel 6.6. Maintained for compatibility with older hardware."
+        },
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18."
+        },
+        "edge": {
+            "fullname": "7.2 - Edge Kernel",
+            "description": "Latest mainline kernel 7.2 with bleeding edge features. May not be as stable as current."
+        }
+    },
+    "spacemit-k3": {
+        "legacy": {
+            "fullname": "1.0 - Legacy Kernel",
+            "description": "Older kernel 1.0. Maintained for compatibility with older hardware."
+        },
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18."
+        }
+    },
+    "starfive2": {
+        "legacy": {
+            "fullname": "6.6 - Legacy Kernel",
+            "description": "Older kernel 6.6. Maintained for compatibility with older hardware."
+        }
+    },
+    "sun55iw3-syterkit": {
+        "legacy": {
+            "fullname": "5.15 - Legacy Kernel",
+            "description": "Older kernel 5.15. Maintained for compatibility with older hardware."
+        }
+    },
+    "sun60iw2": {
+        "legacy": {
+            "fullname": "6.6 - Legacy Kernel",
+            "description": "Older kernel 6.6. Maintained for compatibility with older hardware."
+        }
+    },
+    "sunxi": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Allwinner platforms."
+        }
+    },
+    "sunxi64": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Allwinner (64-bit) platforms."
+        }
+    },
+    "uefidt": {
+        "current": {
+            "fullname": "7.0 Kernel",
+            "description": "Stable mainline kernel based on Linux 7.0."
+        }
+    },
+    "x86": {
+        "current": {
+            "fullname": "6.18 - Current Kernel",
+            "description": "Stable mainline kernel based on Linux 6.18. Optimized for Generic x86 platforms."
+        }
+    }
+}
