@@ -49,6 +49,7 @@ SKIP_DIR_PARTS = {".git", "node_modules", "vendor", "dist", "build", "__pycache_
 
 MAX_PER_FILE = 8000        # truncate any single embedded file to this many chars
 MAX_TREE_ENTRIES = 500     # cap the file listing
+MAX_FEEDBACK_CHARS = 16000 # cap reviewer feedback folded into the prompt
 
 
 def run(cmd, cwd):
@@ -196,6 +197,10 @@ def generate(repo_dir, repo_name, model, max_context, feedback=""):
         "Here is the snapshot of the repository. Produce the README.md.\n\n" + context
     )
     if feedback:
+        # Bound the feedback so an oversized review can't push the combined prompt
+        # past the model context limit (build_context is already capped, this is not).
+        if len(feedback) > MAX_FEEDBACK_CHARS:
+            feedback = feedback[:MAX_FEEDBACK_CHARS] + "\n... [truncated] ...\n"
         # Reviewers commented on the previous README PR; fold their fixes in so a
         # regeneration doesn't silently drop them. Treat as human corrections that
         # override the model's own read where they conflict -- but still only about
