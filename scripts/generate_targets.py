@@ -1979,7 +1979,7 @@ def generate_exposed_map(
 
         # Pattern format: Armbian_[0-9].*BoardName_Release_Branch_[0-9]*.[0-9]*.[0-9]*_Type.ext
         # Community images have 'community_' prefix, stable images don't
-        # This excludes nightly images (which come from armbian/os repo without 'community_' prefix)
+        # This excludes nightly images (which come from armbian/ci repo without 'community_' prefix)
         community_prefix = '(community_)?' if board_type == 'community' else ''
         # Capitalize board name for pattern
         board_pattern = capitalize_board_name(board)
