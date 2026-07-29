@@ -180,28 +180,32 @@ jobs:
           path: out/
           if-no-files-found: warn
 
-      - name: "Checkout OS repository to get version"
-        uses: actions/checkout@v7
-        with:
-          repository: armbian/os
-          fetch-depth: 0
-          clean: false
-          path: os
-
-      - name: "Read version from nightly or stable based on period"
+      - name: "Read version from armbian/ci tags (nightly = latest *trunk* tag, else stable)"
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$PERIOD" == "monthly" || "$PERIOD" == "quarterly" ]]; then
-            FILE="os/stable.json"
-          else
-            FILE="os/nightly.json"
-          fi
-          if [[ ! -f "$FILE" ]]; then
-            echo "::error file=$FILE::Version file not found"
+          # Nightly images now release under armbian/ci, so derive the version
+          # from its tags instead of the old os/{nightly,stable}.json files:
+          # the newest tag with 'trunk' in the name is the nightly version, the
+          # newest without it is stable. -v:refname yields version order, so
+          # 26.8.0-trunk.6 > 26.8.0-trunk.5 and 26.8.0 > its prereleases.
+          TAGS=$(git ls-remote --tags --refs --sort=-v:refname \
+            https://github.com/armbian/ci | sed 's#.*refs/tags/##')
+          if [[ -z "$TAGS" ]]; then
+            echo "::error::No tags found in armbian/ci"
             exit 1
           fi
-          VERSION=$(jq -r '.version' "$FILE")
+          if [[ "$PERIOD" == "monthly" || "$PERIOD" == "quarterly" ]]; then
+            VERSION=$(grep -v -- trunk <<<"$TAGS" | head -n1 || true)   # stable
+          else
+            VERSION=$(grep -- trunk <<<"$TAGS" | head -n1 || true)      # nightly
+          fi
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::No matching armbian/ci tag for period=$PERIOD"
+            exit 1
+          fi
+          VERSION="${VERSION#v}"   # downstream re-adds the 'v' prefix
+          echo "Selected ${PERIOD} version from armbian/ci tags: ${VERSION}"
           echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
 
       - name: "Write a short journalistic intro with AI"
