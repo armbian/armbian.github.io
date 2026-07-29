@@ -612,8 +612,11 @@ awk '
 }' >"$tmpdir/a.txt"
 
 # GitHub feed
+# community  -> community images
+# ci         -> nightly (trunk) images   (moved here from armbian/os)
+# distribution -> stable release images
 : >"$tmpdir/bcd.txt"
-for repo in community os distribution; do
+for repo in community ci distribution; do
   gh release view --json assets --repo "github.com/armbian/$repo" |
   jq -r '.assets[]
     | select(.url | test("\\.txt($|\\?)") | not)
@@ -664,7 +667,9 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     REPO="$(get_download_repository "$URL")"
     [[ -z "$REPO" ]] && continue
 
-    PREFIX=""; [[ "$REPO" == "os" ]] && PREFIX="nightly/"
+    # Nightly (trunk) images now release under armbian/ci (moved from armbian/os);
+    # they are served under the dl.armbian.com nightly/ path.
+    PREFIX=""; [[ "$REPO" == "ci" ]] && PREFIX="nightly/"
 
     BASE_EXT="$(extract_file_extension "$IMAGE_NAME")"
     if [[ -n "$STORAGE" ]]; then
@@ -718,7 +723,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 
     REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${REDI_BRANCH}_${REDI_VARIANT}"
 
-    # file_url must remain the original URL (GitHub Releases for community/os/distribution)
+    # file_url must remain the original URL (GitHub Releases for community/ci/distribution)
     FILE_URL="$URL"
 
     if [[ "$URL" == https://github.com/armbian/* ]]; then
