@@ -8,7 +8,7 @@ on:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || 'armbian/ci' }}" # username/repository
-  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'os' }}" # folder on server
+  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'ci' }}" # folder on server
   PULL_TAG: "" # leave empty for latest
 
 jobs:
