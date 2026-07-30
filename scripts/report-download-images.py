@@ -115,7 +115,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--images", default=IMAGES_URL, help="armbian-images.json URL or local path")
     ap.add_argument("--image-info", default=INFO_URL, help="image-info.json URL or local path (BOARD_HAS_VIDEO map)")
-    ap.add_argument("--top", type=int, default=80, help="max rows per anomaly table")
+    ap.add_argument("--top", type=int, default=80, help="max rows in the outdated table")
     args = ap.parse_args()
 
     data = load(args.images, "armbian-images.json")
@@ -181,7 +181,7 @@ def main():
                              b, board_support.get(b, "?"), v, d.strftime("%Y-%m-%d") if d else "?", age))
     outdated.sort(key=lambda t: (-t[0], t[3]))
     out.append(f"## ⏳ Outdated boards on the download — behind the current {current_str} line ({len(outdated)})")
-    out.append(f"_Newest per-board image on `dl.armbian.com` is older than the current release line._")
+    out.append("_Newest per-board image on `dl.armbian.com` is older than the current release line._")
     if outdated:
         rows = [[b, f"`{s}`", v, d, f"{age} d" if age is not None else "?"]
                 for _, b, s, v, d, age in outdated[:args.top]]
@@ -219,7 +219,7 @@ def main():
             where = sorted({a.get("download_repository", "") for a in assets
                             if a["board_slug"] == b and a.get("download_repository") != DOWNLOAD_REPO})
             rows.append([b, board_name.get(b, b),
-                         ", ".join(REPO_LABELS.get(r, r).split(" ")[0] or "(none)" for r in where) or "—"])
+                         ", ".join(("orphaned" if r == "" else REPO_LABELS.get(r, r).split(" ")[0]) for r in where) or "—"])
         out.append(md_table(["board", "name", "present in"], rows))
     else:
         out.append("_None._")
