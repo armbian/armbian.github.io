@@ -14,12 +14,14 @@
 #   community     -> community nightly (github.com/armbian/os or community).
 #   ci            -> CI nightly (github.com/armbian/ci).
 #
-# Anomalies reported (all against the real download = archive):
+# Anomalies reported (checks 1-3 are scoped to the real download = archive;
+# check 4 scans all channels, since a desktop image for a no-video board is an
+# anomaly wherever it is published):
 #   1. Outdated boards        - newest download release behind the current line.
 #   2. Non-standard on download- csc/wip/tvb boards on the per-board download.
 #   3. Supported not on download- conf boards with NO per-board download image.
-#   4. Desktop w/o video      - desktop-variant images for boards whose inventory
-#                               BOARD_HAS_VIDEO is false (needs image-info.json).
+#   4. Desktop w/o video      - desktop-variant images (any channel) for boards
+#                               whose inventory BOARD_HAS_VIDEO is false.
 
 import argparse
 import collections
@@ -175,6 +177,8 @@ def main():
     # ---- CHECK 1: outdated boards on the download ----
     outdated = []
     for b, (k, v, d) in dl_newest.items():
+        if k == (0, 0, 0):        # non-release (nightly/unknown) on the download; skip
+            continue
         if k[:2] < current_line:  # behind the current major.minor line
             age = (now - d).days if d else None
             outdated.append((current_line[0]*100 + current_line[1] - (k[0]*100 + k[1]),  # minors behind
