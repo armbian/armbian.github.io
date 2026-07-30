@@ -6,18 +6,20 @@
 # truth armbian-images.json, and surface anomalies. Output is GitHub-flavoured
 # Markdown written to $GITHUB_STEP_SUMMARY (and stdout).
 #
-# Anomalies reported:
-#   1. Outdated boards       - newest live image older than --stale-days.
-#   2. Non-conf on stable    - csc/wip/tvb boards published to the stable
-#                              ("distribution") download.
-#   3. Supported not on stable - conf boards with NO image in the stable download.
-#   4. Desktop w/o video     - desktop-variant images for boards whose inventory
-#                              says BOARD_HAS_VIDEO is false (needs image-info.json).
+# Channels (download_repository) -- what each actually is:
+#   archive       -> the per-board DOWNLOAD on dl.armbian.com/<board>/archive/
+#                    (all released versions per board). THIS is "the download".
+#   distribution  -> appliance images on github.com/armbian/distribution
+#                    (kali / omv / homeassistant / openhab), a separate product.
+#   community     -> community nightly (github.com/armbian/os or community).
+#   ci            -> CI nightly (github.com/armbian/ci).
 #
-# Sources (fetched or passed as local files):
-#   - armbian-images.json   https://github.armbian.com/armbian-images.json
-#   - image-info.json       https://github.armbian.com/image-info.json  (for the
-#                           board -> BOARD_HAS_VIDEO map; optional)
+# Anomalies reported (all against the real download = archive):
+#   1. Outdated boards        - newest download release behind the current line.
+#   2. Non-standard on download- csc/wip/tvb boards on the per-board download.
+#   3. Supported not on download- conf boards with NO per-board download image.
+#   4. Desktop w/o video      - desktop-variant images for boards whose inventory
+#                               BOARD_HAS_VIDEO is false (needs image-info.json).
 
 import argparse
 import collections
@@ -31,16 +33,23 @@ import urllib.request
 IMAGES_URL = "https://github.armbian.com/armbian-images.json"
 INFO_URL = "https://github.armbian.com/image-info.json"
 
-# download_repository values that are "live" (offered now), vs 'archive' (old).
-LIVE_REPOS = ("distribution", "community", "ci")
-# the stable / main download users land on
-STABLE_REPO = "distribution"
-# variants that are NOT a desktop (everything else is a desktop environment)
+# The real per-board download (dl.armbian.com). Named "archive" in the JSON.
+DOWNLOAD_REPO = "archive"
+APPLIANCE_REPO = "distribution"
+NIGHTLY_REPOS = ("community", "ci")
+# human labels for the overview
+REPO_LABELS = {
+    "archive": "Download (dl.armbian.com, per-board releases)",
+    "distribution": "Appliance images (kali/omv/homeassistant/openhab)",
+    "community": "Community nightly",
+    "ci": "CI nightly",
+    "": "(orphaned — no repo)",
+}
+# variants that are NOT a desktop
 NON_DESKTOP_VARIANTS = {"minimal", "cli", "server", ""}
 
 
 def load(src, what):
-    """Load JSON from a URL or a local path."""
     try:
         if re.match(r"^https?://", src):
             with urllib.request.urlopen(src, timeout=60) as r:
@@ -52,14 +61,10 @@ def load(src, what):
         return None
 
 
-def version_key(v):
-    """Sortable key for Armbian versions: X.Y.Z and X.Y.Z-trunk.N."""
-    m = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:-trunk\.(\d+))?$", str(v or ""))
-    if not m:
-        return (0, 0, 0, 0, str(v))
-    maj, mnr, pat, trunk = m.groups()
-    # a release (no -trunk) sorts above the same-numbered trunk build
-    return (int(maj), int(mnr), int(pat), int(trunk) if trunk is not None else 10**9, "")
+def rel_key(v):
+    """(major, minor, patch) for a X.Y.Z release; (0,0,0) for nightly/unknown."""
+    m = re.match(r"^(\d+)\.(\d+)\.(\d+)$", str(v or ""))
+    return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
 
 
 def is_release(v):
@@ -82,7 +87,6 @@ def md_table(headers, rows):
 
 
 def build_video_map(info):
-    """board_slug -> BOARD_HAS_VIDEO (bool), from image-info.json inventory."""
     vid = {}
     if not info:
         return vid
@@ -97,10 +101,9 @@ def build_video_map(info):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--images", default=IMAGES_URL, help="armbian-images.json URL or path")
-    ap.add_argument("--image-info", default=INFO_URL, help="image-info.json URL or path (video flag)")
-    ap.add_argument("--stale-days", type=int, default=45, help="a board is 'outdated' if its newest live image is older than this")
-    ap.add_argument("--top", type=int, default=40, help="max rows in the outdated table")
+    ap.add_argument("--images", default=IMAGES_URL)
+    ap.add_argument("--image-info", default=INFO_URL)
+    ap.add_argument("--top", type=int, default=80, help="max rows per anomaly table")
     args = ap.parse_args()
 
     data = load(args.images, "armbian-images.json")
@@ -111,101 +114,116 @@ def main():
     video = build_video_map(load(args.image_info, "image-info.json"))
 
     now = dt.datetime.now(dt.timezone.utc)
-    boards = {a["board_slug"]: a for a in assets}  # any asset, for board_name/support
+    all_boards = {a["board_slug"] for a in assets}
     board_support = {a["board_slug"]: a.get("board_support", "?") for a in assets}
     board_name = {a["board_slug"]: a.get("board_name", a["board_slug"]) for a in assets}
 
-    # ---- overview ----
-    by_repo = collections.Counter(a.get("download_repository", "") for a in assets)
-    by_support = collections.Counter(a.get("board_support", "") for a in assets)
-    repo_versions = collections.defaultdict(set)
+    # per-board newest RELEASE on the download channel
+    dl_newest = {}      # board -> (rel_key, version, date)
     for a in assets:
-        repo_versions[a.get("download_repository", "")].add(a.get("armbian_version", ""))
+        if a.get("download_repository") != DOWNLOAD_REPO:
+            continue
+        v = a.get("armbian_version", "")
+        k = rel_key(v)
+        d = parse_date(a.get("file_date"))
+        cur = dl_newest.get(a["board_slug"])
+        if cur is None or k > cur[0]:
+            dl_newest[a["board_slug"]] = (k, v, d)
+
+    # current release line = highest (major, minor) present on the download
+    current_line = max((k[:2] for k, _, _ in dl_newest.values()), default=(0, 0))
+    current_examples = sorted({v for k, v, _ in dl_newest.values() if k[:2] == current_line},
+                              key=rel_key, reverse=True)
+    current_str = "/".join(current_examples[:3]) or "n/a"
 
     out = []
     out.append("# Download images report")
     out.append(f"_Source: `{args.images}` — {len(assets)} image assets across "
-               f"{len(boards)} boards, generated {now:%Y-%m-%d %H:%M UTC}._\n")
+               f"{len(all_boards)} boards, generated {now:%Y-%m-%d %H:%M UTC}._\n")
+
+    # ---- overview ----
+    by_repo = collections.Counter(a.get("download_repository", "") for a in assets)
+    repo_versions = collections.defaultdict(set)
+    repo_boards = collections.defaultdict(set)
+    for a in assets:
+        r = a.get("download_repository", "")
+        repo_versions[r].add(a.get("armbian_version", ""))
+        repo_boards[r].add(a["board_slug"])
     out.append("## Overview")
     out.append(md_table(
-        ["download_repository", "images", "version(s)"],
-        [[r or "(empty)", n, ", ".join(sorted(repo_versions[r], key=version_key)) if len(repo_versions[r]) <= 3
-          else f"{len(repo_versions[r])} versions"]
+        ["channel", "images", "boards", "version(s)"],
+        [[REPO_LABELS.get(r, r or "(empty)"), n, len(repo_boards[r]),
+          ", ".join(sorted(repo_versions[r], key=rel_key)) if len(repo_versions[r]) <= 3
+          else f"{len(repo_versions[r])} versions (…{sorted(repo_versions[r], key=rel_key)[-1]})"]
          for r, n in by_repo.most_common()]))
-    out.append("")
-    out.append("Support levels: " + ", ".join(f"`{s or '?'}` {n}" for s, n in by_support.most_common()))
+    out.append(f"\nCurrent download release line: **{current_str}**.")
     out.append("")
 
-    # ---- per-board freshness (live repos only) ----
-    live_by_board = collections.defaultdict(list)
-    for a in assets:
-        if a.get("download_repository") in LIVE_REPOS:
-            live_by_board[a["board_slug"]].append(a)
-
-    # ---- CHECK 1: outdated boards ----
+    # ---- CHECK 1: outdated boards on the download ----
     outdated = []
-    for b, imgs in live_by_board.items():
-        dates = [parse_date(i.get("file_date")) for i in imgs]
-        dates = [d for d in dates if d]
-        newest = max(dates) if dates else None
-        newest_ver = max((i.get("armbian_version", "") for i in imgs), key=version_key)
-        age = (now - newest).days if newest else None
-        if age is not None and age > args.stale_days:
-            outdated.append((age, b, board_support.get(b, "?"), newest_ver, newest.strftime("%Y-%m-%d")))
-    outdated.sort(reverse=True)
-    out.append(f"## ⏳ Outdated boards — newest live image older than {args.stale_days} days ({len(outdated)})")
+    for b, (k, v, d) in dl_newest.items():
+        if k[:2] < current_line:  # behind the current major.minor line
+            age = (now - d).days if d else None
+            outdated.append((current_line[0]*100 + current_line[1] - (k[0]*100 + k[1]),  # minors behind
+                             b, board_support.get(b, "?"), v, d.strftime("%Y-%m-%d") if d else "?", age))
+    outdated.sort(key=lambda t: (-t[0], t[3]))
+    out.append(f"## ⏳ Outdated boards on the download — behind the current {current_str} line ({len(outdated)})")
+    out.append(f"_Newest per-board image on `dl.armbian.com` is older than the current release line._")
     if outdated:
-        rows = [[b, f"`{s}`", v, d, f"{age} d"] for age, b, s, v, d in outdated[:args.top]]
-        out.append(md_table(["board", "support", "newest version", "date", "age"], rows))
+        rows = [[b, f"`{s}`", v, d, f"{age} d" if age is not None else "?"]
+                for _, b, s, v, d, age in outdated[:args.top]]
+        out.append(md_table(["board", "support", "newest download version", "date", "age"], rows))
         if len(outdated) > args.top:
             out.append(f"\n_…and {len(outdated) - args.top} more._")
     else:
         out.append("_None._")
     out.append("")
 
-    # ---- CHECK 2: non-conf boards on the stable download ----
-    nonconf_stable = collections.defaultdict(set)
+    # ---- CHECK 2: non-standard boards on the download ----
+    nonconf = collections.defaultdict(set)
     for a in assets:
-        if a.get("download_repository") == STABLE_REPO and a.get("board_support") != "conf":
-            nonconf_stable[a["board_slug"]].add(a.get("board_support", "?"))
-    out.append(f"## ⚠️ Non-standard boards on the stable download (`{STABLE_REPO}`) ({len(nonconf_stable)})")
-    out.append(f"_These are `csc`/`wip`/`tvb` boards published to the main download._")
-    if nonconf_stable:
-        rows = [[b, f"`{'/'.join(sorted(s))}`", board_name.get(b, b)] for b, s in sorted(nonconf_stable.items())]
-        out.append(md_table(["board", "support", "name"], rows))
+        if a.get("download_repository") == DOWNLOAD_REPO and a.get("board_support") != "conf":
+            nonconf[a["board_slug"]].add(a.get("board_support", "?"))
+    out.append(f"## ⚠️ Non-standard boards on the download ({len(nonconf)})")
+    out.append("_`csc`/`wip`/`tvb` boards with images on `dl.armbian.com` (the main per-board download)._")
+    if nonconf:
+        rows = [[b, f"`{'/'.join(sorted(s))}`", dl_newest.get(b, (0, '?', 0))[1], board_name.get(b, b)]
+                for b, s in sorted(nonconf.items())]
+        out.append(md_table(["board", "support", "newest version", "name"], rows))
     else:
         out.append("_None._")
     out.append("")
 
-    # ---- CHECK 3: supported (conf) boards missing from the stable download ----
+    # ---- CHECK 3: supported boards with no download image ----
     conf_boards = {b for b, s in board_support.items() if s == "conf"}
-    in_stable = {a["board_slug"] for a in assets if a.get("download_repository") == STABLE_REPO}
-    missing_stable = sorted(conf_boards - in_stable)
-    out.append(f"## ❓ Supported boards with no stable image (`{STABLE_REPO}`) ({len(missing_stable)})")
-    out.append("_`conf` (standard-support) boards that have no image on the main download._")
-    if missing_stable:
+    on_download = set(dl_newest)
+    missing = sorted(conf_boards - on_download)
+    out.append(f"## ❓ Supported boards with no download image ({len(missing)})")
+    out.append("_`conf` (standard-support) boards absent from `dl.armbian.com` — only nightly/appliance, or nowhere._")
+    if missing:
         rows = []
-        for b in missing_stable:
-            elsewhere = sorted({a.get("download_repository", "") for a in assets
-                                if a["board_slug"] == b and a.get("download_repository") != STABLE_REPO})
-            rows.append([b, board_name.get(b, b), ", ".join(r or "(none)" for r in elsewhere) or "—"])
+        for b in missing:
+            where = sorted({a.get("download_repository", "") for a in assets
+                            if a["board_slug"] == b and a.get("download_repository") != DOWNLOAD_REPO})
+            rows.append([b, board_name.get(b, b),
+                         ", ".join(REPO_LABELS.get(r, r).split(" ")[0] or "(none)" for r in where) or "—"])
         out.append(md_table(["board", "name", "present in"], rows))
     else:
         out.append("_None._")
     out.append("")
 
     # ---- CHECK 4: desktop images for no-video boards ----
-    novideo_desktop = collections.defaultdict(set)
+    novideo = collections.defaultdict(set)
     for a in assets:
         b = a["board_slug"]
         if a.get("variant") not in NON_DESKTOP_VARIANTS and video.get(b) is False:
-            novideo_desktop[b].add(f"{a.get('variant')}·{a.get('branch')}·{a.get('download_repository')}")
-    out.append(f"## 🖥️ Desktop images for boards without video output ({len(novideo_desktop)})")
+            novideo[b].add(f"{a.get('variant')}·{a.get('branch')}·{a.get('download_repository') or '?'}")
+    out.append(f"## 🖥️ Desktop images for boards without video output ({len(novideo)})")
     if not video:
-        out.append("_Skipped: image-info.json (BOARD_HAS_VIDEO) was not available._")
-    elif novideo_desktop:
-        rows = [[b, board_name.get(b, b), ", ".join(sorted(s))] for b, s in sorted(novideo_desktop.items())]
-        out.append(md_table(["board", "name", "desktop images (variant·branch·repo)"], rows))
+        out.append("_Skipped: image-info.json (BOARD_HAS_VIDEO) not available._")
+    elif novideo:
+        rows = [[b, board_name.get(b, b), ", ".join(sorted(s))] for b, s in sorted(novideo.items())]
+        out.append(md_table(["board", "name", "desktop images (variant·branch·channel)"], rows))
     else:
         out.append("_None._")
     out.append("")
