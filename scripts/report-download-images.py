@@ -35,9 +35,7 @@ INFO_URL = "https://github.armbian.com/image-info.json"
 
 # The real per-board download (dl.armbian.com). Named "archive" in the JSON.
 DOWNLOAD_REPO = "archive"
-APPLIANCE_REPO = "distribution"
-NIGHTLY_REPOS = ("community", "ci")
-# human labels for the overview
+# human labels for the overview (also documents what each channel really is)
 REPO_LABELS = {
     "archive": "Download (dl.armbian.com, per-board releases)",
     "distribution": "Appliance images (kali/omv/homeassistant/openhab)",
@@ -62,13 +60,24 @@ def load(src, what):
 
 
 def rel_key(v):
-    """(major, minor, patch) for a X.Y.Z release; (0,0,0) for nightly/unknown."""
+    """(major, minor, patch) for a X.Y.Z RELEASE; (0,0,0) for nightly/unknown.
+    Used for release-line logic (nightly must not count as a release)."""
     m = re.match(r"^(\d+)\.(\d+)\.(\d+)$", str(v or ""))
     return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
 
 
-def is_release(v):
-    return bool(re.match(r"^\d+\.\d+\.\d+$", str(v or "")))
+def version_sort_key(v):
+    """Total order for display sorting: handles X.Y.Z and X.Y.Z-trunk.N
+    (a release sorts above the same-numbered trunk build)."""
+    m = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:-trunk\.(\d+))?$", str(v or ""))
+    if not m:
+        return (0, 0, 0, 0, str(v))
+    maj, mnr, pat, trunk = m.groups()
+    return (int(maj), int(mnr), int(pat), int(trunk) if trunk is not None else 10 ** 9, "")
+
+
+# tz-aware sentinel so assets with an unparseable file_date still compare
+MIN_DT = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
 
 
 def parse_date(s):
@@ -127,13 +136,14 @@ def main():
         k = rel_key(v)
         d = parse_date(a.get("file_date"))
         cur = dl_newest.get(a["board_slug"])
-        if cur is None or k > cur[0]:
+        # keep the highest release; within the same release keep the newest date
+        if cur is None or (k, d or MIN_DT) > (cur[0], cur[2] or MIN_DT):
             dl_newest[a["board_slug"]] = (k, v, d)
 
     # current release line = highest (major, minor) present on the download
     current_line = max((k[:2] for k, _, _ in dl_newest.values()), default=(0, 0))
     current_examples = sorted({v for k, v, _ in dl_newest.values() if k[:2] == current_line},
-                              key=rel_key, reverse=True)
+                              key=version_sort_key, reverse=True)
     current_str = "/".join(current_examples[:3]) or "n/a"
 
     out = []
@@ -153,8 +163,8 @@ def main():
     out.append(md_table(
         ["channel", "images", "boards", "version(s)"],
         [[REPO_LABELS.get(r, r or "(empty)"), n, len(repo_boards[r]),
-          ", ".join(sorted(repo_versions[r], key=rel_key)) if len(repo_versions[r]) <= 3
-          else f"{len(repo_versions[r])} versions (…{sorted(repo_versions[r], key=rel_key)[-1]})"]
+          ", ".join(sorted(repo_versions[r], key=version_sort_key)) if len(repo_versions[r]) <= 3
+          else f"{len(repo_versions[r])} versions (…{sorted(repo_versions[r], key=version_sort_key)[-1]})"]
          for r, n in by_repo.most_common()]))
     out.append(f"\nCurrent download release line: **{current_str}**.")
     out.append("")
