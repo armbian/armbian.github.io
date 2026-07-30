@@ -87,7 +87,8 @@ def parse_date(s):
     returns aware so it can be compared/subtracted against `now`/MIN_DT."""
     try:
         d = dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
-        return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
+        d = d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
+        return d.astimezone(dt.timezone.utc)  # normalize any offset to UTC
     except Exception:
         return None
 
@@ -145,9 +146,11 @@ def main():
         if cur is None or (k, d or MIN_DT) > (cur[0], cur[2] or MIN_DT):
             dl_newest[a["board_slug"]] = (k, v, d)
 
-    # current release line = highest (major, minor) present on the download
-    current_line = max((k[:2] for k, _, _ in dl_newest.values()), default=(0, 0))
-    current_examples = sorted({v for k, v, _ in dl_newest.values() if k[:2] == current_line},
+    # current release line = highest (major, minor) among real RELEASES on the
+    # download (ignore any non-release/nightly entry, rel_key (0,0,0)).
+    current_line = max((k[:2] for k, _, _ in dl_newest.values() if k != (0, 0, 0)), default=(0, 0))
+    current_examples = sorted({v for k, v, _ in dl_newest.values()
+                               if k != (0, 0, 0) and k[:2] == current_line},
                               key=version_sort_key, reverse=True)
     current_str = "/".join(current_examples[:3]) or "n/a"
 
