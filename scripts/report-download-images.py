@@ -81,8 +81,11 @@ MIN_DT = dt.datetime.min.replace(tzinfo=dt.timezone.utc)
 
 
 def parse_date(s):
+    """Parse an ISO timestamp to a tz-aware UTC datetime (or None). Always
+    returns aware so it can be compared/subtracted against `now`/MIN_DT."""
     try:
-        return dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        d = dt.datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        return d if d.tzinfo else d.replace(tzinfo=dt.timezone.utc)
     except Exception:
         return None
 
@@ -110,8 +113,8 @@ def build_video_map(info):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--images", default=IMAGES_URL)
-    ap.add_argument("--image-info", default=INFO_URL)
+    ap.add_argument("--images", default=IMAGES_URL, help="armbian-images.json URL or local path")
+    ap.add_argument("--image-info", default=INFO_URL, help="image-info.json URL or local path (BOARD_HAS_VIDEO map)")
     ap.add_argument("--top", type=int, default=80, help="max rows per anomaly table")
     args = ap.parse_args()
 
