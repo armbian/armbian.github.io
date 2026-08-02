@@ -39,8 +39,8 @@ minimal-stable-ubuntu-current-uefi:
     - { BOARD: uefi-x86, BRANCH: edge }
     - { BOARD: uefi-arm64, BRANCH: current }
     - { BOARD: uefi-x86, BRANCH: current }
-    - { BOARD: uefi-arm64, BRANCH: cloud }
-    - { BOARD: uefi-x86, BRANCH: cloud }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
@@ -63,8 +63,8 @@ minimal-stable-ubuntu-noble-current-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: current }
     - { BOARD: uefi-x86, BRANCH: current }
-    - { BOARD: uefi-arm64, BRANCH: cloud }
-    - { BOARD: uefi-x86, BRANCH: cloud }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
