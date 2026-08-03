@@ -13,8 +13,8 @@ minimal-cli-stable-ubuntu-cloud:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
-    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
@@ -32,8 +32,8 @@ minimal-cli-unstable-debian-cloud:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
-    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
@@ -55,8 +55,8 @@ minimal-cli-stable-debian-cloud-trixie:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
-    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
@@ -77,8 +77,8 @@ minimal-cli-stable-ubuntu-cloud-noble:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
-    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "uefi-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
