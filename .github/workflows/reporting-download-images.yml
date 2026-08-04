@@ -9,10 +9,6 @@ name: "Reporting: Download images"
 on:
   workflow_dispatch:
     inputs:
-      stale_days:
-        description: "A board is 'outdated' if its newest live image is older than this many days"
-        required: false
-        default: "45"
       images_url:
         description: "armbian-images.json source (URL or path)"
         required: false
@@ -33,11 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Generate report -> job summary
         run: |
           python3 scripts/report-download-images.py \
             --images "${{ github.event.inputs.images_url || 'https://github.armbian.com/armbian-images.json' }}" \
-            --image-info "${{ github.event.inputs.image_info_url || 'https://github.armbian.com/image-info.json' }}" \
-            --stale-days "${{ github.event.inputs.stale_days || '45' }}"
+            --image-info "${{ github.event.inputs.image_info_url || 'https://github.armbian.com/image-info.json' }}"
