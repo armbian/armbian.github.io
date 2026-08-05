@@ -15,6 +15,8 @@ minimal-stable-debian-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: edge }
     - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
