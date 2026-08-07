@@ -179,16 +179,14 @@ def get_debian_binary_package_filename(distro, release_name, package_name, archi
     # Build URLs for Packages file
     #
     # Per-release set of architectures that, *for this release*, live
-    # only in debian-ports/ rather than the main archive. loong64 was
-    # promoted to the main archive in forky and stays in debian-ports
-    # for sid; bookworm/trixie don't list loong64 at all so they never
-    # reach this branch via get_debian_architectures.
+    # only in debian-ports/ rather than the main archive.
     #
-    # When a future arch goes through the same promotion cycle, add it
-    # here per-release; when sid promotes loong64 to main, drop the
-    # entry entirely.
+    # loong64 has now been promoted to the main archive for sid as well
+    # (it already was for forky), so there is currently no such arch. When
+    # a future arch goes through the promotion cycle and is published only
+    # in debian-ports for a release, add "release: {arch}" here, and drop
+    # the entry again once it reaches the main archive.
     debian_ports_only = {
-        'sid': {'loong64'},
     }.get(release_name, set())
 
     match distro:
@@ -288,25 +286,38 @@ if __name__ == "__main__":
         distro, release = release.split('/')
         packages = {}
 
-        pkg_architecture = get_debian_srcpkg_architecture(distro, release, "base-files")
+        # A release-level fetch failure (Sources/InRelease 404 or a network
+        # error) should drop just that release with a warning, not abort the
+        # whole index update.
+        try:
+            pkg_architecture = get_debian_srcpkg_architecture(distro, release, "base-files")
 
-        # Get architectures from InRelease
-        print("\n=== Architecture List ===")
-        arch_list = pkg_architecture.split()
-        if( 'any' in arch_list ):
-            architectures = get_debian_architectures(distro, release)
-        else:
-            architectures = arch_list
-        if( release == 'sid' ):
-            # loong64 is hidden away in /debian-ports/
-            architectures += ['loong64']
+            # Get architectures from InRelease
+            print("\n=== Architecture List ===")
+            arch_list = pkg_architecture.split()
+            if( 'any' in arch_list ):
+                architectures = get_debian_architectures(distro, release)
+            else:
+                architectures = arch_list
+        except (requests.exceptions.RequestException, FileNotFoundError) as e:
+            print(f"WARNING: skipping release {distro}/{release}: {e}")
+            continue
 
         # Get binary package filename
         #print("\n=== Binary Package ===")
         # NOTE: we *cheat* here because base-files is always built for all architectures.
         # this is NOT a generic method usable for all cases. for that you have to check Sources above
+        #
+        # Harden against a single arch/mirror hiccup: an upstream 404 or a
+        # network error for one architecture (e.g. an arch mid-promotion
+        # between debian-ports and the main archive) must not abort the whole
+        # run. Warn and skip that arch so the rest of the index still updates.
         for architecture in architectures:
-            binary_filename = get_debian_binary_package_filename(distro, release, "base-files", architecture)
+            try:
+                binary_filename = get_debian_binary_package_filename(distro, release, "base-files", architecture)
+            except requests.exceptions.RequestException as e:
+                print(f"WARNING: skipping {distro}/{release} ({architecture}): {e}")
+                continue
             packages[architecture] = binary_filename
         release_hash[release] = packages
 
