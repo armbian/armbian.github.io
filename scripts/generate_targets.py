@@ -792,7 +792,7 @@ targets:
       RELEASE: DEBIAN
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "no"
-      ENABLE_EXTENSIONS: "ha"
+      ENABLE_EXTENSIONS: "applications-ha"
     items:
       - *apps-builds
 
@@ -806,7 +806,7 @@ targets:
       RELEASE: DEBIAN
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
-      ENABLE_EXTENSIONS: "omv"
+      ENABLE_EXTENSIONS: "applications-omv"
     items:
       - *apps-builds
 
@@ -834,7 +834,7 @@ targets:
       RELEASE: sid
       BUILD_MINIMAL: "no"
       BUILD_DESKTOP: "no"
-      ENABLE_EXTENSIONS: "kali"
+      ENABLE_EXTENSIONS: "applications-kali"
     items:
       - *apps-builds
 """
