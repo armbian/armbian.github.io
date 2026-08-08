@@ -33,7 +33,7 @@ on:
         required: false
         default: "resolute"
       debian_apps:
-        description: "Debian codename for apps builds (HA / OMV / OpenHAB; not Kali, which stays sid)"
+        description: "Debian codename for apps builds (HA / OMV; not Kali, which stays sid)"
         required: false
         default: "trixie"
       ubuntu_apps:

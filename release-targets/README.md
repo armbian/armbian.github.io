@@ -32,7 +32,7 @@ Five files written to the output directory.
 
 | File | What it drives |
 |---|---|
-| `targets-release-apps.yaml` | Application-specific images (Home Assistant, openHAB, Kali). |
+| `targets-release-apps.yaml` | Application-specific images (Home Assistant, OMV, Kali). |
 | `targets-release-standard-support.yaml` | Standard-support release images for `conf` / `wip` boards, split by performance class and branch. |
 | `targets-release-nightly.yaml` | Nightly builds for `conf` / `wip` boards. |
 | `targets-release-community-maintained.yaml` | Community / experimental builds for `csc` / `tvb` boards. |
@@ -46,7 +46,7 @@ Targets are emitted only for combinations that have at least one board:
 
 - `minimal-…` — Debian or Ubuntu CLI image, per branch (current / vendor / legacy / edge), per architecture class (default / riscv64 / loongarch).
 - `desktop-…` — Ubuntu desktop image, per `DESKTOP_ENVIRONMENT` (xfce / gnome / bianbu) the matrix supports for that release × arch combo. Fast HDMI boards get GNOME; slow / riscv64 get XFCE; the SpacemiT K1 family on the legacy branch gets the Bianbu desktop.
-- `apps-…` — Home Assistant + openHAB on Ubuntu (the `apps` scope tracks the last LTS for build-image stability), Kali on `sid`.
+- `apps-…` — Home Assistant + OMV on Ubuntu (the `apps` scope tracks the last LTS for build-image stability), Kali on `sid`.
 
 The exact codename each `RELEASE:` line resolves to depends on which `--<distro>-<scope>` flags the workflow was dispatched with — see [Per-scope codename flags](#per-scope-codename-flags).
 

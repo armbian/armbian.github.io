@@ -10,7 +10,7 @@
 #   archive       -> the per-board DOWNLOAD on dl.armbian.com/<board>/archive/
 #                    (all released versions per board). THIS is "the download".
 #   distribution  -> appliance images on github.com/armbian/distribution
-#                    (kali / omv / homeassistant / openhab), a separate product.
+#                    (kali / omv / homeassistant), a separate product.
 #   community     -> community nightly (github.com/armbian/os or community).
 #   ci            -> CI nightly (github.com/armbian/ci).
 #
@@ -40,7 +40,7 @@ DOWNLOAD_REPO = "archive"
 # human labels for the overview (also documents what each channel really is)
 REPO_LABELS = {
     "archive": "Download (dl.armbian.com, per-board releases)",
-    "distribution": "Appliance images (kali/omv/homeassistant/openhab)",
+    "distribution": "Appliance images (kali/omv/homeassistant)",
     "community": "Community nightly",
     "ci": "CI nightly",
     "": "(orphaned — no repo)",

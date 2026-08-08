@@ -345,7 +345,7 @@ fi
 is_version_token() { [[ "$1" =~ ^[0-9]{2}\.[0-9] ]]; }
 
 is_preinstalled_app() {
-  case "$1" in kali|homeassistant|openhab|omv) return 0 ;; *) return 1 ;; esac
+  case "$1" in kali|homeassistant|omv) return 0 ;; *) return 1 ;; esac
 }
 
 split_desktop_tail() {
@@ -605,7 +605,7 @@ awk '
   if (url ~ /\/[^\/]+\/archive\/Armbian/ &&
       url !~ /\.txt$/ &&
       url !~ /\.(asc|sha|torrent)$/ &&
-      url !~ /(homeassistant|openhab|kali|omv)/) {
+      url !~ /(homeassistant|kali|omv)/) {
     dt=$3 "T" $4 "Z"; gsub("/", "-", dt)
     print size "|" url "|" dt
   }

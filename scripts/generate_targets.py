@@ -810,20 +810,6 @@ targets:
     items:
       - *apps-builds
 
-  apps-openhab:
-    enabled: yes
-    configs: [ armbian-apps ]
-    pipeline:
-      gha: *armbian-gha
-    build-image: "yes"
-    vars:
-      RELEASE: DEBIAN
-      BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "no"
-      ENABLE_EXTENSIONS: "openhab"
-    items:
-      - *apps-builds
-
   apps-kali:
     enabled: yes
     configs: [ armbian-apps ]

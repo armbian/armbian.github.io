@@ -39,7 +39,7 @@ class RpiImagerGenerator:
 
     # Exclude patterns
     EXCLUDE_PATTERNS = [
-        "homeassistant", "openhab", "kali", "omv", "trunk"
+        "homeassistant", "kali", "omv", "trunk"
     ]
 
     # Only include these file extensions
