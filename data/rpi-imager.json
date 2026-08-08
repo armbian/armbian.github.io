@@ -1,0 +1,76 @@
+{
+  "os_list": [
+    {
+      "name": "Armbian Resolute Gnome Desktop 26.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.5.1_Rpi4b_resolute_current_6.18.32_gnome_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-05-24",
+      "extract_size": 6396313600,
+      "extract_sha256": "25a4bf83cb60b925df1c9df3e649a38971ee53c9bc18dc2ed197936f55977df9",
+      "image_download_size": 1089000032,
+      "image_download_sha256": "a3f68c5799f3885727171d832f6fa60c3f6a8ab39f4b83e4fc4bfecf393c6c69",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Resolute KDE Plasma Desktop 26.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.5.1_Rpi4b_resolute_current_6.18.32_kde-plasma_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-05-24",
+      "extract_size": 8346664960,
+      "extract_sha256": "8648fbcdb4deec55fc39122c5975f8fe8e920c651f902a02838cc62b617e1652",
+      "image_download_size": 1458608540,
+      "image_download_sha256": "f3c6fb6703faa00a664b27fa5a4039680755621413c1740404bee20ed9b2502b",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Resolute Minimal 26.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.5.1_Rpi4b_resolute_current_6.18.32_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-05-24",
+      "extract_size": 1828716544,
+      "extract_sha256": "b39ef8942e29e1cf46efcfa4e0bfd3180369944db4c294214f4b08bf4a360e59",
+      "image_download_size": 217532148,
+      "image_download_sha256": "b22c68b40a90fac20b5d822e8f8d3caedd53dd5389cad90f7e46ce587e0efe21",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Trixie Minimal 26.5.1",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.5.1_Rpi4b_trixie_current_6.18.32_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-05-24",
+      "extract_size": 1937768448,
+      "extract_sha256": "809bd9d26ef2dd3cc6b3da1c726f7784dc69fa73e30a6776d310c550393366d0",
+      "image_download_size": 226922412,
+      "image_download_sha256": "189edc38730aa0b97162177a0ba762619d514a3c47a32d655660bcc8e78016b4",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    }
+  ]
+}
