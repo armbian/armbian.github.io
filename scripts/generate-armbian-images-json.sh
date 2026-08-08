@@ -367,7 +367,7 @@ split_desktop_tail() {
 }
 
 strip_img_ext() {
-  sed -E 's/(\.img(\.(xz|zst|gz))?|\.tar\.(xz|zst|gz))$//' <<<"$1"
+  sed -E 's/(\.img(\.(xz|zst|gz))?|\.iso|\.tar\.(xz|zst|gz))$//' <<<"$1"
 }
 
 extract_file_extension() {
@@ -465,6 +465,12 @@ extract_file_extension() {
   fi
   if [[ "$n" == *.hyperv.zip ]]; then
     echo "hyperv.zip"
+    return
+  fi
+
+  # live ISO images (UEFI cloud): shipped uncompressed -> iso
+  if [[ "$n" == *.iso ]]; then
+    echo "iso"
     return
   fi
 
@@ -708,6 +714,8 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 
     if [[ "$FILE_EXTENSION" == img.qcow2* ]]; then
       REDI_VARIANT="${VARIANT}-qcow2"
+    elif [[ "$FILE_EXTENSION" == iso* ]]; then
+      REDI_VARIANT="${VARIANT}-iso"
     elif [[ "$FILE_EXTENSION" == hyperv.zip* ]]; then
       REDI_VARIANT="${VARIANT}-hyperv"
     elif [[ "$FILE_EXTENSION" == fip.img* ]]; then
