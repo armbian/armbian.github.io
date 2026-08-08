@@ -22,7 +22,7 @@ on:
       repos:
         description: "Comma-separated owner/repo targets (default: core repos)"
         required: false
-        default: "armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation"
+        default: "armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation,armbian/distribution"
       model:
         description: "Claude model id"
         required: false
@@ -47,7 +47,7 @@ jobs:
       - id: set
         env:
           # Route the dispatch input through env (not inline ${{ }}) to avoid shell injection.
-          REPOS: ${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation' }}
+          REPOS: ${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation,armbian/distribution' }}
         run: |
           set -euo pipefail
           matrix="$(echo "$REPOS" | tr ',' '\n' | sed 's/[[:space:]]//g' | grep -v '^$' | jq -R . | jq -s -c .)"
