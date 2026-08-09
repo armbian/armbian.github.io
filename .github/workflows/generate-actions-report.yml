@@ -24,7 +24,7 @@ jobs:
 
     strategy:
       matrix:
-        repo: ["armbian.github.io", "build", "imager", "os", "sdk", "documentation", "shallow", "docker-armbian-build", "configng"]
+        repo: ["armbian.github.io", "build", "imager", "ci", "sdk", "documentation", "shallow", "docker-armbian-build", "configng"]
       fail-fast: false
       max-parallel: 1 # free api is very limited
 
