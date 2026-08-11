@@ -1,3 +1,7 @@
 # Boards excluded from standard-support (stable) release builds.
 # One board name per line; '#' comments and blank lines are ignored.
 sk-am62-lp
+# LoongArch only exists in Debian sid, so the stable auto-generated targets
+# can't build it. The one working combo (Debian sid CLI minimal) is added
+# manually in targets-release-standard-support.manual instead.
+uefi-loong64
