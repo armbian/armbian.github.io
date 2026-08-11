@@ -40,6 +40,7 @@ minimal-stable-debian-loong64-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
+    - { BOARD: uefi-loong64, BRANCH: current }
     - { BOARD: uefi-loong64, BRANCH: edge }
 
 # Ubuntu minimal with current kernel - UEFI only
