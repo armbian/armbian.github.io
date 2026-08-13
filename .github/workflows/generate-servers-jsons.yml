@@ -132,7 +132,8 @@ jobs:
                     apt_proxy: (.custom_fields["apt_proxy"] // ""),
                     oci_cache: (.custom_fields["oci_cache"] // ""),
                     redis_cache: (.custom_fields["redis_cache"] // ""),
-                    git_proxy: (.custom_fields["git_proxy"] // "")
+                    git_proxy: (.custom_fields["git_proxy"] // ""),
+                    cputhreads: (.custom_fields["cputhreads"] // "")
                   }
               )
             | sort_by(.host)
