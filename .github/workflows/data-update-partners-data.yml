@@ -64,6 +64,7 @@ jobs:
             echo "$response" \
               | jq -c ".data[] | select(.Company_slug != null and .Company_slug != \"\") | {
                   Account_Name,
+                  company_slug: .Company_slug,
                   logo_url: (\"https://cache.armbian.com/images/vendors/150/\(.Company_slug).png\"),
                   Website,
                   Description,
