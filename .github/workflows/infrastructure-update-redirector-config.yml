@@ -110,7 +110,7 @@ jobs:
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
           echo "Resolved $(jq 'length' <<<"${matrix}") mirror(s)." >> "$GITHUB_STEP_SUMMARY"
 
-  check:
+  mirrors:
     name: "Check ${{ matrix.node.server }}"
     runs-on: ubuntu-24.04
     needs: [ build, index ]
@@ -153,7 +153,7 @@ jobs:
   redirector:
     name: "Redirector config: ${{ matrix.variant }}"
     runs-on: ubuntu-24.04
-    needs: check
+    needs: mirrors
     strategy:
       fail-fast: false
       matrix:
