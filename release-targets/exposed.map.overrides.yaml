@@ -82,3 +82,9 @@ overrides:
     desktop:
       branch: edge
       suffix: gnome_desktop
+
+  - boards: [pocketbeagle2]
+    # PocketBeagle 2 is headless, so recommend the Ubuntu minimal image
+    # instead of the desktop image selected by its current inventory metadata.
+    desktop:
+      suffix: minimal
