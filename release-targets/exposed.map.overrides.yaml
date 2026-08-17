@@ -82,3 +82,9 @@ overrides:
     desktop:
       branch: edge
       suffix: gnome_desktop
+
+  - boards: [beaglebadge]
+    # BeagleBadge has only 256 MB RAM. Keep its display capability in the
+    # inventory, but recommend the Ubuntu minimal image instead of GNOME.
+    desktop:
+      suffix: minimal
