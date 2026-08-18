@@ -725,17 +725,17 @@ armbian-gha: &armbian-gha
     by-name:
       kernel: [ "self-hosted", "Linux", "alfa" ]
       uboot: [ "self-hosted", "Linux", "fast", "X64" ]
-      armbian-bsp-cli: [ "X64" ]
+      armbian-bsp-cli: [ "self-hosted", "Linux", "fast", "X64" ]
     by-name-and-arch:
       rootfs-armhf: [ "ubuntu-latest" ]
-      rootfs-arm64: [ "ubuntu-24.04-arm" ]
+      rootfs-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
       rootfs-amd64: [ "self-hosted", "Linux", "X64" ]
-      rootfs-riscv64: [ "ubuntu-latest" ]
+      rootfs-riscv64: [ "ubuntu-24.04-riscv" ]
       rootfs-loong64: [ "self-hosted", "Linux", "X64" ]
       image-armhf: [ "self-hosted", "Linux", 'images', 'X64' ]
       image-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
       image-amd64: [ "self-hosted", "Linux", 'images', "X64" ]
-      image-riscv64: [ "self-hosted", "Linux", 'images', "X64" ]
+      image-riscv64: [ "ubuntu-24.04-riscv" ]
       image-loong64: [ "self-hosted", "Linux", 'images', "X64" ]
 
 lists:
