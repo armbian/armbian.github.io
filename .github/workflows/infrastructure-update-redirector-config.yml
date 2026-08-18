@@ -29,6 +29,10 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
+# Least-privilege default for GITHUB_TOKEN; jobs that need more opt in below.
+permissions:
+  contents: read
+
 jobs:
 
   Check:
@@ -208,6 +212,9 @@ jobs:
   Close:
     needs: redirector
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write   # push the regenerated YAMLs to the data branch
+      actions: write    # delete the intermediate index/status artifacts
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
