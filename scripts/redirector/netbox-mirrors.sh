@@ -41,6 +41,14 @@ while IFS=$'\t' read -r key tag field fallback reference check; do
 		-H "Accept: application/json" \
 		"${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active&tag=${tag}")
 
+	# limit=500 is a cap, not a promise. If NetBox ever pages the response the
+	# tail would vanish from the matrix silently and those mirrors would drop
+	# out of the failover pool - so fail loudly instead.
+	if [[ "$(jq -r '.next // "null"' <<<"${resp}")" != "null" ]]; then
+		echo "netbox-mirrors: paginated response for tag '${tag}' ($(jq -r '.count' <<<"${resp}") results); raise the limit or follow .next" >&2
+		exit 1
+	fi
+
 	# One clean jq pass per variant: server = name + "/" + download path (the
 	# custom field, or the fallback when it's null/absent).
 	part=$(jq -c \

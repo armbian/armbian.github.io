@@ -78,7 +78,8 @@ jobs:
           if [[ "$platform" =~ ^(dl|archive)$ ]]; then
               # Mirror only */archive/*.torrent into ./source, then lift the archive subdirs out.
               ( cd source && retry lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; quit" "${source_of_truth}/${platform}" )
-              find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -i -- "{}" destination/ \;
+              # -f, not -i: with no tty the prompt reads EOF and declines the move.
+          find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -f -- "{}" destination/ \;
           elif [[ "$platform" == "cache" ]]; then
               # Cache isn't index-compared; ship a placeholder so the artifact exists.
               touch source/valid destination/valid
@@ -103,6 +104,8 @@ jobs:
       matrix: ${{ steps.q.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: "Query NetBox"
         id: q
         env:
@@ -111,8 +114,15 @@ jobs:
         run: |
           set -euo pipefail
           matrix="$(scripts/redirector/netbox-mirrors.sh)"
+          count="$(jq 'length' <<<"${matrix}")"
+          # A matrix over 256 entries is rejected by Actions at dispatch time,
+          # which reads as a workflow-syntax error rather than "fleet too big".
+          if [[ "${count}" -gt 256 ]]; then
+            echo "index: ${count} mirror/variant pairs exceeds the 256-job matrix limit; the check job needs chunking" >&2
+            exit 1
+          fi
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
-          echo "Resolved $(jq 'length' <<<"${matrix}") mirror(s)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Resolved ${count} mirror(s)." >> "$GITHUB_STEP_SUMMARY"
 
   mirrors:
     name: "Check ${{ matrix.node.server }}"
@@ -126,6 +136,8 @@ jobs:
         node: ${{ fromJson(needs.index.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: "Install dependencies: lftp"
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -140,12 +152,19 @@ jobs:
           path: reference
 
       - name: "Compare mirror"
+        env:
+          # Via env, never inline in `run`: these come from NetBox, and a crafted
+          # VM name would otherwise be interpolated straight into the shell.
+          NODE_SERVER: ${{ matrix.node.server }}
+          NODE_CHECK: ${{ matrix.node.check }}
+          NODE_ID: ${{ matrix.node.id }}
         run: |
+          set -euo pipefail
           scripts/redirector/check-mirror.sh \
-            "${{ matrix.node.server }}" \
-            "${{ matrix.node.check }}" \
+            "${NODE_SERVER}" \
+            "${NODE_CHECK}" \
             reference \
-            "${{ matrix.node.id }}"
+            "${NODE_ID}"
 
       - name: "Upload status"
         uses: actions/upload-artifact@v7
@@ -169,6 +188,8 @@ jobs:
           - { key: cache,    variant: cache,     port: "8084" }
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: "Collect ${{ matrix.variant }} statuses"
         uses: actions/download-artifact@v8
@@ -180,27 +201,14 @@ jobs:
       - name: "Summarize"
         run: scripts/redirector/summarize.sh status
 
+      # One invocation for every variant: the action emits `bind:` only when port
+      # is non-empty, so debs (no explicit port) keeps the default as before.
       - name: "Generate ${{ matrix.variant }} redirector YAML"
-        if: ${{ matrix.port != '' }}
         uses: armbian/actions/make-yaml-redirector@main
         with:
           variant: ${{ matrix.variant }}
           failoverserver: "${{ env.failoverserver }}"
-          port: ${{ matrix.port }}
-          geodb: "${{ env.GEODB }}"
-          asndb: "${{ env.ASNDB }}"
-          dl_map: "${{ env.DL_MAP }}"
-          certDataPath: "${{ env.CERTPATH }}"
-          reloadKey: ${{ env.reloadKey }}
-          netbox: ${{ secrets.NETBOX_TOKEN }}
-          netboxapi: ${{ secrets.NETBOX_API }}
-
-      - name: "Generate ${{ matrix.variant }} redirector YAML (default port)"
-        if: ${{ matrix.port == '' }}
-        uses: armbian/actions/make-yaml-redirector@main
-        with:
-          variant: ${{ matrix.variant }}
-          failoverserver: "${{ env.failoverserver }}"
+          port: "${{ matrix.port }}"
           geodb: "${{ env.GEODB }}"
           asndb: "${{ env.ASNDB }}"
           dl_map: "${{ env.DL_MAP }}"
@@ -273,6 +281,7 @@ jobs:
         with:
           name: |
             mirror-status-*
+            config-*
             apt
             beta
             dl

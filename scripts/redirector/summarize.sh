@@ -36,6 +36,13 @@ for f in "${status_dir}"/*; do
 done
 failover="${failover% }"
 
+# An empty pool would generate a redirector config with nowhere to send traffic.
+# Fail the step instead: the previously published config stays live.
+if [[ -z "${failover}" ]]; then
+	echo "summarize: no in-sync mirrors found in '${status_dir}' - refusing to publish an empty failover pool" >&2
+	exit 1
+fi
+
 {
 	echo "failoverserver=${failover}"
 	echo "reloadKey=$(openssl rand -hex 16)"
