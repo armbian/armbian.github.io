@@ -200,8 +200,25 @@ jobs:
                 --exclude='*' \
                 --omit-dir-times --no-perms --no-group \
                 "${INCOMING_PATH}/base-files/${BF_REPO}/" "${STORAGE_PATH}/${BF_REPO}/" \
-                2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
-                echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
+                2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              # PIPESTATUS, not $?: the pipe through tee would otherwise report
+              # tee's status and hide every rsync failure. 23 is expected here -
+              # --no-perms/--no-group on the shared-group storage means some
+              # attributes legitimately do not transfer. Anything else is real,
+              # and must stop the run: update-repository would happily publish a
+              # storage tree that is missing these packages.
+              BF_RC=${PIPESTATUS[0]}
+              case "${BF_RC}" in
+                0) ;;
+                23)
+                  echo "Warning: some files/attrs were not transferred (rsync 23)" >> "$GITHUB_STEP_SUMMARY"
+                  ;;
+                *)
+                  echo "::error::rsync of base-files/${BF_REPO} failed (rsync exit ${BF_RC})"
+                  echo "**rsync of base-files/${BF_REPO} failed (exit ${BF_RC})**" >> "$GITHUB_STEP_SUMMARY"
+                  exit 1
+                  ;;
+              esac
             else
               echo "## No base-files/${BF_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
             fi
