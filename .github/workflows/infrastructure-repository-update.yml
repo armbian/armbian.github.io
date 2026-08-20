@@ -135,11 +135,63 @@ jobs:
             TARGET="cron/"
           fi
 
+          # Ingest the curated kernel selection out of incoming/stable.
+          #
+          # Kernels are a selection rather than a sweep - there is one
+          # linux-image per (linuxfamily, branch) - so which families the
+          # repository carries comes from config/repository-kernel-selection.conf,
+          # and copy-kernel-packages.sh resolves what exists from image-info.json.
+          #
+          # Called from both the stable/ and base-files/ targets: the weekly
+          # chain builds the packages into incoming/stable/ and then runs
+          # base-files, and it is base-files that fires the repository update -
+          # so base-files/ is the signal that the chain finished. Gating it there
+          # rather than running unconditionally also keeps the eight daily cron
+          # updates from re-copying the same debs, since this copies rather than
+          # moves.
+          ingest_stable_kernels() {
+            [ -d "${INCOMING_PATH}/stable" ] || {
+              echo "## No stable/ in incoming, skipping kernel selection" >> "$GITHUB_STEP_SUMMARY"
+              return 0
+            }
+            # shellcheck source=config/repository-kernel-selection.conf
+            . "${GITHUB_WORKSPACE}/config/repository-kernel-selection.conf"
+            echo "## Stable kernel selection: ${KERNEL_SELECT}" >> "$GITHUB_STEP_SUMMARY"
+            local ST_REPO ST_SRC ST_RC
+            for ST_REPO in debs debs-beta; do
+              ST_SRC="${INCOMING_PATH}/stable/${ST_REPO}"
+              if [ ! -d "${ST_SRC}" ]; then
+                echo "## No stable/${ST_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              SELECT="${KERNEL_SELECT}" \
+              UBOOT_SELECT="${UBOOT_SELECT}" \
+              COPY_UBOOT="${COPY_UBOOT}" \
+              INCLUDE_LIBC_DEV="${INCLUDE_LIBC_DEV}" \
+              DRY_RUN=false \
+              SRC_DIR="${ST_SRC}" \
+              DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
+              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              ST_RC=${PIPESTATUS[0]}
+              if [ "${ST_RC}" -ne 0 ]; then
+                echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
+                return 1
+              fi
+            done
+          }
+
           case "$TARGET" in
             "stable/")
-              # Handled unconditionally below, like the generic packages: the
-              # drop box is ingested whichever pipeline triggered the update.
-              :
+              # A stable build dispatching for itself (manual, or if the chain
+              # is ever unpicked).
+              ingest_stable_kernels || exit 1
+              ;;
+
+            "base-files/")
+              # The weekly chain's completion signal: build-all-stable uploads
+              # to incoming/stable/, then runs base-files, and base-files fires
+              # this update. So this is where the stable drop box is drained.
+              ingest_stable_kernels || exit 1
               ;;
             "cron/")
               # move what is inside incoming
@@ -170,45 +222,6 @@ jobs:
               :
               ;;
           esac
-
-          # Always ingest the stable kernel selection, whatever the target was.
-          #
-          # Not keyed on the dispatch target on purpose. The weekly chain builds
-          # the packages (uploading to incoming/stable/) and then runs
-          # base-files, and it is base-files that fires the repository update -
-          # so the payload says "base-files/" and a target-keyed branch would
-          # never see the kernels sitting next door. incoming is a drop box:
-          # whatever is in it gets ingested, whoever rang the bell.
-          #
-          # Kernels are a selection rather than a sweep - there is one
-          # linux-image per (linuxfamily, branch) - so which families the
-          # repository carries comes from config/repository-kernel-selection.conf
-          # and copy-kernel-packages.sh resolves what exists from image-info.json.
-          if [ -d "${INCOMING_PATH}/stable" ]; then
-            # shellcheck source=config/repository-kernel-selection.conf
-            . "${GITHUB_WORKSPACE}/config/repository-kernel-selection.conf"
-            echo "## Stable kernel selection: ${KERNEL_SELECT}" >> "$GITHUB_STEP_SUMMARY"
-            for ST_REPO in debs debs-beta; do
-              ST_SRC="${INCOMING_PATH}/stable/${ST_REPO}"
-              if [ ! -d "${ST_SRC}" ]; then
-                echo "## No stable/${ST_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
-                continue
-              fi
-              SELECT="${KERNEL_SELECT}" \
-              UBOOT_SELECT="${UBOOT_SELECT}" \
-              COPY_UBOOT="${COPY_UBOOT}" \
-              INCLUDE_LIBC_DEV="${INCLUDE_LIBC_DEV}" \
-              DRY_RUN=false \
-              SRC_DIR="${ST_SRC}" \
-              DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
-              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-              ST_RC=${PIPESTATUS[0]}
-              if [ "${ST_RC}" -ne 0 ]; then
-                echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
-                exit 1
-              fi
-            done
-          fi
 
           # Always ingest the release-generic packages, whatever the target was.
           #
