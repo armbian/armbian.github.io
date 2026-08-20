@@ -178,6 +178,35 @@ jobs:
               ;;
           esac
 
+          # Always sync base-files, whatever the target was.
+          #
+          # armbian/ci builds these in their own pipeline (build-base-files.yml,
+          # uploaded to incoming/base-files/) because they must publish even when
+          # a package build did not run - see armbian/build#9476. Nothing used to
+          # consume that directory: "base-files/" fell through to the no-op *)
+          # branch, so the debs piled up in incoming and never reached a
+          # repository. Copy them into STORAGE_PATH, which is what repo.sh reads
+          # (INPUT_DIR="${STORAGE_PATH}/${REPO_NAME}").
+          #
+          # Copied, not moved: unlike incoming/cron these are small, versioned,
+          # and cheap to re-send, and keeping them means a failed run later in the
+          # pipeline cannot lose them. rsync skips what is already identical.
+          for BF_REPO in debs debs-beta; do
+            if [ -d "${INCOMING_PATH}/base-files/${BF_REPO}" ]; then
+              echo "## Copy base-files ${BF_REPO}" >> "$GITHUB_STEP_SUMMARY"
+              rsync -av \
+                --include='*/' \
+                --include='*.deb' \
+                --exclude='*' \
+                --omit-dir-times --no-perms --no-group \
+                "${INCOMING_PATH}/base-files/${BF_REPO}/" "${STORAGE_PATH}/${BF_REPO}/" \
+                2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
+                echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "## No base-files/${BF_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
               echo "## Copy external debs "
