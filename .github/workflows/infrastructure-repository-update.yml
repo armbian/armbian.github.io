@@ -202,11 +202,81 @@ jobs:
             esac
           }
 
+          # Ingest the release-generic packages out of incoming/base-files.
+          #
+          # armbian/ci builds these in their own pipeline and uploads them there,
+          # decoupled so they publish even when a package build did not run
+          # (armbian/build#9476). The drop box carries more than base-files:
+          # everything the general packages build produces lands in it and all of
+          # it belongs in the repository - published today as base-files,
+          # armbian-firmware, armbian-firmware-full, armbian-plymouth-theme,
+          # armbian-zsh, fake-ubuntu-advantage-tools and armbian-bsp-cli-<board>.
+          # So this matches on *.deb only: no package list to keep in sync, and
+          # repo.sh decides which component each one belongs to.
+          #
+          # Moved, not copied, with --remove-source-files rather than a following
+          # rm -rf, so rsync deletes exactly the files it confirmed on the
+          # receiving side - a partial transfer (exit 23) leaves whatever did not
+          # land in place for the next run instead of dropping it.
+          #
+          # Called only from the stable-side targets. cron/ builds with
+          # nightlybuild=yes and feeds debs-beta: the nightly repository has no
+          # business pulling in stable packages.
+          #
+          # Add another drop box by naming it here.
+          GENERIC_INCOMING="base-files"
+
+          ingest_generic_packages() {
+            local GP_DIR GP_REPO GP_RC
+            for GP_DIR in ${GENERIC_INCOMING}; do
+              for GP_REPO in debs debs-beta; do
+                if [ -d "${INCOMING_PATH}/${GP_DIR}/${GP_REPO}" ]; then
+                  echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
+                  rsync -av --remove-source-files \
+                    --include='*/' \
+                    --include='*.deb' \
+                    --exclude='*' \
+                    --omit-dir-times --no-perms --no-group \
+                    "${INCOMING_PATH}/${GP_DIR}/${GP_REPO}/" "${STORAGE_PATH}/${GP_REPO}/" \
+                    2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+                  # PIPESTATUS, not $?: the pipe through tee would otherwise
+                  # report tee's status and hide every rsync failure. 23 is
+                  # expected here - --no-perms/--no-group on the shared-group
+                  # storage means some attributes legitimately do not transfer.
+                  # Anything else is real, and must stop the run:
+                  # update-repository would happily publish a storage tree that
+                  # is missing these packages.
+                  GP_RC=${PIPESTATUS[0]}
+                  case "${GP_RC}" in
+                    0) ;;
+                    23)
+                      echo "Warning: some files/attrs were not transferred (rsync 23)" >> "$GITHUB_STEP_SUMMARY"
+                      ;;
+                    *)
+                      echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (rsync exit ${GP_RC})"
+                      echo "**rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})**" >> "$GITHUB_STEP_SUMMARY"
+                      return 1
+                      ;;
+                  esac
+                  # --remove-source-files only removes files; clear the
+                  # directories it emptied, and the per-repo dir once it is empty.
+                  find "${INCOMING_PATH}/${GP_DIR}/${GP_REPO}" -type d -empty -delete
+                else
+                  echo "## No ${GP_DIR}/${GP_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
+                fi
+              done
+              # Drop the now-empty drop box. Left alone if anything remains, so a
+              # partial transfer stays visible for the next run.
+              rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
+            done
+          }
+
           case "$TARGET" in
             "stable/")
               # A stable build dispatching for itself (manual, or if the chain
               # is ever unpicked).
               ingest_stable_kernels || exit 1
+              ingest_generic_packages || exit 1
               ;;
 
             "base-files/")
@@ -214,6 +284,7 @@ jobs:
               # to incoming/stable/, then runs base-files, and base-files fires
               # this update. So this is where the stable drop box is drained.
               ingest_stable_kernels || exit 1
+              ingest_generic_packages || exit 1
               ;;
             "cron/")
               # move what is inside incoming
@@ -244,83 +315,6 @@ jobs:
               :
               ;;
           esac
-
-          # Always ingest the release-generic packages, whatever the target was.
-          #
-          # armbian/ci builds these in their own pipeline and uploads them to
-          # incoming/base-files/ - decoupled so they publish even when a package
-          # build did not run (armbian/build#9476). Nothing used to consume that
-          # directory: the target fell through to the no-op *) branch, so the
-          # debs piled up in incoming and never reached a repository.
-          #
-          # The drop box carries more than base-files. Everything the general
-          # packages build produces lands here and all of it belongs in the
-          # repository - published today as base-files, armbian-firmware,
-          # armbian-firmware-full, armbian-plymouth-theme, armbian-zsh,
-          # fake-ubuntu-advantage-tools and armbian-bsp-cli-<board>. So this
-          # matches on *.deb only: no package list to keep in sync, and a new
-          # generic package needs no change here. repo.sh decides which
-          # component each one belongs to.
-          #
-          # Moved, not copied: incoming is a drop box, so what has been taken
-          # into storage is removed, the same way incoming/cron is. The move is
-          # done with --remove-source-files rather than a following rm -rf, so
-          # rsync deletes exactly the files it confirmed on the receiving side -
-          # a partial transfer (exit 23) leaves whatever did not land in place
-          # for the next run instead of dropping it.
-          #
-          # Only the generic packages move wholesale. kernel, linux-dtb,
-          # linux-libc-dev and u-boot are deliberately NOT in here: there is one
-          # of each per (linuxfamily, branch) and per (board, branch), so which
-          # of them belong in the repository is a selection, not a sweep.
-          # scripts/copy-kernel-packages.sh already does that selection
-          # (SELECT / UBOOT_SELECT / INCLUDE_LIBC_DEV / COPY_UBOOT, deduplicating
-          # against image-info.json); driving it from a config file is the next
-          # step, and belongs in the per-target branches above.
-          #
-          # Add another drop box by naming it here.
-          GENERIC_INCOMING="base-files"
-
-          for GP_DIR in ${GENERIC_INCOMING}; do
-            for GP_REPO in debs debs-beta; do
-              if [ -d "${INCOMING_PATH}/${GP_DIR}/${GP_REPO}" ]; then
-                echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
-                rsync -av --remove-source-files \
-                  --include='*/' \
-                  --include='*.deb' \
-                  --exclude='*' \
-                  --omit-dir-times --no-perms --no-group \
-                  "${INCOMING_PATH}/${GP_DIR}/${GP_REPO}/" "${STORAGE_PATH}/${GP_REPO}/" \
-                  2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-                # PIPESTATUS, not $?: the pipe through tee would otherwise report
-                # tee's status and hide every rsync failure. 23 is expected here -
-                # --no-perms/--no-group on the shared-group storage means some
-                # attributes legitimately do not transfer. Anything else is real,
-                # and must stop the run: update-repository would happily publish
-                # a storage tree that is missing these packages.
-                GP_RC=${PIPESTATUS[0]}
-                case "${GP_RC}" in
-                  0) ;;
-                  23)
-                    echo "Warning: some files/attrs were not transferred (rsync 23)" >> "$GITHUB_STEP_SUMMARY"
-                    ;;
-                  *)
-                    echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (rsync exit ${GP_RC})"
-                    echo "**rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})**" >> "$GITHUB_STEP_SUMMARY"
-                    exit 1
-                    ;;
-                esac
-                # --remove-source-files only removes files; clear the directories
-                # it emptied, and the per-repo dir itself once it is empty.
-                find "${INCOMING_PATH}/${GP_DIR}/${GP_REPO}" -type d -empty -delete
-              else
-                echo "## No ${GP_DIR}/${GP_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
-              fi
-            done
-            # Drop the now-empty drop box. Left alone if anything remains, so a
-            # partial transfer stays visible for the next run.
-            rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
-          done
 
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
