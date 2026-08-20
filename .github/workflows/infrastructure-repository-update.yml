@@ -137,38 +137,9 @@ jobs:
 
           case "$TARGET" in
             "stable/")
-              # Kernels are a selection, not a sweep: there is one linux-image
-              # per (linuxfamily, branch) and the repository only carries the
-              # families listed in config/repository-kernel-selection.conf.
-              # copy-kernel-packages.sh resolves what actually exists from
-              # image-info.json and copies the matching debs.
-              if [ -d "${INCOMING_PATH}/stable" ]; then
-                # shellcheck source=config/repository-kernel-selection.conf
-                . "${GITHUB_WORKSPACE}/config/repository-kernel-selection.conf"
-                echo "## Stable kernel selection: ${KERNEL_SELECT}" >> $GITHUB_STEP_SUMMARY
-                for ST_REPO in debs debs-beta; do
-                  ST_SRC="${INCOMING_PATH}/stable/${ST_REPO}"
-                  if [ ! -d "${ST_SRC}" ]; then
-                    echo "## No stable/${ST_REPO} in incoming, skipping" >> $GITHUB_STEP_SUMMARY
-                    continue
-                  fi
-                  SELECT="${KERNEL_SELECT}" \
-                  UBOOT_SELECT="${UBOOT_SELECT}" \
-                  COPY_UBOOT="${COPY_UBOOT}" \
-                  INCLUDE_LIBC_DEV="${INCLUDE_LIBC_DEV}" \
-                  DRY_RUN=false \
-                  SRC_DIR="${ST_SRC}" \
-                  DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
-                  scripts/copy-kernel-packages.sh 2>&1 | tee -a $GITHUB_STEP_SUMMARY
-                  ST_RC=${PIPESTATUS[0]}
-                  if [ "${ST_RC}" -ne 0 ]; then
-                    echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
-                    exit 1
-                  fi
-                done
-              else
-                echo "## Source folder INCOMING/stable does not exist, skipping" >> $GITHUB_STEP_SUMMARY
-              fi
+              # Handled unconditionally below, like the generic packages: the
+              # drop box is ingested whichever pipeline triggered the update.
+              :
               ;;
             "cron/")
               # move what is inside incoming
@@ -199,6 +170,45 @@ jobs:
               :
               ;;
           esac
+
+          # Always ingest the stable kernel selection, whatever the target was.
+          #
+          # Not keyed on the dispatch target on purpose. The weekly chain builds
+          # the packages (uploading to incoming/stable/) and then runs
+          # base-files, and it is base-files that fires the repository update -
+          # so the payload says "base-files/" and a target-keyed branch would
+          # never see the kernels sitting next door. incoming is a drop box:
+          # whatever is in it gets ingested, whoever rang the bell.
+          #
+          # Kernels are a selection rather than a sweep - there is one
+          # linux-image per (linuxfamily, branch) - so which families the
+          # repository carries comes from config/repository-kernel-selection.conf
+          # and copy-kernel-packages.sh resolves what exists from image-info.json.
+          if [ -d "${INCOMING_PATH}/stable" ]; then
+            # shellcheck source=config/repository-kernel-selection.conf
+            . "${GITHUB_WORKSPACE}/config/repository-kernel-selection.conf"
+            echo "## Stable kernel selection: ${KERNEL_SELECT}" >> "$GITHUB_STEP_SUMMARY"
+            for ST_REPO in debs debs-beta; do
+              ST_SRC="${INCOMING_PATH}/stable/${ST_REPO}"
+              if [ ! -d "${ST_SRC}" ]; then
+                echo "## No stable/${ST_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              SELECT="${KERNEL_SELECT}" \
+              UBOOT_SELECT="${UBOOT_SELECT}" \
+              COPY_UBOOT="${COPY_UBOOT}" \
+              INCLUDE_LIBC_DEV="${INCLUDE_LIBC_DEV}" \
+              DRY_RUN=false \
+              SRC_DIR="${ST_SRC}" \
+              DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
+              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              ST_RC=${PIPESTATUS[0]}
+              if [ "${ST_RC}" -ne 0 ]; then
+                echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
+                exit 1
+              fi
+            done
+          fi
 
           # Always ingest the release-generic packages, whatever the target was.
           #
