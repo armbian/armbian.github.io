@@ -249,6 +249,17 @@ boards:
     branch: "current"
     file_extension: "img.xz"
 
+  - board_slug: "raspberrypi5"
+    board_name: "Raspberry Pi 5"
+    board_vendor: "rpi-foundation"
+    board_support: "conf"
+    board_introduced: "2023"
+
+    # The magic: reuse artifact set
+    uses: "rpi4b"
+    branch: "current"
+    file_extension: "img.xz"
+
   - board_slug: "qidi-x7"
     board_name: "Qidi X7"
     board_vendor: "makerbase"
