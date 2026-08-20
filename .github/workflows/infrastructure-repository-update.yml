@@ -178,6 +178,28 @@ jobs:
                 return 1
               fi
             done
+
+            # Drain the drop box: what was wanted has been copied, the rest is
+            # every other family's kernel and every other board's u-boot, which
+            # this repository does not carry. Leaving them means incoming grows
+            # without bound and each weekly run re-copies over the last.
+            #
+            # Only reached when every selection above succeeded, so nothing is
+            # dropped on the strength of a failed copy. The count is reported
+            # first: widening KERNEL_SELECT means next week's build supplies
+            # them again, but this week's are gone.
+            local ST_TOTAL
+            ST_TOTAL=$(find "${INCOMING_PATH}/stable" -type f -name '*.deb' 2>/dev/null | wc -l)
+            echo "## Dropping incoming/stable (${ST_TOTAL} .deb, selected ones already copied)" >> "$GITHUB_STEP_SUMMARY"
+            case "${INCOMING_PATH}" in
+              *"/armbian/openssh-server/storage"*)
+                rm -rf "${INCOMING_PATH}/stable"
+                ;;
+              *)
+                echo "::error::refusing to remove ${INCOMING_PATH}/stable - not under the storage path"
+                return 1
+                ;;
+            esac
           }
 
           case "$TARGET" in
