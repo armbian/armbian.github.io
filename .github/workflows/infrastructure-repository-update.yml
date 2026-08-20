@@ -188,13 +188,16 @@ jobs:
           # repository. Copy them into STORAGE_PATH, which is what repo.sh reads
           # (INPUT_DIR="${STORAGE_PATH}/${REPO_NAME}").
           #
-          # Copied, not moved: unlike incoming/cron these are small, versioned,
-          # and cheap to re-send, and keeping them means a failed run later in the
-          # pipeline cannot lose them. rsync skips what is already identical.
+          # Moved, not copied: incoming is a drop box, so what has been taken
+          # into storage is removed, the same way incoming/cron is. The move is
+          # done with --remove-source-files rather than a following rm -rf, so
+          # rsync deletes exactly the files it confirmed on the receiving side -
+          # a partial transfer (exit 23) leaves whatever did not land in place
+          # for the next run instead of dropping it.
           for BF_REPO in debs debs-beta; do
             if [ -d "${INCOMING_PATH}/base-files/${BF_REPO}" ]; then
               echo "## Copy base-files ${BF_REPO}" >> "$GITHUB_STEP_SUMMARY"
-              rsync -av \
+              rsync -av --remove-source-files \
                 --include='*/' \
                 --include='*.deb' \
                 --exclude='*' \
@@ -219,10 +222,16 @@ jobs:
                   exit 1
                   ;;
               esac
+              # --remove-source-files only removes files; clear the directories
+              # it emptied, and the per-repo dir itself once it is empty.
+              find "${INCOMING_PATH}/base-files/${BF_REPO}" -type d -empty -delete
             else
               echo "## No base-files/${BF_REPO} in incoming, skipping" >> "$GITHUB_STEP_SUMMARY"
             fi
           done
+          # Drop the now-empty drop box. Left alone if anything remains, so a
+          # partial transfer stays visible for the next run.
+          rmdir "${INCOMING_PATH}/base-files" 2>/dev/null || true
 
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
