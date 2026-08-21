@@ -1,7 +1,13 @@
 # Nightly build blocklist
 #
-# Policy: nightly images are built ONLY for platinum targets. Every other
-# Supported (.conf) board is listed below so the nightly generator skips it.
+# Policy: by default nightly images are built only for platinum targets. Every
+# other Supported (.conf) board is listed below so the nightly generator skips
+# it.
+#
+# This is NOT a strict criteria: any standard Supported (.conf) board can have
+# nightly enabled - just remove it from this list (a maintainer/user can propose
+# that with a PR). Platinum is only the default set; being off this list is what
+# turns nightly on, platinum or not.
 #
 # Source of truth: the `platinum` field in
 # https://github.armbian.com/armbian-images.json (populated from Zoho Bigin).
