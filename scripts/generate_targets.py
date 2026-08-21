@@ -735,7 +735,7 @@ armbian-gha: &armbian-gha
       image-armhf: [ "self-hosted", "Linux", 'images', 'X64' ]
       image-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
       image-amd64: [ "self-hosted", "Linux", 'images', "X64" ]
-      image-riscv64: [ "ubuntu-24.04-riscv" ]
+      image-riscv64: [ "self-hosted", "Linux", 'images', "X64" ]
       image-loong64: [ "self-hosted", "Linux", 'images', "X64" ]
 
 lists:
