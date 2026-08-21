@@ -9,11 +9,6 @@
 # that with a PR). Platinum is only the default set; being off this list is what
 # turns nightly on, platinum or not.
 #
-# Source of truth: the `platinum` field in
-# https://github.armbian.com/armbian-images.json (populated from Zoho Bigin).
-# This list == all board_support=="conf" boards whose `platinum` is not true.
-# Regenerate whenever the platinum set changes.
-#
 # Not listed on purpose:
 #   - csc / tvb boards: community tier, never in the nightly (conf+wip) universe.
 #   - virtual/reusable boards (release-targets/reusable.yml): download remaps,
