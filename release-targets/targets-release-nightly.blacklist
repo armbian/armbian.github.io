@@ -1,13 +1,13 @@
 # Nightly build blocklist
 #
-# Policy: by default nightly images are built only for platinum targets. Every
-# other Supported (.conf) board is listed below so the nightly generator skips
-# it.
+# Policy: by default nightly images are built only for platinum targets and
+# gold-partner boards. Every other Supported (.conf) board is listed below so
+# the nightly generator skips it.
 #
 # This is NOT a strict criteria: any standard Supported (.conf) board can have
 # nightly enabled - just remove it from this list (a maintainer/user can propose
-# that with a PR). Platinum is only the default set; being off this list is what
-# turns nightly on, platinum or not.
+# that with a PR). Platinum/gold is only the default set; being off this list is
+# what turns nightly on, sponsored or not.
 #
 # Not listed on purpose:
 #   - csc / tvb boards: community tier, never in the nightly (conf+wip) universe.
@@ -41,7 +41,6 @@ easepi-a2
 easepi-r2
 espressobin
 gateway-dk
-gateway-gz80x
 helios4
 helios64
 imb3588
@@ -60,9 +59,6 @@ lepotato
 lime-a64
 lubancat-5io
 luckfox-rk3308b-nova
-mba8mpxl
-mba8mpxl-ras314
-mba93xxla-mini
 mekotronics-r58s2
 mksklipad50
 musebook
@@ -116,27 +112,14 @@ rockpi-s
 rockpro64
 rpi4b
 sakurapi-rk3308b
-sk-am62-lp
-sk-am62-sip
-sk-am62b
-sk-am62p
-sk-am64b
-sk-am68
-sk-am69
-sk-tda4vm
 sovol-zero
 sweet-potato
 tanix-tx6s-axp313
 thinkpad-x13s
 tinkerboard
-tmds62levm
-tmds64evm
-tq-smarc2-tqma8mpxs
 udoo
 uefi-arm64
 uefi-arm64-dt
 uefi-loong64
 uefi-x86
 xiaomi-elish
-youyeetoo-r1-v3
-youyeetoo-yy3588
