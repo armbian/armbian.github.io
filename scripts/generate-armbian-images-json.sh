@@ -644,7 +644,23 @@ awk '
 # distribution -> stable release images
 : >"$tmpdir/bcd.txt"
 for repo in community ci distribution; do
-  gh release view --json assets --repo "github.com/armbian/$repo" |
+  tag=""
+  if [[ "$repo" == "ci" ]]; then
+    # armbian/ci holds X.Y.Z-trunk.N nightlies AND clean X.Y.Z stable version
+    # markers (which carry no image assets). Its GitHub "latest" is frequently
+    # one of those stable markers, so `gh release view` with no tag reads a
+    # 0-asset release and the nightly feed comes out EMPTY. Resolve the highest
+    # promoted (non-pre-release) -trunk.N tag that actually has assets instead.
+    tag="$(gh api --paginate "repos/armbian/$repo/releases" --jq '
+      [ .[] | select((.tag_name|test("-trunk[.]")) and (.prerelease==false) and (.assets|length>0)) ]
+      | max_by(.tag_name | capture("-trunk[.](?<n>[0-9]+)").n | tonumber) | .tag_name')"
+    if [[ -z "$tag" ]]; then
+      echo "WARNING: no armbian/$repo -trunk.N release with assets found; nightly feed will be empty" >&2
+    else
+      echo "Nightly feed: using armbian/$repo release $tag" >&2
+    fi
+  fi
+  gh release view ${tag:+"$tag"} --json assets --repo "github.com/armbian/$repo" |
   jq -r '.assets[]
     | select(.url | test("\\.txt($|\\?)") | not)
     | select(.url | test("\\.(asc|sha|torrent)($|\\?)") | not)
