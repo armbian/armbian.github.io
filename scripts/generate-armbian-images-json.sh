@@ -510,9 +510,30 @@ get_download_repository() {
 # -----------------------------------------------------------------------------
 EXPOSED_MAP_FILE="${OS_DIR}/exposed.map"
 
+# exposed.map lists images by their .img.xz name, so only the .xz can ever be
+# promoted - which is why none of the ISOs on the download pages are flagged,
+# even when the same image is recommended.
+#
+# Compare stems instead: drop the format suffix from both the pattern and the
+# candidate. Only .img.xz and .iso are stripped, so those two are the formats a
+# single exposed.map entry can promote; .img.qcow2, .hyperv.zip.xz and the
+# variant-specific ones (oowow, recovery, fip...) keep their suffix, fail the
+# anchored match, and stay unpromoted unless someone lists them deliberately.
+#
+# The suffix is also what terminates these unanchored patterns, so removing it
+# without anchoring would let '..._minimal' match '..._minimal_something' -
+# hence the '$' the stripped patterns end with.
+IMAGE_FORMAT_SUFFIX_RE='\.(img\.xz|iso)$'
+
+EXPOSED_MAP_MATCH_FILE="$(mktemp)"
+trap '{ rm -f -- "$EXPOSED_MAP_MATCH_FILE"; }' EXIT
+sed -E "s#${IMAGE_FORMAT_SUFFIX_RE}#\$#" "$EXPOSED_MAP_FILE" > "$EXPOSED_MAP_MATCH_FILE"
+
 is_promoted_candidate() {
   local candidate="$1"
-  grep -Eq -f "$EXPOSED_MAP_FILE" <<<"$candidate"
+  # strip the format suffix so the stem is what gets matched
+  candidate="$(sed -E "s#${IMAGE_FORMAT_SUFFIX_RE}##" <<<"$candidate")"
+  grep -Eq -f "$EXPOSED_MAP_MATCH_FILE" <<<"$candidate"
 }
 
 is_promoted() {
