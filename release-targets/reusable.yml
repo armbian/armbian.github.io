@@ -301,5 +301,5 @@ boards:
     # The magic: reuse artifact set. The M6V2 has no dedicated build - it ships
     # on the unified "nanopi6-series" image (R6S/R6C/M6/M6V2), see armbian/build#10442.
     uses: "nanopi6-series"
-    branch: "current"
+    branch: "current,vendor"
     file_extension: "img.xz"
