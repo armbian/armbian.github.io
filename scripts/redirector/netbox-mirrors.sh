@@ -27,7 +27,7 @@ variants=$(
 		debsbeta	debs-beta	download_path_debs	beta	beta	dists
 		debs	debs	download_path_debs	apt	apt	dists
 		images	images	download_path_images	dl	dl	torrents
-		archive	archive	download_path_images	archive	archive	torrents
+		archive	archive	download_path_archive	archive	archive	torrents
 		cache	cache	download_path_cache	cache	cache	noop
 	TSV
 )
