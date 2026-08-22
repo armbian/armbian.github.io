@@ -291,3 +291,15 @@ boards:
     uses: "nanopct6-lts"
     branch: "current"
     file_extension: "img.xz"
+
+  - board_slug: "nanopi-m6v2"
+    board_name: "NanoPi M6 V2"
+    board_vendor: "friendlyelec"
+    board_support: "conf"
+    board_introduced: "2026"
+
+    # The magic: reuse artifact set. The M6V2 has no dedicated build - it ships
+    # on the unified "nanopi6-series" image (R6S/R6C/M6/M6V2), see armbian/build#10442.
+    uses: "nanopi6-series"
+    branch: "current"
+    file_extension: "img.xz"
