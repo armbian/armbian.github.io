@@ -13,8 +13,8 @@ minimal-stable-debian-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -40,8 +40,8 @@ minimal-stable-debian-loong64-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-loong64, BRANCH: current }
-    - { BOARD: uefi-loong64, BRANCH: edge }
+    - { BOARD: uefi-loong64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-loong64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
 
 # Ubuntu minimal with current kernel - UEFI only
 minimal-stable-ubuntu-current-uefi:
@@ -55,10 +55,10 @@ minimal-stable-ubuntu-current-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
-    - { BOARD: uefi-arm64, BRANCH: current }
-    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -81,8 +81,8 @@ minimal-stable-ubuntu-noble-current-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: current }
-    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
