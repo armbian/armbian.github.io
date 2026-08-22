@@ -13,8 +13,8 @@ minimal-stable-debian-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -40,8 +40,8 @@ minimal-stable-debian-loong64-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-loong64, BRANCH: current }
-    - { BOARD: uefi-loong64, BRANCH: edge }
+    - { BOARD: uefi-loong64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-loong64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
 
 # Ubuntu minimal with current kernel - UEFI only
 minimal-stable-ubuntu-current-uefi:
@@ -55,10 +55,10 @@ minimal-stable-ubuntu-current-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
-    - { BOARD: uefi-arm64, BRANCH: current }
-    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -81,8 +81,8 @@ minimal-stable-ubuntu-noble-current-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: current }
-    - { BOARD: uefi-x86, BRANCH: current }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -104,8 +104,8 @@ desktop-stable-ubuntu-gnome-uefi:
     DESKTOP_ENVIRONMENT: "gnome"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
     - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
@@ -125,8 +125,8 @@ desktop-stable-ubuntu-cinnamon-uefi:
     DESKTOP_ENVIRONMENT: "cinnamon"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
     - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
@@ -146,8 +146,8 @@ desktop-stable-ubuntu-kde-plasma-uefi:
     DESKTOP_ENVIRONMENT: "kde-plasma"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
 
 # Ubuntu MATE desktop - UEFI only
 desktop-stable-ubuntu-mate-uefi:
@@ -163,8 +163,8 @@ desktop-stable-ubuntu-mate-uefi:
     DESKTOP_ENVIRONMENT: "mate"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
 
 # Ubuntu Xfce desktop - UEFI only
 desktop-stable-ubuntu-xfce-uefi:
@@ -180,8 +180,8 @@ desktop-stable-ubuntu-xfce-uefi:
     DESKTOP_ENVIRONMENT: "xfce"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
 
 # Ubuntu i3 window-manager - UEFI only
 desktop-stable-ubuntu-i3-wm-uefi:
@@ -197,5 +197,5 @@ desktop-stable-ubuntu-i3-wm-uefi:
     DESKTOP_ENVIRONMENT: "i3-wm"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
