@@ -1,0 +1,57 @@
+# Manual target additions for apps builds.
+# This content is appended to the auto-generated targets-release-apps.yaml.
+#
+# The generic UEFI virtual targets (uefi-x86, uefi-arm64) are blacklisted from
+# the auto apps section - see targets-release-apps.blacklist. They're shipped as
+# installable .iso images rather than raw board images, which the auto section
+# can't express (it emits boards without per-board extensions). The same three
+# app images (Home Assistant, OMV, Kali) are re-created for them here with the
+# image-output-iso extension enabled. Branch: current (their KERNEL_TEST_TARGET).
+
+# Home Assistant - UEFI, .iso
+apps-ha-iso:
+  enabled: yes
+  configs: [ armbian-apps ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "no"
+    ENABLE_EXTENSIONS: "applications-ha,image-output-iso"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
+
+# OpenMediaVault - UEFI, .iso
+apps-omv-iso:
+  enabled: yes
+  configs: [ armbian-apps ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+    ENABLE_EXTENSIONS: "applications-omv,image-output-iso"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }
+
+# Kali (Debian sid) - UEFI, .iso
+apps-kali-iso:
+  enabled: yes
+  configs: [ armbian-apps ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: sid
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "no"
+    ENABLE_EXTENSIONS: "applications-kali,image-output-iso"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: current }
+    - { BOARD: uefi-x86, BRANCH: current }

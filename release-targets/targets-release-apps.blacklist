@@ -4,3 +4,9 @@ oneplus-kebab
 xiaomi-elish
 beaglebadge
 pocketbeagle2
+# The generic UEFI virtual targets are distributed as installable .iso images,
+# not raw board images. The apps auto-section can't set image-output-iso (it
+# emits boards without per-board extensions), so these two are excluded here
+# and re-added as .iso app targets in targets-release-apps.manual.
+uefi-x86
+uefi-arm64
