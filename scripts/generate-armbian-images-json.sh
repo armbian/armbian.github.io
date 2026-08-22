@@ -651,14 +651,29 @@ for repo in community ci distribution; do
     # one of those stable markers, so `gh release view` with no tag reads a
     # 0-asset release and the nightly feed comes out EMPTY. Resolve the highest
     # promoted (non-pre-release) -trunk.N tag that actually has assets instead.
+    #
+    # The --jq filter runs per page, so it only ever *filters* - it prints every
+    # matching tag and the ordering is done once, afterwards, over all pages.
+    # Picking a maximum inside the filter would yield one winner per page.
+    #
+    # sort -V, not the trunk ordinal: comparing only N makes 26.10.0-trunk.100
+    # look newer than 26.11.0-trunk.19. Version sort compares major, minor,
+    # patch and then the ordinal, matching the -v:refname ordering used
+    # elsewhere. The pattern is anchored so only exact X.Y.Z-trunk.N qualifies.
     tag="$(gh api --paginate "repos/armbian/$repo/releases" --jq '
-      [ .[] | select((.tag_name|test("-trunk[.]")) and (.prerelease==false) and (.assets|length>0)) ]
-      | max_by(.tag_name | capture("-trunk[.](?<n>[0-9]+)").n | tonumber) | .tag_name')"
+      .[]
+      | select((.tag_name | test("^[0-9]+[.][0-9]+[.][0-9]+-trunk[.][0-9]+$"))
+               and (.prerelease == false)
+               and ((.assets | length) > 0))
+      | .tag_name' | sort -V | tail -n1)"
     if [[ -z "$tag" ]]; then
-      echo "WARNING: no armbian/$repo -trunk.N release with assets found; nightly feed will be empty" >&2
-    else
-      echo "Nightly feed: using armbian/$repo release $tag" >&2
+      # Falling through would call `gh release view` with no tag, which is the
+      # very thing this block exists to avoid: it resolves to "latest" and can
+      # feed stable assets into the nightly section.
+      echo "WARNING: no armbian/$repo -trunk.N release with assets found; skipping nightly feed" >&2
+      continue
     fi
+    echo "Nightly feed: using armbian/$repo release $tag" >&2
   fi
   gh release view ${tag:+"$tag"} --json assets --repo "github.com/armbian/$repo" |
   jq -r '.assets[]
