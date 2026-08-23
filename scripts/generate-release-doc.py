@@ -558,8 +558,9 @@ def main():
         generated = fallback_description(args.version, args.date, grouped, len(rows))
         description = check_description(generated) if generated else None
     if not description:
-        # Last resort. Still unique per release, and padded with a fixed clause
-        # rather than filler so it stays readable in a search result.
+        # Last resort, reached only if the AI description and the generated one
+        # both fall outside the window. Still unique per release, and made of
+        # whole sentences so it stays readable in a search result.
         base = " ".join(
             ("Armbian {} release notes, published {}: merged changes across "
              "boards, kernels, desktops, the build framework and Armbian "
@@ -567,12 +568,16 @@ def main():
         )
         # Whole-sentence fillers, shortest first, so the punctuation survives
         # and a short version or date string still reaches the 140 minimum this
-        # branch exists to guarantee.
+        # branch exists to guarantee. No two consecutive lengths differ by more
+        # than the 16-character width of the window, so for any base sentence
+        # of 91 characters or more some candidate always lands inside it.
         for filler in (
             "",
+            " See below.",
             " Full list below.",
             " See the full list below.",
             " See the full change list below.",
+            " See the full change list for this release.",
             " See the full change list for this release below.",
         ):
             candidate = base + filler
