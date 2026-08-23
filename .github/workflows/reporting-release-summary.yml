@@ -599,20 +599,40 @@ jobs:
       # version. Weekly and monthly digests stay on GitHub releases only.
       # ----------------------------------------------------------------------
 
-      - name: "Docs: resolve the release date"
+      - name: "Docs: resolve the release date and the docs version"
         if: ${{ env.PERIOD == 'quarterly' }}
         run: |
           set -euo pipefail
           # Prefer the release's own publish date so re-runs keep reporting the
           # original date rather than the date of the re-run.
-          PUBLISHED=$(gh api "repos/armbian/build/releases/tags/v${VERSION_OVERRIDE}"             --jq '.published_at' 2>/dev/null || true)
-          if [[ -n "$PUBLISHED" && "$PUBLISHED" != "null" ]]; then
+          #
+          # gh writes its error body to stdout, so a 404 for a release that does
+          # not exist yet would otherwise land in PUBLISHED and make `date -d`
+          # fail the step. Only accept something shaped like a timestamp; the
+          # fallback below is what an absent release is supposed to reach.
+          PUBLISHED=$(gh api "repos/armbian/build/releases/tags/v${VERSION_OVERRIDE}" \
+            --jq '.published_at' 2>/dev/null || true)
+          if [[ ! "$PUBLISHED" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]; then
+            PUBLISHED=""
+          fi
+          if [[ -n "$PUBLISHED" ]]; then
             RELEASE_DATE=$(date -u -d "$PUBLISHED" '+%-d %B %Y')
           else
             RELEASE_DATE=$(date -u '+%-d %B %Y')
           fi
           echo "RELEASE_DATE=$RELEASE_DATE" >> "$GITHUB_ENV"
           echo "Release date: $RELEASE_DATE"
+
+          # Armbian ships one stable per quarter and then patches it. The digest
+          # describes the quarter, not the patch, so the docs page is keyed on
+          # MAJOR.MINOR: 26.8.1 and a later 26.8.3 rewrite one page on one
+          # branch instead of publishing the same three months twice.
+          #
+          # Strip the patch only when there is one, so a bare "26.8" survives
+          # intact -- ${VERSION_OVERRIDE%.*} would turn it into "26".
+          DOCS_VERSION=$(sed -E 's/^([0-9]+\.[0-9]+)\.[0-9]+$/\1/' <<<"$VERSION_OVERRIDE")
+          echo "DOCS_VERSION=$DOCS_VERSION" >> "$GITHUB_ENV"
+          echo "Docs version: $DOCS_VERSION (from $VERSION_OVERRIDE)"
 
       - name: "Docs: check out this repository for the generator scripts"
         if: ${{ env.PERIOD == 'quarterly' }}
@@ -715,7 +735,9 @@ jobs:
         run: |
           set -euo pipefail
           # Writing to a fixed path keeps this idempotent: a re-run for the same
-          # version overwrites its page instead of adding a second one.
+          # quarter overwrites its page instead of adding a second one. The page
+          # is named for the quarter but titled with the precise version, so
+          # --version stays the full VERSION_OVERRIDE.
           python3 self/scripts/generate-release-doc.py \
             --version "$VERSION_OVERRIDE" \
             --date "$RELEASE_DATE" \
@@ -725,7 +747,7 @@ jobs:
             --known-issues out/known-issues.tsv \
             --description out/description.txt \
             --build-tree build-tree \
-            --out "documentation/docs/releases/${VERSION_OVERRIDE}.md"
+            --out "documentation/docs/releases/${DOCS_VERSION}.md"
           if [[ -x documentation/tools/generate-release-index.py ]]; then
             python3 documentation/tools/generate-release-index.py --docs documentation/docs
           else
@@ -740,9 +762,10 @@ jobs:
         with:
           path: documentation
           token: ${{ secrets.RELEASE_TOKEN }}
-          # One branch per version, so a re-run updates the open PR in place
-          # rather than opening a second one.
-          branch: "release-notes/${{ env.VERSION_OVERRIDE }}"
+          # One branch per quarter, so a re-run -- including for a later patch
+          # release in the same quarter -- updates the open PR in place rather
+          # than opening a second one.
+          branch: "release-notes/${{ env.DOCS_VERSION }}"
           base: main
           commit-message: "releases: add Armbian ${{ env.VERSION_OVERRIDE }} release notes"
           title: "releases: Armbian ${{ env.VERSION_OVERRIDE }} release notes"
