@@ -156,16 +156,6 @@ REPO_FALLBACK = {
 }
 
 
-def repo_fixed_group(repo):
-    """Kernel-tree, firmware-blob and out-of-tree driver repos, by pattern."""
-    if repo in REPO_FIXED:
-        return REPO_FIXED[repo]
-    name = repo.split("/", 1)[-1].lower()
-    if name.startswith(("linux-", "wifi-", "rtl", "rtw")) or name.endswith("-dkms"):
-        return "Kernel and U-Boot"
-    return None
-
-
 def load_vocabulary(build_tree):
     """Read the real board slugs and kernel family names out of an armbian/build tree.
 
@@ -557,11 +547,13 @@ def main():
 
     intro = ""
     if args.intro and os.path.exists(args.intro):
-        intro = clean_intro(open(args.intro, encoding="utf-8").read())
+        with open(args.intro, encoding="utf-8") as fh:
+            intro = clean_intro(fh.read())
 
     description = None
     if args.description and os.path.exists(args.description):
-        description = check_description(open(args.description, encoding="utf-8").read())
+        with open(args.description, encoding="utf-8") as fh:
+            description = check_description(fh.read())
     if not description:
         generated = fallback_description(args.version, args.date, grouped, len(rows))
         description = check_description(generated) if generated else None
