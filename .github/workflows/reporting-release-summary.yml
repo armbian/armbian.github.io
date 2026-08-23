@@ -619,6 +619,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           path: self
+          persist-credentials: false
 
       - name: "Docs: check out armbian/build for board and family names"
         if: ${{ env.PERIOD == 'quarterly' }}
@@ -631,6 +632,7 @@ jobs:
           # board/family name vocabulary.
           filter: blob:none
           fetch-depth: 0
+          persist-credentials: false
 
       - name: "Docs: collect board support-tier changes"
         if: ${{ env.PERIOD == 'quarterly' }}
@@ -706,6 +708,7 @@ jobs:
           repository: armbian/documentation
           path: documentation
           token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: false
 
       - name: "Docs: render the release page"
         if: ${{ env.PERIOD == 'quarterly' }}
@@ -723,7 +726,13 @@ jobs:
             --description out/description.txt \
             --build-tree build-tree \
             --out "documentation/docs/releases/${VERSION_OVERRIDE}.md"
-          python3 documentation/tools/generate-release-index.py --docs documentation/docs
+          if [[ -x documentation/tools/generate-release-index.py ]]; then
+            python3 documentation/tools/generate-release-index.py --docs documentation/docs
+          else
+            echo "::warning title=Release page::documentation/tools/generate-release-index.py \
+          is missing on armbian/documentation main; the release page is published but \
+          docs/releases/index.md is not refreshed"
+          fi
 
       - name: "Docs: open or update the pull request"
         if: ${{ env.PERIOD == 'quarterly' }}
