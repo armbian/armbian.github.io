@@ -748,7 +748,10 @@ jobs:
             --description out/description.txt \
             --build-tree build-tree \
             --out "documentation/docs/releases/${DOCS_VERSION}.md"
-          if [[ -x documentation/tools/generate-release-index.py ]]; then
+          # -f, not -x: the script is run through python3, so the executable
+          # bit is irrelevant. Testing -x would skip the refresh and report the
+          # file missing whenever a checkout dropped the mode bit.
+          if [[ -f documentation/tools/generate-release-index.py ]]; then
             python3 documentation/tools/generate-release-index.py --docs documentation/docs
           else
             echo "::warning title=Release page::documentation/tools/generate-release-index.py \
