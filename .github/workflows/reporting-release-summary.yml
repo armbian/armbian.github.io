@@ -135,14 +135,18 @@ jobs:
             title=$(jq -r .title <<<"$pr")
             author=$(jq -r .user.login <<<"$pr")
             pr_url=$(jq -r .html_url <<<"$pr")
+            # Labels ride along in a sixth column so the docs publish step can
+            # find 'Breaking change' / 'user-visible' PRs without a second pass
+            # over the API. The digest body ignores this column.
+            labels=$(jq -r '[.labels[].name] | join(",")' <<<"$pr")
 
             # Skip bots and worker accounts
             if [[ "$author" == "github-actions[bot]" || "$author" == "dependabot[bot]" || "$author" == "armbianworker" || "$author" == "armbianworker[bot]" ]]; then
               continue
             fi
 
-            # Output tab-separated: title, author, repo, pr_number, pr_url
-            printf "%s\t%s\t%s\t%s\t%s\n" "$title" "$author" "$repo" "$num" "$pr_url"
+            # Output tab-separated: title, author, repo, pr_number, pr_url, labels
+            printf "%s\t%s\t%s\t%s\t%s\t%s\n" "$title" "$author" "$repo" "$num" "$pr_url" "$labels"
           done | LC_ALL=C sort -f -t $'\t' -k1,1 > "$outfile"
           EOF
           chmod +x pr_fetch.sh
@@ -159,7 +163,7 @@ jobs:
             if [[ ! -s out/pr-digest.tsv ]]; then
               echo "_No merged PRs in this period._"
             else
-              while IFS=$'\t' read -r title author repo num pr_url; do
+              while IFS=$'\t' read -r title author repo num pr_url labels; do
                 echo "* ${title}. by @${author} in [${repo}#${num}](${pr_url})"
               done < out/pr-digest.tsv
             fi
@@ -280,6 +284,12 @@ jobs:
 
           with open("summary.md", "w", encoding="utf-8") as f:
               f.write(intro + "\n\n" + content)
+
+          # The docs release page wants the narrative without the change list,
+          # the cover image or the subscribe badge that get added below.
+          os.makedirs("out", exist_ok=True)
+          with open("out/intro.md", "w", encoding="utf-8") as f:
+              f.write(intro + "\n")
 
           print("Prepended AI intro:")
           print(intro)
@@ -579,3 +589,162 @@ jobs:
           allowUpdates: "true"
           skipIfReleaseExists: "true"
           token: ${{ secrets.RELEASE_TOKEN }}
+
+      # ----------------------------------------------------------------------
+      # Quarterly only: publish the digest to docs.armbian.com.
+      #
+      # GitHub serves release pages with 'noindex', so the quarterly digest is
+      # invisible to search engines. docs.armbian.com is where it becomes
+      # findable, so the stable release note is mirrored there as one page per
+      # version. Weekly and monthly digests stay on GitHub releases only.
+      # ----------------------------------------------------------------------
+
+      - name: "Docs: resolve the release date"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          # Prefer the release's own publish date so re-runs keep reporting the
+          # original date rather than the date of the re-run.
+          PUBLISHED=$(gh api "repos/armbian/build/releases/tags/v${VERSION_OVERRIDE}"             --jq '.published_at' 2>/dev/null || true)
+          if [[ -n "$PUBLISHED" && "$PUBLISHED" != "null" ]]; then
+            RELEASE_DATE=$(date -u -d "$PUBLISHED" '+%-d %B %Y')
+          else
+            RELEASE_DATE=$(date -u '+%-d %B %Y')
+          fi
+          echo "RELEASE_DATE=$RELEASE_DATE" >> "$GITHUB_ENV"
+          echo "Release date: $RELEASE_DATE"
+
+      - name: "Docs: check out this repository for the generator scripts"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v5
+        with:
+          path: self
+
+      - name: "Docs: check out armbian/build for board and family names"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v5
+        with:
+          repository: armbian/build
+          path: build-tree
+          # Blobless: the tier scan needs full history over config/boards, but
+          # none of the file contents. Checkout of the tip is enough for the
+          # board/family name vocabulary.
+          filter: blob:none
+          fetch-depth: 0
+
+      - name: "Docs: collect board support-tier changes"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          python3 self/scripts/collect-board-tier-changes.py \
+            --build-tree build-tree \
+            --since "$SINCE_UTC" --until "$UNTIL_UTC" \
+            --digest out/pr-digest.tsv \
+            --out out/board-changes.tsv
+
+      - name: "Docs: collect open known issues"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          # Empty result is normal and means the section is omitted, so a repo
+          # without the label must not fail the run.
+          gh search issues --owner armbian --label known-issue --state open \
+            --limit 100 --json title,repository,number,url \
+            --jq '.[] | [.title, "armbian/\(.repository.name)#\(.number)", .url] | @tsv' \
+            > out/known-issues.tsv || : > out/known-issues.tsv
+          echo "known issues: $(wc -l < out/known-issues.tsv)"
+
+      - name: "Docs: write the page description with AI"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import os
+          from anthropic import Anthropic
+
+          version = os.environ["VERSION_OVERRIDE"]
+          with open("out/intro.md", encoding="utf-8") as f:
+              narrative = f.read().strip()
+
+          # Every other page on docs.armbian.com inherits mkdocs' site_description,
+          # so they all share one meta description and compete with each other in
+          # search results. Each release page gets its own instead.
+          client = Anthropic()
+          resp = client.messages.create(
+              model="claude-opus-4-7",
+              max_tokens=1024,
+              system=(
+                  "You write meta descriptions for documentation pages. Output one "
+                  "single line of plain text, between 140 and 155 characters "
+                  "inclusive, no markdown, no quotes, no trailing newline commentary."
+              ),
+              messages=[{"role": "user", "content": (
+                  f"Write the meta description for the Armbian {version} release "
+                  f"notes page, released {os.environ['RELEASE_DATE']}. Name the "
+                  "version, the release date, and the two or three headline themes "
+                  "from the summary below. Between 140 and 155 characters.\n\n"
+                  f"{narrative}"
+              )}],
+          )
+          text = " ".join(
+              next((b.text for b in resp.content if b.type == "text"), "").split()
+          )
+          if not 140 <= len(text) <= 155:
+              print(f"::warning title=Release page::AI description was {len(text)} "
+                    "chars, outside 140-155; falling back to the generated form")
+          else:
+              with open("out/description.txt", "w", encoding="utf-8") as f:
+                  f.write(text)
+              print(f"description ({len(text)} chars): {text}")
+          PY
+
+      - name: "Docs: check out armbian/documentation"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v5
+        with:
+          repository: armbian/documentation
+          path: documentation
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: "Docs: render the release page"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          # Writing to a fixed path keeps this idempotent: a re-run for the same
+          # version overwrites its page instead of adding a second one.
+          python3 self/scripts/generate-release-doc.py \
+            --version "$VERSION_OVERRIDE" \
+            --date "$RELEASE_DATE" \
+            --intro out/intro.md \
+            --digest out/pr-digest.tsv \
+            --board-changes out/board-changes.tsv \
+            --known-issues out/known-issues.tsv \
+            --description out/description.txt \
+            --build-tree build-tree \
+            --out "documentation/docs/releases/${VERSION_OVERRIDE}.md"
+          python3 documentation/tools/generate-release-index.py --docs documentation/docs
+
+      - name: "Docs: open or update the pull request"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: peter-evans/create-pull-request@v7
+        with:
+          path: documentation
+          token: ${{ secrets.RELEASE_TOKEN }}
+          # One branch per version, so a re-run updates the open PR in place
+          # rather than opening a second one.
+          branch: "release-notes/${{ env.VERSION_OVERRIDE }}"
+          base: main
+          commit-message: "releases: add Armbian ${{ env.VERSION_OVERRIDE }} release notes"
+          title: "releases: Armbian ${{ env.VERSION_OVERRIDE }} release notes"
+          body: |
+            Generated by [Reporting: Release summary](https://github.com/armbian/armbian.github.io/actions/workflows/reporting-release-summary.yml)
+            from the quarterly digest published as [v${{ env.VERSION_OVERRIDE }}](https://github.com/armbian/build/releases/tag/v${{ env.VERSION_OVERRIDE }}).
+
+            The narrative body, the change list and the board status changes all
+            come from PR metadata and the digest; nothing here is hand-written.
+
+            Re-running the workflow for this version updates this PR in place.
+          delete-branch: true
+          add-paths: |
+            docs/releases/**
