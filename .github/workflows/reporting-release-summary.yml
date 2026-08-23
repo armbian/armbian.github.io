@@ -21,7 +21,7 @@ on:
           - monthly
           - quarterly
       publish_release:
-        description: "Publish a GitHub release"
+        description: "Publish a GitHub release (weekly only; monthly and quarterly never do)"
         required: false
         default: "true"
         type: choice
@@ -85,6 +85,23 @@ jobs:
           echo "UNTIL_UTC=$UNTIL_UTC" >> "$GITHUB_ENV"
           echo "SINCE_UTC=$SINCE_UTC" >> "$GITHUB_ENV"
           echo "LABEL=$LABEL" >> "$GITHUB_ENV"
+
+          # Only the weekly digest becomes a GitHub release on armbian/build.
+          #
+          # The quarterly note now lives on docs.armbian.com, which is the only
+          # copy search engines can see -- GitHub serves release pages noindex.
+          # Publishing both left two copies competing, and the GitHub one had to
+          # invent a v<version> tag in armbian/build that exists only in
+          # armbian/ci, then move the "Latest" badge onto it.
+          #
+          # Monthly stops publishing too: it selects the same stable tag as the
+          # quarterly, so whichever ran first won the tag and skipIfReleaseExists
+          # made the other a silent no-op.
+          if [[ "$PERIOD" != "weekly" ]]; then
+            RELEASE_ENABLED=false
+          fi
+          echo "RELEASE_ENABLED=$RELEASE_ENABLED" >> "$GITHUB_ENV"
+          echo "Period ${PERIOD}: GitHub release enabled = ${RELEASE_ENABLED}"
 
       - name: Prepare workspace
         run: mkdir -p out
@@ -599,29 +616,46 @@ jobs:
       # version. Weekly and monthly digests stay on GitHub releases only.
       # ----------------------------------------------------------------------
 
+      - name: "Docs: check out armbian/documentation"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v5
+        with:
+          repository: armbian/documentation
+          path: documentation
+          token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: false
+
       - name: "Docs: resolve the release date and the docs version"
         if: ${{ env.PERIOD == 'quarterly' }}
         run: |
           set -euo pipefail
-          # Prefer the release's own publish date so re-runs keep reporting the
-          # original date rather than the date of the re-run.
+          # The date must not move when this is re-run, so it is read from
+          # something dated rather than from the clock. Sources, in order:
           #
-          # gh writes its error body to stdout, so a 404 for a release that does
-          # not exist yet would otherwise land in PUBLISHED and make `date -d`
-          # fail the step. Only accept something shaped like a timestamp; the
-          # fallback below is what an absent release is supposed to reach.
-          PUBLISHED=$(gh api "repos/armbian/build/releases/tags/v${VERSION_OVERRIDE}" \
-            --jq '.published_at' 2>/dev/null || true)
-          if [[ ! "$PUBLISHED" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]; then
-            PUBLISHED=""
-          fi
-          if [[ -n "$PUBLISHED" ]]; then
-            RELEASE_DATE=$(date -u -d "$PUBLISHED" '+%-d %B %Y')
-          else
-            RELEASE_DATE=$(date -u '+%-d %B %Y')
-          fi
-          echo "RELEASE_DATE=$RELEASE_DATE" >> "$GITHUB_ENV"
-          echo "Release date: $RELEASE_DATE"
+          #   1. the page itself, if this quarter has already been published.
+          #      Once a release note is on main its date is a matter of record
+          #      and must not move, whatever later becomes of the tag or the
+          #      release it was first read from. This is what makes the page
+          #      independent of retention in armbian/ci.
+          #   2. the armbian/build release, for quarters published back when
+          #      quarterly still created one, and for any tag a weekly used
+          #   3. the armbian/ci tag the version came from -- the actual cut
+          #      date, and the usual source for a new quarter now that
+          #      quarterly no longer publishes a release. armbian/ci prunes
+          #      old *releases* (see its delete-old-releases.yml) but never
+          #      the tags, so this outlives the release it was cut for.
+          #   4. today, only if all of those are gone
+          #
+          # `commits/<ref>` takes the tag name directly and dereferences an
+          # annotated tag on its own, so this stays one call either way.
+          #
+          # gh writes its error body to stdout, so a 404 lands in the variable
+          # and `date -d` would fail the step under set -e. Accept only
+          # something shaped like a timestamp.
+          iso_or_empty() {
+            [[ "$1" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] && printf '%s' "$1"
+            return 0
+          }
 
           # Armbian ships one stable per quarter and then patches it. The digest
           # describes the quarter, not the patch, so the docs page is keyed on
@@ -633,6 +667,47 @@ jobs:
           DOCS_VERSION=$(sed -E 's/^([0-9]+\.[0-9]+)\.[0-9]+$/\1/' <<<"$VERSION_OVERRIDE")
           echo "DOCS_VERSION=$DOCS_VERSION" >> "$GITHUB_ENV"
           echo "Docs version: $DOCS_VERSION (from $VERSION_OVERRIDE)"
+
+          PUBLISHED=""
+          DATE_SOURCE=""
+
+          PAGE="documentation/docs/releases/${DOCS_VERSION}.md"
+          if [[ -f "$PAGE" ]]; then
+            PRIOR=$(sed -n 's/^\*Released \(.*\)\*[[:space:]]*$/\1/p' "$PAGE" | head -n1)
+            if [[ -n "$PRIOR" ]]; then
+              RELEASE_DATE="$PRIOR"
+              DATE_SOURCE="the published page, which is now the record"
+            fi
+          fi
+
+          if [[ -z "${RELEASE_DATE:-}" ]]; then
+            PUBLISHED=$(iso_or_empty "$(gh api \
+              "repos/armbian/build/releases/tags/v${VERSION_OVERRIDE}" \
+              --jq '.published_at' 2>/dev/null || true)")
+            DATE_SOURCE="armbian/build release v${VERSION_OVERRIDE}"
+          fi
+
+          if [[ -z "${RELEASE_DATE:-}" && -z "$PUBLISHED" ]]; then
+            PUBLISHED=$(iso_or_empty "$(gh api \
+              "repos/armbian/ci/commits/${VERSION_OVERRIDE}" \
+              --jq '.commit.committer.date' 2>/dev/null || true)")
+            DATE_SOURCE="armbian/ci tag ${VERSION_OVERRIDE}"
+          fi
+
+          if [[ -n "${RELEASE_DATE:-}" ]]; then
+            :
+          elif [[ -z "$PUBLISHED" ]]; then
+            DATE_SOURCE="today: no armbian/build release and no armbian/ci tag"
+            echo "::warning title=Release date::No release or tag found for \
+          ${VERSION_OVERRIDE}; dating the page today, which will move if this \
+          is re-run"
+            RELEASE_DATE=$(LC_ALL=C date -u '+%-d %B %Y')
+          else
+            RELEASE_DATE=$(LC_ALL=C date -u -d "$PUBLISHED" '+%-d %B %Y')
+          fi
+          echo "RELEASE_DATE=$RELEASE_DATE" >> "$GITHUB_ENV"
+          echo "Release date: $RELEASE_DATE (from $DATE_SOURCE)"
+
 
       - name: "Docs: check out this repository for the generator scripts"
         if: ${{ env.PERIOD == 'quarterly' }}
@@ -721,15 +796,6 @@ jobs:
               print(f"description ({len(text)} chars): {text}")
           PY
 
-      - name: "Docs: check out armbian/documentation"
-        if: ${{ env.PERIOD == 'quarterly' }}
-        uses: actions/checkout@v5
-        with:
-          repository: armbian/documentation
-          path: documentation
-          token: ${{ secrets.RELEASE_TOKEN }}
-          persist-credentials: false
-
       - name: "Docs: render the release page"
         if: ${{ env.PERIOD == 'quarterly' }}
         run: |
@@ -774,7 +840,12 @@ jobs:
           title: "releases: Armbian ${{ env.VERSION_OVERRIDE }} release notes"
           body: |
             Generated by [Reporting: Release summary](https://github.com/armbian/armbian.github.io/actions/workflows/reporting-release-summary.yml)
-            from the quarterly digest published as [v${{ env.VERSION_OVERRIDE }}](https://github.com/armbian/build/releases/tag/v${{ env.VERSION_OVERRIDE }}).
+            for Armbian ${{ env.VERSION_OVERRIDE }}, from the pull requests
+            merged across the org in the release window.
+
+            This page is the canonical release note. The quarterly digest is no
+            longer published as a GitHub release, because GitHub serves release
+            pages `noindex` and this one has to be findable.
 
             The narrative body, the change list and the board status changes all
             come from PR metadata and the digest; nothing here is hand-written.
