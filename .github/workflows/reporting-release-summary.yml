@@ -105,13 +105,21 @@ jobs:
           path: self
           persist-credentials: false
 
+      # Checked out ahead of the resolver below, which reads the previous
+      # quarter's page to date this one and to anchor its window.
+      #
+      # ACCESS_TOKEN_ARMBIANWORKER, not RELEASE_TOKEN: the latter can write
+      # releases to armbian/build but has no write access to
+      # armbian/documentation, so the push at the end of this job 403s after
+      # every expensive step has already run. armbianworker has write on
+      # armbian/documentation and already opens PRs this way elsewhere.
       - name: "Docs: check out armbian/documentation"
         if: ${{ env.PERIOD == 'quarterly' }}
         uses: actions/checkout@v5
         with:
           repository: armbian/documentation
           path: documentation
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           persist-credentials: false
 
       - name: "Docs: resolve the release date and the docs version"
@@ -796,7 +804,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           path: documentation
-          token: ${{ secrets.RELEASE_TOKEN }}
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           # One branch per quarter, so a re-run -- including for a later patch
           # release in the same quarter -- updates the open PR in place rather
           # than opening a second one.
