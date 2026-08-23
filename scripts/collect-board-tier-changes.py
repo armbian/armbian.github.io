@@ -12,6 +12,7 @@ Emits a TSV of: board, old extension, new extension, PR reference, PR URL.
 
 import argparse
 import csv
+import json
 import os
 import re
 import subprocess
@@ -30,7 +31,7 @@ def git_log(tree, since, until):
             "--since", since, "--until", until,
             "--diff-filter=R", "--find-renames=40%",
             "--name-status", "--no-merges",
-            "--format=%x01%s",
+            "--format=%x01%H %s",
             "--", "config/boards",
         ],
         check=True, capture_output=True, text=True,
@@ -39,8 +40,9 @@ def git_log(tree, since, until):
         record = record.strip("\n")
         if not record:
             continue
-        subject, _, body = record.partition("\n")
-        yield subject.strip(), body
+        header, _, body = record.partition("\n")
+        sha, _, subject = header.strip().partition(" ")
+        yield sha, subject.strip(), body
 
 
 def tier_of(path):
@@ -67,6 +69,37 @@ def load_digest_index(path):
     return index
 
 
+def pr_for_commit(sha, repo="armbian/build", cache={}):
+    """Ask GitHub which pull request a commit arrived in.
+
+    Last resort, and worth the call: a rebase or merge-queue merge leaves the
+    individual commits without a "(#123)" subject, and their subjects are the
+    commit messages rather than the PR title, so neither of the cheap paths
+    can match. Only unlinked commits reach here -- four in 26.8 -- and the
+    result is cached, so this stays a handful of requests.
+    """
+    if sha in cache:
+        return cache[sha]
+    cache[sha] = ("", "")
+    try:
+        out = subprocess.run(
+            ["gh", "api", "repos/{}/commits/{}/pulls".format(repo, sha),
+             "--jq", "[.[] | {number, url: .html_url}]"],
+            check=True, capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
+        return cache[sha]
+    try:
+        hits = json.loads(out) if out else []
+    except ValueError:
+        return cache[sha]
+    if len(hits) == 1:
+        # More than one means the commit is in several PRs and picking would
+        # be a guess; leave it unlinked rather than attribute it wrongly.
+        cache[sha] = ("{}#{}".format(repo, hits[0]["number"]), hits[0]["url"])
+    return cache[sha]
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--build-tree", required=True, help="armbian/build checkout")
@@ -74,6 +107,8 @@ def main():
     ap.add_argument("--until", required=True, help="ISO timestamp, window end")
     ap.add_argument("--digest", help="merged-PR TSV, used to recover PR links")
     ap.add_argument("--out", required=True, help="output TSV path")
+    ap.add_argument("--no-api", action="store_true",
+                    help="skip the gh lookup for commits nothing else linked")
     args = ap.parse_args()
 
     digest = load_digest_index(args.digest)
@@ -84,7 +119,7 @@ def main():
     # back to where it began reports nothing at all.
     merged, changes = {}, []
 
-    for subject, body in git_log(args.build_tree, args.since, args.until):
+    for sha, subject, body in git_log(args.build_tree, args.since, args.until):
         ref = url = ""
         match = RE_PR_IN_SUBJECT.search(subject)
         if match:
@@ -95,6 +130,8 @@ def main():
             if hit:
                 repo, number, url = hit
                 ref = "{}#{}".format(repo, number)
+            elif not args.no_api:
+                ref, url = pr_for_commit(sha)
 
         for line in body.splitlines():
             fields = line.split("\t")
