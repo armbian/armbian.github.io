@@ -12,6 +12,7 @@ Emits a TSV of: board, old extension, new extension, PR reference, PR URL.
 
 import argparse
 import csv
+import functools
 import json
 import os
 import re
@@ -69,18 +70,16 @@ def load_digest_index(path):
     return index
 
 
-def pr_for_commit(sha, repo="armbian/build", cache={}):
+@functools.lru_cache(maxsize=None)
+def pr_for_commit(sha, repo="armbian/build"):
     """Ask GitHub which pull request a commit arrived in.
 
     Last resort, and worth the call: a rebase or merge-queue merge leaves the
     individual commits without a "(#123)" subject, and their subjects are the
     commit messages rather than the PR title, so neither of the cheap paths
-    can match. Only unlinked commits reach here -- four in 26.8 -- and the
-    result is cached, so this stays a handful of requests.
+    can match. Only unlinked commits reach here -- four in 26.8 -- and
+    lru_cache keeps a repeated sha from asking twice.
     """
-    if sha in cache:
-        return cache[sha]
-    cache[sha] = ("", "")
     try:
         out = subprocess.run(
             ["gh", "api", "repos/{}/commits/{}/pulls".format(repo, sha),
@@ -88,16 +87,16 @@ def pr_for_commit(sha, repo="armbian/build", cache={}):
             check=True, capture_output=True, text=True, timeout=30,
         ).stdout.strip()
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError):
-        return cache[sha]
+        return ("", "")
     try:
         hits = json.loads(out) if out else []
     except ValueError:
-        return cache[sha]
-    if len(hits) == 1:
-        # More than one means the commit is in several PRs and picking would
-        # be a guess; leave it unlinked rather than attribute it wrongly.
-        cache[sha] = ("{}#{}".format(repo, hits[0]["number"]), hits[0]["url"])
-    return cache[sha]
+        return ("", "")
+    if len(hits) != 1:
+        # None means nothing claims it; more than one means picking would be a
+        # guess. Either way leave it unlinked rather than attribute it wrongly.
+        return ("", "")
+    return ("{}#{}".format(repo, hits[0]["number"]), hits[0]["url"])
 
 
 def main():
