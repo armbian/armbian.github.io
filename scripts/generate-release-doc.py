@@ -565,10 +565,24 @@ def main():
              "boards, kernels, desktops, the build framework and Armbian "
              "tooling.").format(args.version, args.date).split()
         )
-        while len(base) < 140:
-            base = base[:-1] + " See the full change list below."
-            base = " ".join(base.split())
-        description = base[:155].rsplit(" ", 1)[0] if len(base) > 155 else base
+        # Whole-sentence fillers, shortest first, so the punctuation survives
+        # and a short version or date string still reaches the 140 minimum this
+        # branch exists to guarantee.
+        for filler in (
+            "",
+            " Full list below.",
+            " See the full list below.",
+            " See the full change list below.",
+            " See the full change list for this release below.",
+        ):
+            candidate = base + filler
+            if 140 <= len(candidate) <= 155:
+                base = candidate
+                break
+        else:
+            if len(base) > 155:
+                base = base[:155].rsplit(" ", 1)[0]
+        description = base
 
     page = render(
         args.version,
