@@ -77,7 +77,12 @@ def main():
     args = ap.parse_args()
 
     digest = load_digest_index(args.digest)
-    seen, changes = set(), []
+    # git log runs newest first, so the first record for a board fixes the tier
+    # it ends the window on and each older record widens where it started. A
+    # board that moved twice in one quarter (wip -> csc -> conf) has to report
+    # wip -> conf rather than the last hop alone, and one that round-tripped
+    # back to where it began reports nothing at all.
+    merged, changes = {}, []
 
     for subject, body in git_log(args.build_tree, args.since, args.until):
         ref = url = ""
@@ -105,11 +110,16 @@ def main():
                 continue
             if old_stem != new_stem or old_ext == new_ext:
                 continue
-            if old_stem in seen:
-                continue
-            seen.add(old_stem)
-            changes.append((old_stem, old_ext, new_ext, ref, url))
+            if old_stem in merged:
+                merged[old_stem][0] = old_ext
+            else:
+                merged[old_stem] = [old_ext, new_ext, ref, url]
 
+    changes = [
+        (board, old, new, ref, url)
+        for board, (old, new, ref, url) in merged.items()
+        if old != new
+    ]
     changes.sort(key=lambda c: c[0].lower())
     with open(args.out, "w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh, delimiter="\t", quoting=csv.QUOTE_NONE,
