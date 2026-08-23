@@ -142,7 +142,12 @@ REPO_FIXED = {
 # Single-purpose repos supply a fallback when no title rule fires. armbian/build
 # and armbian/armbian.github.io are deliberately absent: they span every group,
 # so an unmatched title there is genuinely unclassified and belongs in "Other".
-REPO_FALLBACK = {
+# Repositories with one clear home. Everything they merge belongs to that
+# group unless the change is plainly desktop work, because their titles talk
+# about what the tool acts on rather than what the change is: "armbian-install:
+# fix boot on UEFI systems" is configng work, not a board change.
+REPO_HOME = {
+    "armbian/armbian.github.io": "Build framework and CI",
     "armbian/os": "Build framework and CI",
     "armbian/actions": "Build framework and CI",
     "armbian/docker-armbian-build": "Build framework and CI",
@@ -299,6 +304,17 @@ def classify(title, repo, boards, families):
     low = title.lower()
     parts = prefix_parts(title_prefix(title))
 
+    # Repo identity outranks title vocabulary for repos that have one home.
+    # The prefix table below is tuned for armbian/build, where "firmware:" or
+    # a board name really does mean a kernel or board change; in configng or
+    # imager the same words describe the subject of a tooling change. Desktop
+    # is the one group these repos genuinely also belong to, so it may win.
+    home = REPO_HOME.get(repo)
+    if home:
+        if parts & PREFIX_GROUPS["Desktop"] or RE_DESKTOP.search(low):
+            return "Desktop"
+        return home
+
     for group, prefixes in PREFIX_GROUPS.items():
         if parts & prefixes:
             return group
@@ -317,7 +333,7 @@ def classify(title, repo, boards, families):
         return "Build framework and CI"
     if RE_TOOLING.search(low):
         return "Tooling"
-    return REPO_FALLBACK.get(repo, "Other")
+    return "Other"
 
 
 def read_digest(path):
