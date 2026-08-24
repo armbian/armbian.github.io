@@ -100,7 +100,7 @@ jobs:
 
       - name: "Docs: check out this repository for the generator scripts"
         if: ${{ env.PERIOD == 'quarterly' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           path: self
           persist-credentials: false
@@ -115,7 +115,7 @@ jobs:
       # armbian/documentation and already opens PRs this way elsewhere.
       - name: "Docs: check out armbian/documentation"
         if: ${{ env.PERIOD == 'quarterly' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: armbian/documentation
           path: documentation
@@ -692,7 +692,7 @@ jobs:
 
       - name: "Docs: check out armbian/build for board and family names"
         if: ${{ env.PERIOD == 'quarterly' }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           path: build-tree
