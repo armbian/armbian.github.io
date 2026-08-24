@@ -131,12 +131,22 @@ RE_PREFIX_CI_PART = re.compile(
     r"generate|generation|release|repo|docker|deps|dispatch|sync)(-|$)"
 )
 
-# Repos whose entire output belongs to one group regardless of title.
+# Repos whose entire output belongs to one group regardless of title. Kernel
+# mirrors, firmware-blob collections and out-of-tree drivers whose names the
+# pattern below does not reach: 'uwe5622' names the chip, 'mtkbin' and
+# 'odroidc2-blobs' name the vendor, and 'phytium-linux-kernel' puts the vendor
+# ahead of 'linux'.
 REPO_FIXED = {
+    "armbian/linux": "Kernel and U-Boot",
     "armbian/linux-rockchip": "Kernel and U-Boot",
+    "armbian/phytium-linux-kernel": "Kernel and U-Boot",
     "armbian/rkbin": "Kernel and U-Boot",
-    "armbian/firmware": "Kernel and U-Boot",
+    "armbian/mtkbin": "Kernel and U-Boot",
     "armbian/qcombin": "Kernel and U-Boot",
+    "armbian/odroidc2-blobs": "Kernel and U-Boot",
+    "armbian/firmware": "Kernel and U-Boot",
+    "armbian/sunxi-dt-overlays": "Kernel and U-Boot",
+    "armbian/uwe5622": "Kernel and U-Boot",
 }
 
 # Single-purpose repos supply a fallback when no title rule fires. armbian/build
@@ -153,11 +163,14 @@ REPO_HOME = {
     "armbian/docker-armbian-build": "Build framework and CI",
     "armbian/sdk": "Build framework and CI",
     "armbian/ci": "Build framework and CI",
+    "armbian/distribution": "Build framework and CI",
+    "armbian/shallow": "Build framework and CI",
     "armbian/configng": "Tooling",
     "armbian/imager": "Tooling",
     "armbian/documentation": "Tooling",
     "armbian/website": "Tooling",
     "armbian/armbian-router": "Tooling",
+    "armbian/scripts": "Tooling",
 }
 
 
@@ -281,10 +294,16 @@ def names_a_board(title, boards, families):
 
 
 def repo_fixed_group(repo):
-    """Kernel-tree, firmware-blob and out-of-tree driver repos, by pattern."""
-    if repo in REPO_FIXED:
-        return REPO_FIXED[repo]
-    name = repo.split("/", 1)[-1].lower()
+    """Kernel-tree, firmware-blob and out-of-tree driver repos, by pattern.
+
+    Matched case-insensitively: the org spells repos both ways
+    (MorseMicro-DKMS, sunxi-DT-overlays), and the digest reports whatever
+    GitHub reports.
+    """
+    lowered = repo.lower()
+    if lowered in REPO_FIXED:
+        return REPO_FIXED[lowered]
+    name = lowered.split("/", 1)[-1]
     if name.startswith(("linux-", "wifi-", "rtl", "rtw")) or name.endswith("-dkms"):
         return "Kernel and U-Boot"
     return None
