@@ -801,7 +801,7 @@ jobs:
 
       - name: "Docs: open or update the pull request"
         if: ${{ env.PERIOD == 'quarterly' }}
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           path: documentation
           token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
