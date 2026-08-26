@@ -47,7 +47,7 @@ jobs:
       - id: set
         env:
           # Route the dispatch input through env (not inline ${{ }}) to avoid shell injection.
-          REPOS: ${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation,armbian/distribution' }}
+          REPOS: ${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation,armbian/distribution,armbian/actions,armbian/armbian.github.io,armbian/armbian-router,armbian/shallow,armbian/docker-armbian-build,armbian/autotests,armbian/sdk,armbian/hastebin-ansi,armbian/infra' }}
         run: |
           set -euo pipefail
           matrix="$(echo "$REPOS" | tr ',' '\n' | sed 's/[[:space:]]//g' | grep -v '^$' | jq -R . | jq -s -c .)"
