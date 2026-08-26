@@ -20,9 +20,9 @@ on:
   workflow_dispatch:
     inputs:
       repos:
-        description: "Comma-separated owner/repo targets (default: core repos)"
+        description: "Comma-separated owner/repo targets (leave empty for the full default set)"
         required: false
-        default: "armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation,armbian/distribution"
+        default: ""
       model:
         description: "Claude model id"
         required: false
