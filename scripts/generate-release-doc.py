@@ -328,7 +328,7 @@ def classify(title, repo, boards, families):
     # a board name really does mean a kernel or board change; in configng or
     # imager the same words describe the subject of a tooling change. Desktop
     # is the one group these repos genuinely also belong to, so it may win.
-    home = REPO_HOME.get(repo)
+    home = REPO_HOME.get(repo.lower())  # keys are lowercase; GitHub reports repos in mixed case
     if home:
         if parts & PREFIX_GROUPS["Desktop"] or RE_DESKTOP.search(low):
             return "Desktop"
