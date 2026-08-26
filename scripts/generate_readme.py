@@ -135,8 +135,11 @@ def build_context(repo_dir, repo_name):
         embedded.append(block)
         budget -= len(block)
 
+    ci_overview_url = f"https://actions.armbian.com/?repo={repo_name.split('/')[-1]}"
+
     parts = [
         f"Repository: {repo_name}\n",
+        f"CI overview URL for this repo (link to this instead of describing workflows): {ci_overview_url}\n",
         f"\n----- TOP-LEVEL LAYOUT ({len(files)} tracked files) -----\n" + top_level_layout(files) + "\n",
         f"\n----- FILE TREE (first {len(tree)}) -----\n" + "\n".join(tree) + tree_note,
     ]
@@ -173,8 +176,9 @@ SYSTEM = (
     "CI workflow files (e.g. .github/workflows/*.yml) are YAML, not shell -- only the "
     "shell in their `run:` steps counts as shell/Bash.\n"
     "- Do not enumerate or describe the individual GitHub Actions workflows. Armbian "
-    "has a dedicated CI overview at https://actions.armbian.com/ -- link to that "
-    "instead of documenting each workflow here.\n"
+    "has a dedicated CI overview -- link to this repo's overview URL, given in the "
+    "snapshot as \"CI overview URL for this repo\" (https://actions.armbian.com/?repo="
+    "<repo>), instead of documenting each workflow here.\n"
     "- Begin the README with this exact Armbian logo header, verbatim and at the very "
     "top before anything else (the <h2> and </h2> at column 0, not indented, no code "
     "fence around it):\n"
