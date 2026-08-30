@@ -61,3 +61,25 @@ minimal-cli-stable-debian-cloud-trixie:
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
+# SpacemiT RISC-V, edge kernel on Debian forky.
+#
+# forky is pinned literally rather than using the DEBIAN token: the token
+# resolves to the current stable codename, and the point of this target is to
+# exercise the next Debian alongside the edge kernel.
+#
+# k3picoitx gained its edge branch in armbian/build#10506; without that merged
+# it has only legacy/current and this item resolves to nothing.
+minimal-cli-forky-edge-spacemit:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: forky
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: musepipro, BRANCH: edge }
+    - { BOARD: k3picoitx, BRANCH: edge }
