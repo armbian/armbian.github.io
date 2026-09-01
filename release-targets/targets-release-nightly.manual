@@ -61,3 +61,23 @@ minimal-cli-stable-debian-cloud-trixie:
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
+# Ubuntu minimal CLI for Khadas VIM1S / VIM4 on mainline (current).
+# Both boards are in targets-release-nightly.blacklist so the auto-generated
+# section skips them. Note that removing them from the blacklist would NOT
+# produce this image: they are fast-HDMI boards, and that bucket only gets
+# Debian minimal + Ubuntu GNOME desktop. Ubuntu minimal CLI is emitted for
+# headless boards only, hence this explicit target.
+nightly-ubuntu-minimal-khadas-vims:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: khadas-vim1s, BRANCH: current, ENABLE_EXTENSIONS: "image-output-oowow" }
+    - { BOARD: khadas-vim4, BRANCH: current, ENABLE_EXTENSIONS: "image-output-oowow" }
