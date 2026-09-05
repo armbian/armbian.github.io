@@ -1,0 +1,201 @@
+{
+  "entries": [
+    {
+      "type": "service",
+      "id": "armbian-sponsors",
+      "name": "Support Armbian Development",
+      "url": "https://github.com/sponsors/armbian",
+      "title": "Become a Sponsor",
+      "summary": "Support continued Armbian development through sponsorship. Contributors get access to beta builds, priority support, and direct influence on project direction.",
+      "author": {
+        "name": "Armbian Project",
+        "handle": "@armbian"
+      },
+      "tags": [
+        "support",
+        "sponsorship",
+        "donate",
+        "community"
+      ],
+      "motd": {
+        "line": "Support Armbian: Become a sponsor",
+        "hint": "https://github.com/sponsors/armbian"
+      },
+      "manual": true
+    },
+    {
+      "type": "sponsor",
+      "id": "sponsor-4",
+      "name": "Sponsor: ahoneybun",
+      "url": "https://github.com/ahoneybun",
+      "title": "Aaron Honeycutt - Silver Sponsor",
+      "summary": "Sponsor of Armbian build",
+      "image": "https://avatars.githubusercontent.com/u/4884946?u=2fdb7e87d7a96c50f031762f20a946b48f73bcb2&v=4",
+      "author": {
+        "name": "Aaron Honeycutt",
+        "handle": "@ahoneybun"
+      },
+      "tags": [
+        "sponsor",
+        "silver",
+        "community"
+      ],
+      "motd": {
+        "line": "Silver level supporter"
+      }
+    },
+    {
+      "type": "news",
+      "id": "ghost-696407e693dc320001185cd0",
+      "name": "Armbian",
+      "url": "http://blog.armbian.com/forget-third-party-utilities-meet-armbian-imager/",
+      "title": "Forget third-party utilities: meet Armbian Imager",
+      "summary": "Armbian Imager eliminates the guesswork from flashing SBC images. Real-time board detection, persistent caching, and built-in safety make installation fast, simple, and risk-free",
+      "published_at": "2026-01-17T14:43:51.000+01:00",
+      "image": "http://blog.armbian.com/content/images/2026/01/introducing-armbian-imager.png",
+      "author": {
+        "name": "Daniele Briguglio"
+      },
+      "tags": [
+        "Armbian",
+        "SBC",
+        "imager",
+        "linux"
+      ]
+    },
+    {
+      "type": "software",
+      "id": "ART001",
+      "name": "CDN router",
+      "url": "",
+      "title": "CDN router",
+      "summary": "Router for repository mirror automation",
+      "author": {
+        "name": "efectn",
+        "handle": "efectn"
+      },
+      "tags": [
+        "armbian"
+      ],
+      "motd": {
+        "line": "Featured: CDN router",
+        "hint": "armbian-config \u2192 Software"
+      }
+    },
+    {
+      "type": "contribution",
+      "id": "release-v26.2.0-trunk.146",
+      "name": "Weekly digest",
+      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.146",
+      "title": "Armbian Weekly digest Released",
+      "summary": "This week in Armbian development saw a series of refinements and maintenance updates across the build and configuration repositories. Contributors focused on workflow standardization, cosmetic improve...",
+      "published_at": "2025-12-29T06:49:33Z",
+      "highlights": [],
+      "tags": [
+        "release",
+        "update",
+        "armbian"
+      ]
+    },
+    {
+      "type": "contribution",
+      "id": "release-v26.2.0-trunk.278",
+      "name": "Weekly digest",
+      "url": "https://github.com/armbian/build/releases/tag/v26.2.0-trunk.278",
+      "title": "Armbian Weekly digest Released",
+      "summary": "This week\u2019s Armbian development saw a major cleanup of legacy toolchain code, alongside numerous board-specific improvements and kernel updates. Support was added for the Nuvoton MA35D1 NuMaker IoT bo...",
+      "published_at": "2026-01-19T06:52:55Z",
+      "highlights": [],
+      "tags": [
+        "release",
+        "update",
+        "armbian"
+      ]
+    },
+    {
+      "type": "news",
+      "id": "ghost-69782e9693dc320001185e07",
+      "name": "Armbian News",
+      "url": "http://blog.armbian.com/github-highlights-12/",
+      "title": "Github Highlights",
+      "summary": "This week\u2019s Armbian development saw a wide range of updates focused on automation, hardware support, and workflow improvements. Key highlights include the introduction of automatic YAML target generation, expanded support for Hetzner ARM64 runners, and enhancements to the redirector update workflow with cache mirror support. Several board-specific fixes and feature additions were made, including improved power cycle handling for meson-sm1 devices and new binary files for RK35 series components. ",
+      "published_at": "2026-01-27T04:20:04.000+01:00",
+      "image": "http://blog.armbian.com/content/images/2026/01/githubhighlights-2-2.webp",
+      "author": {
+        "name": "Michael Robinson"
+      },
+      "tags": []
+    },
+    {
+      "type": "sponsor",
+      "id": "sponsor-9",
+      "name": "Sponsor: Nardol",
+      "url": "https://github.com/Nardol",
+      "title": "Patrick ZAJDA - Silver Sponsor",
+      "summary": "Sponsor of Armbian build",
+      "image": "https://avatars.githubusercontent.com/u/2864821?v=4",
+      "author": {
+        "name": "Patrick ZAJDA",
+        "handle": "@Nardol"
+      },
+      "tags": [
+        "sponsor",
+        "silver",
+        "community"
+      ],
+      "motd": {
+        "line": "Silver level supporter"
+      }
+    },
+    {
+      "type": "service",
+      "id": "armbian-actions",
+      "name": "Armbian Actions",
+      "url": "https://actions.armbian.com/",
+      "title": "Armbian CI/CD Infrastructure",
+      "summary": "Automated build and testing infrastructure for Armbian firmware. Check build status, download latest images, and track releases across all supported boards.",
+      "author": {
+        "name": "Armbian",
+        "handle": "@armbian"
+      },
+      "tags": [
+        "infrastructure",
+        "ci-cd",
+        "build",
+        "automation"
+      ],
+      "motd": {
+        "line": "Armbian Actions: Track builds and releases",
+        "hint": "https://actions.armbian.com"
+      },
+      "manual": true
+    },
+    {
+      "type": "software",
+      "id": "EMB001",
+      "name": "Emby",
+      "url": "",
+      "title": "Emby",
+      "summary": "Emby organizes video, music, live TV, and photos",
+      "author": {
+        "name": "schwar3kat",
+        "handle": "schwar3kat"
+      },
+      "tags": [
+        "media"
+      ],
+      "motd": {
+        "line": "Featured: Emby",
+        "hint": "armbian-config \u2192 Software"
+      }
+    }
+  ],
+  "count": 10,
+  "sources": {
+    "contribution": 5,
+    "news": 5,
+    "sponsor": 10,
+    "software": 10,
+    "service": 6
+  }
+}
