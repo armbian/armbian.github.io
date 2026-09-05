@@ -148,6 +148,12 @@ def main():
                 continue
             if old_stem in merged:
                 merged[old_stem][0] = old_ext
+                # The newest hop owns the link, since it produced the tier the
+                # board ends the window on. But if nothing could link that hop,
+                # an older one is a better answer than no link at all.
+                if not merged[old_stem][2] and ref:
+                    merged[old_stem][2] = ref
+                    merged[old_stem][3] = url
             else:
                 merged[old_stem] = [old_ext, new_ext, ref, url]
 
