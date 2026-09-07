@@ -15,6 +15,9 @@ set -euo pipefail
 #      MIN_OBJECT_PCT (int) — if set, fail a board image whose fill is below this
 #      %, i.e. a board floating small in a mostly empty frame. Unset = no floor.
 #      Board images currently fill 5-50%, median 22%.
+#      MIN_BBOX_PCT (int, default 25) — an image under MIN_OBJECT_PCT is only
+#      failed when its bounding box also covers less than this % of the canvas.
+#      Spares sparse-but-large boards, e.g. one filling 10% while spanning 70%.
 #      MAX_LOGO_OBJECT_PCT (int, default 80) — same cap for vendor logos. There
 #      is deliberately no floor for logos: wordmarks are legitimately sparse,
 #      median 11%, smallest 2%.
@@ -80,6 +83,19 @@ object_fill_pct() {
   convert "$1" -alpha extract -format '%[fx:round(mean*100)]' info: 2>/dev/null || echo 100
 }
 
+# Object extent = % of the canvas covered by the object's bounding box. Fill and
+# extent answer different questions: a long thin board, or one shot at an angle,
+# can span most of the frame while colouring few of its pixels. Only something
+# low on BOTH is actually small in frame.
+object_bbox_pct() {
+  local dim bb W H bw bh
+  dim=$(identify -format '%wx%h' "$1" 2>/dev/null) || { echo 100; return; }
+  bb=$(convert "$1" -trim -format '%wx%h' info: 2>/dev/null) || { echo 100; return; }
+  W=${dim%x*}; H=${dim#*x}; bw=${bb%x*}; bh=${bb#*x}
+  [[ -z "$bw" || -z "$bh" || "$W" -eq 0 || "$H" -eq 0 ]] && { echo 100; return; }
+  awk -v w="$bw" -v h="$bh" -v W="$W" -v H="$H" 'BEGIN{printf "%d", (w*h*100)/(W*H)}'
+}
+
 fail=0
 
 check_board_image() {
@@ -117,8 +133,17 @@ check_board_image() {
     return 1
   fi
   if [[ -n "${MIN_OBJECT_PCT:-}" && "$fill" -lt "${MIN_OBJECT_PCT}" ]]; then
-    echo "❌ $file: object too small — fills ${fill}% of the frame (min ${MIN_OBJECT_PCT}%)"
-    return 1
+    # Sparse shapes fill little while still spanning the frame, so confirm the
+    # object really is small before failing. Only computed on the few that get
+    # this far, since trimming costs more than reading the alpha mean.
+    local bbox min_bbox="${MIN_BBOX_PCT:-25}"
+    bbox=$(object_bbox_pct "$file")
+    if [[ "$bbox" -lt "$min_bbox" ]]; then
+      echo "❌ $file: object too small — fills ${fill}% of the frame, bounding box ${bbox}% (min ${MIN_OBJECT_PCT}% fill)"
+      return 1
+    fi
+    echo "✅ $file: OK (${w}x${h}, transparent, object ${fill}% but spans ${bbox}% — sparse, not small)"
+    return 0
   fi
 
   echo "✅ $file: OK (${w}x${h}, transparent, object ${fill}%)"
