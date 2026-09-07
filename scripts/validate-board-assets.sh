@@ -80,7 +80,7 @@ bg_transparent() {
 
 # Object fill = % of the canvas that is opaque (non-transparent) pixels.
 object_fill_pct() {
-  convert "$1" -alpha extract -format '%[fx:round(mean*100)]' info: 2>/dev/null || echo 100
+  convert "$1" -alpha extract -format '%[fx:round(mean*100)]' info: 2>/dev/null || return 1
 }
 
 # Object extent = % of the canvas covered by the object's bounding box. Fill and
@@ -89,10 +89,10 @@ object_fill_pct() {
 # low on BOTH is actually small in frame.
 object_bbox_pct() {
   local dim bb W H bw bh
-  dim=$(identify -format '%wx%h' "$1" 2>/dev/null) || { echo 100; return; }
-  bb=$(convert "$1" -trim -format '%wx%h' info: 2>/dev/null) || { echo 100; return; }
+  dim=$(identify -format '%wx%h' "$1" 2>/dev/null) || return 1
+  bb=$(convert "$1" -trim -format '%wx%h' info: 2>/dev/null) || return 1
   W=${dim%x*}; H=${dim#*x}; bw=${bb%x*}; bh=${bb#*x}
-  [[ -z "$bw" || -z "$bh" || "$W" -eq 0 || "$H" -eq 0 ]] && { echo 100; return; }
+  [[ -z "$bw" || -z "$bh" || "$W" -eq 0 || "$H" -eq 0 ]] && return 1
   awk -v w="$bw" -v h="$bh" -v W="$W" -v H="$H" 'BEGIN{printf "%d", (w*h*100)/(W*H)}'
 }
 
@@ -127,7 +127,10 @@ check_board_image() {
 
   # Object size: report the opaque-pixel fill %, and fail only if a limit is set.
   local fill
-  fill=$(object_fill_pct "$file")
+  if ! fill=$(object_fill_pct "$file"); then
+    echo "❌ $file: could not measure object fill"
+    return 1
+  fi
   if [[ -n "${MAX_OBJECT_PCT:-}" && "$fill" -gt "${MAX_OBJECT_PCT}" ]]; then
     echo "❌ $file: object too large — fills ${fill}% of the frame (max ${MAX_OBJECT_PCT}%)"
     return 1
@@ -137,7 +140,10 @@ check_board_image() {
     # object really is small before failing. Only computed on the few that get
     # this far, since trimming costs more than reading the alpha mean.
     local bbox min_bbox="${MIN_BBOX_PCT:-25}"
-    bbox=$(object_bbox_pct "$file")
+    if ! bbox=$(object_bbox_pct "$file"); then
+      echo "❌ $file: could not calculate object bounding box"
+      return 1
+    fi
     if [[ "$bbox" -lt "$min_bbox" ]]; then
       echo "❌ $file: object too small — fills ${fill}% of the frame, bounding box ${bbox}% (min ${MIN_OBJECT_PCT}% fill)"
       return 1
