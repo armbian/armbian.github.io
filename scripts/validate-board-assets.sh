@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Validate images:
 # - board-images/: 16:9 AND either 1920x1080 or 3840x2160, TRANSPARENT background,
-#   and (optional) object not larger than MAX_OBJECT_PCT of the frame
+#   and (optional) object between MIN_OBJECT_PCT and MAX_OBJECT_PCT of the frame
 # - board-vendor-logos/: square (WxH equal), TRANSPARENT background, and object
 #   not larger than MAX_LOGO_OBJECT_PCT of the frame (default 80)
 #
@@ -11,8 +11,13 @@ set -euo pipefail
 # WHOLE set is checked. Requires ImageMagick's `identify`/`convert`.
 #
 # env: MAX_OBJECT_PCT (int) — if set, fail a board image whose opaque-pixel fill
-#      exceeds this %. Unset = report only (board images currently fill 5–48%).
-#      MAX_LOGO_OBJECT_PCT (int, default 80) — same cap for vendor logos.
+#      exceeds this %. Unset = report only.
+#      MIN_OBJECT_PCT (int) — if set, fail a board image whose fill is below this
+#      %, i.e. a board floating small in a mostly empty frame. Unset = no floor.
+#      Board images currently fill 5-50%, median 22%.
+#      MAX_LOGO_OBJECT_PCT (int, default 80) — same cap for vendor logos. There
+#      is deliberately no floor for logos: wordmarks are legitimately sparse,
+#      median 11%, smallest 2%.
 
 BASE_REF="${BASE_REF:-origin/${GITHUB_BASE_REF:-main}}"
 HEAD_REF="${HEAD_REF:-HEAD}"
@@ -109,6 +114,10 @@ check_board_image() {
   fill=$(object_fill_pct "$file")
   if [[ -n "${MAX_OBJECT_PCT:-}" && "$fill" -gt "${MAX_OBJECT_PCT}" ]]; then
     echo "❌ $file: object too large — fills ${fill}% of the frame (max ${MAX_OBJECT_PCT}%)"
+    return 1
+  fi
+  if [[ -n "${MIN_OBJECT_PCT:-}" && "$fill" -lt "${MIN_OBJECT_PCT}" ]]; then
+    echo "❌ $file: object too small — fills ${fill}% of the frame (min ${MIN_OBJECT_PCT}%)"
     return 1
   fi
 

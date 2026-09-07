@@ -29,6 +29,9 @@ jobs:
           HEAD_REF: "${{ github.sha }}"
           # object (opaque pixels) must not fill more than this % of the frame
           MAX_OBJECT_PCT: "50"        # board images
+          # ...and must not be lost in an empty frame. Board images sit at a
+          # median of 22%; 12% is the 10th percentile.
+          MIN_OBJECT_PCT: "12"        # board images
           MAX_LOGO_OBJECT_PCT: "80"   # vendor logos (denser, allowed to fill more)
         run: |
           scripts/validate-board-assets.sh
