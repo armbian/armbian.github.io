@@ -291,3 +291,27 @@ boards:
     uses: "nanopct6-lts"
     branch: "current"
     file_extension: "img.xz"
+
+  # NanoPi M3 and NanoPi Fire3 are the same Nexell S5P6818 octa-core SoC as the
+  # NanoPC-T3 Plus and were built from the same s5p6818 family before it was
+  # retired, so they take that board's images rather than carrying their own
+  # build targets.
+  - board_slug: "nanopim3"
+    board_name: "NanoPi M3"
+    board_vendor: "friendlyelec"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "nanopct3plus"
+    branch: "current"
+    file_extension: "img.xz"
+
+  - board_slug: "nanopifire3"
+    board_name: "NanoPi Fire3"
+    board_vendor: "friendlyelec"
+    board_support: "conf"
+
+    # The magic: reuse artifact set
+    uses: "nanopct3plus"
+    branch: "current"
+    file_extension: "img.xz"
