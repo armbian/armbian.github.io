@@ -4,11 +4,59 @@
 
 import os
 import requests
+import sys
+import time
 from pathlib import Path
 import json
 import re
 import gzip
 from urllib.parse import urljoin
+
+
+class UpstreamGone(Exception):
+    """The archive answered, and the thing genuinely is not published."""
+
+
+class UpstreamUnreachable(Exception):
+    """The archive did not answer. Says nothing about what it publishes."""
+
+
+HTTP_ATTEMPTS = 4
+HTTP_TIMEOUT = 60
+
+
+def http_get(url, timeout=HTTP_TIMEOUT):
+    """
+    GET with retries, separating "not published" from "could not ask".
+
+    A 404 is an answer: the release or architecture is not there, and the
+    caller may legitimately skip it. A timeout, a connection error or a 5xx
+    is not an answer - treating it as one is what silently dropped Ubuntu
+    resolute out of the published index (armbian/build#10680) and broke every
+    build of that release until the next run happened to succeed.
+    """
+    last = None
+    for attempt in range(1, HTTP_ATTEMPTS + 1):
+        try:
+            response = requests.get(url, timeout=timeout)
+        except requests.exceptions.RequestException as e:
+            last = e
+        else:
+            if response.status_code == 404:
+                raise UpstreamGone(f"404 Not Found: {url}")
+            if response.status_code < 500:
+                response.raise_for_status()
+                return response
+            last = requests.exceptions.HTTPError(
+                f"{response.status_code} {response.reason}: {url}")
+
+        if attempt < HTTP_ATTEMPTS:
+            delay = 3 ** attempt
+            print(f"WARNING: {url}: {last}; retrying in {delay}s "
+                  f"({attempt}/{HTTP_ATTEMPTS - 1})", flush=True)
+            time.sleep(delay)
+
+    raise UpstreamUnreachable(f"{url}: {last}")
 
 def get_debian_release_names(cache_dir="./debian_cache"):
     """
@@ -28,8 +76,7 @@ def get_debian_release_names(cache_dir="./debian_cache"):
             readme_content = f.read()
     else:
         print("Downloading README...")
-        response = requests.get(readme_url, timeout=30)
-        response.raise_for_status()
+        response = http_get(readme_url)
         readme_content = response.text
 
         # Save to cache
@@ -74,8 +121,7 @@ def get_debian_architectures(distro, release_name, cache_dir="./debian_cache"):
             inrelease_content = f.read()
     else:
         #print(f"Downloading InRelease for {release_name}...")
-        response = requests.get(inrelease_url, timeout=30)
-        response.raise_for_status()
+        response = http_get(inrelease_url)
         inrelease_content = response.text
 
         # Save to cache
@@ -126,8 +172,7 @@ def get_debian_srcpkg_architecture(distro, release_name, package_name, cache_dir
         print(f"Using cached Sources.gz: {sources_path}")
     else:
         print(f"Downloading Sources.gz for {release_name}...")
-        response = requests.get(sources_url, timeout=30)
-        response.raise_for_status()
+        response = http_get(sources_url)
 
         # Save to cache
         with open(sources_path, 'wb') as f:
@@ -208,8 +253,7 @@ def get_debian_binary_package_filename(distro, release_name, package_name, archi
         print(f"Using cached Packages.gz: {packages_path}")
     else:
         print(f"Downloading Packages.gz for {release_name} ({architecture})...")
-        response = requests.get(packages_url, timeout=30)
-        response.raise_for_status()
+        response = http_get(packages_url)
 
         # Save to cache
         with open(packages_path, 'wb') as f:
@@ -282,13 +326,16 @@ if __name__ == "__main__":
     # Add -updates repos for LTS releases to get latest security updates
     releases += [ 'ubuntu/jammy-updates', 'ubuntu/noble-updates' ]
     release_hash = {}
+    unreachable = []
     for release in releases:
         distro, release = release.split('/')
         packages = {}
 
-        # A release-level fetch failure (Sources/InRelease 404 or a network
-        # error) should drop just that release with a warning, not abort the
-        # whole index update.
+        # A release that upstream genuinely does not publish (404) or that has
+        # no base-files source package is dropped with a warning. A release we
+        # could not *ask* about is recorded and fails the run at the end: the
+        # published index is what every build reads, and quietly shipping it
+        # one release short breaks all of them.
         try:
             pkg_architecture = get_debian_srcpkg_architecture(distro, release, "base-files")
 
@@ -299,8 +346,12 @@ if __name__ == "__main__":
                 architectures = get_debian_architectures(distro, release)
             else:
                 architectures = arch_list
-        except (requests.exceptions.RequestException, FileNotFoundError) as e:
+        except (UpstreamGone, FileNotFoundError) as e:
             print(f"WARNING: skipping release {distro}/{release}: {e}")
+            continue
+        except UpstreamUnreachable as e:
+            print(f"ERROR: could not reach upstream for release {distro}/{release}: {e}")
+            unreachable.append(f"{distro}/{release}")
             continue
 
         # Get binary package filename
@@ -315,11 +366,25 @@ if __name__ == "__main__":
         for architecture in architectures:
             try:
                 binary_filename = get_debian_binary_package_filename(distro, release, "base-files", architecture)
-            except requests.exceptions.RequestException as e:
+            except UpstreamGone as e:
                 print(f"WARNING: skipping {distro}/{release} ({architecture}): {e}")
+                continue
+            except UpstreamUnreachable as e:
+                print(f"ERROR: could not reach upstream for {distro}/{release} ({architecture}): {e}")
+                unreachable.append(f"{distro}/{release} ({architecture})")
                 continue
             packages[architecture] = binary_filename
         release_hash[release] = packages
+
+    # Fail closed. Writing a half-built index is worse than writing nothing:
+    # the previous good one stays published and builds keep working.
+    if unreachable:
+        print("\nERROR: upstream was unreachable for:", file=sys.stderr)
+        for item in unreachable:
+            print(f"  - {item}", file=sys.stderr)
+        print("Refusing to write a partial index; the published one stays in "
+              "place. Re-run once upstream is healthy.", file=sys.stderr)
+        sys.exit(1)
 
     json_content = json.dumps(release_hash)
     print(json_content)
