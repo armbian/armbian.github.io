@@ -281,7 +281,13 @@ if __name__ == "__main__":
     releases += [ 'ubuntu/jammy', 'ubuntu/noble', 'ubuntu/plucky', 'ubuntu/questing', 'ubuntu/resolute' ]
     # Add -updates repos for LTS releases to get latest security updates
     releases += [ 'ubuntu/jammy-updates', 'ubuntu/noble-updates' ]
-    release_hash = {}
+    # Seed from the currently-published index (wanted releases only) so a transient fetch failure keeps the prior entry
+    wanted_releases = {wanted.split('/', 1)[1] for wanted in releases}
+    try:
+        published = requests.get("https://github.armbian.com/base-files.json", timeout=30).json()
+    except (requests.exceptions.RequestException, ValueError):
+        published = {}
+    release_hash = {name: info for name, info in published.items() if name in wanted_releases}
     for release in releases:
         distro, release = release.split('/')
         packages = {}
