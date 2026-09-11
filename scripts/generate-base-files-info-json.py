@@ -284,7 +284,9 @@ if __name__ == "__main__":
     # Seed from the currently-published index (wanted releases only) so a transient fetch failure keeps the prior entry
     wanted_releases = {wanted.split('/', 1)[1] for wanted in releases}
     try:
-        published = requests.get("https://github.armbian.com/base-files.json", timeout=30).json()
+        response = requests.get("https://github.armbian.com/base-files.json", timeout=30)
+        response.raise_for_status()
+        published = response.json()
     except (requests.exceptions.RequestException, ValueError):
         published = {}
     release_hash = {name: info for name, info in published.items() if name in wanted_releases}
