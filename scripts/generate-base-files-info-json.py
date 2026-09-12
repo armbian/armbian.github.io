@@ -44,9 +44,11 @@ def http_get(url, timeout=HTTP_TIMEOUT):
         else:
             if response.status_code == 404:
                 raise UpstreamGone(f"404 Not Found: {url}")
-            if response.status_code < 500:
-                response.raise_for_status()
+            if response.ok:
                 return response
+            # Everything else - 429 and 403 from a rate-limiting or unhappy
+            # mirror, any 5xx - is retried and then reported as unreachable.
+            # Only a 404 is taken as a statement about what is published.
             last = requests.exceptions.HTTPError(
                 f"{response.status_code} {response.reason}: {url}")
 
