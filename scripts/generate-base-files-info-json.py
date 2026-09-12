@@ -23,6 +23,7 @@ class UpstreamUnreachable(Exception):
 
 HTTP_ATTEMPTS = 4
 HTTP_TIMEOUT = 60
+PUBLISHED_INDEX_URL = "https://github.armbian.com/base-files.json"
 
 
 def http_get(url, timeout=HTTP_TIMEOUT):
@@ -315,8 +316,7 @@ def synthesize_binary_package_filename(package_info):
 
     return filename
 
-# Example usage:
-if __name__ == "__main__":
+def main():
     releases = get_debian_release_names()
     if('debian/rc-buggy' in releases):
         releases.remove('debian/rc-buggy')
@@ -327,11 +327,28 @@ if __name__ == "__main__":
     releases += [ 'ubuntu/jammy', 'ubuntu/noble', 'ubuntu/plucky', 'ubuntu/questing', 'ubuntu/resolute' ]
     # Add -updates repos for LTS releases to get latest security updates
     releases += [ 'ubuntu/jammy-updates', 'ubuntu/noble-updates' ]
+    # Seed from the currently published index, restricted to the releases we
+    # still want, so anything we cannot reach this run keeps the value it
+    # already has instead of vanishing. Approach from @silvervest in #446.
+    wanted_releases = {wanted.split('/', 1)[1] for wanted in releases}
+    try:
+        published = http_get(PUBLISHED_INDEX_URL).json()
+        if not isinstance(published, dict):
+            raise ValueError("published index is not an object")
+    except (UpstreamGone, UpstreamUnreachable, ValueError) as e:
+        print(f"WARNING: could not read the published index ({e}); "
+              "nothing to fall back on this run")
+        published = {}
+    published = {name: info for name, info in published.items()
+                 if name in wanted_releases and isinstance(info, dict)}
+
     release_hash = {}
     unreachable = []
+    carried = []
     for release in releases:
         distro, release = release.split('/')
         packages = {}
+        seed = published.get(release, {})
 
         # A release that upstream genuinely does not publish (404) or that has
         # no base-files source package is dropped with a warning. A release we
@@ -352,8 +369,17 @@ if __name__ == "__main__":
             print(f"WARNING: skipping release {distro}/{release}: {e}")
             continue
         except UpstreamUnreachable as e:
-            print(f"ERROR: could not reach upstream for release {distro}/{release}: {e}")
-            unreachable.append(f"{distro}/{release}")
+            # Unreachable, not gone. Keep what is already published rather
+            # than dropping the release; only a release we have never
+            # published has nothing to fall back on.
+            if seed:
+                release_hash[release] = seed
+                carried.append(f"{distro}/{release}")
+                print(f"WARNING: could not reach upstream for release "
+                      f"{distro}/{release}: {e}; keeping the published entry")
+            else:
+                print(f"ERROR: could not reach upstream for release {distro}/{release}: {e}")
+                unreachable.append(f"{distro}/{release}")
             continue
 
         # Get binary package filename
@@ -369,17 +395,35 @@ if __name__ == "__main__":
             try:
                 binary_filename = get_debian_binary_package_filename(distro, release, "base-files", architecture)
             except UpstreamGone as e:
+                # Genuinely not published any more - do NOT carry the old
+                # value forward, or a retired architecture would live on in
+                # the index for ever.
                 print(f"WARNING: skipping {distro}/{release} ({architecture}): {e}")
                 continue
             except UpstreamUnreachable as e:
-                print(f"ERROR: could not reach upstream for {distro}/{release} ({architecture}): {e}")
-                unreachable.append(f"{distro}/{release} ({architecture})")
+                if architecture in seed:
+                    packages[architecture] = seed[architecture]
+                    carried.append(f"{distro}/{release} ({architecture})")
+                    print(f"WARNING: could not reach upstream for "
+                          f"{distro}/{release} ({architecture}): {e}; "
+                          "keeping the published entry")
+                else:
+                    print(f"ERROR: could not reach upstream for {distro}/{release} ({architecture}): {e}")
+                    unreachable.append(f"{distro}/{release} ({architecture})")
                 continue
             packages[architecture] = binary_filename
+        # Assigned wholesale, so a seeded entry only survives through the
+        # per-architecture carry-forward above: seeding alone does not protect
+        # against a single architecture failing while the release is reachable.
         release_hash[release] = packages
 
-    # Fail closed. Writing a half-built index is worse than writing nothing:
-    # the previous good one stays published and builds keep working.
+    if carried:
+        print(f"\n::warning::Kept the published entry for {len(carried)} item(s) "
+              f"upstream could not be reached for: {', '.join(carried)}")
+
+    # Fail closed on anything with nothing to fall back on. Writing a
+    # half-built index is worse than writing nothing: the previous good one
+    # stays published and builds keep working.
     if unreachable:
         print("\nERROR: upstream was unreachable for:", file=sys.stderr)
         for item in unreachable:
@@ -393,3 +437,7 @@ if __name__ == "__main__":
     json_file_name = "base-files.json"
     with open(json_file_name, "w") as outfile:
         outfile.write(json_content)
+
+
+if __name__ == "__main__":
+    main()
