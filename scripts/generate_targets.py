@@ -502,6 +502,13 @@ def is_fast_hardware(entry):
     if board_family == 'imx93':
         return False
 
+    # Nexell S5P6818 (NanoPi M3 / NanoPC-T3+ / NanoPi Fire3) has a Mali-400
+    # GPU that is GLES2-only — no OpenGL ES 3.0, which GNOME/mutter requires,
+    # so the shell falls back to software rendering (and it is 1 GiB). Classify
+    # as slow to get XFCE instead of GNOME.
+    if board_family == 's5p6818':
+        return False
+
     # Rockchip RK3328, RK3399 and RK3399PRO are slow
     if boot_soc in ['rk3328', 'rk3399', 'rk3399pro']:
         return False
