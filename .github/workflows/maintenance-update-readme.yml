@@ -12,8 +12,12 @@
 #
 # Secrets (already present on this repo):
 #   ANTHROPIC_API_KEY  - Claude API key (same one reporting-release-summary uses)
-#   ACCESS_TOKEN       - PAT with `repo` scope on the target repos (the builtin
-#                        GITHUB_TOKEN cannot push branches / open PRs cross-repo)
+#   ACCESS_TOKEN_ARMBIANWORKER
+#                      - armbianworker PAT with `repo` scope on the target repos
+#                        (the builtin GITHUB_TOKEN cannot push branches / open PRs
+#                        cross-repo). Must be the worker account, not a person:
+#                        reporting-release-summary.yml filters the release digest
+#                        by PR author, and a human author lands these in the notes.
 name: "Maintenance: Update README (AI)"
 
 on:
@@ -70,7 +74,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: ${{ matrix.repo }}
-          token: ${{ secrets.ACCESS_TOKEN }}
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           path: target
           fetch-depth: 0
 
@@ -89,7 +93,7 @@ jobs:
       # closed: any gh/API error aborts the run rather than proceeding feedback-less.
       - name: Collect reviewer feedback from the open README PR
         env:
-          GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           REPO: ${{ matrix.repo }}
         run: |
           set -euo pipefail
@@ -121,7 +125,7 @@ jobs:
       - name: Open pull request
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ secrets.ACCESS_TOKEN }}
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
           path: target
           branch: chore/update-readme
           delete-branch: true
