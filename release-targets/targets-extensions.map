@@ -23,4 +23,5 @@ bananapif3:::ENABLE_EXTENSIONS: "v4l2loopback-dkms"
 # vendor U-Boot chain; not for the mainline edge branch).
 # Requires the seeed-extension wrapper extension in armbian/build.
 recomputer-rk3576-devkit:vendor::ENABLE_EXTENSIONS="seeed-extension"
+recomputer-rk3576-module-devkit:vendor::ENABLE_EXTENSIONS="seeed-extension"
 recomputer-rk3588-devkit:vendor::ENABLE_EXTENSIONS="seeed-extension"
