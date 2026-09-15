@@ -18,3 +18,10 @@ khadas-vim4:::ENABLE_EXTENSIONS="image-output-oowow"
 uefi-x86:::ENABLE_EXTENSIONS="nvidia"
 musepipro:::ENABLE_EXTENSIONS: "v4l2loopback-dkms"
 bananapif3:::ENABLE_EXTENSIONS: "v4l2loopback-dkms"
+
+# Seeed boards: vendor-branch only (Seeed extension depends on the
+# vendor U-Boot chain; not for the mainline edge branch).
+# Requires the seeed-extension wrapper extension in armbian/build.
+recomputer-rk3576-devkit:vendor::ENABLE_EXTENSIONS="seeed-extension"
+recomputer-rk3576-module-devkit:vendor::ENABLE_EXTENSIONS="seeed-extension"
+recomputer-rk3588-devkit:vendor::ENABLE_EXTENSIONS="seeed-extension"
