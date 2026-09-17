@@ -502,6 +502,12 @@ def is_fast_hardware(entry):
     if board_family == 'imx93':
         return False
 
+    # MBa62xx (TI AM625/PowerVR AXE-1-16M): GNOME/Mutter's cross-GPU EGLImage
+    # sharing isn't supported, screen stays stuck on fbcon. XFCE works fine.
+    # Board-specific, not family-wide - MBa67xx (bigger GPU) has no issue.
+    if board == 'mba62xx-tqma62xx':
+        return False
+
     # Nexell S5P6818 (NanoPi M3 / NanoPC-T3+ / NanoPi Fire3) has a Mali-400
     # GPU that is GLES2-only — no OpenGL ES 3.0, which GNOME/mutter requires,
     # so the shell falls back to software rendering (and it is 1 GiB). Classify
