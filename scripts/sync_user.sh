@@ -108,6 +108,7 @@ CREATED=0
 KEYS_WRITTEN=0
 LOCKED=0
 DELETED=0
+UNCONFIRMED=0
 ERRORS=0
 
 # gh_get and friends return their results in globals on purpose: called as
@@ -136,7 +137,8 @@ Usage: ${0##*/} [OPTIONS]
   -c, --config FILE   config file to source (default: $CONFIG_FILE)
   -n, --dry-run       report what would be done, change nothing
   -y, --yes           prune without asking (for cron). Without a tty and
-                      without --yes prune candidates are only reported.
+                      without --yes prune candidates are only reported and
+                      the run ends with status 2.
       --delete        prune = "userdel --remove" instead of locking.
                       Removes all files of the user. CANNOT BE UNDONE.
       --max-prune N   refuse to prune more than N accounts (0 = unlimited)
@@ -144,7 +146,8 @@ Usage: ${0##*/} [OPTIONS]
   -h, --help          this text
 
 Token: environment variable GITHUB_TOKEN or the file configured as TOKEN_FILE.
-Exit codes: 0 ok, 1 fatal (nothing or not everything done), 2 finished with errors.
+Exit codes: 0 ok, 1 fatal (aborted, no account touched), 2 finished, but with
+            errors or with accounts left to prune.
 EOF
 }
 
@@ -162,6 +165,13 @@ valid_login() {
     [[ $1 =~ $LOGIN_RE && $1 == *[[:alpha:]]* ]]
 }
 
+# non-negative decimal integer, printed without leading zeros: bash arithmetic
+# would read "010" as octal 8 and choke on "08". Length cap keeps it in 64 bit.
+uint() {
+    [[ $1 =~ ^[0-9]{1,15}$ ]] || return 1
+    printf '%d' "$(( 10#$1 ))"
+}
+
 # run a command, or only show it in dry-run mode
 run() {
     local shown
@@ -174,15 +184,16 @@ run() {
     "$@"
 }
 
-# ask yes/no. Yes in dry-run and with --yes, no without a tty.
+# ask yes/no. 0 = yes (always in dry-run and with --yes), 1 = no,
+# 2 = nobody to ask, no tty.
 confirm() {
     local answer
     if (( DRY_RUN || ASSUME_YES )); then
         return 0
     fi
     if [[ ! -t 0 ]]; then
-        log "$1 -> skipped, no tty. Run with --yes to apply."
-        return 1
+        log "$1 -> skipped, no tty"
+        return 2
     fi
     read -r -n 1 -p "$1 [y/N] " answer
     echo
@@ -204,8 +215,7 @@ while (( $# )); do
         --delete)     DELETE=1 ;;
         --max-prune)
             [[ $# -ge 2 ]] || die "$1 needs an argument"
-            [[ $2 =~ ^[0-9]+$ ]] || die "--max-prune expects a number"
-            OPT_MAX_PRUNE=$2
+            OPT_MAX_PRUNE=$(uint "$2") || die "--max-prune expects a number"
             shift
             ;;
         -d|--debug)   DEBUG=1 ;;
@@ -239,8 +249,8 @@ KEYS_DIR=${KEYS_DIR%/}
 [[ $KEYS_DIR == /?* && $KEYS_DIR != *[[:space:]]* ]] || die "KEYS_DIR must be an absolute path below /"
 [[ $ORG =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ ]] || die "ORG is not a valid GitHub organization name"
 [[ $SFTPGROUP =~ ^[a-z_][a-z0-9_-]*$ ]] || die "SFTPGROUP is not a valid group name"
-[[ $MAX_PRUNE =~ ^[0-9]+$ ]] || die "MAX_PRUNE must be a number"
-[[ $TOKEN_WARN_DAYS =~ ^[0-9]+$ ]] || die "TOKEN_WARN_DAYS must be a number"
+MAX_PRUNE=$(uint "$MAX_PRUNE") || die "MAX_PRUNE must be a number"
+TOKEN_WARN_DAYS=$(uint "$TOKEN_WARN_DAYS") || die "TOKEN_WARN_DAYS must be a number"
 declare -A IN_BLOCK=()
 for u in "${BLOCKLIST[@]}"; do IN_BLOCK[$u]=1; done
 for u in "${KEEPLIST[@]}"; do
@@ -248,8 +258,7 @@ for u in "${KEEPLIST[@]}"; do
     [[ -z ${IN_BLOCK[$u]:-} ]] || die "$u is in BLOCKLIST and KEEPLIST"
 done
 if [[ -r /etc/login.defs ]]; then
-    v=$(awk '$1 == "UID_MIN" { print $2 }' /etc/login.defs)
-    [[ $v =~ ^[0-9]+$ ]] && UID_MIN=$v
+    v=$(uint "$(awk '$1 == "UID_MIN" { print $2 }' /etc/login.defs)") && UID_MIN=$v
 fi
 
 # token: environment first, file second. Never stored in the script.
@@ -379,10 +388,13 @@ fetch_org_members() {
     while :; do
         gh_get "https://api.github.com/orgs/$ORG/members?per_page=100&page=$page" || return 1
         GH_ERROR="unexpected response"
-        count=$(jq 'if type == "array" then length else error("unexpected response") end' <<<"$GH_BODY") || return 1
+        # every item must be a record with a string login, or nothing is trusted:
+        # a silently dropped member would end up as a prune candidate
+        count=$(jq 'if type == "array" and all(.[]; type == "object" and (.login | type) == "string")
+                    then length else error("member list is not an array of records with a string login") end' <<<"$GH_BODY") || return 1
         [[ $count =~ ^[0-9]+$ ]] || return 1
         (( count == 0 )) && break
-        logins=$(jq -r '.[] | objects | .login | strings' <<<"$GH_BODY") || return 1
+        logins=$(jq -r '.[].login' <<<"$GH_BODY") || return 1
         [[ -n $logins ]] && ORG_MEMBERS+=${logins}$'\n'
         (( count < 100 )) && break
         page=$((page + 1))
@@ -421,16 +433,20 @@ local_members() {
 
 # collect the user's public keys from GitHub into FETCHED_KEYS, validated,
 # one per line. Empty = no keys. Non-zero = fetch failed, reason in GH_ERROR.
-# "No keys" is only what GitHub says with an empty JSON array; an empty or
-# otherwise unexpected body is a failure, never a reason to drop keys.
+# "No keys" is only what GitHub says with an empty JSON array; an empty,
+# incomplete or otherwise unexpected body is a failure, never a reason to
+# drop keys.
 fetch_keys() {
     local count keys rc
     FETCHED_KEYS=
     gh_get "https://api.github.com/users/$1/keys" || return 1
     GH_ERROR="unexpected response"
-    count=$(jq 'if type == "array" then length else error("unexpected response") end' <<<"$GH_BODY") || return 1
+    # every item must be a record with a string key, or nothing is trusted:
+    # a silently dropped key would be removed from the account
+    count=$(jq 'if type == "array" and all(.[]; type == "object" and (.key | type) == "string")
+                then length else error("key list is not an array of records with a string key") end' <<<"$GH_BODY") || return 1
     [[ $count =~ ^[0-9]+$ ]] || return 1
-    keys=$(jq -r '.[] | objects | .key | strings' <<<"$GH_BODY") || return 1
+    keys=$(jq -r '.[].key' <<<"$GH_BODY") || return 1
     # line-wise validation: no options, no comments, nothing but "<type> <base64>"
     FETCHED_KEYS=$(grep -E "$KEY_RE" <<<"$keys")
     rc=$?
@@ -459,8 +475,7 @@ write_file() {
 # account expired? That is how this script locks users.
 is_expired() {
     local expire today
-    expire=$(getent shadow -- "$1" | cut -d: -f8)
-    [[ $expire =~ ^[0-9]+$ ]] || return 1
+    expire=$(uint "$(getent shadow -- "$1" | cut -d: -f8)") || return 1
     today=$(( $(date +%s) / 86400 ))
     (( expire <= today ))
 }
@@ -670,12 +685,17 @@ elif (( MAX_PRUNE > 0 && ${#CANDIDATES[@]} > MAX_PRUNE )); then
     err "verify the member list, then raise --max-prune if this is expected"
 else
     for u in "${CANDIDATES[@]}"; do
-        if confirm "$u: no longer member of \"$ORG\" or blocklisted. ${ACTION}?"; then
-            prune_user "$u"
-        else
-            log "$u: kept"
-        fi
+        confirm "$u: no longer member of \"$ORG\" or blocklisted. ${ACTION}?"
+        case $? in
+            0) prune_user "$u" ;;
+            1) log "$u: kept" ;;
+            *) UNCONFIRMED=$((UNCONFIRMED + 1)) ;;
+        esac
     done
+    # an operator saying no is a decision; nobody being asked is not
+    if (( UNCONFIRMED )); then
+        err "$UNCONFIRMED account(s) left to prune, run with --yes to apply"
+    fi
 fi
 
 log ""
