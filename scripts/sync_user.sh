@@ -6,10 +6,13 @@
 # GitHub profile gets a local account that is jailed via SFTPGROUP into the
 # chroot USERPATH and can only authenticate with those keys. No key on
 # GitHub, no account, no directory. Existing accounts whose keys disappear
-# from GitHub keep their files but cannot log in until a key is back.
+# from GitHub keep their files but cannot log in until a key is back. When
+# GitHub cannot be asked (network, rate limit, bad token) the current keys
+# stay as they are: the script fails open, never closed.
 # Members who left the organization (or got blocklisted) are locked; with
-# --delete they are removed together with their files. Accounts listed in
-# KEEPLIST are never pruned.
+# --delete they are removed together with their files. Logins listed in
+# KEEPLIST are treated like members no matter whether they are (still) in
+# the organization: account and keys are kept in sync, never pruned.
 #
 # Which local accounts belong to this script is decided by the account
 # database (members of SFTPGROUP), never by directory listings. Therefore
@@ -26,8 +29,9 @@
 # permission "Members: read". Concealed members are only returned when the
 # token owner is a member of the organization. Provide the token via the
 # environment variable GITHUB_TOKEN or in TOKEN_FILE (owned by root, mode 0600).
+# A token with an expiry date is reported TOKEN_WARN_DAYS before it expires.
 #
-# Requirements: bash >= 4.4, curl >= 7.55, jq, flock, shadow tools.
+# Requirements: bash >= 4.4, curl >= 7.71, jq, flock, shadow tools.
 #
 # sshd_config:
 #   Match Group sftponly
@@ -73,8 +77,12 @@ TOKEN_FILE=/etc/sync_users.token
 # GitHub logins that never get an account. Existing accounts get pruned.
 BLOCKLIST=(armbianworker)
 
-# local accounts (members of SFTPGROUP) that are never pruned
+# GitHub logins that get an account and key sync regardless of their
+# membership in ORG, and are never pruned. Must not overlap with BLOCKLIST.
 KEEPLIST=()
+
+# warn when the token expires in less than this many days. 0 = never.
+TOKEN_WARN_DAYS=14
 
 # refuse to prune when more than this many accounts qualify. 0 = unlimited.
 # Protects against a truncated or wrong member list wiping the server.
@@ -102,13 +110,24 @@ LOCKED=0
 DELETED=0
 ERRORS=0
 
+# gh_get and friends return their results in globals on purpose: called as
+# $(...) they would run in a subshell and lose RATE_LIMITED etc.
+GH_BODY=            # body of the last successful gh_get
+GH_ERROR=           # why the last gh_get failed, for messages
+RATE_LIMITED=0      # GitHub throttled us, further API calls are pointless
+TOKEN_CHECKED=0
+BODY_TMP=
+HEADERS_TMP=
+ORG_MEMBERS=        # fetch_org_members: logins, one per line
+FETCHED_KEYS=       # fetch_keys: validated key lines, one per line
+
 # GitHub login that is also a valid unix user name (shadow: max 32 chars).
 # valid_login() additionally requires a letter: all-digit names are looked
 # up as uid by getent/chown/install and could hit a foreign account.
 LOGIN_RE='^[A-Za-z0-9][A-Za-z0-9-]{0,31}$'
 UID_MIN=1000
 # public key types GitHub hands out: "<type> <base64>", no comment
-KEY_RE='^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)|sk-(ssh-ed25519|ecdsa-sha2-nistp256)@openssh\.com) [A-Za-z0-9+/]{32,}={0,2}$'
+KEY_RE='^(ssh-(rsa|ed25519)|ecdsa-sha2-nistp(256|384|521)|sk-(ssh-ed25519|ecdsa-sha2-nistp256)@openssh\.com) [A-Za-z0-9+/]{32,}={0,2}$'
 
 usage() {
     cat <<EOF
@@ -221,6 +240,13 @@ KEYS_DIR=${KEYS_DIR%/}
 [[ $ORG =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ ]] || die "ORG is not a valid GitHub organization name"
 [[ $SFTPGROUP =~ ^[a-z_][a-z0-9_-]*$ ]] || die "SFTPGROUP is not a valid group name"
 [[ $MAX_PRUNE =~ ^[0-9]+$ ]] || die "MAX_PRUNE must be a number"
+[[ $TOKEN_WARN_DAYS =~ ^[0-9]+$ ]] || die "TOKEN_WARN_DAYS must be a number"
+declare -A IN_BLOCK=()
+for u in "${BLOCKLIST[@]}"; do IN_BLOCK[$u]=1; done
+for u in "${KEEPLIST[@]}"; do
+    valid_login "$u" || die "KEEPLIST entry \"$(safe "$u")\" is not a valid GitHub login"
+    [[ -z ${IN_BLOCK[$u]:-} ]] || die "$u is in BLOCKLIST and KEEPLIST"
+done
 if [[ -r /etc/login.defs ]]; then
     v=$(awk '$1 == "UID_MIN" { print $2 }' /etc/login.defs)
     [[ $v =~ ^[0-9]+$ ]] && UID_MIN=$v
@@ -230,7 +256,9 @@ fi
 if [[ -n ${GITHUB_TOKEN:-} ]]; then
     TOKEN=$GITHUB_TOKEN
 elif [[ -r $TOKEN_FILE ]]; then
-    [[ $(stat -c %a "$TOKEN_FILE") =~ ^[0-7]?[0-7]00$ ]] || warn "$TOKEN_FILE is readable by others, chmod 0600 it"
+    [[ -L $TOKEN_FILE ]] && die "$TOKEN_FILE is a symlink"
+    [[ $(stat -c %u "$TOKEN_FILE") == 0 ]] || die "$TOKEN_FILE must be owned by root"
+    [[ $(stat -c %a "$TOKEN_FILE") =~ ^[0-7]?[0-7]00$ ]] || die "$TOKEN_FILE must not be accessible by group or other users"
     TOKEN=$(<"$TOKEN_FILE")
     TOKEN=${TOKEN//[[:space:]]/}
 else
@@ -281,34 +309,86 @@ else
 fi
 
 NOLOGIN_SHELL=$(command -v nologin || echo /bin/false)
+
+# body and response headers of the last API call go through root-only temp
+# files (umask 077). curl truncates the body file before a retry, stdout it
+# cannot. The token never touches a file here.
+BODY_TMP=$(mktemp) || die "cannot create temporary file"
+HEADERS_TMP=$(mktemp) || die "cannot create temporary file"
+trap 'rm -f -- "$BODY_TMP" "$HEADERS_TMP"' EXIT
 ### END CHECKS
 
 
 ### FUNCTIONS
 
-# GET a GitHub API URL. Prints the body. Fails on network errors and HTTP >= 400.
+# GET a GitHub API URL into GH_BODY. Fails on network errors and HTTP >= 400
+# and leaves the reason in GH_ERROR. Sets RATE_LIMITED when GitHub throttles us.
 # The token is passed via curl config on a pipe from the printf builtin, so it
 # never shows up in "ps" or in a temp file.
 gh_get() {
-    printf 'header = "Authorization: Bearer %s"\n' "$TOKEN" |
-    curl -sS -f -L --retry 2 --connect-timeout 10 --max-time 60 -K - \
-        -H "Accept: application/vnd.github+json" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        -- "$1"
+    local status rc msg
+    GH_BODY=
+    GH_ERROR=
+    status=$(printf 'header = "Authorization: Bearer %s"\n' "$TOKEN" |
+        curl -sS -L --retry 2 --connect-timeout 10 --max-time 60 -K - \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -D "$HEADERS_TMP" -o "$BODY_TMP" -w '%{http_code}' -- "$1")
+    rc=$?
+    if (( rc != 0 )); then
+        GH_ERROR="curl failed with exit code $rc"
+        return 1
+    fi
+    GH_BODY=$(<"$BODY_TMP")
+    if [[ $status != 2[0-9][0-9] ]]; then
+        msg=$(jq -r 'if type == "object" then .message // empty else empty end' <<<"$GH_BODY" 2>/dev/null)
+        GH_ERROR="HTTP $status${msg:+ $(safe "$msg")}"
+        if [[ ($status == 403 || $status == 429) && ${msg,,} == *"rate limit"* ]]; then
+            RATE_LIMITED=1
+        fi
+        GH_BODY=
+        return 1
+    fi
+    check_token_expiry
+    return 0
 }
 
-# print all member logins of ORG, one per line, following pagination
+# warn once when the token is about to expire. GitHub reports the expiry of
+# tokens that have one in a response header.
+check_token_expiry() {
+    local value expires now
+    (( TOKEN_CHECKED || TOKEN_WARN_DAYS == 0 )) && return 0
+    TOKEN_CHECKED=1
+    value=$(awk -F': ' 'tolower($1) == "github-authentication-token-expiration" { v = $2 } END { print v }' "$HEADERS_TMP" | tr -d '\r')
+    [[ -n $value ]] || return 0
+    expires=$(date -d "$value" +%s 2>/dev/null) || { debug "cannot parse token expiry \"$(safe "$value")\""; return 0; }
+    now=$(date +%s)
+    if (( expires - now < TOKEN_WARN_DAYS * 86400 )); then
+        warn "GitHub token expires $(safe "$value"), less than $TOKEN_WARN_DAYS days left. Replace it."
+    else
+        debug "token expires $(safe "$value")"
+    fi
+    return 0
+}
+
+# collect all member logins of ORG into ORG_MEMBERS, one per line, following
+# pagination. Non-zero = fetch failed, reason in GH_ERROR.
 fetch_org_members() {
-    local page=1 body count
+    local page=1 count logins
+    ORG_MEMBERS=
     while :; do
-        body=$(gh_get "https://api.github.com/orgs/$ORG/members?per_page=100&page=$page") || return 1
-        count=$(jq 'if type == "array" then length else error("unexpected response") end' <<<"$body") || return 1
+        gh_get "https://api.github.com/orgs/$ORG/members?per_page=100&page=$page" || return 1
+        GH_ERROR="unexpected response"
+        count=$(jq 'if type == "array" then length else error("unexpected response") end' <<<"$GH_BODY") || return 1
         [[ $count =~ ^[0-9]+$ ]] || return 1
         (( count == 0 )) && break
-        jq -r '.[] | objects | .login | strings' <<<"$body" || return 1
+        logins=$(jq -r '.[] | objects | .login | strings' <<<"$GH_BODY") || return 1
+        [[ -n $logins ]] && ORG_MEMBERS+=${logins}$'\n'
         (( count < 100 )) && break
         page=$((page + 1))
     done
+    ORG_MEMBERS=${ORG_MEMBERS%$'\n'}
+    GH_ERROR=
     return 0
 }
 
@@ -339,14 +419,30 @@ local_members() {
     return 0
 }
 
-# print the user's public keys from GitHub, validated, one per line.
-# Empty output = no keys. Non-zero = fetch failed.
+# collect the user's public keys from GitHub into FETCHED_KEYS, validated,
+# one per line. Empty = no keys. Non-zero = fetch failed, reason in GH_ERROR.
+# "No keys" is only what GitHub says with an empty JSON array; an empty or
+# otherwise unexpected body is a failure, never a reason to drop keys.
 fetch_keys() {
-    local body keys
-    body=$(gh_get "https://api.github.com/users/$1/keys") || return 1
-    keys=$(jq -r 'if type == "array" then .[] | objects | .key | strings else error("unexpected response") end' <<<"$body") || return 1
+    local count keys rc
+    FETCHED_KEYS=
+    gh_get "https://api.github.com/users/$1/keys" || return 1
+    GH_ERROR="unexpected response"
+    count=$(jq 'if type == "array" then length else error("unexpected response") end' <<<"$GH_BODY") || return 1
+    [[ $count =~ ^[0-9]+$ ]] || return 1
+    keys=$(jq -r '.[] | objects | .key | strings' <<<"$GH_BODY") || return 1
     # line-wise validation: no options, no comments, nothing but "<type> <base64>"
-    grep -E "$KEY_RE" <<<"$keys" || true
+    FETCHED_KEYS=$(grep -E "$KEY_RE" <<<"$keys")
+    rc=$?
+    if (( rc == 2 )); then
+        GH_ERROR="grep failed"
+        return 1
+    fi
+    if (( count > 0 )) && [[ -z $FETCHED_KEYS ]]; then
+        warn "$1: $count key(s) on GitHub, none of a supported type"
+    fi
+    GH_ERROR=
+    return 0
 }
 
 # atomically write $2 into root-owned file $1, mode 0644
@@ -416,12 +512,12 @@ install_keys() {
 
 # refresh keys of an existing account. Fetch failure keeps current keys.
 sync_keys() {
-    local u=$1 keys
-    if ! keys=$(fetch_keys "$u"); then
-        err "$u: fetching keys from GitHub failed, keeping current keys"
+    local u=$1
+    if ! fetch_keys "$u"; then
+        err "$u: fetching keys from GitHub failed ($GH_ERROR), keeping current keys"
         return 1
     fi
-    install_keys "$u" "$keys"
+    install_keys "$u" "$FETCHED_KEYS"
 }
 
 # create account, but only for members that have a usable key on GitHub:
@@ -432,10 +528,11 @@ create_user() {
         err "$u: account exists but is not in group $SFTPGROUP, not touching it"
         return 1
     fi
-    if ! keys=$(fetch_keys "$u"); then
-        err "$u: fetching keys from GitHub failed, account not created"
+    if ! fetch_keys "$u"; then
+        err "$u: fetching keys from GitHub failed ($GH_ERROR), account not created"
         return 1
     fi
+    keys=$FETCHED_KEYS
     if [[ -z $keys ]]; then
         log "$u: no usable SSH key on GitHub, no account"
         return 0
@@ -451,7 +548,7 @@ create_user() {
 update_user() {
     local u=$1
     if is_expired "$u"; then
-        log "$u: back in \"$ORG\", re-enabling account"
+        log "$u: wanted again, re-enabling account"
         run usermod -e '' -- "$u" || { err "$u: usermod failed"; return 1; }
     fi
     ensure_home "$u" || return 1
@@ -490,16 +587,15 @@ prune_user() {
 
 # remote state
 log "fetching members of \"$ORG\""
-ORG_MEMBERS=$(fetch_org_members) || die "could not fetch the member list of \"$ORG\" (token, permissions, network?)"
+fetch_org_members || die "could not fetch the member list of \"$ORG\": $GH_ERROR"
 [[ -n $ORG_MEMBERS ]] || die "member list of \"$ORG\" is empty, refusing to continue"
 mapfile -t ORG_LIST <<<"$ORG_MEMBERS"
 debug "org members: ${ORG_LIST[*]}"
 
-declare -A IN_ORG=() IN_BLOCK=() IN_KEEP=() IS_LOCAL=()
-for u in "${BLOCKLIST[@]}"; do IN_BLOCK[$u]=1; done
-for u in "${KEEPLIST[@]}";  do IN_KEEP[$u]=1;  done
+declare -A IS_WANTED=() IS_LOCAL=()
 
-# wanted = org members that are neither unusable as user name nor blocklisted.
+# wanted = org members that are neither unusable as user name nor blocklisted,
+# plus the keeplist regardless of membership.
 # Logins are untrusted input: validate before they are used anywhere,
 # including as array subscripts.
 WANTED=()
@@ -512,10 +608,16 @@ for u in "${ORG_LIST[@]}"; do
         debug "$u: blocklisted"
         continue
     fi
-    IN_ORG[$u]=1
+    IS_WANTED[$u]=1
     WANTED+=("$u")
 done
-log "${#ORG_LIST[@]} members, ${#WANTED[@]} wanted after blocklist (${BLOCKLIST[*]:-none})"
+for u in "${KEEPLIST[@]}"; do
+    [[ -n ${IS_WANTED[$u]:-} ]] && continue
+    debug "$u: keeplisted, wanted regardless of membership"
+    IS_WANTED[$u]=1
+    WANTED+=("$u")
+done
+log "${#ORG_LIST[@]} members, ${#WANTED[@]} wanted after blocklist (${BLOCKLIST[*]:-none}) and keeplist (${KEEPLIST[*]:-none})"
 
 # local state
 LOCAL_MEMBERS=$(local_members) || die "cannot read members of group \"$SFTPGROUP\""
@@ -528,7 +630,12 @@ debug "local accounts: ${LOCAL_LIST[*]}"
 # create or refresh
 log ""
 log "syncing accounts and keys"
-for u in "${WANTED[@]}"; do
+for (( i = 0; i < ${#WANTED[@]}; i++ )); do
+    u=${WANTED[i]}
+    if (( RATE_LIMITED )); then
+        err "GitHub rate limit hit, not synced this run: ${WANTED[*]:i}"
+        break
+    fi
     if [[ -n ${IS_LOCAL[$u]:-} ]]; then
         update_user "$u"
     else
@@ -541,11 +648,7 @@ log ""
 log "checking for accounts to prune"
 CANDIDATES=()
 for u in "${LOCAL_LIST[@]}"; do
-    [[ -n ${IN_ORG[$u]:-} ]] && continue
-    if [[ -n ${IN_KEEP[$u]:-} ]]; then
-        debug "$u: keeplisted"
-        continue
-    fi
+    [[ -n ${IS_WANTED[$u]:-} ]] && continue
     if (( ! DELETE )) && is_expired "$u" && [[ ! -e $KEYS_DIR/$u ]]; then
         debug "$u: already locked"
         continue
