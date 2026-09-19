@@ -46,7 +46,8 @@
 # nginx: serve USERPATH read-only, deny dotfiles:
 #   location ~ /\. { deny all; }
 #
-# Cron example: 17 * * * * root /usr/local/sbin/sync_users.sh --yes
+# Cron example: 17 * * * * root /usr/local/sbin/sync_users.sh --yes --syslog
+# Read the log with: journalctl -t sync_users  (or grep sync_users /var/log/syslog)
 
 set -u -o pipefail
 # No "set -e": every failure is handled explicitly so that one broken member
@@ -101,6 +102,7 @@ DRY_RUN=0
 ASSUME_YES=0
 DELETE=0
 DEBUG=0
+SYSLOG=0
 OPT_MAX_PRUNE=
 CONFIG_EXPLICIT=0
 
@@ -142,6 +144,8 @@ Usage: ${0##*/} [OPTIONS]
       --delete        prune = "userdel --remove" instead of locking.
                       Removes all files of the user. CANNOT BE UNDONE.
       --max-prune N   refuse to prune more than N accounts (0 = unlimited)
+  -s, --syslog        send all output to syslog (tag "sync_users") instead of
+                      stdout/stderr. For cron on hosts without an MTA.
   -d, --debug         verbose output
   -h, --help          this text
 
@@ -218,12 +222,20 @@ while (( $# )); do
             OPT_MAX_PRUNE=$(uint "$2") || die "--max-prune expects a number"
             shift
             ;;
+        -s|--syslog)  SYSLOG=1 ;;
         -d|--debug)   DEBUG=1 ;;
         -h|--help)    usage; exit 0 ;;
         *)            usage >&2; die "unknown option: $1" ;;
     esac
     shift
 done
+
+# cron has no terminal and often no MTA to mail output to: log to syslog.
+# One stream for stdout and stderr keeps the lines in order.
+if (( SYSLOG )); then
+    command -v logger >/dev/null 2>&1 || die "\"logger\" not found"
+    exec > >(logger -t sync_users) 2>&1
+fi
 
 
 ### CHECKS
