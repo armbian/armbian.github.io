@@ -1,0 +1,3726 @@
+{
+  "schema": "armbian/board-performance/v1",
+  "source": "https://github.com/armbian/autotests",
+  "run_url_template": "https://github.com/armbian/autotests/actions/runs/{run_id}",
+  "generated": "2026-09-19T14:26:13Z",
+  "boards_total": 59,
+  "boards_skipped_no_passing_run": [
+    "nanopi-r2s",
+    "orangepi3"
+  ],
+  "boards_skipped_no_measurements": [
+    "bigtreetech-cb1"
+  ],
+  "boards": [
+    {
+      "board_slug": "arduino-uno-q",
+      "device": "Arduino UNO Q 01",
+      "last_good_test": "2026-09-19T14:25:32Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35448283954",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "7.1.8-edge-qrb2210",
+      "cpu": {
+        "max_mhz": 2016,
+        "aes_MBs": 940,
+        "temp_C": 40.6,
+        "governor": "schedutil",
+        "min_mhz": 300,
+        "peak_mhz": 2016,
+        "tested": "2026-09-19T14:25:32Z",
+        "run_id": "35448283954"
+      },
+      "memory": {
+        "copy_MBs": 5100,
+        "tested": "2026-09-19T14:25:32Z",
+        "run_id": "35448283954"
+      },
+      "storage": {
+        "read_MBs": 258,
+        "write_MBs": 188,
+        "tested": "2026-09-19T14:25:32Z",
+        "run_id": "35448283954"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "usb0",
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 27,
+            "down_mbits": 20,
+            "wifi_chip": "Qualcomm WCN3990",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-19T14:25:32Z",
+        "run_id": "35448283954"
+      },
+      "summary": {
+        "cpu_mhz": 2016,
+        "cpu_aes_MBs": 940,
+        "ethernet_mbits": 0,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 27,
+        "wifi_chip": "Qualcomm WCN3990"
+      }
+    },
+    {
+      "board_slug": "bananapicm4io",
+      "device": "Banana Pi CM4IO 01",
+      "last_good_test": "2026-09-18T08:53:07Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.8.3",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1512,
+        "aes_MBs": 852,
+        "temp_C": 50.8,
+        "governor": "ondemand",
+        "min_mhz": 1000,
+        "peak_mhz": 1512,
+        "tested": "2026-09-18T08:53:07Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3900,
+        "tested": "2026-09-18T08:53:07Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 151,
+        "write_MBs": 40,
+        "tested": "2026-09-18T08:53:07Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 936,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 43,
+            "down_mbits": 36,
+            "wifi_chip": "Realtek RTL8822CS",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          },
+          {
+            "interface": "wlx00e032c00694",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 4,
+            "down_mbits": 49,
+            "wifi_chip": "Realtek RTL8821CU",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-08-29T04:58:07Z",
+        "run_id": "33234800518"
+      },
+      "summary": {
+        "cpu_mhz": 1512,
+        "cpu_aes_MBs": 852,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 43,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Realtek RTL8822CS"
+      }
+    },
+    {
+      "board_slug": "bananapif3",
+      "device": "BananaPi BPI-F3 01",
+      "last_good_test": "2026-09-18T07:53:55Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-spacemit",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 30,
+        "temp_C": 60.0,
+        "governor": "performance",
+        "min_mhz": 614,
+        "peak_mhz": 1800,
+        "tested": "2026-09-18T07:53:55Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3400,
+        "tested": "2026-09-18T07:53:55Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 82,
+        "write_MBs": 59,
+        "tested": "2026-09-18T07:53:55Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 919,
+            "down_mbits": 666,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 215,
+            "down_mbits": 227,
+            "wifi_chip": "Realtek RTL8852BS",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          },
+          {
+            "interface": "wlan1",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 69,
+            "down_mbits": 88,
+            "wifi_chip": "Realtek RTL8822BU",
+            "wifi_attach": "USB",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:53:55Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 30,
+        "ethernet_mbits": 919,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 227,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Realtek RTL8852BS"
+      }
+    },
+    {
+      "board_slug": "bananapim2pro",
+      "device": "Banana Pi M2Pro 01",
+      "last_good_test": "2026-09-17T12:31:44Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35220865583",
+      "image_version": "26.11.0-trunk.44",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 2100,
+        "aes_MBs": 980,
+        "temp_C": 48.5,
+        "governor": "ondemand",
+        "min_mhz": 1000,
+        "peak_mhz": 2100,
+        "tested": "2026-09-17T12:31:44Z",
+        "run_id": "35220865583"
+      },
+      "memory": {
+        "copy_MBs": 5200,
+        "tested": "2026-09-17T12:31:44Z",
+        "run_id": "35220865583"
+      },
+      "storage": {
+        "read_MBs": 15,
+        "write_MBs": 12,
+        "tested": "2026-09-17T12:31:44Z",
+        "run_id": "35220865583"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 765,
+            "down_mbits": 585,
+            "wireless": false
+          },
+          {
+            "interface": "wlx60fb00480eb0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 151,
+            "down_mbits": 105,
+            "wifi_chip": "Realtek RTL8821CU",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-17T12:31:44Z",
+        "run_id": "35220865583"
+      },
+      "summary": {
+        "cpu_mhz": 2100,
+        "cpu_aes_MBs": 980,
+        "ethernet_mbits": 765,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "bananapim2ultra",
+      "device": "Banana Pi M2 Ultra 01",
+      "last_good_test": "2026-08-11T14:38:14Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/31500992869",
+      "image_version": "26.8.0-trunk.314",
+      "kernel": "6.12.93-legacy-sunxi",
+      "cpu": {
+        "max_mhz": 1200,
+        "aes_MBs": 23,
+        "temp_C": 56.4,
+        "governor": "ondemand",
+        "min_mhz": 720,
+        "peak_mhz": 1200,
+        "tested": "2026-08-11T14:38:14Z",
+        "run_id": "31500992869"
+      },
+      "memory": {
+        "copy_MBs": 2100,
+        "tested": "2026-08-11T14:38:14Z",
+        "run_id": "31500992869"
+      },
+      "storage": {
+        "read_MBs": 76,
+        "write_MBs": 13,
+        "tested": "2026-08-11T14:38:14Z",
+        "run_id": "31500992869"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 823,
+            "down_mbits": 938,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 19,
+            "down_mbits": 7,
+            "wifi_chip": "Broadcom (brcmfmac)",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-08-11T14:38:14Z",
+        "run_id": "31500992869"
+      },
+      "summary": {
+        "cpu_mhz": 1200,
+        "cpu_aes_MBs": 23,
+        "ethernet_mbits": 938,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 19,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom (brcmfmac)"
+      }
+    },
+    {
+      "board_slug": "bananapim5",
+      "device": "Banana Pi M5 01",
+      "last_good_test": "2026-09-18T07:58:36Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 2100,
+        "aes_MBs": 975,
+        "temp_C": 57.2,
+        "governor": "ondemand",
+        "min_mhz": 1000,
+        "peak_mhz": 2100,
+        "tested": "2026-09-18T07:58:36Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 5200,
+        "tested": "2026-09-18T07:58:36Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 15,
+        "write_MBs": 10,
+        "tested": "2026-09-18T07:58:36Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 940,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlx000f13960190",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 2,
+            "down_mbits": 11,
+            "wifi_chip": "Realtek RTL8192CU",
+            "wifi_attach": "USB",
+            "channel_mhz": 2412,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-17T12:40:24Z",
+        "run_id": "35220865583"
+      },
+      "summary": {
+        "cpu_mhz": 2100,
+        "cpu_aes_MBs": 975,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "bananapim7",
+      "device": "Banana Pi M7 01",
+      "last_good_test": "2026-09-18T07:49:26Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1262,
+        "temp_C": 55.5,
+        "governor": "ondemand",
+        "min_mhz": 1800,
+        "peak_mhz": 2256,
+        "tested": "2026-09-18T07:49:26Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 15200,
+        "tested": "2026-09-18T07:49:26Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 1253,
+        "write_MBs": 963,
+        "tested": "2026-09-18T07:49:26Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enP2p33s0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 940,
+            "down_mbits": 941,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:49:26Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 4.1,
+        "avg": 5.84,
+        "max": 10.3,
+        "samples": 174,
+        "tested": "2026-09-18T07:49:26Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1262,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "power_min_w": 4.1,
+        "power_max_w": 10.3
+      }
+    },
+    {
+      "board_slug": "bananapir3mini",
+      "device": "Banana Pi R3 Mini 01",
+      "last_good_test": "2026-09-18T07:50:23Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk",
+      "kernel": "6.18.52-current-filogic-mt7986",
+      "cpu": {
+        "aes_MBs": 935,
+        "temp_C": 61.2,
+        "tested": "2026-09-18T07:50:23Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3200,
+        "tested": "2026-09-18T07:50:23Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 91,
+        "write_MBs": 76,
+        "tested": "2026-09-18T07:50:23Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 939,
+            "down_mbits": 899,
+            "wireless": false
+          },
+          {
+            "interface": "eth1",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 743,
+            "down_mbits": 752,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 16,
+            "down_mbits": 19,
+            "wifi_chip": "MediaTek (mt798x-wmac)",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          },
+          {
+            "interface": "wlan1",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 266,
+            "down_mbits": 237,
+            "wifi_chip": "MediaTek (mt798x-wmac)",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 160,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:50:23Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 3.1,
+        "avg": 5.96,
+        "max": 10.1,
+        "samples": 238,
+        "tested": "2026-09-18T07:50:23Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_aes_MBs": 935,
+        "ethernet_mbits": 939,
+        "ethernet_interfaces": 2,
+        "wifi_mbits": 266,
+        "wifi_chip": "MediaTek (mt798x-wmac)",
+        "power_min_w": 3.1,
+        "power_max_w": 10.1
+      }
+    },
+    {
+      "board_slug": "clearfogpro",
+      "device": "Clearfog Pro 01",
+      "last_good_test": "2026-09-18T07:52:07Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.6.151-current-mvebu",
+      "cpu": {
+        "aes_MBs": 43,
+        "temp_C": 64.2,
+        "tested": "2026-09-18T07:52:07Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3800,
+        "tested": "2026-09-18T07:52:07Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 20,
+        "tested": "2026-09-18T07:52:07Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "lan2",
+            "up_mbits": 936,
+            "down_mbits": 936,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:52:07Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_aes_MBs": 43,
+        "ethernet_mbits": 936,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "cubietruck",
+      "device": "Cubietruck 01",
+      "last_good_test": "2026-09-18T07:58:50Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-sunxi",
+      "cpu": {
+        "max_mhz": 960,
+        "aes_MBs": 19,
+        "temp_C": 48.6,
+        "governor": "ondemand",
+        "min_mhz": 528,
+        "peak_mhz": 960,
+        "tested": "2026-09-18T07:58:50Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 1700,
+        "tested": "2026-09-18T07:58:50Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 22,
+        "write_MBs": 17,
+        "tested": "2026-09-18T07:58:50Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 729,
+            "down_mbits": 881,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 19,
+            "down_mbits": 21,
+            "wifi_chip": "Broadcom BCM43362",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:58:50Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 960,
+        "cpu_aes_MBs": 19,
+        "ethernet_mbits": 881,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 21,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43362"
+      }
+    },
+    {
+      "board_slug": "espressobin",
+      "device": "Espressobin 01",
+      "last_good_test": "2026-09-18T07:47:17Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.8.3",
+      "kernel": "6.18.44-current-mvebu64",
+      "cpu": {
+        "max_mhz": 800,
+        "aes_MBs": 371,
+        "governor": "ondemand",
+        "min_mhz": 200,
+        "peak_mhz": 800,
+        "tested": "2026-09-18T07:47:17Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 2000,
+        "tested": "2026-09-18T07:47:17Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 142,
+        "write_MBs": 14,
+        "tested": "2026-09-18T07:47:17Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "lan0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 936,
+            "down_mbits": 745,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:47:17Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 800,
+        "cpu_aes_MBs": 371,
+        "ethernet_mbits": 936,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "helios4",
+      "device": "Helios4 01",
+      "last_good_test": "2026-09-19T14:24:18Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35448242942",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.6.151-current-mvebu",
+      "cpu": {
+        "aes_MBs": 43,
+        "temp_C": 52.7,
+        "tested": "2026-09-19T14:24:18Z",
+        "run_id": "35448242942"
+      },
+      "memory": {
+        "copy_MBs": 3800,
+        "tested": "2026-09-19T14:24:18Z",
+        "run_id": "35448242942"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 20,
+        "tested": "2026-09-19T14:24:18Z",
+        "run_id": "35448242942"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end1",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 939,
+            "down_mbits": 939,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-19T14:24:18Z",
+        "run_id": "35448242942"
+      },
+      "summary": {
+        "cpu_aes_MBs": 43,
+        "ethernet_mbits": 939,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "inovato-quadra",
+      "device": "Inovato Quadra 01",
+      "last_good_test": "2026-06-26T06:03:21Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/28219975764",
+      "image_version": "26.8.0-trunk.229",
+      "kernel": "6.18.33-current-sunxi64",
+      "cpu": {
+        "max_mhz": 1704,
+        "aes_MBs": 795,
+        "temp_C": 61.5,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1704,
+        "tested": "2026-06-26T06:03:21Z",
+        "run_id": "28219975764"
+      },
+      "memory": {
+        "copy_MBs": 3300,
+        "tested": "2026-06-26T06:03:21Z",
+        "run_id": "28219975764"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 21,
+        "tested": "2026-06-26T06:03:21Z",
+        "run_id": "28219975764"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "100BASE-TX (10/100ME)",
+            "up_mbits": 94,
+            "down_mbits": 94,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-06-26T06:03:21Z",
+        "run_id": "28219975764"
+      },
+      "summary": {
+        "cpu_mhz": 1704,
+        "cpu_aes_MBs": 795,
+        "ethernet_mbits": 94,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "k3picoitx",
+      "device": "SpacemiT K3 Pico-ITX 01",
+      "last_good_test": "2026-09-18T07:25:51Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.3-legacy-spacemit-k3",
+      "cpu": {
+        "max_mhz": 2150,
+        "aes_MBs": 778,
+        "temp_C": 43.0,
+        "governor": "performance",
+        "min_mhz": 614,
+        "peak_mhz": 2150,
+        "tested": "2026-09-18T07:25:51Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 12800,
+        "tested": "2026-09-18T07:25:51Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 1454,
+        "write_MBs": 1328,
+        "tested": "2026-09-18T07:25:51Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 937,
+            "down_mbits": 942,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 27,
+            "down_mbits": 149,
+            "wifi_chip": "Realtek RTL8852BE",
+            "wifi_attach": "PCIe",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:25:51Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 13.4,
+        "avg": 14.4,
+        "max": 22.4,
+        "samples": 148,
+        "tested": "2026-08-29T19:35:37Z",
+        "run_id": "33270498615"
+      },
+      "summary": {
+        "cpu_mhz": 2150,
+        "cpu_aes_MBs": 778,
+        "ethernet_mbits": 942,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 149,
+        "wifi_attach": "PCIe",
+        "wifi_chip": "Realtek RTL8852BE",
+        "power_min_w": 13.4,
+        "power_max_w": 22.4
+      }
+    },
+    {
+      "board_slug": "khadas-vim1",
+      "device": "Khadas VIM1 01",
+      "last_good_test": "2026-06-26T07:17:51Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/28219975764",
+      "image_version": "26.8.0-trunk.236",
+      "kernel": "6.18.34-current-meson64",
+      "cpu": {
+        "max_mhz": 1512,
+        "aes_MBs": 658,
+        "temp_C": 55.0,
+        "governor": "ondemand",
+        "min_mhz": 500,
+        "peak_mhz": 1512,
+        "tested": "2026-06-26T07:17:51Z",
+        "run_id": "28219975764"
+      },
+      "memory": {
+        "copy_MBs": 3500,
+        "tested": "2026-06-26T07:17:51Z",
+        "run_id": "28219975764"
+      },
+      "storage": {
+        "read_MBs": 151,
+        "write_MBs": 43,
+        "tested": "2026-06-26T07:17:51Z",
+        "run_id": "28219975764"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "100BASE-TX (10/100ME)",
+            "up_mbits": 94,
+            "down_mbits": 94,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 35,
+            "down_mbits": 35,
+            "wifi_chip": "Broadcom (brcmfmac)",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-06-24T06:27:11Z",
+        "run_id": "28077954321"
+      },
+      "summary": {
+        "cpu_mhz": 1512,
+        "cpu_aes_MBs": 658,
+        "ethernet_mbits": 94,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 35,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom (brcmfmac)"
+      }
+    },
+    {
+      "board_slug": "khadas-vim2",
+      "device": "Khadas VIM2 01",
+      "last_good_test": "2026-08-29T19:29:08Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33270498615",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1512,
+        "aes_MBs": 652,
+        "temp_C": 56.0,
+        "governor": "ondemand",
+        "min_mhz": 500,
+        "peak_mhz": 1512,
+        "tested": "2026-08-29T19:29:08Z",
+        "run_id": "33270498615"
+      },
+      "memory": {
+        "copy_MBs": 3600,
+        "tested": "2026-08-29T19:29:08Z",
+        "run_id": "33270498615"
+      },
+      "storage": {
+        "read_MBs": 149,
+        "write_MBs": 42,
+        "tested": "2026-08-29T19:29:08Z",
+        "run_id": "33270498615"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 904,
+            "down_mbits": 847,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 106,
+            "down_mbits": 102,
+            "wifi_chip": "Broadcom (brcmfmac)",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 40,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-08-29T19:29:08Z",
+        "run_id": "33270498615"
+      },
+      "summary": {
+        "cpu_mhz": 1512,
+        "cpu_aes_MBs": 652,
+        "ethernet_mbits": 904,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 106,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom (brcmfmac)"
+      }
+    },
+    {
+      "board_slug": "khadas-vim3",
+      "device": "Khadas VIM3 01",
+      "last_good_test": "2026-09-03T15:55:55Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33774465704",
+      "image_version": "26.8.3",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1512,
+        "aes_MBs": 852,
+        "temp_C": 45.2,
+        "governor": "ondemand",
+        "min_mhz": 1000,
+        "peak_mhz": 1512,
+        "tested": "2026-09-03T15:55:55Z",
+        "run_id": "33774465704"
+      },
+      "memory": {
+        "copy_MBs": 3900,
+        "tested": "2026-09-03T15:55:55Z",
+        "run_id": "33774465704"
+      },
+      "storage": {
+        "read_MBs": 22,
+        "write_MBs": 12,
+        "tested": "2026-09-03T15:55:55Z",
+        "run_id": "33774465704"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 940,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 40,
+            "down_mbits": 39,
+            "wifi_chip": "Broadcom BCM4359",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-03T15:55:55Z",
+        "run_id": "33774465704"
+      },
+      "summary": {
+        "cpu_mhz": 1512,
+        "cpu_aes_MBs": 852,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 40,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM4359"
+      }
+    },
+    {
+      "board_slug": "khadas-vim4",
+      "device": "Khadas VIM4 01",
+      "last_good_test": "2026-09-18T07:53:24Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "5.15.137-legacy-meson-s4t7",
+      "cpu": {
+        "max_mhz": 2208,
+        "aes_MBs": 1253,
+        "temp_C": 47.6,
+        "governor": "ondemand",
+        "min_mhz": 500,
+        "peak_mhz": 2208,
+        "tested": "2026-09-18T07:53:24Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 6900,
+        "tested": "2026-09-18T07:53:24Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 155,
+        "write_MBs": 99,
+        "tested": "2026-09-18T07:53:24Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 845,
+            "down_mbits": 751,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 144,
+            "down_mbits": 63,
+            "wifi_chip": "Broadcom BCM43752",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          },
+          {
+            "interface": "wlan1",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 120,
+            "down_mbits": 55,
+            "wifi_chip": "Broadcom BCM43752",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:53:24Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.7,
+        "avg": 3.87,
+        "max": 8.3,
+        "samples": 381,
+        "tested": "2026-09-18T07:53:24Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 2208,
+        "cpu_aes_MBs": 1253,
+        "ethernet_mbits": 845,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 144,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43752",
+        "power_min_w": 1.7,
+        "power_max_w": 8.3
+      }
+    },
+    {
+      "board_slug": "lepotato",
+      "device": "Le potato 01",
+      "last_good_test": "2026-08-29T19:28:26Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33270498615",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1512,
+        "aes_MBs": 656,
+        "temp_C": 50.0,
+        "governor": "ondemand",
+        "min_mhz": 500,
+        "peak_mhz": 1512,
+        "tested": "2026-08-29T19:28:26Z",
+        "run_id": "33270498615"
+      },
+      "memory": {
+        "copy_MBs": 3600,
+        "tested": "2026-08-29T19:28:26Z",
+        "run_id": "33270498615"
+      },
+      "storage": {
+        "read_MBs": 2,
+        "write_MBs": 17,
+        "tested": "2026-08-29T19:28:26Z",
+        "run_id": "33270498615"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "100BASE-TX (10/100ME)",
+            "up_mbits": 94,
+            "down_mbits": 94,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-08-29T19:28:26Z",
+        "run_id": "33270498615"
+      },
+      "summary": {
+        "cpu_mhz": 1512,
+        "cpu_aes_MBs": 656,
+        "ethernet_mbits": 94,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "mekotronics-r58hd",
+      "device": "Mekotronics R58HD 01",
+      "last_good_test": "2026-09-18T07:50:02Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1292,
+        "temp_C": 50.8,
+        "governor": "ondemand",
+        "min_mhz": 1800,
+        "peak_mhz": 2304,
+        "tested": "2026-09-18T07:50:02Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 14000,
+        "tested": "2026-09-18T07:50:02Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 290,
+        "write_MBs": 250,
+        "tested": "2026-09-18T07:50:02Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enP3p49s0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 933,
+            "down_mbits": 933,
+            "wireless": false
+          },
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 826,
+            "down_mbits": 522,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:50:02Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 3.5,
+        "avg": 6.0,
+        "max": 12.2,
+        "samples": 223,
+        "tested": "2026-09-18T07:50:02Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1292,
+        "ethernet_mbits": 933,
+        "ethernet_interfaces": 2,
+        "power_min_w": 3.5,
+        "power_max_w": 12.2
+      }
+    },
+    {
+      "board_slug": "mekotronics-r58s2",
+      "device": "Mekotronics R58S2 01",
+      "last_good_test": "2026-09-16T18:23:26Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35133587341",
+      "image_version": "26.8.3",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1282,
+        "temp_C": 42.5,
+        "governor": "ondemand",
+        "min_mhz": 1800,
+        "peak_mhz": 2256,
+        "tested": "2026-09-16T18:23:26Z",
+        "run_id": "35133587341"
+      },
+      "memory": {
+        "copy_MBs": 14000,
+        "tested": "2026-09-16T18:23:26Z",
+        "run_id": "35133587341"
+      },
+      "storage": {
+        "read_MBs": 273,
+        "write_MBs": 224,
+        "tested": "2026-09-16T18:23:26Z",
+        "run_id": "35133587341"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end1",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 619,
+            "down_mbits": 870,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 59,
+            "down_mbits": 156,
+            "wifi_chip": "Broadcom BCM43456",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-16T18:23:26Z",
+        "run_id": "35133587341"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1282,
+        "ethernet_mbits": 870,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 156,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43456"
+      }
+    },
+    {
+      "board_slug": "nanopi-m5",
+      "device": "NanoPi M5 01",
+      "last_good_test": "2026-09-18T07:53:00Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 2016,
+        "aes_MBs": 1269,
+        "temp_C": 44.4,
+        "governor": "ondemand",
+        "min_mhz": 2016,
+        "peak_mhz": 2208,
+        "tested": "2026-09-18T07:53:00Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 8000,
+        "tested": "2026-09-18T07:53:00Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 77,
+        "write_MBs": 64,
+        "tested": "2026-09-18T07:53:00Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 554,
+            "down_mbits": 423,
+            "wireless": false
+          },
+          {
+            "interface": "end1",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 845,
+            "down_mbits": 764,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 31,
+            "down_mbits": 80,
+            "wifi_chip": "Realtek RTL8822CS",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          },
+          {
+            "interface": "wlx44334c47dec3",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 34,
+            "down_mbits": 12,
+            "wifi_chip": "Ralink RT2870/RT3070",
+            "wifi_attach": "USB",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:53:00Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 0.6,
+        "avg": 4.71,
+        "max": 8.2,
+        "samples": 369,
+        "tested": "2026-09-18T07:53:00Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 2016,
+        "cpu_aes_MBs": 1269,
+        "ethernet_mbits": 845,
+        "ethernet_interfaces": 2,
+        "wifi_mbits": 80,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Realtek RTL8822CS",
+        "power_min_w": 0.6,
+        "power_max_w": 8.2
+      }
+    },
+    {
+      "board_slug": "nanopi-m6",
+      "device": "NanoPi M6 01",
+      "last_good_test": "2026-09-17T12:33:35Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35220865583",
+      "image_version": "26.8.3",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1203,
+        "temp_C": 50.8,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 2400,
+        "tested": "2026-09-17T12:33:35Z",
+        "run_id": "35220865583"
+      },
+      "memory": {
+        "copy_MBs": 10200,
+        "tested": "2026-09-17T12:33:35Z",
+        "run_id": "35220865583"
+      },
+      "storage": {
+        "read_MBs": 57,
+        "write_MBs": 14,
+        "tested": "2026-09-17T12:33:35Z",
+        "run_id": "35220865583"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "lan",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 939,
+            "down_mbits": 939,
+            "wireless": false
+          },
+          {
+            "interface": "wlP3p49s0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 197,
+            "down_mbits": 233,
+            "wifi_chip": "Realtek RTL8822CE",
+            "wifi_attach": "PCIe",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-17T12:33:35Z",
+        "run_id": "35220865583"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.1,
+        "avg": 4.28,
+        "max": 10.2,
+        "samples": 410,
+        "tested": "2026-09-17T12:33:35Z",
+        "run_id": "35220865583"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1203,
+        "ethernet_mbits": 939,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 233,
+        "wifi_attach": "PCIe",
+        "wifi_chip": "Realtek RTL8822CE",
+        "power_min_w": 1.1,
+        "power_max_w": 10.2
+      }
+    },
+    {
+      "board_slug": "nanopi-r6s",
+      "device": "NanoPi R6S 01",
+      "last_good_test": "2026-09-18T07:14:41Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1281,
+        "temp_C": 34.2,
+        "governor": "ondemand",
+        "min_mhz": 1800,
+        "peak_mhz": 2256,
+        "tested": "2026-09-18T07:14:41Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 15400,
+        "tested": "2026-09-18T07:14:41Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 274,
+        "write_MBs": 207,
+        "tested": "2026-09-18T07:14:41Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "lan2",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 937,
+            "down_mbits": 918,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:14:41Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 0.7,
+        "avg": 4.01,
+        "max": 9.3,
+        "samples": 178,
+        "tested": "2026-09-18T07:14:41Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1281,
+        "ethernet_mbits": 937,
+        "ethernet_interfaces": 1,
+        "power_min_w": 0.7,
+        "power_max_w": 9.3
+      }
+    },
+    {
+      "board_slug": "nanopi-r76s",
+      "device": "NanoPi R76S 01",
+      "last_good_test": "2026-08-29T19:26:01Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33270498615",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "7.1.8-edge-rockchip64",
+      "cpu": {
+        "max_mhz": 2016,
+        "aes_MBs": 1306,
+        "temp_C": 48.1,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 2208,
+        "tested": "2026-08-29T19:26:01Z",
+        "run_id": "33270498615"
+      },
+      "memory": {
+        "copy_MBs": 8800,
+        "tested": "2026-08-29T19:26:01Z",
+        "run_id": "33270498615"
+      },
+      "storage": {
+        "read_MBs": 71,
+        "write_MBs": 63,
+        "tested": "2026-08-29T19:26:01Z",
+        "run_id": "33270498615"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "2.5GBASE-T (2.5GE)",
+            "up_mbits": 2353,
+            "down_mbits": 2354,
+            "wireless": false
+          },
+          {
+            "interface": "end1",
+            "type": "2.5GBASE-T (2.5GE)",
+            "up_mbits": 2353,
+            "down_mbits": 2279,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 98,
+            "down_mbits": 188,
+            "wifi_chip": "Realtek RTL8822CS",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          },
+          {
+            "interface": "wlxe0e1a933de37",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 197,
+            "down_mbits": 204,
+            "wifi_chip": "Realtek RTL8821CU",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-08-29T19:26:01Z",
+        "run_id": "33270498615"
+      },
+      "summary": {
+        "cpu_mhz": 2016,
+        "cpu_aes_MBs": 1306,
+        "ethernet_mbits": 2354,
+        "ethernet_interfaces": 2,
+        "wifi_mbits": 188,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Realtek RTL8822CS"
+      }
+    },
+    {
+      "board_slug": "nanopifire3",
+      "device": "NanoPi Fire3 01",
+      "last_good_test": "2026-09-18T07:51:08Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "7.2.6-edge-s5p6818",
+      "cpu": {
+        "aes_MBs": 370,
+        "temp_C": 65.0,
+        "tested": "2026-09-18T07:51:08Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 2000,
+        "tested": "2026-09-18T07:51:08Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 22,
+        "write_MBs": 20,
+        "tested": "2026-09-18T07:51:08Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 431,
+            "down_mbits": 822,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:51:08Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_aes_MBs": 370,
+        "ethernet_mbits": 822,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "nanopik2-s905",
+      "device": "NanoPi K2 01",
+      "last_good_test": "2026-09-18T07:54:07Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1536,
+        "aes_MBs": 51,
+        "temp_C": 61.0,
+        "governor": "ondemand",
+        "min_mhz": 500,
+        "peak_mhz": 1536,
+        "tested": "2026-09-18T07:54:07Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3700,
+        "tested": "2026-09-18T07:54:07Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 40,
+        "write_MBs": 10,
+        "tested": "2026-09-18T07:54:07Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 934,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 13,
+            "down_mbits": 24,
+            "wifi_chip": "Broadcom BCM43430",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:54:07Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.1,
+        "avg": 2.54,
+        "max": 4.6,
+        "samples": 259,
+        "tested": "2026-09-16T18:01:12Z",
+        "run_id": "35131071598"
+      },
+      "summary": {
+        "cpu_mhz": 1536,
+        "cpu_aes_MBs": 51,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 24,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43430",
+        "power_min_w": 1.1,
+        "power_max_w": 4.6
+      }
+    },
+    {
+      "board_slug": "nanopim4v2",
+      "device": "NanoPi M4V2 01",
+      "last_good_test": "2026-09-18T07:53:19Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1416,
+        "aes_MBs": 1020,
+        "temp_C": 46.9,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 1800,
+        "tested": "2026-09-18T07:53:19Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 6600,
+        "tested": "2026-09-18T07:53:19Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 60,
+        "write_MBs": 52,
+        "tested": "2026-09-18T07:53:19Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 305,
+            "down_mbits": 729,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 153,
+            "down_mbits": 163,
+            "wifi_chip": "Broadcom BCM4356",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 40,
+            "wireless": true
+          },
+          {
+            "interface": "wlx803f5d16af63",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 73,
+            "down_mbits": 116,
+            "wifi_chip": "MediaTek MT7610",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:53:19Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 3.0,
+        "avg": 7.1,
+        "max": 12.3,
+        "samples": 376,
+        "tested": "2026-09-18T07:53:19Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1416,
+        "cpu_aes_MBs": 1020,
+        "ethernet_mbits": 729,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 163,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM4356",
+        "power_min_w": 3.0,
+        "power_max_w": 12.3
+      }
+    },
+    {
+      "board_slug": "nanopineo2black",
+      "device": "NanoPi Neo 2 Black 01",
+      "last_good_test": "2026-09-18T07:15:10Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-sunxi64",
+      "cpu": {
+        "max_mhz": 1368,
+        "aes_MBs": 636,
+        "temp_C": 62.7,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1368,
+        "tested": "2026-09-18T07:15:10Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3500,
+        "tested": "2026-09-18T07:15:10Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 2,
+        "write_MBs": 18,
+        "tested": "2026-09-18T07:15:10Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 665,
+            "down_mbits": 448,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:15:10Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1368,
+        "cpu_aes_MBs": 636,
+        "ethernet_mbits": 665,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "nanopineo3",
+      "device": "NanoPi Neo 3 01",
+      "last_good_test": "2026-09-18T07:19:41Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1296,
+        "aes_MBs": 592,
+        "temp_C": 77.3,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 1296,
+        "tested": "2026-09-18T07:19:41Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 2400,
+        "tested": "2026-09-18T07:19:41Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 2,
+        "write_MBs": 53,
+        "tested": "2026-09-18T07:19:41Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 900,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlx7cdd905518f9",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 29,
+            "down_mbits": 26,
+            "wifi_chip": "Ralink RT5370",
+            "wifi_attach": "USB",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:19:41Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1296,
+        "cpu_aes_MBs": 592,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "odroidc1",
+      "device": "Odroid C1 01",
+      "last_good_test": "2026-08-28T17:37:43Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33195191033",
+      "image_version": "26.8.0-trunk.314",
+      "kernel": "6.12.28-current-meson",
+      "cpu": {
+        "max_mhz": 1536,
+        "aes_MBs": 29,
+        "temp_C": 55.6,
+        "governor": "ondemand",
+        "min_mhz": 504,
+        "peak_mhz": 1536,
+        "tested": "2026-08-28T17:37:43Z",
+        "run_id": "33195191033",
+        "dvfs_tested": "2026-06-26T06:21:28Z",
+        "dvfs_run_id": "28219975764"
+      },
+      "memory": {
+        "copy_MBs": 1900,
+        "tested": "2026-08-28T17:37:43Z",
+        "run_id": "33195191033"
+      },
+      "storage": {
+        "read_MBs": 10,
+        "write_MBs": 3,
+        "tested": "2026-08-28T17:37:43Z",
+        "run_id": "33195191033"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 934,
+            "down_mbits": 941,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-08-28T17:37:43Z",
+        "run_id": "33195191033"
+      },
+      "summary": {
+        "cpu_mhz": 1536,
+        "cpu_aes_MBs": 29,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "odroidc2",
+      "device": "Odroid C2 01",
+      "last_good_test": "2026-09-18T07:17:30Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1536,
+        "aes_MBs": 51,
+        "temp_C": 45.0,
+        "governor": "ondemand",
+        "min_mhz": 500,
+        "peak_mhz": 1536,
+        "tested": "2026-09-18T07:17:30Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3500,
+        "tested": "2026-09-18T07:17:30Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 153,
+        "write_MBs": 34,
+        "tested": "2026-09-18T07:17:30Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 940,
+            "down_mbits": 940,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:17:30Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1536,
+        "cpu_aes_MBs": 51,
+        "ethernet_mbits": 940,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "odroidc4",
+      "device": "Odroid C4 01",
+      "last_good_test": "2026-09-18T07:19:55Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 2100,
+        "aes_MBs": 980,
+        "temp_C": 40.7,
+        "governor": "ondemand",
+        "min_mhz": 1000,
+        "peak_mhz": 2100,
+        "tested": "2026-09-18T07:19:55Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 5200,
+        "tested": "2026-09-18T07:19:55Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 77,
+        "write_MBs": 31,
+        "tested": "2026-09-18T07:19:55Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 834,
+            "down_mbits": 938,
+            "wireless": false
+          },
+          {
+            "interface": "wlx24050fdd332b",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 75,
+            "down_mbits": 43,
+            "wifi_chip": "Ralink RT5572",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 40,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:19:55Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.0,
+        "avg": 3.4,
+        "max": 5.0,
+        "samples": 330,
+        "tested": "2026-09-18T07:19:55Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 2100,
+        "cpu_aes_MBs": 980,
+        "ethernet_mbits": 938,
+        "ethernet_interfaces": 1,
+        "power_min_w": 1.0,
+        "power_max_w": 5.0
+      }
+    },
+    {
+      "board_slug": "odroidm1",
+      "device": "Odroid M1 01",
+      "last_good_test": "2026-09-18T07:20:19Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1992,
+        "aes_MBs": 918,
+        "temp_C": 34.4,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 1992,
+        "tested": "2026-09-18T07:20:19Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 5100,
+        "tested": "2026-09-18T07:20:19Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 1038,
+        "write_MBs": 1032,
+        "tested": "2026-09-18T07:20:19Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "eth0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 516,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlx40a5eff39254",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 212,
+            "down_mbits": 215,
+            "wifi_chip": "Realtek RTL8821AU",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:20:19Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.9,
+        "avg": 6.26,
+        "max": 10.7,
+        "samples": 300,
+        "tested": "2026-09-18T07:20:19Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1992,
+        "cpu_aes_MBs": 918,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "power_min_w": 1.9,
+        "power_max_w": 10.7
+      }
+    },
+    {
+      "board_slug": "odroidn2",
+      "device": "Odroid N2 01",
+      "last_good_test": "2026-09-18T07:20:05Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-meson64",
+      "cpu": {
+        "max_mhz": 1992,
+        "aes_MBs": 1085,
+        "temp_C": 37.5,
+        "governor": "performance",
+        "min_mhz": 1000,
+        "peak_mhz": 1992,
+        "tested": "2026-09-18T07:20:05Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 4900,
+        "tested": "2026-09-18T07:20:05Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 136,
+        "write_MBs": 24,
+        "tested": "2026-09-18T07:20:05Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 941,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:20:05Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.0,
+        "avg": 3.61,
+        "max": 9.6,
+        "samples": 299,
+        "tested": "2026-09-18T07:20:05Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1992,
+        "cpu_aes_MBs": 1085,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "power_min_w": 1.0,
+        "power_max_w": 9.6
+      }
+    },
+    {
+      "board_slug": "odroidxu4",
+      "device": "Odroid XU4 01",
+      "last_good_test": "2026-09-18T07:24:52Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "6.6.151-current-odroidxu4",
+      "cpu": {
+        "max_mhz": 1400,
+        "aes_MBs": 68,
+        "temp_C": 61.0,
+        "governor": "ondemand",
+        "min_mhz": 600,
+        "peak_mhz": 2000,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 5800,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 54,
+        "write_MBs": 1,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enx001e0636e380",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 923,
+            "down_mbits": 941,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1400,
+        "cpu_aes_MBs": 68,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "orangepi3-lts",
+      "device": "OrangePi 3 LTS 01",
+      "last_good_test": "2026-09-18T07:17:13Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.8.3",
+      "kernel": "7.1.8-edge-sunxi64",
+      "cpu": {
+        "max_mhz": 1608,
+        "aes_MBs": 750,
+        "temp_C": 62.6,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1608,
+        "tested": "2026-09-18T07:17:13Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 4100,
+        "tested": "2026-09-18T07:17:13Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 127,
+        "write_MBs": 54,
+        "tested": "2026-09-18T07:17:13Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 916,
+            "down_mbits": 940,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 127,
+            "down_mbits": 114,
+            "wifi_chip": "Unisoc UWE5622",
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:17:13Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 2.5,
+        "avg": 3.41,
+        "max": 4.5,
+        "samples": 96,
+        "tested": "2026-09-18T07:17:13Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1608,
+        "cpu_aes_MBs": 750,
+        "ethernet_mbits": 940,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 127,
+        "wifi_chip": "Unisoc UWE5622",
+        "power_min_w": 2.5,
+        "power_max_w": 4.5
+      }
+    },
+    {
+      "board_slug": "orangepi5",
+      "device": "Orange Pi 5 01",
+      "last_good_test": "2026-08-11T14:40:29Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/31500992869",
+      "image_version": "26.8.0-trunk.314",
+      "kernel": "6.18.43-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1257,
+        "temp_C": 49.0,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 2400,
+        "tested": "2026-08-11T14:40:29Z",
+        "run_id": "31500992869"
+      },
+      "memory": {
+        "copy_MBs": 7700,
+        "tested": "2026-08-11T14:40:29Z",
+        "run_id": "31500992869"
+      },
+      "storage": {
+        "read_MBs": 63,
+        "write_MBs": 55,
+        "tested": "2026-08-11T14:40:29Z",
+        "run_id": "31500992869"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 942,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-08-11T14:40:29Z",
+        "run_id": "31500992869"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1257,
+        "ethernet_mbits": 942,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "orangepi5-plus",
+      "device": "Orange Pi 5 Plus 01",
+      "last_good_test": "2026-09-18T07:18:43Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.1.172-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1267,
+        "temp_C": 54.5,
+        "governor": "ondemand",
+        "min_mhz": 1800,
+        "peak_mhz": 2256,
+        "tested": "2026-09-18T07:18:43Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 13600,
+        "tested": "2026-09-18T07:18:43Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 22,
+        "write_MBs": 20,
+        "tested": "2026-09-18T07:18:43Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enP3p49s0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlxe0e1a9380c53",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 405,
+            "down_mbits": 399,
+            "wifi_chip": "MediaTek MT7921",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:18:43Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 0.6,
+        "avg": 5.52,
+        "max": 10.8,
+        "samples": 182,
+        "tested": "2026-09-18T07:18:43Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1267,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "power_min_w": 0.6,
+        "power_max_w": 10.8
+      }
+    },
+    {
+      "board_slug": "orangepilite2",
+      "device": "Orange Pi Lite 2 01",
+      "last_good_test": "2026-09-18T07:24:55Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.12.103-legacy-sunxi64",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 798,
+        "temp_C": 75.3,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1800,
+        "tested": "2026-09-18T07:24:55Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 6300,
+        "tested": "2026-09-18T07:24:55Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 21,
+        "tested": "2026-09-18T07:24:55Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 24,
+            "down_mbits": 22,
+            "wifi_chip": "Broadcom BCM43455",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 40,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:24:55Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 798,
+        "wifi_mbits": 24,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43455"
+      }
+    },
+    {
+      "board_slug": "orangepioneplus",
+      "device": "Orange Pi One+ 01",
+      "last_good_test": "2026-09-18T07:22:16Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "7.1.8-edge-sunxi64",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 834,
+        "temp_C": 59.2,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1800,
+        "tested": "2026-09-18T07:22:16Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 4600,
+        "tested": "2026-09-18T07:22:16Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 21,
+        "tested": "2026-09-18T07:22:16Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 912,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlx00e04c881724",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 131,
+            "down_mbits": 169,
+            "wifi_chip": "Realtek RTL8821AU",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:22:16Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 834,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "orangepipc2",
+      "device": "Orange Pi PC2 01",
+      "last_good_test": "2026-09-17T14:33:09Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35220865583",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "6.18.44-current-sunxi64",
+      "cpu": {
+        "max_mhz": 1368,
+        "aes_MBs": 638,
+        "temp_C": 59.6,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1368,
+        "tested": "2026-09-17T14:33:09Z",
+        "run_id": "35220865583"
+      },
+      "memory": {
+        "copy_MBs": 3500,
+        "tested": "2026-09-17T14:33:09Z",
+        "run_id": "35220865583"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 6,
+        "tested": "2026-09-17T14:33:09Z",
+        "run_id": "35220865583"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 887,
+            "down_mbits": 876,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-17T14:33:09Z",
+        "run_id": "35220865583"
+      },
+      "summary": {
+        "cpu_mhz": 1368,
+        "cpu_aes_MBs": 638,
+        "ethernet_mbits": 887,
+        "ethernet_interfaces": 1
+      }
+    },
+    {
+      "board_slug": "orangepiprime",
+      "device": "Orange Pi Prime 01",
+      "last_good_test": "2026-09-18T07:18:12Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.51-current-sunxi64",
+      "cpu": {
+        "aes_MBs": 379,
+        "temp_C": 42.0,
+        "tested": "2026-09-18T07:18:12Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 2100,
+        "tested": "2026-09-18T07:18:12Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 21,
+        "tested": "2026-09-18T07:18:12Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 885,
+            "down_mbits": 713,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 31,
+            "down_mbits": 26,
+            "wifi_chip": "Realtek RTL8723BS",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:18:12Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_aes_MBs": 379,
+        "ethernet_mbits": 885,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 31,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Realtek RTL8723BS"
+      }
+    },
+    {
+      "board_slug": "orangepizero2",
+      "device": "Orange Pi Zero2 01",
+      "last_good_test": "2026-08-29T19:38:54Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33270498615",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "7.1.8-edge-sunxi64",
+      "cpu": {
+        "max_mhz": 1512,
+        "aes_MBs": 700,
+        "temp_C": 59.8,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1512,
+        "tested": "2026-08-29T19:38:54Z",
+        "run_id": "33270498615"
+      },
+      "memory": {
+        "copy_MBs": 3000,
+        "tested": "2026-08-29T19:38:54Z",
+        "run_id": "33270498615"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 21,
+        "tested": "2026-08-29T19:38:54Z",
+        "run_id": "33270498615"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 876,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlx7c023a625db1",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 37,
+            "down_mbits": 20,
+            "wifi_chip": "Unisoc UWE5622",
+            "wireless": true
+          }
+        ],
+        "tested": "2026-08-29T19:38:54Z",
+        "run_id": "33270498615"
+      },
+      "summary": {
+        "cpu_mhz": 1512,
+        "cpu_aes_MBs": 700,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 37,
+        "wifi_chip": "Unisoc UWE5622"
+      }
+    },
+    {
+      "board_slug": "radxa-cubie-a5e",
+      "device": "Cubie A5E 01",
+      "last_good_test": "2026-09-02T19:40:52Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33673886289",
+      "image_version": "26.11.0-trunk.27",
+      "kernel": "6.18.44-current-sunxi64",
+      "cpu": {
+        "aes_MBs": 358,
+        "temp_C": 66.1,
+        "tested": "2026-09-02T19:40:52Z",
+        "run_id": "33673886289"
+      },
+      "memory": {
+        "copy_MBs": 2000,
+        "tested": "2026-09-02T19:40:52Z",
+        "run_id": "33673886289"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 10,
+        "tested": "2026-09-02T19:40:52Z",
+        "run_id": "33673886289"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 910,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "end1",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 940,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-02T19:40:52Z",
+        "run_id": "33673886289"
+      },
+      "power": {
+        "unit": "W",
+        "min": 2.7,
+        "avg": 4.1,
+        "max": 4.7,
+        "samples": 394,
+        "tested": "2026-09-02T19:40:52Z",
+        "run_id": "33673886289"
+      },
+      "summary": {
+        "cpu_aes_MBs": 358,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 2,
+        "power_min_w": 2.7,
+        "power_max_w": 4.7
+      }
+    },
+    {
+      "board_slug": "radxa-dragon-q6a",
+      "device": "Cubox i2eX/i4 01",
+      "last_good_test": "2026-09-18T08:53:16Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-imx6",
+      "cpu": {
+        "max_mhz": 996,
+        "aes_MBs": 26,
+        "temp_C": 52.0,
+        "governor": "ondemand",
+        "min_mhz": 396,
+        "peak_mhz": 996,
+        "tested": "2026-09-18T08:53:16Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 778,
+        "tested": "2026-09-18T08:53:16Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 20,
+        "write_MBs": 19,
+        "tested": "2026-09-18T08:53:16Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 392,
+            "down_mbits": 211,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 18,
+            "down_mbits": 14,
+            "wifi_chip": "Broadcom BCM4330",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T08:53:16Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.1,
+        "avg": 2.4,
+        "max": 7.6,
+        "samples": 487,
+        "tested": "2026-09-18T07:25:42Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 996,
+        "cpu_aes_MBs": 26,
+        "ethernet_mbits": 392,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 18,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM4330",
+        "power_min_w": 1.1,
+        "power_max_w": 7.6
+      }
+    },
+    {
+      "board_slug": "radxa-zero3",
+      "device": "Radxa ZERO 3 01",
+      "last_good_test": "2026-09-18T07:19:05Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.5.1",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1416,
+        "aes_MBs": 720,
+        "temp_C": 51.2,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 1416,
+        "tested": "2026-09-18T07:19:05Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3900,
+        "tested": "2026-09-18T07:19:05Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 22,
+        "write_MBs": 21,
+        "tested": "2026-09-18T07:19:05Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 1,
+            "down_mbits": 33,
+            "wifi_chip": "AICSemi AIC8800",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2412,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-17T12:38:52Z",
+        "run_id": "35220865583"
+      },
+      "summary": {
+        "cpu_mhz": 1416,
+        "cpu_aes_MBs": 720,
+        "wifi_mbits": 33,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "AICSemi AIC8800"
+      }
+    },
+    {
+      "board_slug": "rock-2f",
+      "device": "ROCK 2F 01",
+      "last_good_test": "2026-09-18T07:19:39Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.5.1",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 2016,
+        "aes_MBs": 824,
+        "temp_C": 47.8,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 2016,
+        "tested": "2026-09-18T07:19:39Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 5900,
+        "tested": "2026-09-18T07:19:39Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 65,
+        "write_MBs": 15,
+        "tested": "2026-09-18T07:19:39Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 211,
+            "down_mbits": 218,
+            "wifi_chip": "AICSemi AIC8800D80",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:19:39Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 2016,
+        "cpu_aes_MBs": 824
+      }
+    },
+    {
+      "board_slug": "rock-5b",
+      "device": "Rock 5B 02",
+      "last_good_test": "2026-09-18T07:24:52Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1284,
+        "temp_C": 64.7,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 2400,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 11000,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 73,
+        "write_MBs": 62,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enP4p65s0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 942,
+            "wireless": false
+          },
+          {
+            "interface": "wlP2p33s0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 637,
+            "down_mbits": 263,
+            "wifi_chip": "Realtek RTL8852BE",
+            "wifi_attach": "PCIe",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 4.0,
+        "avg": 6.04,
+        "max": 13.7,
+        "samples": 254,
+        "tested": "2026-09-18T07:24:52Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1284,
+        "ethernet_mbits": 942,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 637,
+        "wifi_attach": "PCIe",
+        "wifi_chip": "Realtek RTL8852BE",
+        "power_min_w": 4.0,
+        "power_max_w": 13.7
+      }
+    },
+    {
+      "board_slug": "rock-5b-plus",
+      "device": "Rock 5B Plus 01",
+      "last_good_test": "2026-09-18T07:22:45Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.31",
+      "kernel": "6.1.115-vendor-rk35xx",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1286,
+        "temp_C": 49.0,
+        "governor": "ondemand",
+        "min_mhz": 1800,
+        "peak_mhz": 2352,
+        "tested": "2026-09-18T07:22:45Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 14100,
+        "tested": "2026-09-18T07:22:45Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 80,
+        "write_MBs": 12,
+        "tested": "2026-09-18T07:22:45Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enP4p65s0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 941,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:22:45Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 0.9,
+        "avg": 3.64,
+        "max": 8.9,
+        "samples": 139,
+        "tested": "2026-09-18T07:22:45Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1286,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "power_min_w": 0.9,
+        "power_max_w": 8.9
+      }
+    },
+    {
+      "board_slug": "rock-5t",
+      "device": "Rock 5T 01",
+      "last_good_test": "2026-08-30T09:06:12Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/33302902202",
+      "image_version": "26.11.0-trunk.30",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 1251,
+        "temp_C": 58.2,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 2400,
+        "tested": "2026-08-30T09:06:12Z",
+        "run_id": "33302902202"
+      },
+      "memory": {
+        "copy_MBs": 10000,
+        "tested": "2026-08-30T09:06:12Z",
+        "run_id": "33302902202"
+      },
+      "storage": {
+        "read_MBs": 82,
+        "write_MBs": 50,
+        "tested": "2026-08-30T09:06:12Z",
+        "run_id": "33302902202"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enP3p49s0",
+            "type": "2.5GBASE-T (2.5GE)",
+            "up_mbits": 2353,
+            "down_mbits": 2352,
+            "wireless": false
+          },
+          {
+            "interface": "enP4p65s0",
+            "type": "2.5GBASE-T (2.5GE)",
+            "up_mbits": 2353,
+            "down_mbits": 2354,
+            "wireless": false
+          },
+          {
+            "interface": "wlP2p33s0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 337,
+            "down_mbits": 216,
+            "wifi_chip": "Realtek RTL8852BE",
+            "wifi_attach": "PCIe",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          },
+          {
+            "interface": "wlx7cdd90ebf00a",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 96,
+            "down_mbits": 121,
+            "wifi_chip": "Ralink RT5572",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 40,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-08-30T09:06:12Z",
+        "run_id": "33302902202"
+      },
+      "power": {
+        "unit": "W",
+        "min": 0.9,
+        "avg": 9.24,
+        "max": 16.7,
+        "samples": 273,
+        "tested": "2026-08-30T09:06:12Z",
+        "run_id": "33302902202"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 1251,
+        "ethernet_mbits": 2354,
+        "ethernet_interfaces": 2,
+        "wifi_mbits": 337,
+        "wifi_attach": "PCIe",
+        "wifi_chip": "Realtek RTL8852BE",
+        "power_min_w": 0.9,
+        "power_max_w": 16.7
+      }
+    },
+    {
+      "board_slug": "rockpi-e",
+      "device": "Rockpi E 01",
+      "last_good_test": "2026-09-18T07:29:43Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1296,
+        "aes_MBs": 599,
+        "temp_C": 60.4,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 1296,
+        "tested": "2026-09-18T07:29:43Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3300,
+        "tested": "2026-09-18T07:29:43Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 21,
+        "tested": "2026-09-18T07:29:43Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "end1",
+            "type": "100BASE-TX (10/100ME)",
+            "up_mbits": 94,
+            "down_mbits": 94,
+            "wireless": false
+          },
+          {
+            "interface": "wlx7ca7b020e87c",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 91,
+            "down_mbits": 200,
+            "wifi_chip": "Realtek RTL8821CU",
+            "wifi_attach": "USB",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:29:43Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1296,
+        "cpu_aes_MBs": 599,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 2
+      }
+    },
+    {
+      "board_slug": "rockpro64",
+      "device": "RockPro 64 01",
+      "last_good_test": "2026-09-17T12:51:43Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35220865583",
+      "image_version": "26.8.1",
+      "kernel": "6.18.44-current-rockchip64",
+      "cpu": {
+        "max_mhz": 1416,
+        "aes_MBs": 1020,
+        "temp_C": 44.4,
+        "governor": "ondemand",
+        "min_mhz": 408,
+        "peak_mhz": 1800,
+        "tested": "2026-09-17T12:51:43Z",
+        "run_id": "35220865583"
+      },
+      "memory": {
+        "copy_MBs": 6600,
+        "tested": "2026-09-17T12:51:43Z",
+        "run_id": "35220865583"
+      },
+      "storage": {
+        "read_MBs": 123,
+        "write_MBs": 68,
+        "tested": "2026-09-17T12:51:43Z",
+        "run_id": "35220865583"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "100BASE-TX (10/100ME)",
+            "up_mbits": 94,
+            "down_mbits": 94,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 113,
+            "down_mbits": 99,
+            "wifi_chip": "Broadcom (brcmfmac)",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 5240,
+            "channel_width_mhz": 80,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-17T12:51:43Z",
+        "run_id": "35220865583"
+      },
+      "summary": {
+        "cpu_mhz": 1416,
+        "cpu_aes_MBs": 1020,
+        "ethernet_mbits": 94,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 113,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom (brcmfmac)"
+      }
+    },
+    {
+      "board_slug": "rpi4b",
+      "device": "Raspberry Pi 3B",
+      "last_good_test": "2026-09-18T07:28:57Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-bcm2711",
+      "cpu": {
+        "max_mhz": 1200,
+        "aes_MBs": 20,
+        "temp_C": 54.8,
+        "governor": "ondemand",
+        "min_mhz": 600,
+        "peak_mhz": 1200,
+        "tested": "2026-09-18T07:28:57Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 1400,
+        "tested": "2026-09-18T07:28:57Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 22,
+        "write_MBs": 20,
+        "tested": "2026-09-18T07:28:57Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enxb827eb253a53",
+            "type": "100BASE-TX (10/100ME)",
+            "up_mbits": 94,
+            "down_mbits": 94,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 24,
+            "down_mbits": 24,
+            "wifi_chip": "Broadcom BCM43430",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:28:57Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 2.6,
+        "avg": 5.94,
+        "max": 10.2,
+        "samples": 217,
+        "tested": "2026-09-18T07:21:17Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1200,
+        "cpu_aes_MBs": 20,
+        "ethernet_mbits": 94,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 24,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43430",
+        "power_min_w": 2.6,
+        "power_max_w": 10.2
+      }
+    },
+    {
+      "board_slug": "tinkerboard",
+      "device": "Tinker Board 01",
+      "last_good_test": "2026-09-18T07:26:53Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-rockchip",
+      "cpu": {
+        "max_mhz": 1800,
+        "aes_MBs": 67,
+        "temp_C": 59.5,
+        "governor": "ondemand",
+        "min_mhz": 600,
+        "peak_mhz": 1800,
+        "tested": "2026-09-18T07:26:53Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 3300,
+        "tested": "2026-09-18T07:26:53Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 63,
+        "write_MBs": 14,
+        "tested": "2026-09-18T07:26:53Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 941,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 18,
+            "down_mbits": 27,
+            "wifi_chip": "Realtek RTL8723BS",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:26:53Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.3,
+        "avg": 3.91,
+        "max": 8.4,
+        "samples": 310,
+        "tested": "2026-09-18T07:26:53Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1800,
+        "cpu_aes_MBs": 67,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 27,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Realtek RTL8723BS",
+        "power_min_w": 1.3,
+        "power_max_w": 8.4
+      }
+    },
+    {
+      "board_slug": "udoo",
+      "device": "Udoo 01",
+      "last_good_test": "2026-09-18T07:41:02Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-imx6",
+      "cpu": {
+        "max_mhz": 996,
+        "aes_MBs": 26,
+        "temp_C": 49.2,
+        "governor": "ondemand",
+        "min_mhz": 396,
+        "peak_mhz": 996,
+        "tested": "2026-09-18T07:41:02Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 718,
+        "tested": "2026-09-18T07:41:02Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 20,
+        "write_MBs": 19,
+        "tested": "2026-09-18T07:41:02Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 400,
+            "down_mbits": 232,
+            "wireless": false
+          },
+          {
+            "interface": "wlx7cdd903aa418",
+            "type": "IEEE 802.11n (Wi-Fi 4)",
+            "up_mbits": 34,
+            "down_mbits": 34,
+            "wifi_chip": "Ralink RT5370",
+            "wifi_attach": "USB",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:41:02Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.3,
+        "avg": 5.74,
+        "max": 8.4,
+        "samples": 1004,
+        "tested": "2026-09-18T07:41:02Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 996,
+        "cpu_aes_MBs": 26,
+        "ethernet_mbits": 400,
+        "ethernet_interfaces": 1,
+        "power_min_w": 1.3,
+        "power_max_w": 8.4
+      }
+    },
+    {
+      "board_slug": "uefi-arm64",
+      "device": "UEFI arm64 01",
+      "last_good_test": "2026-09-16T18:09:01Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35131071598",
+      "image_version": "26.11.0-trunk.30",
+      "kernel": "7.1.12-edge-arm64",
+      "cpu": {
+        "max_mhz": 2600,
+        "aes_MBs": 1458,
+        "temp_C": 45.0,
+        "governor": "ondemand",
+        "min_mhz": 800,
+        "peak_mhz": 2600,
+        "tested": "2026-09-16T18:09:01Z",
+        "run_id": "35131071598"
+      },
+      "memory": {
+        "copy_MBs": 13000,
+        "tested": "2026-09-16T18:09:01Z",
+        "run_id": "35131071598"
+      },
+      "storage": {
+        "read_MBs": 2008,
+        "write_MBs": 1585,
+        "tested": "2026-09-16T18:09:01Z",
+        "run_id": "35131071598"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enp1s0",
+            "type": "10GBASE-T (10GE)",
+            "up_mbits": 7985,
+            "down_mbits": 2773,
+            "wireless": false
+          },
+          {
+            "interface": "enp49s0",
+            "type": "10GBASE-T (10GE)",
+            "up_mbits": 6687,
+            "down_mbits": 9384,
+            "wireless": false
+          },
+          {
+            "interface": "wlp97s0",
+            "type": "IEEE 802.11ax (Wi-Fi 6)",
+            "up_mbits": 83,
+            "down_mbits": 90,
+            "wifi_chip": "MediaTek MT7921",
+            "wifi_attach": "PCIe",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-16T18:09:01Z",
+        "run_id": "35131071598"
+      },
+      "summary": {
+        "cpu_mhz": 2600,
+        "cpu_aes_MBs": 1458,
+        "ethernet_mbits": 9384,
+        "ethernet_interfaces": 2,
+        "wifi_mbits": 90,
+        "wifi_attach": "PCIe",
+        "wifi_chip": "MediaTek MT7921"
+      }
+    },
+    {
+      "board_slug": "uefi-x86",
+      "device": "UEFI x86 01",
+      "last_good_test": "2026-09-18T07:31:22Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-x86",
+      "cpu": {
+        "max_mhz": 1920,
+        "aes_MBs": 237,
+        "temp_C": 61.0,
+        "governor": "schedutil",
+        "min_mhz": 480,
+        "peak_mhz": 1919,
+        "tested": "2026-09-18T07:31:22Z",
+        "run_id": "35317730586",
+        "dvfs_tested": "2026-06-26T06:30:52Z",
+        "dvfs_run_id": "28219975764"
+      },
+      "memory": {
+        "copy_MBs": 5800,
+        "tested": "2026-09-18T07:31:22Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 104,
+        "write_MBs": 24,
+        "tested": "2026-09-18T07:31:22Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "enp1s0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 911,
+            "down_mbits": 941,
+            "wireless": false
+          },
+          {
+            "interface": "wlan0",
+            "type": "IEEE 802.11ac (Wi-Fi 5)",
+            "up_mbits": 35,
+            "down_mbits": 32,
+            "wifi_chip": "Broadcom BCM43455",
+            "wifi_attach": "SDIO",
+            "channel_mhz": 2437,
+            "channel_width_mhz": 20,
+            "wireless": true
+          }
+        ],
+        "tested": "2026-09-18T07:31:22Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 2.0,
+        "avg": 4.1,
+        "max": 6.9,
+        "samples": 520,
+        "tested": "2026-09-18T07:31:22Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1920,
+        "cpu_aes_MBs": 237,
+        "ethernet_mbits": 941,
+        "ethernet_interfaces": 1,
+        "wifi_mbits": 35,
+        "wifi_attach": "SDIO",
+        "wifi_chip": "Broadcom BCM43455",
+        "power_min_w": 2.0,
+        "power_max_w": 6.9
+      }
+    },
+    {
+      "board_slug": "zeropi",
+      "device": "ZeroPi 01",
+      "last_good_test": "2026-09-18T07:30:18Z",
+      "run_url": "https://github.com/armbian/autotests/actions/runs/35317730586",
+      "image_version": "26.11.0-trunk.51",
+      "kernel": "6.18.44-current-sunxi",
+      "cpu": {
+        "max_mhz": 1296,
+        "aes_MBs": 25,
+        "temp_C": 47.3,
+        "governor": "ondemand",
+        "min_mhz": 480,
+        "peak_mhz": 1296,
+        "tested": "2026-09-18T07:30:18Z",
+        "run_id": "35317730586"
+      },
+      "memory": {
+        "copy_MBs": 1500,
+        "tested": "2026-09-18T07:30:18Z",
+        "run_id": "35317730586"
+      },
+      "storage": {
+        "read_MBs": 23,
+        "write_MBs": 2,
+        "tested": "2026-09-18T07:30:18Z",
+        "run_id": "35317730586"
+      },
+      "network": {
+        "interfaces": [
+          {
+            "interface": "end0",
+            "type": "1000BASE-T (1GE)",
+            "up_mbits": 638,
+            "down_mbits": 934,
+            "wireless": false
+          }
+        ],
+        "tested": "2026-09-18T07:30:18Z",
+        "run_id": "35317730586"
+      },
+      "power": {
+        "unit": "W",
+        "min": 1.2,
+        "avg": 2.12,
+        "max": 3.4,
+        "samples": 460,
+        "tested": "2026-09-18T07:30:18Z",
+        "run_id": "35317730586"
+      },
+      "summary": {
+        "cpu_mhz": 1296,
+        "cpu_aes_MBs": 25,
+        "ethernet_mbits": 934,
+        "ethernet_interfaces": 1,
+        "power_min_w": 1.2,
+        "power_max_w": 3.4
+      }
+    }
+  ]
+}
