@@ -16,8 +16,8 @@ khadas-vim3:::ENABLE_EXTENSIONS="image-output-oowow"
 khadas-vim3l:::ENABLE_EXTENSIONS="image-output-oowow"
 khadas-vim4:::ENABLE_EXTENSIONS="image-output-oowow"
 uefi-x86:::ENABLE_EXTENSIONS="nvidia"
-musepipro:::ENABLE_EXTENSIONS: "v4l2loopback-dkms"
-bananapif3:::ENABLE_EXTENSIONS: "v4l2loopback-dkms"
+musepipro:::ENABLE_EXTENSIONS="v4l2loopback-dkms"
+bananapif3:::ENABLE_EXTENSIONS="v4l2loopback-dkms"
 
 # Seeed boards: vendor-branch only (Seeed extension depends on the
 # vendor U-Boot chain; not for the mainline edge branch).
