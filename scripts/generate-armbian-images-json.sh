@@ -840,8 +840,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         branch_filter="${REUSABLE_BOARD_BRANCH[$reusable_slug]:-}"
         ext_filter="${REUSABLE_BOARD_EXT[$reusable_slug]:-}"
 
-        # Apply branch filter if specified
-        if [[ -n "$branch_filter" && "$BRANCH" != "$branch_filter" ]]; then
+        # Apply branch filter if specified. Accepts a comma-separated list
+        # (e.g. "current,vendor") — include the image if its branch is any of
+        # them. A single value keeps its original exact-match behaviour.
+        if [[ -n "$branch_filter" && ",${branch_filter//[[:space:]]/}," != *",${BRANCH},"* ]]; then
           continue
         fi
 
