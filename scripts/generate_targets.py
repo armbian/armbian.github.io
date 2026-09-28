@@ -2115,7 +2115,9 @@ def generate_exposed_map(
         # broken), so the recommended-image regex must point at noble too —
         # otherwise it would keep matching resolute and the riscv64
         # "recommended" download would silently disappear from the site.
-        d_release = RISCV64_UBUNTU_CODENAME if is_fast == 'riscv64' else ubuntu_codename
+        # Checked on arch, not is_fast: headless riscv64 boards (is_fast None)
+        # are pinned to noble too - see split_riscv64().
+        d_release = RISCV64_UBUNTU_CODENAME if board_data['arch'] == 'riscv64' else ubuntu_codename
         d_branch = branch
         d_suffix = default_suffix
         if override and isinstance(override.get('desktop'), dict):
