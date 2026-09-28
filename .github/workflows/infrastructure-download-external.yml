@@ -764,8 +764,6 @@ jobs:
             mkdir -p "$APTLY_ROOT"
             printf '{ "rootDir": "%s" }\n' "$APTLY_ROOT" > "$APTLY_CFG"
 
-            echo "::debug::APTLY_ROOT=$APTLY_ROOT"
-            echo "::debug::APTLY_CFG=$APTLY_CFG"
             echo "::debug::Config file contents:"
             cat "$APTLY_CFG" >&2
 
@@ -789,7 +787,6 @@ jobs:
             MIRROR="${{ matrix.name }}-${{ matrix.release }}-${{ matrix.arch }}"
 
             echo "::debug::MIRROR_NAME=$MIRROR"
-            echo "::debug::Original KEY='${KEY:-}'"
 
             # KEY may be:
             #   - "unstable contrib non-free"  (suite + components)
@@ -798,9 +795,6 @@ jobs:
             read -r DIST REST <<<"${KEY:-}"
             COMPONENTS="$REST"
 
-            echo "::debug::DIST='$DIST'"
-            echo "::debug::REST='$REST'"
-            echo "::debug::COMPONENTS='$COMPONENTS'"
 
             # Special/flat cases: do not pass components
             case "${KEY:-}" in
@@ -823,12 +817,58 @@ jobs:
             URL="${URL/http:\/\//https:\/\/}"
 
             echo "::debug::URL='$URL'"
-            echo "::debug::FILTER_ARGS='${FILTER_ARGS[*]}'"
             echo "::debug::ADDITIONAL_FILTER='$ADDITIONAL_FILTER'"
             echo "::debug::ARCH='${{ matrix.arch }}'"
 
+            # Some upstreams advertise every historical build: ~50 versions of
+            # "code" pass GLOB, 7.9 GiB, of which the prune below keeps 210 MiB.
+            # aptly queues from the filtered index, so pin the filter to the newest
+            # version of each name first -- same index aptly is about to read.
+            # Engages only where the index actually holds duplicates.
+            PINNED_FILTER=""
+            pin_newest() {
+              local comp stem body name ver entries=0
+              local -A newest=()
+              local -a comps=()
+              if [[ -n "$COMPONENTS" ]]; then
+                read -r -a comps <<< "$COMPONENTS"
+              else
+                comps=("")
+              fi
+              for comp in "${comps[@]}"; do
+                if [[ -n "$comp" ]]; then
+                  stem="${URL%/}/dists/${DIST}/${comp}/binary-${{ matrix.arch }}/Packages"
+                else
+                  stem="${URL%/}/Packages"
+                fi
+                body=""
+                body="$(curl -fsSL --max-time 60 "${stem}.gz" 2>/dev/null | gzip -dc 2>/dev/null)" || true
+                [[ -n "$body" ]] || body="$(curl -fsSL --max-time 60 "${stem}.xz" 2>/dev/null | xz -dc 2>/dev/null)" || true
+                [[ -n "$body" ]] || body="$(curl -fsSL --max-time 60 "${stem}" 2>/dev/null)" || true
+                # 2 = index unreadable; caller must not run unpinned
+                [[ -n "$body" ]] || return 2
+                while read -r name ver; do
+                  [[ -n "$name" && -n "$ver" ]] || continue
+                  entries=$((entries + 1))
+                  if [[ -z "${newest[$name]:-}" ]] || dpkg --compare-versions "$ver" gt "${newest[$name]}"; then
+                    newest["$name"]="$ver"
+                  fi
+                done < <(awk '/^Package: /{p=$2} /^Version: /{if (p != "") {print p, $2; p=""}}' <<< "$body")
+              done
+              # nothing to gain when the index already holds one version per name,
+              # and a filter naming hundreds of packages is not worth building
+              (( entries > ${#newest[@]} )) || return 1
+              (( ${#newest[@]} > 0 && ${#newest[@]} <= 500 )) || return 1
+              local q=""
+              for name in "${!newest[@]}"; do
+                q+="${q:+ | }${name} (= ${newest[$name]})"
+              done
+              PINNED_FILTER="$q"
+              echo "::notice::pinning ${#newest[@]} package(s) to newest of ${entries} versions"
+            }
+            pin_newest || { [[ $? == 2 ]] && warn_skip "index unreadable: $URL $DIST"; true; }
+
             # Drop mirror if it already exists from previous run
-            echo "::debug::Checking if mirror exists..."
             if aptly -config="$APTLY_CFG" mirror show "$MIRROR" &>/dev/null; then
               echo "::notice::Dropping existing mirror: $MIRROR"
               aptly -config="$APTLY_CFG" mirror drop "$MIRROR" || true
@@ -836,55 +876,51 @@ jobs:
               echo "::debug::Mirror does not exist yet"
             fi
 
-            # Create mirror (distribution + optional components).
-            # `|| warn_skip` catches a missing/dead Release file at
-            # the URL — common cause of "broken source" — and skips
-            # the slot instead of letting `set -euo pipefail` fail
-            # the whole job.
-            echo "::debug::Creating mirror..."
-            if [[ -n "$COMPONENTS" ]]; then
-              echo "::debug::aptly -config="$APTLY_CFG" -ignore-signatures ${FILTER_ARGS[*]} ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS"
+            # $COMPONENTS unquoted on purpose: empty means "no components".
+            mk_mirror() {
               # shellcheck disable=SC2086
-              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS \
+              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER \
+                -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS \
                 || warn_skip "aptly mirror create failed (URL='$URL' DIST='$DIST' COMPONENTS='$COMPONENTS')"
-            else
-              echo "::debug::aptly -config="$APTLY_CFG" -ignore-signatures ${FILTER_ARGS[*]} ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST""
-              # shellcheck disable=SC2086
-              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" \
-                || warn_skip "aptly mirror create failed (URL='$URL' DIST='$DIST')"
+            }
+
+            # Swap in the pinned filter.
+            PINNED_APPLIED=0
+            if [[ -n "$PINNED_FILTER" ]]; then
+              [[ -n "${GLOB:-}" ]] \
+                && FILTER_ARGS=(-filter="( ${GLOB} ), ( ${PINNED_FILTER} )") \
+                || FILTER_ARGS=(-filter="${PINNED_FILTER}")
+              PINNED_APPLIED=1
             fi
-            echo "::debug::Mirror created successfully"
+
+            echo "::debug::Creating mirror..."
+            mk_mirror
 
             # Update mirror with retry logic for EOF errors
-            echo "::debug::Updating mirror..."
             MAX_RETRIES=3
             RETRY_COUNT=0
             UPDATE_SUCCESS=false
-
             while [[ $RETRY_COUNT -lt $MAX_RETRIES && "$UPDATE_SUCCESS" == "false" ]]; do
               if aptly -config="$APTLY_CFG" -max-tries=20 -ignore-signatures mirror update "$MIRROR"; then
-                echo "::debug::Mirror updated successfully"
                 UPDATE_SUCCESS=true
               else
                 RETRY_COUNT=$((RETRY_COUNT + 1))
                 if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
                   echo "::warning::Mirror update failed (attempt $RETRY_COUNT/$MAX_RETRIES), retrying..."
                   sleep 2
-                  # Recreate mirror if it got corrupted
-                  echo "::debug::Recreating mirror after failure..."
                   aptly -config="$APTLY_CFG" mirror drop "$MIRROR" || true
-                  if [[ -n "$COMPONENTS" ]]; then
-                    # shellcheck disable=SC2086
-                    aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS
-                  else
-                    # shellcheck disable=SC2086
-                    aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST"
-                  fi
+                  mk_mirror
                 else
                   warn_skip "aptly mirror update failed after $MAX_RETRIES attempts (URL='$URL' DIST='$DIST')"
                 fi
               fi
             done
+
+            # A pinned filter matching nothing would publish an empty repository.
+            if [[ "$PINNED_APPLIED" == "1" ]] && [[ "$(aptly -config="$APTLY_CFG" mirror show "$MIRROR" \
+                 2>/dev/null | awk -F': *' '/^Number of packages/{print $2;exit}')" == "0" ]]; then
+              warn_skip "newest-version pin matched no packages (URL='$URL' DIST='$DIST')"
+            fi
 
             # Snapshot. Failure here is rare (local aptly state op,
             # not a remote fetch) but `set -e` would still kill the
