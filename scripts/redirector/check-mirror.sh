@@ -8,6 +8,7 @@
 #   timeout       - the mirror answered nothing before the time cap
 #
 # For not_in_sync / timeout a second line carries the server, for the summary.
+# For a stale apt mirror a third line lists the stale suites.
 #
 # Every probe is a plain per-file GET/HEAD. Unlike an lftp directory mirror this
 # needs NO directory autoindex on the mirror (a 403 on a directory blocks
@@ -19,12 +20,15 @@
 # file, so one unreachable mirror can't run out the job's time budget.
 #
 # Reference manifest (built by build-reference.sh), TAB-separated:
-#   dists    : <suite>   <TAB> <sha256 of dists/<suite>/InRelease>  (usually 1 line)
+#   dists    : <suite>   <TAB> <content fingerprint of dists/<suite>/InRelease>
 #   torrents : <relpath> <TAB> <size-bytes>
 #
 # Usage: check-mirror.sh <server> <check-type> <reference-dir> <id>
 #   check-type: dists | torrents | noop
 set -uo pipefail
+
+# shellcheck source=scripts/redirector/apt-index-fingerprint.sh
+source "$(dirname "${BASH_SOURCE[0]}")/apt-index-fingerprint.sh"
 
 server="${1:?server (host/path) required}"
 check="${2:?check type required}"
@@ -38,7 +42,9 @@ manifest="${reference_dir}/manifest.tsv"
 server="${server%/}"
 base="https://${server}"
 
-classify() { printf '%s\n%s\n' "$1" "${server}" > "status/${id}"; exit 0; }
+stale=""
+classify() { printf '%s\n%s\n%s' "$1" "${server}" "${stale:+${stale}
+}" > "status/${id}"; exit 0; }
 
 # Cache: not content-compared, always in sync.
 [[ "${check}" == "noop" ]] && { echo "true" > "status/${id}"; exit 0; }
@@ -83,24 +89,24 @@ fi
 
 case "${check}" in
 	dists)
-		# Compare each manifest suite's InRelease (fallback Release) hash. Normally
-		# one representative suite, so this is one request against an up mirror.
-		# NB: fetch the body exactly as build-reference does -- $(curl ...) so the
-		# same trailing-newline trimming applies on both sides and the hashes are
-		# comparable. The gate already proved the host answers, so a failed fetch
-		# here means the suite is missing (stale) -> not in sync.
+		# Compare every manifest suite's content fingerprint. The gate proved the
+		# host answers, so a suite without an index is missing: stale.
 		bad=0
 		while IFS=$'\t' read -r suite refsha; do
 			[[ -n "${suite}" ]] || continue
+			if (( $(date +%s) > deadline )); then hit_deadline=1; break; fi
 			got=""
 			for f in InRelease Release; do
 				if body="$(curl -fsSL --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
 					"${base}/dists/${suite}/${f}" 2>/dev/null)" && [[ -n "${body}" ]]; then
-					got="$(printf '%s' "${body}" | sha256sum | awk '{print $1}')"; break
+					got="$(printf '%s' "${body}" | apt_index_fingerprint)"; break
 				fi
 			done
-			[[ -n "${got}" && "${got}" == "${refsha}" ]] || bad=1
+			if [[ -z "${got}" || "${got}" != "${refsha}" ]]; then
+				bad=1; stale+="${stale:+ }${suite}"
+			fi
 		done < "${manifest}"
+		[[ -n "${stale}" ]] && echo "check-mirror: ${server} stale suites: ${stale}" >&2
 		;;
 
 	torrents)
