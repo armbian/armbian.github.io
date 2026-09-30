@@ -100,16 +100,27 @@ case "${check}" in
 		# are immutable and versioned, so a matching size on a present file is a
 		# strong "has this exact artifact" signal without downloading it. Probe in
 		# bounded parallel; one result token per line.
+		#
+		# Only a DEFINITIVE answer condemns the mirror: a 404 (file absent) or a
+		# size mismatch (wrong/corrupt file). A transient error (timeout, reset,
+		# 5xx) is retried and, if it still will not resolve, ignored -- the gate
+		# already proved the host is up, and a single blip among thousands of
+		# parallel probes must not flag an otherwise-current mirror. (Genuinely
+		# missing files answer 404 immediately; they do not time out.)
 		res="$(mktemp -d)"; trap 'rm -rf "${res}"' EXIT
 		probe() { # <relpath> <refsize> <slot>
-			local rel="$1" refsize="$2" slot="$3" len rc
-			len="$(curl -sSL -I --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
-				-o /dev/null -w '%{http_code} %header{content-length}' "${base}/${rel}" 2>/dev/null)"
-			rc=$?
-			local code="${len%% *}" size="${len#* }"
-			if [[ "${code}" == "200" && "${size}" == "${refsize}" ]]; then echo ok > "${res}/${slot}"
-			elif [[ ${rc} -eq 28 ]]; then echo timeout > "${res}/${slot}"
-			else echo bad > "${res}/${slot}"; fi
+			local rel="$1" refsize="$2" slot="$3" out code size attempt
+			for attempt in 1 2 3; do
+				out="$(curl -sSL -I --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
+					-o /dev/null -w '%{http_code} %header{content-length}' "${base}/${rel}" 2>/dev/null)"
+				code="${out%% *}"; size="${out#* }"
+				case "${code}" in
+					200) [[ "${size}" == "${refsize}" ]] && echo ok > "${res}/${slot}" || echo mismatch > "${res}/${slot}"; return ;;
+					404) echo missing > "${res}/${slot}"; return ;;
+					*)   sleep "${attempt}" ;;   # 000/5xx/timeout -> transient, retry
+				esac
+			done
+			echo transient > "${res}/${slot}"
 		}
 		slot=0; running=0
 		while IFS=$'\t' read -r rel refsize; do
@@ -123,7 +134,10 @@ case "${check}" in
 		bad=0
 		for f in "${res}"/*; do
 			[[ -f "${f}" ]] || continue
-			[[ "$(cat "${f}")" == "ok" ]] || bad=1
+			case "$(cat "${f}")" in
+				missing|mismatch) bad=1 ;;   # definitively out of sync
+				ok|transient)     : ;;       # in sync, or a blip we won't condemn on
+			esac
 		done
 		;;
 
