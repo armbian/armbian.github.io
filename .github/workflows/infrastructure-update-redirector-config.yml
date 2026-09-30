@@ -2,16 +2,24 @@ name: "Infrastructure: Update CDN redirector"
 
 # Regenerate the CDN redirector's per-variant YAML config from the mirror fleet:
 #   Check  -> permissions
-#   build  -> fetch the reference index for each platform from the source of truth
+#   build  -> build a small reference FINGERPRINT for each platform from the
+#             source of truth (apt/beta: suite->InRelease-hash; dl/archive:
+#             torrent-relpath->size; cache: noop)
 #   index  -> ask NetBox which mirror servers back each redirector variant
-#   check  -> compare every mirror against the reference (in sync / not / timeout)
+#   check  -> compare every mirror against the reference with plain per-file
+#             GET/HEAD (in sync / not / timeout)
 #   redirector -> turn the results into a per-variant redirector YAML
 #   Close  -> commit the YAMLs to the data branch and refresh the directory listing
 #
-# The five variants (debs-beta, debs, images, archive, cache) used to be five
-# copy-pasted index jobs, five check jobs and five redirector blocks. They are
-# now data-driven: the variant table lives once in scripts/redirector/, and the
-# index/check/redirector jobs run as matrices over it.
+# The five variants (debs-beta, debs, images, archive, cache) are data-driven:
+# the variant table lives once in scripts/redirector/, and the index/check/
+# redirector jobs run as matrices over it.
+#
+# Why per-file probing (not an lftp directory mirror + diff): a large share of
+# the fleet disables directory autoindex (403 on a directory, but serves the
+# files themselves fine). Listing them is impossible, so the old tree-diff
+# always reported them "not in sync". The reference is now a fingerprint the
+# check verifies file by file, which works uniformly across the whole fleet.
 
 on:
   repository_dispatch:
@@ -48,7 +56,7 @@ jobs:
           TEAM: "Release manager"
 
   build:
-    name: "Reference index: ${{ matrix.platform }}"
+    name: "Reference manifest: ${{ matrix.platform }}"
     runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'Armbian' }}
     needs: Check
@@ -57,43 +65,28 @@ jobs:
       matrix:
         platform: [ beta, apt, dl, archive, cache ]
     steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
       - name: "Install dependencies: lftp"
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: lftp
           version: 1.0
 
-      - name: "Download ${{ matrix.platform }} from ${{ env.SOURCE_OF_TRUTH }}"
-        run: |
-          set -euo pipefail
-          mkdir -p source destination
+      # Build a small reference FINGERPRINT (not a mirrored tree): the suite ->
+      # InRelease-hash map for apt/beta, or the torrent relpath -> size list for
+      # dl/archive. The mirror check diffs against this with per-file GET/HEAD.
+      - name: "Reference manifest for ${{ matrix.platform }}"
+        run: scripts/redirector/build-reference.sh "${{ matrix.platform }}" "${{ env.SOURCE_OF_TRUTH }}"
 
-          platform="${{ matrix.platform }}"
-          source_of_truth="${{ env.SOURCE_OF_TRUTH }}"
-
-          # lftp mirror is the flaky step; retry a few times before giving up so a
-          # transient blip no longer needs a whole-run re-run.
-          retry() { local n=0; until "$@"; do n=$((n+1)); [[ $n -ge 3 ]] && return 1; sleep $((n*10)); done; }
-
-          if [[ "$platform" =~ ^(dl|archive)$ ]]; then
-              # Mirror only */archive/*.torrent into ./source, then lift the archive subdirs out.
-              ( cd source && retry lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; quit" "${source_of_truth}/${platform}" )
-              # -f, not -i: with no tty the prompt reads EOF and declines the move.
-          find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -f -- "{}" destination/ \;
-          elif [[ "$platform" == "cache" ]]; then
-              # Cache isn't index-compared; ship a placeholder so the artifact exists.
-              touch source/valid destination/valid
-          else
-              # APT: mirror the dists tree into ./destination.
-              ( cd destination && retry lftp -e "mirror --parallel=64; quit" "${source_of_truth}/${platform}/dists" )
-          fi
-
-      - name: "Upload ${{ matrix.platform }} index"
+      - name: "Upload ${{ matrix.platform }} manifest"
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.platform }}
-          path: destination
-          compression-level: 0
+          path: ref/manifest.tsv
+          compression-level: 6
           retention-days: 2
 
   index:
@@ -139,13 +132,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: "Install dependencies: lftp"
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: lftp
-          version: 1.0
-
-      - name: "Fetch reference index (${{ matrix.node.reference }})"
+      - name: "Fetch reference manifest (${{ matrix.node.reference }})"
         uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.node.reference }}
