@@ -122,7 +122,11 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [ build, index ]
     if: ${{ needs.index.outputs.matrix != '' && needs.index.outputs.matrix != '[]' }}
-    timeout-minutes: 7
+    # Safety margin above check-mirror.sh's own CHECK_BUDGET (300s). The script
+    # always finishes with a verdict inside its budget, so this cap should never
+    # fire; if it ever did, a job killed here reports "cancelled" and poisons the
+    # whole run -- which is exactly what we are avoiding.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -164,6 +168,12 @@ jobs:
     name: "Redirector config: ${{ matrix.variant }}"
     runs-on: ubuntu-24.04
     needs: mirrors
+    # Publish from whatever mirror statuses we have, even if a single mirror job
+    # failed or was cancelled -- one bad mirror must not skip regenerating the
+    # config. summarize.sh still refuses to publish an empty failover pool, so a
+    # variant with no in-sync mirror fails safe (keeps the previous config live).
+    # !cancelled() so a human-cancelled run still stops cleanly.
+    if: ${{ !cancelled() }}
     strategy:
       fail-fast: false
       matrix:
