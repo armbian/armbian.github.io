@@ -65,6 +65,7 @@ fi
 # and record a "timeout" verdict for this one mirror, so its job still succeeds
 # and the rest of the run proceeds. A single slow mirror can never break the run.
 : "${CHECK_BUDGET:=300}"
+: "${TRANSIENT_MAX_PCT:=5}"   # torrents: share of probes allowed to fail transiently
 deadline=$(( $(date +%s) + CHECK_BUDGET ))
 hit_deadline=0
 
@@ -115,12 +116,10 @@ case "${check}" in
 		# strong "has this exact artifact" signal without downloading it. Probe in
 		# bounded parallel; one result token per line.
 		#
-		# Only a DEFINITIVE answer condemns the mirror: a 404 (file absent) or a
-		# size mismatch (wrong/corrupt file). A transient error (timeout, reset,
-		# 5xx) is retried and, if it still will not resolve, ignored -- the gate
-		# already proved the host is up, and a single blip among thousands of
-		# parallel probes must not flag an otherwise-current mirror. (Genuinely
-		# missing files answer 404 immediately; they do not time out.)
+		# A file the mirror does not serve (401/403/404/410) or a size mismatch
+		# puts the mirror out of sync. A transient error (timeout, reset, 5xx) is
+		# retried once and tolerated up to TRANSIENT_MAX_PCT of the probes; above
+		# that the result is unproven, so the mirror is reported as timeout.
 		res="$(mktemp -d)"; trap 'rm -rf "${res}"' EXIT
 		probe() { # <relpath> <refsize> <slot>
 			local rel="$1" refsize="$2" slot="$3" out code size attempt
@@ -130,7 +129,7 @@ case "${check}" in
 				code="${out%% *}"; size="${out#* }"
 				case "${code}" in
 					200) [[ "${size}" == "${refsize}" ]] && echo ok > "${res}/${slot}" || echo mismatch > "${res}/${slot}"; return ;;
-					404) echo missing > "${res}/${slot}"; return ;;
+					401|403|404|410) echo missing > "${res}/${slot}"; return ;;
 					*)   [[ ${attempt} -lt 2 ]] && sleep 1 ;;   # 000/5xx/timeout -> transient, one retry
 				esac
 			done
@@ -147,14 +146,19 @@ case "${check}" in
 		done < "${manifest}"
 		wait
 
-		bad=0
+		bad=0; probes=0; transient=0
 		for f in "${res}"/*; do
 			[[ -f "${f}" ]] || continue
+			probes=$((probes + 1))
 			case "$(cat "${f}")" in
-				missing|mismatch) bad=1 ;;   # definitively out of sync
-				ok|transient)     : ;;       # in sync, or a blip we won't condemn on
+				missing|mismatch) bad=1 ;;
+				transient)        transient=$((transient + 1)) ;;
 			esac
 		done
+		if (( probes > 0 && transient * 100 > probes * TRANSIENT_MAX_PCT )); then
+			echo "check-mirror: ${server} ${transient}/${probes} probes failed transiently" >&2
+			hit_deadline=1
+		fi
 		;;
 
 	*)
