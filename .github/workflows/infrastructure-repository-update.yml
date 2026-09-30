@@ -440,7 +440,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: singlemode
+          ref: main
           clean: false
 
       - name: "Update repository ${{ matrix.repository.name }}"
