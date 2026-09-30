@@ -60,15 +60,21 @@ case "${platform}" in
 
 		# Fetch each suite's index once; keep its content fingerprint.
 		declare -A SHA
+		missing=()
 		while read -r s; do
 			[[ -n "${s}" ]] || continue
-			body="$(fetch_index "${base}" "${s}")" || { echo "build-reference: ${platform}/${s} has no InRelease/Release — skipped" >&2; continue; }
+			body="$(fetch_index "${base}" "${s}")" || { missing+=("${s}"); continue; }
 			SHA["${s}"]="$(printf '%s' "${body}" | apt_index_fingerprint)"
 		done <<<"${suites}"
 		[[ "${#SHA[@]}" -gt 0 ]] || { echo "build-reference: no suite has a readable index under ${base}/" >&2; exit 1; }
 
 		# Every suite, unless APT_REF_SUITE pins one.
 		want="${APT_REF_SUITE:-all}"
+		# A partial manifest would never check the missing suites, so refuse it.
+		if [[ "${want}" == "all" && "${#missing[@]}" -gt 0 ]]; then
+			echo "build-reference: no InRelease/Release for ${platform} suite(s): ${missing[*]}" >&2
+			exit 1
+		fi
 		selected=()
 		if [[ "${want}" == "all" ]]; then
 			mapfile -t selected < <(printf '%s\n' "${!SHA[@]}" | LC_ALL=C sort)
