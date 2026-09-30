@@ -52,7 +52,15 @@ fi
 
 : "${PROBE_PARALLEL:=24}"     # concurrent probes for the torrents check
 : "${CONNECT_TIMEOUT:=8}"     # TCP/TLS connect cap (down hosts fail fast)
-: "${PROBE_TIMEOUT:=25}"      # per-request total cap
+: "${PROBE_TIMEOUT:=15}"      # per-request total cap
+# Overall wall-clock budget for the whole check. It MUST stay well under the
+# job's timeout-minutes: a job killed by GitHub's cap is reported "cancelled",
+# which poisons the run conclusion and skips the publish. Instead we stop on time
+# and record a "timeout" verdict for this one mirror, so its job still succeeds
+# and the rest of the run proceeds. A single slow mirror can never break the run.
+: "${CHECK_BUDGET:=300}"
+deadline=$(( $(date +%s) + CHECK_BUDGET ))
+hit_deadline=0
 
 # Reachability gate: does the host give ANY HTTP response? Returns the curl exit
 # code via a global, so a pure timeout can be told from a refusal/DNS failure.
@@ -110,14 +118,14 @@ case "${check}" in
 		res="$(mktemp -d)"; trap 'rm -rf "${res}"' EXIT
 		probe() { # <relpath> <refsize> <slot>
 			local rel="$1" refsize="$2" slot="$3" out code size attempt
-			for attempt in 1 2 3; do
+			for attempt in 1 2; do
 				out="$(curl -sSL -I --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
 					-o /dev/null -w '%{http_code} %header{content-length}' "${base}/${rel}" 2>/dev/null)"
 				code="${out%% *}"; size="${out#* }"
 				case "${code}" in
 					200) [[ "${size}" == "${refsize}" ]] && echo ok > "${res}/${slot}" || echo mismatch > "${res}/${slot}"; return ;;
 					404) echo missing > "${res}/${slot}"; return ;;
-					*)   sleep "${attempt}" ;;   # 000/5xx/timeout -> transient, retry
+					*)   [[ ${attempt} -lt 2 ]] && sleep 1 ;;   # 000/5xx/timeout -> transient, one retry
 				esac
 			done
 			echo transient > "${res}/${slot}"
@@ -125,6 +133,8 @@ case "${check}" in
 		slot=0; running=0
 		while IFS=$'\t' read -r rel refsize; do
 			[[ -n "${rel}" ]] || continue
+			# Stop launching once the budget is spent; in-flight probes drain below.
+			if (( $(date +%s) > deadline )); then hit_deadline=1; break; fi
 			probe "${rel}" "${refsize}" "${slot}" &
 			slot=$((slot + 1)); running=$((running + 1))
 			(( running % PROBE_PARALLEL == 0 )) && wait
@@ -147,9 +157,13 @@ case "${check}" in
 		;;
 esac
 
-# The host answered the gate, so it is reachable; in sync iff nothing was wrong.
-if [[ "${bad}" -eq 0 ]]; then
-	echo "true" > "status/${id}"
-else
+# The host answered the gate, so it is reachable. A definitive miss/mismatch means
+# stale; otherwise, if we ran out of budget before finishing, report timeout (the
+# job still succeeds); else in sync.
+if [[ "${bad}" -ne 0 ]]; then
 	classify not_in_sync
+elif [[ "${hit_deadline}" -ne 0 ]]; then
+	classify timeout
+else
+	echo "true" > "status/${id}"
 fi
