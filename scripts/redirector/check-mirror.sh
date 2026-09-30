@@ -1,21 +1,29 @@
 #!/usr/bin/env bash
 #
-# Compare one mirror server against the reference index and classify it.
-# Writes a single status file  status/<id>  whose first line is one of:
+# Compare one mirror against the reference MANIFEST and classify it. Writes a
+# single status file  status/<id>  whose first line is one of:
 #
-#   true          - reachable AND identical to the reference
-#   not_in_sync   - reachable but differs, or unreachable / no index
-#   timeout       - the mirror pull hit the 3-minute cap
+#   true          - reachable AND matches the reference
+#   not_in_sync   - reachable but differs (stale / missing files), or unreachable
+#   timeout       - the mirror answered nothing before the time cap
 #
-# For not_in_sync / timeout a second line carries the server, so the summary
-# step can list it.
+# For not_in_sync / timeout a second line carries the server, for the summary.
+#
+# Every probe is a plain per-file GET/HEAD. Unlike an lftp directory mirror this
+# needs NO directory autoindex on the mirror (a 403 on a directory blocks
+# listing, not file serving), so mirrors that disable autoindex are classified
+# on their actual content instead of being written off as unreachable.
+#
+# A fast reachability gate runs first: any HTTP response (even 403/404) means the
+# host is up; a host that answers nothing is classified without hammering every
+# file, so one unreachable mirror can't run out the job's time budget.
+#
+# Reference manifest (built by build-reference.sh), TAB-separated:
+#   dists    : <suite>   <TAB> <sha256 of dists/<suite>/InRelease>  (usually 1 line)
+#   torrents : <relpath> <TAB> <size-bytes>
 #
 # Usage: check-mirror.sh <server> <check-type> <reference-dir> <id>
 #   check-type: dists | torrents | noop
-#
-# This replaces five copy-pasted inline blocks and fixes their shared bug:
-# `exit_status` was used uninitialised and only some variants set it (debs-beta
-# used `|| true`), so out-of-sync / timeout servers were silently dropped.
 set -uo pipefail
 
 server="${1:?server (host/path) required}"
@@ -23,43 +31,100 @@ check="${2:?check type required}"
 reference_dir="${3:?reference dir required}"
 id="${4:?server id required}"
 
-mkdir -p status compare
+mkdir -p status
+manifest="${reference_dir}/manifest.tsv"
 
-# 0 = pull ok, 124 = timeout, anything else = pull error. Initialised so the
-# classification is well-defined even when the mirror is unreachable.
-exit_status=0
-# Whether the mirror answered at all. An unreachable mirror leaves compare/
-# empty, which would diff clean against an empty reference and be published as
-# healthy - so reachability is tracked explicitly rather than inferred.
-reached=0
+# Trim any stray trailing slash so https://<server>/<path> never becomes '//'.
+server="${server%/}"
+base="https://${server}"
+
+classify() { printf '%s\n%s\n' "$1" "${server}" > "status/${id}"; exit 0; }
+
+# Cache: not content-compared, always in sync.
+[[ "${check}" == "noop" ]] && { echo "true" > "status/${id}"; exit 0; }
+
+# A missing/empty manifest means the reference job produced nothing; refusing to
+# classify is safer than diffing against emptiness and publishing the fleet.
+if [[ ! -s "${manifest}" ]]; then
+	echo "check-mirror: empty/missing manifest '${manifest}' - refusing to classify ${server}" >&2
+	classify not_in_sync
+fi
+
+: "${PROBE_PARALLEL:=24}"     # concurrent probes for the torrents check
+: "${CONNECT_TIMEOUT:=8}"     # TCP/TLS connect cap (down hosts fail fast)
+: "${PROBE_TIMEOUT:=25}"      # per-request total cap
+
+# Reachability gate: does the host give ANY HTTP response? Returns the curl exit
+# code via a global, so a pure timeout can be told from a refusal/DNS failure.
+gate_rc=0
+reachable() { # <url>
+	local code
+	code="$(curl -sSL -o /dev/null --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
+		-w '%{http_code}' "$1" 2>/dev/null)"
+	gate_rc=$?
+	[[ "${code}" =~ ^[0-9]+$ && "${code}" -ge 100 ]]
+}
+
+gate="${base}/dists/"
+[[ "${check}" == "torrents" ]] && gate="${base}/"
+if ! reachable "${gate}"; then
+	# No HTTP response at all. Distinguish a slow (timeout) mirror from a dead one.
+	[[ "${gate_rc}" -eq 28 ]] && classify timeout
+	classify not_in_sync
+fi
 
 case "${check}" in
-	noop)
-		# Cache mirrors aren't index-compared; they're always considered in sync.
-		echo "true" > "status/${id}"
-		exit 0
-		;;
-
 	dists)
-		# APT repositories: mirror the dists/ tree and diff it.
-		if curl -o /dev/null -sfI "https://${server}/dists/"; then
-			reached=1
-			( cd compare && timeout 3m lftp -e "mirror --parallel=16; exit" "https://${server}/dists/" ) \
-				|| exit_status=$?
-		fi
+		# Compare each manifest suite's InRelease (fallback Release) hash. Normally
+		# one representative suite, so this is one request against an up mirror.
+		# NB: fetch the body exactly as build-reference does -- $(curl ...) so the
+		# same trailing-newline trimming applies on both sides and the hashes are
+		# comparable. The gate already proved the host answers, so a failed fetch
+		# here means the suite is missing (stale) -> not in sync.
+		bad=0
+		while IFS=$'\t' read -r suite refsha; do
+			[[ -n "${suite}" ]] || continue
+			got=""
+			for f in InRelease Release; do
+				if body="$(curl -fsSL --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
+					"${base}/dists/${suite}/${f}" 2>/dev/null)" && [[ -n "${body}" ]]; then
+					got="$(printf '%s' "${body}" | sha256sum | awk '{print $1}')"; break
+				fi
+			done
+			[[ -n "${got}" && "${got}" == "${refsha}" ]] || bad=1
+		done < "${manifest}"
 		;;
 
 	torrents)
-		# Image repositories: mirror only the archive/*.torrent files.
-		mkdir -p source
-		if curl -o /dev/null -sfI "https://${server}"; then
-			reached=1
-			( cd source && timeout 3m lftp -e "mirror --include-glob=*/archive/*.torrent --parallel=64; exit" "https://${server}" ) \
-				|| exit_status=$?
-			# -f, not -i: with no tty an interactive prompt reads EOF and silently
-			# declines the move. Errors stay on stderr so a real failure is visible.
-			find source/*/archive/ -mindepth 1 -maxdepth 1 -exec mv -f -- {} compare/ \; || true
-		fi
+		# HEAD each torrent and compare Content-Length to the reference. The files
+		# are immutable and versioned, so a matching size on a present file is a
+		# strong "has this exact artifact" signal without downloading it. Probe in
+		# bounded parallel; one result token per line.
+		res="$(mktemp -d)"; trap 'rm -rf "${res}"' EXIT
+		probe() { # <relpath> <refsize> <slot>
+			local rel="$1" refsize="$2" slot="$3" len rc
+			len="$(curl -sSL -I --connect-timeout "${CONNECT_TIMEOUT}" --max-time "${PROBE_TIMEOUT}" \
+				-o /dev/null -w '%{http_code} %header{content-length}' "${base}/${rel}" 2>/dev/null)"
+			rc=$?
+			local code="${len%% *}" size="${len#* }"
+			if [[ "${code}" == "200" && "${size}" == "${refsize}" ]]; then echo ok > "${res}/${slot}"
+			elif [[ ${rc} -eq 28 ]]; then echo timeout > "${res}/${slot}"
+			else echo bad > "${res}/${slot}"; fi
+		}
+		slot=0; running=0
+		while IFS=$'\t' read -r rel refsize; do
+			[[ -n "${rel}" ]] || continue
+			probe "${rel}" "${refsize}" "${slot}" &
+			slot=$((slot + 1)); running=$((running + 1))
+			(( running % PROBE_PARALLEL == 0 )) && wait
+		done < "${manifest}"
+		wait
+
+		bad=0
+		for f in "${res}"/*; do
+			[[ -f "${f}" ]] || continue
+			[[ "$(cat "${f}")" == "ok" ]] || bad=1
+		done
 		;;
 
 	*)
@@ -68,19 +133,9 @@ case "${check}" in
 		;;
 esac
 
-# An empty reference means the index job produced nothing: every mirror would
-# then diff clean and the whole fleet would be published as in sync. Refuse.
-if [[ -z "$(find "${reference_dir}" -mindepth 1 -print -quit 2>/dev/null)" ]]; then
-	echo "check-mirror: reference dir '${reference_dir}' is empty - refusing to classify ${server}" >&2
-	printf '%s\n%s\n' "not_in_sync" "${server}" > "status/${id}"
-	exit 0
-fi
-
-# In sync only when the mirror answered AND its content matches the reference.
-if [[ "${reached}" -eq 1 && -z "$(diff -rq compare "${reference_dir}" 2>/dev/null || true)" ]]; then
+# The host answered the gate, so it is reachable; in sync iff nothing was wrong.
+if [[ "${bad}" -eq 0 ]]; then
 	echo "true" > "status/${id}"
-elif [[ "${exit_status}" -eq 124 ]]; then
-	printf '%s\n%s\n' "timeout" "${server}" > "status/${id}"
 else
-	printf '%s\n%s\n' "not_in_sync" "${server}" > "status/${id}"
+	classify not_in_sync
 fi
