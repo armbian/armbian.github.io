@@ -767,6 +767,32 @@ def format_board_item(board_data, include_extensions=True):
         return f'    - {{ BOARD: {board}, BRANCH: {branch} }}'
 
 
+def split_riscv64(boards):
+    """
+    Split a headless list into (other, riscv64).
+
+    Headless boards skip the riscv64 category in is_fast_hardware(), so without
+    this a headless riscv64 board (e.g. Milk-V Duo S) rides the plain
+    `RELEASE: UBUNTU` targets and gets resolute, whose riscv64 userspace needs
+    RVA23 - the board config then rejects it. Kept apart, it goes to Debian and
+    to the UBUNTU_RISCV64 (noble) minimal target only, never to a desktop.
+    """
+    return ([b for b in boards if b['arch'] != 'riscv64'],
+            [b for b in boards if b['arch'] == 'riscv64'])
+
+
+def anchor_block(name, boards):
+    """YAML anchor list `name` for `boards`, or '' when empty."""
+    if not boards:
+        return ''
+    yaml = f'  {name}: &{name}\n'
+    yaml += '  # auto generated section\n'
+    for board_data in sorted(boards, key=lambda x: x['board']):
+        yaml += format_board_item(board_data, include_extensions=True) + '\n'
+    yaml += '  # end of auto generated section\n\n'
+    return yaml
+
+
 def generate_apps_yaml(conf_wip_boards, manual_content=""):
     """
     Generate apps.yml with one image per board with different extensions.
@@ -881,6 +907,18 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
     edge_riscv64 = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] == 'riscv64' and b['board'] not in current_boards]
     edge_loongarch = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] == 'loongarch' and b['board'] not in current_boards]
     edge_headless = [b for b in conf_wip_boards if b['branch'] == 'edge' and b['is_fast'] is None and b['board'] not in current_boards]
+
+    # Headless riscv64 boards: Debian + noble minimal only (see split_riscv64)
+    current_headless, current_headless_riscv64 = split_riscv64(current_headless)
+    vendor_headless, vendor_headless_riscv64 = split_riscv64(vendor_headless)
+    legacy_headless, legacy_headless_riscv64 = split_riscv64(legacy_headless)
+    edge_headless, edge_headless_riscv64 = split_riscv64(edge_headless)
+    headless_riscv64 = [
+        ('stable-current-headless-riscv64', current_headless_riscv64),
+        ('stable-vendor-headless-riscv64', vendor_headless_riscv64),
+        ('stable-legacy-headless-riscv64', legacy_headless_riscv64),
+        ('stable-edge-headless-riscv64', edge_headless_riscv64),
+    ]
 
     # Current branch lists
     yaml += """# Stable builds - fast HDMI (quad-core+ or modern SoCs)
@@ -1027,6 +1065,9 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    for name, boards in headless_riscv64:
+        yaml += anchor_block(name, boards)
+
     yaml += """# automated lists stop
 
 targets:
@@ -1082,6 +1123,9 @@ targets:
         yaml += '      - *stable-edge-loongarch\n'
     if edge_headless:
         yaml += '      - *stable-edge-headless\n'
+    for name, boards in headless_riscv64:
+        if boards:
+            yaml += f'      - *{name}\n'
 
     yaml += """
   # Ubuntu stable minimal
@@ -1295,7 +1339,7 @@ targets:
     # Dedicated riscv64 minimal target, pinned to noble (resolute riscv64
     # is broken). Carries legacy too — it used to ride the shared
     # minimal-stable-ubuntu target, which is now resolute-only.
-    if current_riscv64 or vendor_riscv64 or legacy_riscv64 or edge_riscv64:
+    if current_riscv64 or vendor_riscv64 or legacy_riscv64 or edge_riscv64 or any(b for _, b in headless_riscv64):
         yaml += """
   # Ubuntu stable minimal - RISC-V (noble; resolute riscv64 is broken)
   minimal-stable-ubuntu-riscv:
@@ -1318,6 +1362,9 @@ targets:
             yaml += '      - *stable-legacy-riscv64\n'
         if edge_riscv64:
             yaml += '      - *stable-edge-riscv64\n'
+        for name, boards in headless_riscv64:
+            if boards:
+                yaml += f'      - *{name}\n'
         yaml += '\n'
 
     # Add loongarch target if any loongarch boards exist
@@ -1369,6 +1416,9 @@ def generate_nightly_yaml(conf_wip_boards, manual_content=""):
     riscv64_boards = [b for b in boards if b['is_fast'] == 'riscv64']
     loongarch_boards = [b for b in boards if b['is_fast'] == 'loongarch']
     headless_boards = [b for b in boards if b['is_fast'] is None]
+    # Headless riscv64: Debian only here - nightly has no noble riscv64
+    # minimal target, and the resolute one can't run on them (see split_riscv64)
+    headless_boards, headless_riscv64_boards = split_riscv64(headless_boards)
 
     yaml += """# Nightly builds - fast HDMI (quad-core+ or modern SoCs)
   nightly-fast-hdmi: &nightly-fast-hdmi
@@ -1407,6 +1457,8 @@ def generate_nightly_yaml(conf_wip_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    yaml += anchor_block('nightly-headless-riscv64', headless_riscv64_boards)
+
     yaml += """# automated lists stop
 
 targets:
@@ -1429,6 +1481,8 @@ targets:
         yaml += '      - *nightly-slow-hdmi\n'
     if headless_boards:
         yaml += '      - *nightly-headless\n'
+    if headless_riscv64_boards:
+        yaml += '      - *nightly-headless-riscv64\n'
     if riscv64_boards:
         yaml += '      - *nightly-riscv64\n'
     if loongarch_boards:
@@ -1558,6 +1612,16 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
     edge_riscv64 = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] == 'riscv64' and b['board'] not in current_boards]
     edge_loongarch = [b for b in csc_tvb_boards if b['branch'] == 'edge' and b['is_fast'] == 'loongarch' and b['board'] not in current_boards]
 
+    # Headless riscv64 boards: Debian + noble minimal only (see split_riscv64)
+    current_headless, current_headless_riscv64 = split_riscv64(current_headless)
+    vendor_headless, vendor_headless_riscv64 = split_riscv64(vendor_headless)
+    edge_headless, edge_headless_riscv64 = split_riscv64(edge_headless)
+    headless_riscv64 = [
+        ('community-current-headless-riscv64', current_headless_riscv64),
+        ('community-vendor-headless-riscv64', vendor_headless_riscv64),
+        ('community-edge-headless-riscv64', edge_headless_riscv64),
+    ]
+
     yaml += """# Community builds - fast HDMI (current branch)
   community-current-fast-hdmi: &community-current-fast-hdmi
   # auto generated section
@@ -1667,6 +1731,9 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    for name, boards in headless_riscv64:
+        yaml += anchor_block(name, boards)
+
     yaml += """# automated lists stop
 
 targets:
@@ -1713,6 +1780,9 @@ targets:
         yaml += '      - *community-edge-riscv64\n'
     if edge_loongarch:
         yaml += '      - *community-edge-loongarch\n'
+    for name, boards in headless_riscv64:
+        if boards:
+            yaml += f'      - *{name}\n'
 
     yaml += """
   # Ubuntu GNOME desktop for fast HDMI community boards
@@ -1855,7 +1925,7 @@ targets:
     # Ubuntu minimal CLI for RISC-V community boards. Pinned to noble
     # (resolute riscv64 is broken) and split out of community-noble-minimal
     # above so riscv64 stays on the last-good LTS while the rest move on.
-    if current_riscv64 or vendor_riscv64 or edge_riscv64:
+    if current_riscv64 or vendor_riscv64 or edge_riscv64 or any(b for _, b in headless_riscv64):
         yaml += """
   # Ubuntu minimal CLI for RISC-V community boards (noble; resolute riscv64 is broken)
   community-noble-riscv64-minimal:
@@ -1876,6 +1946,9 @@ targets:
             yaml += '      - *community-vendor-riscv64\n'
         if edge_riscv64:
             yaml += '      - *community-edge-riscv64\n'
+        for name, boards in headless_riscv64:
+            if boards:
+                yaml += f'      - *{name}\n'
 
     # Note: loongarch boards don't get noble images, only bookworm minimal
 
@@ -2042,7 +2115,9 @@ def generate_exposed_map(
         # broken), so the recommended-image regex must point at noble too —
         # otherwise it would keep matching resolute and the riscv64
         # "recommended" download would silently disappear from the site.
-        d_release = RISCV64_UBUNTU_CODENAME if is_fast == 'riscv64' else ubuntu_codename
+        # Checked on arch, not is_fast: headless riscv64 boards (is_fast None)
+        # are pinned to noble too - see split_riscv64().
+        d_release = RISCV64_UBUNTU_CODENAME if board_data['arch'] == 'riscv64' else ubuntu_codename
         d_branch = branch
         d_suffix = default_suffix
         if override and isinstance(override.get('desktop'), dict):
