@@ -1,0 +1,127 @@
+name: Generate Featured Content
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      gemini_api_key:
+        description: 'Google Gemini API Key for AI-powered summary generation'
+        required: false
+        type: string
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+
+env:
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY || inputs.gemini_api_key }}
+
+permissions:
+  contents: write
+
+jobs:
+  generate-featured-content:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
+      - name: Checkout armbian/configng repository
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/configng
+          path: configng
+
+      - name: Copy config.software.json
+        run: |
+          if [ -f "configng/tools/json/config.software.json" ]; then
+            echo "Copying config.software.json..."
+            cp configng/tools/json/config.software.json ./config.software.json
+            echo "File copied successfully"
+          else
+            echo "Warning: config.software.json not found in configng repository"
+          fi
+
+      - name: Install Python dependencies
+        run: |
+          pip3 install --upgrade google-genai pyyaml
+
+      - name: Generate featured content
+        env:
+          GHOST_API_KEY: ${{ secrets.GHOST_API_KEY }}
+          GHOST_API_URL: ${{ secrets.GHOST_API_URL }}
+          GITHUB_TOKEN: ${{ secrets.SPONSORS }}
+        run: |
+          set -x  # Debug mode 
+
+          cd featured-content/scripts
+
+          # Create temporary directory for intermediate results
+          mkdir -p /tmp/featured-steps
+
+          # 1. Fetch GitHub releases
+          echo "=== Step 1: Fetching GitHub releases ==="
+          python3 github_releases.py --limit 5 > /tmp/featured-steps/01-releases.json || echo "[]" > /tmp/featured-steps/01-releases.json
+
+          # 2. Fetch Ghost news
+          echo "=== Step 2: Fetching Ghost news ==="
+          if [ -n "$GHOST_API_URL" ]; then
+            python3 ghost_news.py --url "$GHOST_API_URL" --limit 5 > /tmp/featured-steps/02-news.json || echo "[]" > /tmp/featured-steps/02-news.json
+          else
+            echo "[]" > /tmp/featured-steps/02-news.json
+          fi
+
+          # 3. Fetch GitHub sponsors
+          echo "=== Step 3: Fetching GitHub sponsors ==="
+          python3 sponsors.py --limit 10 > /tmp/featured-steps/03-sponsors.json || echo "[]" > /tmp/featured-steps/03-sponsors.json
+
+          # 4. Process software list (optional)
+          echo "=== Step 4: Processing software list ==="
+          if [ -f "../../config.software.json" ]; then
+            python3 software_list.py --config ../../config.software.json --limit 10 > /tmp/featured-steps/04-software.json || echo "[]" > /tmp/featured-steps/04-software.json
+          else
+            echo "[]" > /tmp/featured-steps/04-software.json
+          fi
+
+          # 5. Load manual entries
+          echo "=== Step 5: Loading manual entries ==="
+          python3 manual_list.py --file ../manual_featured.yml > /tmp/featured-steps/05-manual.json || echo "[]" > /tmp/featured-steps/05-manual.json
+
+          # 6. Select N entries from each category (N=2 means 2 per type)
+          echo "=== Step 6: Selecting featured entries ==="
+          python3 select_featured.py 2 /tmp/featured-steps/*.json > ../../featured-content.json
+
+          # Display counts
+          echo "=== Summary ==="
+          for step in /tmp/featured-steps/*.json; do
+            name=$(basename "$step" .json)
+            count=$(cat "$step" | jq '. | length' 2>/dev/null || echo 0)
+            echo "  $name: $count"
+          done
+
+      - name: Update generation timestamp
+        run: |
+          # Replace null timestamp with actual ISO timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          sed -i "s/\"generated_at\": null/\"generated_at\": \"$TIMESTAMP\"/" featured-content.json || true
+
+      - name: Display generated JSON
+        run: |
+          echo "=== Generated Featured Content JSON ==="
+          cat featured-content.json
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Add the generated file
+          git add featured-content.json
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Generate featured content selection [skip ci]"
+            git push
+          fi
