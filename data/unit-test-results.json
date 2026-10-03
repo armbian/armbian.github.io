@@ -1,0 +1,1577 @@
+{
+  "generated_at": "2026-10-03T13:50:02Z",
+  "tests": [
+    {
+      "name": "Docker install",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 37,
+      "result": "success"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 1383,
+      "result": "success"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 1843,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 67,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 70,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 638,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 575,
+      "result": "success"
+    },
+    {
+      "name": "samba install",
+      "release": "bookworm",
+      "arch": "amd64",
+      "duration": 11,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 53,
+      "result": "success"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 719,
+      "result": "success"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 794,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Stable repository",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 646,
+      "result": "success"
+    },
+    {
+      "name": "samba install",
+      "release": "bookworm",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "bookworm",
+      "arch": "armhf",
+      "duration": 2436,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "forky",
+      "arch": "amd64",
+      "duration": 14,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "forky",
+      "arch": "amd64",
+      "duration": 6,
+      "result": "failure"
+    },
+    {
+      "name": "Stable repository",
+      "release": "forky",
+      "arch": "amd64",
+      "duration": 4,
+      "result": "failure"
+    },
+    {
+      "name": "Docker install",
+      "release": "forky",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "forky",
+      "arch": "arm64",
+      "duration": 8,
+      "result": "failure"
+    },
+    {
+      "name": "Stable repository",
+      "release": "forky",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Docker install",
+      "release": "jammy",
+      "arch": "amd64",
+      "duration": 60,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "jammy",
+      "arch": "amd64",
+      "duration": 70,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "jammy",
+      "arch": "amd64",
+      "duration": 83,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "jammy",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "jammy",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Stable repository",
+      "release": "jammy",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "ActualBudget install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 99,
+      "result": "success"
+    },
+    {
+      "name": "AdGuardHome install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 16,
+      "result": "success"
+    },
+    {
+      "name": "Bazarr install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 219,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 821,
+      "result": "success"
+    },
+    {
+      "name": "Deluge install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 61,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 42,
+      "result": "success"
+    },
+    {
+      "name": "Domoticz install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 64,
+      "result": "success"
+    },
+    {
+      "name": "Duplicati install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 20,
+      "result": "success"
+    },
+    {
+      "name": "EVCC install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 14,
+      "result": "success"
+    },
+    {
+      "name": "EmbyServer install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 42,
+      "result": "success"
+    },
+    {
+      "name": "Filebrowser install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 96,
+      "result": "success"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 687,
+      "result": "success"
+    },
+    {
+      "name": "Ghost install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 77,
+      "result": "success"
+    },
+    {
+      "name": "Grafana install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 42,
+      "result": "success"
+    },
+    {
+      "name": "Hastebin install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 67,
+      "result": "success"
+    },
+    {
+      "name": "Homepage install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 35,
+      "result": "success"
+    },
+    {
+      "name": "Immich install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 612,
+      "result": "success"
+    },
+    {
+      "name": "Jellyfin install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 76,
+      "result": "success"
+    },
+    {
+      "name": "Jellyseerr install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 25,
+      "result": "success"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 794,
+      "result": "success"
+    },
+    {
+      "name": "Lidarr install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 123,
+      "result": "success"
+    },
+    {
+      "name": "Mariadb install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 107,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 707,
+      "result": "success"
+    },
+    {
+      "name": "Medusa install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 126,
+      "result": "success"
+    },
+    {
+      "name": "Navidrome install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 88,
+      "result": "success"
+    },
+    {
+      "name": "NetAlertX install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 35,
+      "result": "success"
+    },
+    {
+      "name": "Netdata install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 17,
+      "result": "success"
+    },
+    {
+      "name": "Nextcloud install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 56,
+      "result": "success"
+    },
+    {
+      "name": "OctoPrint install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 25,
+      "result": "success"
+    },
+    {
+      "name": "Owncloud install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 169,
+      "result": "success"
+    },
+    {
+      "name": "PhpMyAdmin install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 218,
+      "result": "success"
+    },
+    {
+      "name": "Portainer install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 19,
+      "result": "failure"
+    },
+    {
+      "name": "PostgreSQL install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 17,
+      "result": "success"
+    },
+    {
+      "name": "Prometheus install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 75,
+      "result": "success"
+    },
+    {
+      "name": "Prowlarr install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 159,
+      "result": "success"
+    },
+    {
+      "name": "Radarr install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 17,
+      "result": "success"
+    },
+    {
+      "name": "Redis install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 139,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 42,
+      "result": "success"
+    },
+    {
+      "name": "SABnzbd install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 194,
+      "result": "success"
+    },
+    {
+      "name": "Sonarr install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 16,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 22,
+      "result": "success"
+    },
+    {
+      "name": "Stirling-PDF install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 221,
+      "result": "success"
+    },
+    {
+      "name": "Syncthing install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 95,
+      "result": "success"
+    },
+    {
+      "name": "Transmission install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 16,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 9,
+      "result": "success"
+    },
+    {
+      "name": "Unbound install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 214,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 736,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 559,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 549,
+      "result": "success"
+    },
+    {
+      "name": "qBittorrent install",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 129,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "noble",
+      "arch": "amd64",
+      "duration": 833,
+      "result": "success"
+    },
+    {
+      "name": "ActualBudget install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 78,
+      "result": "success"
+    },
+    {
+      "name": "AdGuardHome install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Bazarr install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 1033,
+      "result": "success"
+    },
+    {
+      "name": "Deluge install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Docker install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 54,
+      "result": "success"
+    },
+    {
+      "name": "Domoticz install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 28,
+      "result": "success"
+    },
+    {
+      "name": "Duplicati install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "EVCC install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "EmbyServer install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Filebrowser install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 708,
+      "result": "success"
+    },
+    {
+      "name": "Ghost install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Grafana install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Hastebin install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Homepage install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Immich install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Jellyfin install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Jellyseerr install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 750,
+      "result": "success"
+    },
+    {
+      "name": "Lidarr install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Mariadb install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 707,
+      "result": "success"
+    },
+    {
+      "name": "Medusa install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Navidrome install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "NetAlertX install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Netdata install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Nextcloud install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "OctoPrint install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Owncloud install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 143,
+      "result": "success"
+    },
+    {
+      "name": "PhpMyAdmin install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Portainer install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "PostgreSQL install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Prometheus install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Prowlarr install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Radarr install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 19,
+      "result": "success"
+    },
+    {
+      "name": "Redis install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "SABnzbd install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 39,
+      "result": "success"
+    },
+    {
+      "name": "Sonarr install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 54,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 56,
+      "result": "success"
+    },
+    {
+      "name": "Stirling-PDF install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Syncthing install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Transmission install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 21,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 14,
+      "result": "success"
+    },
+    {
+      "name": "Unbound install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 725,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 636,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 685,
+      "result": "success"
+    },
+    {
+      "name": "qBittorrent install",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "noble",
+      "arch": "arm64",
+      "duration": 758,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "noble",
+      "arch": "armhf",
+      "duration": 2738,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "noble",
+      "arch": "armhf",
+      "duration": 2333,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "noble",
+      "arch": "armhf",
+      "duration": 1093,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "noble",
+      "arch": "armhf",
+      "duration": 2940,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "noble",
+      "arch": "riscv64",
+      "duration": 5121,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "noble",
+      "arch": "riscv64",
+      "duration": 4115,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "noble",
+      "arch": "riscv64",
+      "duration": 152,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "noble",
+      "arch": "riscv64",
+      "duration": 3624,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "noble",
+      "arch": "riscv64",
+      "duration": 3597,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "noble",
+      "arch": "riscv64",
+      "duration": 4708,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 1970,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 38,
+      "result": "success"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 818,
+      "result": "success"
+    },
+    {
+      "name": "HedgeDoc install",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 136,
+      "result": "success"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 1065,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 1367,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 49,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 23,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 8,
+      "result": "success"
+    },
+    {
+      "name": "Uptimekuma install",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 27,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 555,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 1518,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 580,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "resolute",
+      "arch": "amd64",
+      "duration": 946,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 1132,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 738,
+      "result": "success"
+    },
+    {
+      "name": "HedgeDoc install",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 866,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 1897,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 67,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 73,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 14,
+      "result": "success"
+    },
+    {
+      "name": "Uptimekuma install",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 707,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "resolute",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "resolute",
+      "arch": "armhf",
+      "duration": 3348,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "resolute",
+      "arch": "armhf",
+      "duration": 3237,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "resolute",
+      "arch": "armhf",
+      "duration": 3339,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "resolute",
+      "arch": "armhf",
+      "duration": 4035,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "resolute",
+      "arch": "riscv64",
+      "duration": 8313,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "resolute",
+      "arch": "riscv64",
+      "duration": 7199,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "resolute",
+      "arch": "riscv64",
+      "duration": 202,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "resolute",
+      "arch": "riscv64",
+      "duration": 6817,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "resolute",
+      "arch": "riscv64",
+      "duration": 5981,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "resolute",
+      "arch": "riscv64",
+      "duration": 7979,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 798,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 17,
+      "result": "success"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 1415,
+      "result": "success"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 996,
+      "result": "success"
+    },
+    {
+      "name": "LXQt desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 1046,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 789,
+      "result": "success"
+    },
+    {
+      "name": "Proxmox VE install",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 247,
+      "result": "success"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 41,
+      "result": "success"
+    },
+    {
+      "name": "Stable repository",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 55,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 8,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 751,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 617,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 572,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "trixie",
+      "arch": "amd64",
+      "duration": 834,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 860,
+      "result": "success"
+    },
+    {
+      "name": "Docker install",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "GNOME desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 819,
+      "result": "success"
+    },
+    {
+      "name": "KDE Plasma desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 877,
+      "result": "success"
+    },
+    {
+      "name": "LXQt desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 809,
+      "result": "success"
+    },
+    {
+      "name": "Proxmox VE install",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Rolling repository",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "Stable repository",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 60,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 13,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 783,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 1647,
+      "result": "success"
+    },
+    {
+      "name": "i3-wm desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 0,
+      "result": "failure",
+      "note": "runner killed or step did not complete"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "trixie",
+      "arch": "arm64",
+      "duration": 1850,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "trixie",
+      "arch": "armhf",
+      "duration": 2794,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "trixie",
+      "arch": "armhf",
+      "duration": 2668,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "trixie",
+      "arch": "armhf",
+      "duration": 2884,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "trixie",
+      "arch": "armhf",
+      "duration": 3523,
+      "result": "success"
+    },
+    {
+      "name": "Cinnamon desktop",
+      "release": "trixie",
+      "arch": "riscv64",
+      "duration": 5787,
+      "result": "success"
+    },
+    {
+      "name": "Mate desktop",
+      "release": "trixie",
+      "arch": "riscv64",
+      "duration": 4616,
+      "result": "success"
+    },
+    {
+      "name": "Tuning profiles",
+      "release": "trixie",
+      "arch": "riscv64",
+      "duration": 148,
+      "result": "success"
+    },
+    {
+      "name": "XFCE desktop",
+      "release": "trixie",
+      "arch": "riscv64",
+      "duration": 2645,
+      "result": "success"
+    },
+    {
+      "name": "enlightenment desktop",
+      "release": "trixie",
+      "arch": "riscv64",
+      "duration": 4030,
+      "result": "success"
+    },
+    {
+      "name": "xmonad desktop",
+      "release": "trixie",
+      "arch": "riscv64",
+      "duration": 4827,
+      "result": "success"
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+[
+  {
+    "host": "ampere-1",
+    "runners": 41,
+    "vcpus": 128,
+    "memory": 524288,
+    "apt_proxy": "10.0.40.2:3142",
+    "oci_cache": "10.0.40.2:5000",
+    "redis_cache": "redis://10.0.40.2:6379",
+    "git_proxy": "http://10.0.40.2:8000",
+    "cputhreads": 32
+  },
+  {
+    "host": "cats",
+    "runners": 6,
+    "vcpus": 16,
+    "memory": 32768,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "geekom",
+    "runners": 4,
+    "vcpus": 20,
+    "memory": 64000,
+    "apt_proxy": "10.0.40.2:3142",
+    "oci_cache": "10.0.40.2:5000",
+    "redis_cache": "redis://10.0.40.2:6379",
+    "git_proxy": "http://10.0.40.2:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "github",
+    "runners": 20,
+    "vcpus": 40,
+    "memory": 140000,
+    "apt_proxy": "",
+    "oci_cache": "",
+    "redis_cache": "",
+    "git_proxy": "",
+    "cputhreads": ""
+  },
+  {
+    "host": "insa-trixie",
+    "runners": 50,
+    "vcpus": 176,
+    "memory": 393216,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": 32
+  },
+  {
+    "host": "kspace",
+    "runners": 24,
+    "vcpus": 128,
+    "memory": 262144,
+    "apt_proxy": "",
+    "oci_cache": "",
+    "redis_cache": "redis://193.40.103.61:6379",
+    "git_proxy": "http://193.40.103.61:8000",
+    "cputhreads": 24
+  },
+  {
+    "host": "oregon-1",
+    "runners": 6,
+    "vcpus": 16,
+    "memory": 32768,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "oregon-2",
+    "runners": 6,
+    "vcpus": 16,
+    "memory": 32768,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "rack-ryzen",
+    "runners": 15,
+    "vcpus": 32,
+    "memory": 128000,
+    "apt_proxy": "10.0.40.2:3142",
+    "oci_cache": "10.0.40.2:5000",
+    "redis_cache": "redis://10.0.40.2:6379",
+    "git_proxy": "http://10.0.40.2:8000",
+    "cputhreads": 20
+  },
+  {
+    "host": "repoassembly",
+    "runners": 16,
+    "vcpus": 10,
+    "memory": 16000,
+    "apt_proxy": "",
+    "oci_cache": "",
+    "redis_cache": "",
+    "git_proxy": "",
+    "cputhreads": ""
+  },
+  {
+    "host": "stpete",
+    "runners": 40,
+    "vcpus": 80,
+    "memory": 385571,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": 32
+  },
+  {
+    "host": "vps3000-1",
+    "runners": 4,
+    "vcpus": 12,
+    "memory": 24576,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "vps8000-1",
+    "runners": 6,
+    "vcpus": 18,
+    "memory": 64000,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "vps8000-2",
+    "runners": 6,
+    "vcpus": 18,
+    "memory": 64000,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": ""
+  },
+  {
+    "host": "werner-trixie",
+    "runners": 4,
+    "vcpus": 8,
+    "memory": 32000,
+    "apt_proxy": "",
+    "oci_cache": "",
+    "redis_cache": "",
+    "git_proxy": "",
+    "cputhreads": ""
+  },
+  {
+    "host": "xogium",
+    "runners": 12,
+    "vcpus": 32,
+    "memory": 128000,
+    "apt_proxy": "172.17.0.1:3142",
+    "oci_cache": "172.17.0.1:5000",
+    "redis_cache": "redis://172.17.0.1:6379",
+    "git_proxy": "http://172.17.0.1:8000",
+    "cputhreads": 20
+  }
+]
