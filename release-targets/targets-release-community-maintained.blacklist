@@ -7,3 +7,6 @@ mekotronics-r58hd
 mekotronics-r58-4x4
 retroidpocket-rpmini
 retroidpocket-rp5
+
+# Blacklisted until the build/compilation issues are resolved
+xiaomi-sheng

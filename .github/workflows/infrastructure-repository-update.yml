@@ -440,7 +440,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: singlemode
+          ref: main
           clean: false
 
       - name: "Update repository ${{ matrix.repository.name }}"
@@ -494,6 +494,24 @@ jobs:
           DEB_COUNT=$(find "$INPUT_DIR" -type f -name "*.deb" 2>/dev/null | wc -l)
           echo "Found ${DEB_COUNT} .deb files" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
+
+          # Stable changes rarely, but this workflow runs several times a day. Publish
+          # stable only for a stable release or when the last publish is older than
+          # STABLE_REPOSITORY_UPDATE days, so slow mirrors can catch up. 0 or unset:
+          # publish every run.
+          INTERVAL_DAYS="${{ vars.STABLE_REPOSITORY_UPDATE }}"
+          TARGET="${{ github.event.client_payload.target }}"
+          if [ "$REPO_NAME" = "debs" ] && [ "${INTERVAL_DAYS:-0}" -gt 0 ] && [ "$TARGET" != "stable/" ]; then
+            LAST=$(find "$OUTPUT_DIR/public/dists" -maxdepth 2 -name InRelease -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+            if [ -n "$LAST" ]; then
+              AGE_DAYS=$(( ( $(date +%s) - ${LAST%.*} ) / 86400 ))
+              if [ "$AGE_DAYS" -lt "$INTERVAL_DAYS" ]; then
+                echo "::notice::Stable repository published ${AGE_DAYS} day(s) ago, less than ${INTERVAL_DAYS}: skipping" | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              echo "Stable repository published ${AGE_DAYS} day(s) ago: updating" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
 
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
