@@ -9,7 +9,6 @@ Env: GH_TOKEN, REPOS ("owner/repo ..."), LOOKBACK_HOURS (default 6), DRY_RUN.
 """
 import json
 import os
-import sys
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -126,4 +125,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
