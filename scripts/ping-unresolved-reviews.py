@@ -9,6 +9,7 @@ Env: GH_TOKEN, REPOS ("owner/repo ..."), LOOKBACK_HOURS (default 6), DRY_RUN.
 """
 import json
 import os
+import sys
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -27,12 +28,30 @@ query($owner: String!, $name: String!, $cursor: String) {
         number isDraft url
         author { login __typename }
         reviewThreads(first: 100) {
+          pageInfo { hasNextPage }
           nodes {
             isResolved
             comments(first: 1) { nodes { createdAt url author { login } } }
           }
         }
-        comments(last: 50) { nodes { createdAt body } }
+        comments(last: 50) {
+          pageInfo { hasPreviousPage startCursor }
+          nodes { createdAt body }
+        }
+      }
+    }
+  }
+}
+"""
+
+# Older PR comments, newest page first, to find the last ping beyond the first 50
+OLDER_COMMENTS = """
+query($owner: String!, $name: String!, $number: Int!, $before: String) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      comments(last: 100, before: $before) {
+        pageInfo { hasPreviousPage startCursor }
+        nodes { createdAt body }
       }
     }
   }
@@ -51,8 +70,8 @@ def request(method, url, data=None):
         return json.load(resp)
 
 
-def graphql(variables):
-    out = request("POST", f"{API}/graphql", {"query": QUERY, "variables": variables})
+def graphql(variables, query=QUERY):
+    out = request("POST", f"{API}/graphql", {"query": query, "variables": variables})
     if out.get("errors"):
         raise RuntimeError(out["errors"])
     return out["data"]
@@ -74,11 +93,30 @@ def open_prs(repo):
         cursor = prs["pageInfo"]["endCursor"]
 
 
-def new_unresolved(pr, now):
+def pings_in(nodes):
+    return [ts(c["createdAt"]) for c in nodes if MARKER in (c.get("body") or "")]
+
+
+def last_ping(repo, pr):
+    """Time of the last ping. Pages back through older comments, else a ping can repeat."""
+    page = pr["comments"]
+    pings = pings_in(page["nodes"])
+    owner, name = repo.split("/")
+    while not pings and page["pageInfo"]["hasPreviousPage"]:
+        data = graphql({"owner": owner, "name": name, "number": pr["number"],
+                        "before": page["pageInfo"]["startCursor"]}, OLDER_COMMENTS)
+        page = data["repository"]["pullRequest"]["comments"]
+        pings = pings_in(page["nodes"])
+    return max(pings) if pings else None
+
+
+def new_unresolved(repo, pr, now):
     """Unresolved threads started after the last ping, by someone other than the author."""
     author = (pr.get("author") or {}).get("login", "")
-    pings = [ts(c["createdAt"]) for c in pr["comments"]["nodes"] if MARKER in (c.get("body") or "")]
-    since = max(pings + [now - LOOKBACK])
+    if pr["reviewThreads"]["pageInfo"]["hasNextPage"]:
+        print(f"warning: {repo}#{pr['number']} has more than 100 review threads, later ones are not checked")
+    ping = last_ping(repo, pr)
+    since = max([now - LOOKBACK] + ([ping] if ping else []))
     found = []
     for thread in pr["reviewThreads"]["nodes"]:
         first = (thread["comments"]["nodes"] or [None])[0]
@@ -110,19 +148,29 @@ def comment(repo, pr, threads):
 
 
 def main():
+    """Scan all repositories. Return 1 if any PR or repository failed, else 0."""
     now = datetime.now(timezone.utc)
-    pinged = 0
+    pinged = failed = 0
     for repo in os.environ["REPOS"].split():
-        for pr in open_prs(repo):
-            author = pr.get("author") or {}
-            if pr["isDraft"] or author.get("__typename") == "Bot" or not author.get("login"):
-                continue
-            threads = new_unresolved(pr, now)
-            if threads:
-                comment(repo, pr, threads)
-                pinged += 1
-    print(f"done: {pinged} PR(s) pinged")
+        try:
+            for pr in open_prs(repo):
+                author = pr.get("author") or {}
+                if pr["isDraft"] or author.get("__typename") == "Bot" or not author.get("login"):
+                    continue
+                try:
+                    threads = new_unresolved(repo, pr, now)
+                    if threads:
+                        comment(repo, pr, threads)
+                        pinged += 1
+                except Exception as e:  # noqa: BLE001 - one PR must not stop the scan
+                    print(f"error: {repo}#{pr['number']}: {e}")
+                    failed += 1
+        except Exception as e:  # noqa: BLE001 - one repository must not stop the scan
+            print(f"error: {repo}: {e}")
+            failed += 1
+    print(f"done: {pinged} PR(s) pinged, {failed} error(s)")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
