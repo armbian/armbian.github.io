@@ -1,0 +1,40 @@
+name: "Community: Ping unresolved review conversations"
+
+# Ask PR authors to resolve or dismiss NEW unresolved review conversations.
+# Scheduled instead of on pull_request_review: review events from fork PRs get
+# no secrets, so they could not comment as armbianworker.
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "Repositories to scan (space-separated owner/repo)"
+        default: "armbian/build armbian/configng armbian/documentation armbian/os armbian/armbian.github.io"
+      dry_run:
+        description: "Print the comments, do not post them"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ping-unresolved-reviews
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    if: ${{ github.repository_owner == 'armbian' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Ping authors
+        env:
+          GH_TOKEN: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          REPOS: ${{ inputs.repos || 'armbian/build armbian/configng armbian/documentation armbian/os armbian/armbian.github.io' }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          LOOKBACK_HOURS: "6"
+        run: python3 scripts/ping-unresolved-reviews.py
