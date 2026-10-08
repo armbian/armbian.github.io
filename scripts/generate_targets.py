@@ -1271,7 +1271,7 @@ targets:
         yaml += """
   # Ubuntu noble Bianbu desktop for SpacemiT K1 boards (legacy branch)
   desktop-stable-ubuntu-riscv64-bianbu:
-    enabled: yes
+    enabled: no  # Bianbu desktop is broken
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha
