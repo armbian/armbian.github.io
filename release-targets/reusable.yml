@@ -299,7 +299,9 @@ boards:
     board_introduced: "2026"
 
     # The magic: reuse artifact set. The M6V2 has no dedicated build - it ships
-    # on the unified "nanopi6-series" image (R6S/R6C/M6/M6V2), see armbian/build#10442.
-    uses: "nanopi6-series"
+    # on the unified "friendlyelec-rk3588" image (R6S/R6C/M6/M6V2/T6 family),
+    # see armbian/build#10946. That board was originally named "nanopi6-series"
+    # (armbian/build#10442) before being renamed as T6 support was added.
+    uses: "friendlyelec-rk3588"
     branch: "current,vendor"
     file_extension: "img.xz"
