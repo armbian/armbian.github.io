@@ -305,3 +305,86 @@ boards:
     uses: "friendlyelec-rk3588"
     branch: "current,vendor"
     file_extension: "img.xz"
+
+  # ---------------------------------------------------------------------
+  # NanoPi 6-series unification (armbian/build#10946): R6S, R6C, M6, T6
+  # and T6-LTS each still have their own independently-built .conf file
+  # today, so they already appear as real (non-virtual) boards with
+  # their own board_slug - adding entries for them here right now would
+  # collide with those real entries (the generator emits both the real
+  # board's own row AND every reusable row that uses it, so duplicate
+  # rows for one slug - see generate-armbian-images-json.sh around the
+  # "Check if this board is used by any reusable boards" loop).
+  #
+  # The five entries below are prepared ahead of time and must stay
+  # commented out / unmerged until armbian/build#10946 actually drops
+  # each board's independent .conf file in favor of the unified
+  # "friendlyelec-rk3588" image. Once that happens, uncomment the
+  # matching entry (same board_slug as today's real board, so existing
+  # download links/bookmarks keep working) and drop its old real image
+  # from this repo's own scan if still referenced anywhere.
+  #
+  # T6-LTS-Plus is NOT in this situation: it has never had its own .conf
+  # file (same as M6V2 - a pure ADC-runtime-detected variant), so it has
+  # no existing real board_slug to collide with and is safe to add live
+  # right now, same as M6V2 above.
+
+  - board_slug: "nanopct6-lts-plus"
+    board_name: "NanoPC T6 LTS Plus"
+    board_vendor: "friendlyelec"
+    board_support: "conf"
+    board_introduced: "2026"
+
+    # The magic: reuse artifact set. Like M6V2, T6-LTS-Plus has no
+    # dedicated build - it ships on the unified "friendlyelec-rk3588"
+    # image, see armbian/build#10946.
+    uses: "friendlyelec-rk3588"
+    branch: "current,vendor"
+    file_extension: "img.xz"
+
+  # --- Prepared, NOT yet safe to merge - see comment block above ---
+  #
+  # - board_slug: "nanopi-r6s"
+  #   board_name: "NanoPi R6S"
+  #   board_vendor: "friendlyelec"
+  #   board_support: "conf"
+  #   board_introduced: "2023"
+  #   uses: "friendlyelec-rk3588"
+  #   branch: "current,vendor"
+  #   file_extension: "img.xz"
+  #
+  # - board_slug: "nanopi-r6c"
+  #   board_name: "NanoPi R6C"
+  #   board_vendor: "friendlyelec"
+  #   board_support: "conf"
+  #   board_introduced: "2023"
+  #   uses: "friendlyelec-rk3588"
+  #   branch: "current,vendor"
+  #   file_extension: "img.xz"
+  #
+  # - board_slug: "nanopi-m6"
+  #   board_name: "NanoPi M6"
+  #   board_vendor: "friendlyelec"
+  #   board_support: "conf"
+  #   board_introduced: "2023"
+  #   uses: "friendlyelec-rk3588"
+  #   branch: "current,vendor"
+  #   file_extension: "img.xz"
+  #
+  # - board_slug: "nanopct6"
+  #   board_name: "NanoPC T6"
+  #   board_vendor: "friendlyelec"
+  #   board_support: "conf"
+  #   board_introduced: "2023"
+  #   uses: "friendlyelec-rk3588"
+  #   branch: "current,vendor"
+  #   file_extension: "img.xz"
+  #
+  # - board_slug: "nanopct6-lts"
+  #   board_name: "NanoPC T6 LTS"
+  #   board_vendor: "friendlyelec"
+  #   board_support: "conf"
+  #   board_introduced: "2024"
+  #   uses: "friendlyelec-rk3588"
+  #   branch: "current,vendor"
+  #   file_extension: "img.xz"
