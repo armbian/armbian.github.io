@@ -4,3 +4,13 @@
 # can't build it. The one working combo (Debian sid CLI minimal) is added
 # manually in targets-release-standard-support.manual instead.
 uefi-loong64
+
+# Superseded by the unified "friendlyelec-rk3588" image (armbian/build#10946),
+# which covers these boards plus M6V2/T6-LTS-Plus via runtime SARADC
+# detection. Their .conf files stay unchanged/independent in armbian/build;
+# this only stops new builds under their old slugs across all target types.
+nanopi-r6s
+nanopi-r6c
+nanopi-m6
+nanopct6
+nanopct6-lts
