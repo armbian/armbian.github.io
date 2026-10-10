@@ -246,6 +246,18 @@ def load_manual_overrides(base_path):
         return ""
 
 
+def collect_target_boards(value):
+    """Return boards from nested target lists."""
+    if isinstance(value, dict):
+        if 'BOARD' in value:
+            yield value['BOARD']
+        for item in value.values():
+            yield from collect_target_boards(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from collect_target_boards(item)
+
+
 def load_exposed_overrides(path):
     """
     Load per-board(family) overrides for exposed.map regex generation.
@@ -2010,8 +2022,9 @@ def generate_exposed_map(
             m_branch = mb.get('branch', m_branch)
             m_suffix = mb.get('suffix', m_suffix)
 
-        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{m_release}_{m_branch}_[0-9]*.[0-9]*.[0-9]*_{m_suffix}{file_ext}"
-        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{m_release}_{m_branch}_[0-9]*.[0-9]*.[0-9]*_{m_suffix}{file_ext}"
+        m_tail = f"_{m_suffix}" if m_suffix else ''
+        minimal_pattern = f"{dir_prefix}Armbian_{community_prefix}[0-9].*{board_pattern}_{m_release}_{m_branch}_[0-9]*.[0-9]*.[0-9]*{m_tail}{file_ext}"
+        minimal_pattern_no_prefix = f"Armbian_{community_prefix}[0-9].*{board_pattern}_{m_release}_{m_branch}_[0-9]*.[0-9]*.[0-9]*{m_tail}{file_ext}"
         lines.append(minimal_pattern)
         lines.append(minimal_pattern_no_prefix)
 
@@ -2196,6 +2209,13 @@ def main():
     community_path.write_text(resolve_release_tokens(community_yaml, args.debian_community, args.ubuntu_community))
     print(f"  Written {community_path}", file=sys.stderr)
 
+    community_targets = yaml.safe_load(community_yaml)['targets']
+    community_target_boards = set(collect_target_boards(community_targets))
+    _, community_exposed_boards = extract_boards_by_support_level(
+        image_info, extensions_map, remove_extensions_map,
+        blacklist_community - community_target_boards,
+    )
+
     # exposed.map
     # Generate from stable + community boards (exclude nightly targets).
     # Per-board(family) overrides for the recommended-image regex (used
@@ -2205,7 +2225,7 @@ def main():
     exposed_overrides = load_exposed_overrides(output_dir / 'exposed.map.overrides.yaml')
     exposed_map = generate_exposed_map(
         conf_wip_boards_stable,
-        csc_tvb_boards_community,
+        community_exposed_boards,
         debian_standard=args.debian_standard,
         ubuntu_standard=args.ubuntu_standard,
         debian_community=args.debian_community,
