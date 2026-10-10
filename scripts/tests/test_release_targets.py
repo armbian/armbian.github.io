@@ -1,3 +1,5 @@
+"""Check release targets and download recommendations."""
+
 import json
 from pathlib import Path
 import re
@@ -10,8 +12,11 @@ import yaml
 
 
 class ReleaseTargetsTest(unittest.TestCase):
+    """Check manual targets, blacklists, and image patterns."""
+
     @classmethod
     def setUpClass(cls):
+        """Generate release targets for test boards."""
         cls.directory = tempfile.TemporaryDirectory()
         cls.root = Path(cls.directory.name)
         entries = [
@@ -57,12 +62,15 @@ overrides:
 
     @classmethod
     def tearDownClass(cls):
+        """Remove temporary test files."""
         cls.directory.cleanup()
 
     def matches(self, filename):
+        """Return whether the filename matches a recommendation."""
         return any(re.fullmatch(pattern, filename) for pattern in self.patterns)
 
     def test_manual_images_remain_recommended(self):
+        """Keep manual CLI and desktop images in recommendations."""
         self.assertIn("manual-cli", self.targets["targets"])
         prefix = "Armbian_community_26.11.0-trunk.1_Manual-board_"
         self.assertTrue(self.matches(prefix + "trixie_current_6.18.42.img.xz"))
@@ -70,9 +78,11 @@ overrides:
         self.assertFalse(self.matches(prefix + "trixie_current_6.18.42_minimal.img.xz"))
 
     def test_blacklisted_board_without_targets_stays_hidden(self):
+        """Hide blacklisted boards without release targets."""
         self.assertFalse(any("Blocked-board" in pattern for pattern in self.patterns))
 
     def test_regular_images_remain_recommended(self):
+        """Keep default image recommendations for regular boards."""
         prefix = "Armbian_community_26.11.0-trunk.1_Regular-board_"
         self.assertTrue(self.matches(prefix + "trixie_current_6.18.42_minimal.img.xz"))
         self.assertTrue(self.matches(prefix + "resolute_current_6.18.42_gnome_desktop.img.xz"))
