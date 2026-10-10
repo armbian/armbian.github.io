@@ -10,3 +10,6 @@ retroidpocket-rp5
 
 # Blacklisted until the build/compilation issues are resolved
 xiaomi-sheng
+
+# Use the four manual RM66 images.
+eltay-rm66

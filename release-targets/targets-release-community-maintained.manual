@@ -15,6 +15,8 @@ cli-stable-debian:
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: aml-s9xx-box, BRANCH: edge }
+    - { BOARD: eltay-rm66, BRANCH: current }
+    - { BOARD: eltay-rm66, BRANCH: vendor }
 
 # Ubuntu cli
 cli-stable-ubuntu:
@@ -46,3 +48,35 @@ desktop-stable-debian-xfce:
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
+
+# Debian LXQt desktop
+desktop-stable-debian-lxqt:
+  enabled: yes
+  configs: [ armbian-community ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "lxqt"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: eltay-rm66, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+
+# Ubuntu KDE Plasma desktop
+desktop-stable-ubuntu-kde-plasma:
+  enabled: yes
+  configs: [ armbian-community ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "kde-plasma"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: eltay-rm66, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
