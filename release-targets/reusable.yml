@@ -117,6 +117,12 @@
 #
 # ==============================================================================
 
+# Boards with no download page of their own. Their images still appear on the
+# reusable boards below that use them (e.g. the unified FriendlyElec RK3588
+# image shows on NanoPi M6 V2 and NanoPC T6 LTS Plus).
+hide:
+  - "friendlyelec-rk3588"
+
 boards:
   - board_slug: "minisforum-msr1"
     board_name: "Minisforum MS-R1"
