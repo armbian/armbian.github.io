@@ -199,6 +199,28 @@ jobs:
           # Clean up the temporary file
           rm "$temp_file"
 
+      - name: Virtual boards inherit maintainers of their base board
+        run: |
+          set -euo pipefail
+          # A virtual board in reusable.yml has no own maintainer in Bigin.
+          # Give it the maintainers of the board it reuses ("uses").
+          python3 - <<'PY'
+          import json, yaml
+          with open("armbian.github.io/release-targets/reusable.yml") as f:
+              boards = (yaml.safe_load(f) or {}).get("boards") or []
+          uses = {b["board_slug"]: b["uses"] for b in boards if b.get("board_slug") and b.get("uses")}
+          with open("maintainers.json") as f:
+              maintainers = json.load(f)
+          for m in maintainers:
+              slugs = [s.strip() for s in (m.get("Maintaining") or "").split(",") if s.strip()]
+              add = [v for v, base in uses.items() if base in slugs and v not in slugs]
+              if add:
+                  m["Maintaining"] = ", ".join(slugs + add)
+                  print(f"{m.get('First_Name')}: + {', '.join(add)}")
+          with open("maintainers.json", "w") as f:
+              json.dump(maintainers, f, indent=2)
+          PY
+
       - name: Commit and push JSON files
         run: |
           set -euo pipefail
