@@ -101,6 +101,7 @@ declare -A REUSABLE_BOARD_USES=()       # board_slug -> target_board_slug
 declare -A REUSABLE_BOARD_BRANCH=()     # board_slug -> branch_filter (optional)
 declare -A REUSABLE_BOARD_EXT=()        # board_slug -> file_extension_filter (optional)
 declare -A REUSABLE_BOARD_META=()       # board_slug -> "name|vendor|support"
+declare -A HIDDEN_BOARDS=()             # board_slug -> 1 (no own download entries)
 
 if [[ -f "$REUSABLE_FILE" ]]; then
   echo "▶ Loading reusable board definitions from ${REUSABLE_FILE}…" >&2
@@ -147,6 +148,21 @@ except Exception as e:
   )
 
   echo "  - Reusable boards loaded: ${#REUSABLE_BOARD_USES[@]}" >&2
+
+  # Boards listed under "hide:" get no download entries of their own. Their
+  # images still reach every reusable board that uses them.
+  while IFS= read -r slug; do
+    [[ -n "$slug" ]] && HIDDEN_BOARDS["${slug,,}"]=1
+  done < <(
+    python3 -c "
+import yaml
+with open('$REUSABLE_FILE') as f:
+    data = yaml.safe_load(f) or {}
+for s in data.get('hide') or []:
+    print(s)
+" 2>/dev/null || true
+  )
+  echo "  - Hidden boards: ${!HIDDEN_BOARDS[*]}" >&2
 else
   echo "ℹ️  Reusable board file not found: ${REUSABLE_FILE}" >&2
 fi
@@ -829,7 +845,9 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         PLAT_EXPIRED="false"
       fi
     fi
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+    if [[ -z "${HIDDEN_BOARDS[$BOARD_SLUG]:-}" ]]; then
+      echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+    fi
 
     # Check if this board is used by any reusable boards
     for reusable_slug in "${!REUSABLE_BOARD_USES[@]}"; do
