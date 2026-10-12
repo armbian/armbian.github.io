@@ -8,6 +8,7 @@ release types based on board support levels and use cases.
 
 import argparse
 import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -726,6 +727,51 @@ def select_one_branch_per_board(boards):
     return list(seen_boards.values())
 
 
+# arm64 image jobs per matrix run that stay on ARM64 runners. The rest
+# overflow to the X64 'images' runners instead of queueing behind the smaller
+# ARM64 pool. Needs armbian/build#10967.
+ARM64_IMAGE_NATIVE_FACTOR = 1.5   # jobs per ARM64 'images' runner kept native
+ARM64_IMAGE_NATIVE_FALLBACK = 80  # used when the runner list is not readable
+_arm64_image_native_max = None
+
+
+def arm64_image_native_max():
+    """ARM64_IMAGE_NATIVE_FACTOR x the org's self-hosted runners labelled
+    'images' and 'ARM64' (GH_RUNNERS_TOKEN, same as build-machinery-status).
+    Falls back to ARM64_IMAGE_NATIVE_FALLBACK."""
+    global _arm64_image_native_max
+    if _arm64_image_native_max is not None:
+        return _arm64_image_native_max
+    import urllib.request
+    token = os.environ.get("GH_RUNNERS_TOKEN", "")
+    value = ARM64_IMAGE_NATIVE_FALLBACK
+    if token:
+        try:
+            runners, page = [], 1
+            while True:
+                req = urllib.request.Request(
+                    f"https://api.github.com/orgs/armbian/actions/runners?per_page=100&page={page}",
+                    headers={"Authorization": f"Bearer {token}",
+                             "Accept": "application/vnd.github+json",
+                             "X-GitHub-Api-Version": "2022-11-28"})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.load(resp)
+                batch = data.get("runners", [])
+                runners.extend(batch)
+                if not batch or len(runners) >= data.get("total_count", 0):
+                    break
+                page += 1
+            arm64 = sum(1 for r in runners
+                        if {"images", "ARM64"} <= {lbl["name"] for lbl in r.get("labels", [])})
+            if arm64 > 0:
+                value = round(arm64 * ARM64_IMAGE_NATIVE_FACTOR)
+            print(f"ARM64 'images' runners: {arm64}, image-arm64 native max: {value}", file=sys.stderr)
+        except Exception as e:  # noqa: BLE001 - never fail target generation on this
+            print(f"Runner lookup failed ({e}), image-arm64 native max: {value}", file=sys.stderr)
+    _arm64_image_native_max = value
+    return value
+
+
 def generate_yaml_header():
     """Generate common YAML header."""
     return """#
@@ -750,6 +796,11 @@ armbian-gha: &armbian-gha
       image-amd64: [ "self-hosted", "Linux", 'images', "X64" ]
       image-riscv64: [ "self-hosted", "Linux", 'images', "X64" ]
       image-loong64: [ "self-hosted", "Linux", 'images', "X64" ]
+    by-name-and-arch-overflow-max:
+      image-arm64:
+        max: """ + str(arm64_image_native_max()) + """
+        runs-on: [ "self-hosted", "Linux", 'images', 'ARM64' ]
+        runs-on-over-max: [ "self-hosted", "Linux", 'images', "X64" ]
 
 lists:
 """
