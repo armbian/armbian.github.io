@@ -7,7 +7,9 @@ release types based on board support levels and use cases.
 """
 
 import argparse
+import functools
 import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -502,6 +504,12 @@ def is_fast_hardware(entry):
     if board_family == 'imx93':
         return False
 
+    # MBa62xx (TI AM625/PowerVR AXE-1-16M): GNOME/Mutter's cross-GPU EGLImage
+    # sharing isn't supported, screen stays stuck on fbcon. XFCE works fine.
+    # Board-specific, not family-wide - MBa67xx (bigger GPU) has no issue.
+    if board == 'mba62xx-tqma62xx':
+        return False
+
     # Nexell S5P6818 (NanoPi M3 / NanoPC-T3+ / NanoPi Fire3) has a Mali-400
     # GPU that is GLES2-only — no OpenGL ES 3.0, which GNOME/mutter requires,
     # so the shell falls back to software rendering (and it is 1 GiB). Classify
@@ -720,6 +728,84 @@ def select_one_branch_per_board(boards):
     return list(seen_boards.values())
 
 
+# arm64 image jobs per matrix run that stay on ARM64 runners. The rest
+# overflow to the X64 'images' runners instead of queueing behind the smaller
+# ARM64 pool. Needs armbian/build#10967.
+ARM64_IMAGE_NATIVE_FACTOR = 1.5   # jobs per ARM64 'images' runner kept native
+ARM64_IMAGE_NATIVE_FALLBACK = 80  # used when the runner list is not readable
+
+# Kernel jobs build only on 'alfa' and 'beta' runners (alfa runners also carry
+# 'beta'). The first KERNEL_ALFA_FIRST kernel jobs per arch need 'alfa'; the
+# rest need 'beta', so a big rebuild uses the whole alfa+beta pool.
+KERNEL_ALFA_FIRST = 5
+KERNEL_ARCHES = ("arm64", "armhf", "amd64", "riscv64", "loong64")
+
+
+@functools.lru_cache(maxsize=None)
+def org_runners():
+    """Self-hosted runners of the armbian org (GH_RUNNERS_TOKEN, same as
+    build-machinery-status), or None when the list is not readable."""
+    import urllib.request
+    token = os.environ.get("GH_RUNNERS_TOKEN", "")
+    if not token:
+        return None
+    try:
+        runners, page = [], 1
+        while True:
+            req = urllib.request.Request(
+                f"https://api.github.com/orgs/armbian/actions/runners?per_page=100&page={page}",
+                headers={"Authorization": f"Bearer {token}",
+                         "Accept": "application/vnd.github+json",
+                         "X-GitHub-Api-Version": "2022-11-28"})
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.load(resp)
+            batch = data.get("runners", [])
+            runners.extend(batch)
+            if not batch or len(runners) >= data.get("total_count", 0):
+                break
+            page += 1
+        return runners
+    except Exception as e:  # noqa: BLE001 - never fail target generation on this
+        print(f"Runner lookup failed ({e})", file=sys.stderr)
+        return None
+
+
+def count_runners(*labels):
+    """Runners carrying all `labels`, or None when the list is not readable."""
+    runners = org_runners()
+    if runners is None:
+        return None
+    want = set(labels)
+    return sum(1 for r in runners if want <= {lbl["name"] for lbl in r.get("labels", [])})
+
+
+@functools.lru_cache(maxsize=None)
+def arm64_image_native_max():
+    """ARM64_IMAGE_NATIVE_FACTOR x the runners labelled 'images' and 'ARM64'.
+    Falls back to ARM64_IMAGE_NATIVE_FALLBACK."""
+    arm64 = count_runners("images", "ARM64")
+    value = round(arm64 * ARM64_IMAGE_NATIVE_FACTOR) if arm64 else ARM64_IMAGE_NATIVE_FALLBACK
+    print(f"ARM64 'images' runners: {arm64}, image-arm64 native max: {value}", file=sys.stderr)
+    return value
+
+
+@functools.lru_cache(maxsize=None)
+def kernel_overflow_yaml():
+    """'by-name-and-arch-overflow-max' entries that send the first
+    KERNEL_ALFA_FIRST kernel jobs per arch to 'alfa' and the rest to 'beta'.
+    Empty (kernels stay on 'alfa' only) until runners carry 'beta': overflow
+    jobs would queue forever."""
+    beta = count_runners("beta")
+    print(f"'beta' runners: {beta}, kernel jobs first on 'alfa': {KERNEL_ALFA_FIRST}", file=sys.stderr)
+    if not beta:
+        return ""
+    return "".join(f"""
+      kernel-{arch}:
+        max: {KERNEL_ALFA_FIRST}
+        runs-on: [ "self-hosted", "Linux", "alfa" ]
+        runs-on-over-max: [ "self-hosted", "Linux", "beta" ]""" for arch in KERNEL_ARCHES)
+
+
 def generate_yaml_header():
     """Generate common YAML header."""
     return """#
@@ -744,6 +830,11 @@ armbian-gha: &armbian-gha
       image-amd64: [ "self-hosted", "Linux", 'images', "X64" ]
       image-riscv64: [ "self-hosted", "Linux", 'images', "X64" ]
       image-loong64: [ "self-hosted", "Linux", 'images', "X64" ]
+    by-name-and-arch-overflow-max:
+      image-arm64:
+        max: """ + str(arm64_image_native_max()) + """
+        runs-on: [ "self-hosted", "Linux", 'images', 'ARM64' ]
+        runs-on-over-max: [ "self-hosted", "Linux", 'images', "X64" ]""" + kernel_overflow_yaml() + """
 
 lists:
 """
@@ -1265,7 +1356,7 @@ targets:
         yaml += """
   # Ubuntu noble Bianbu desktop for SpacemiT K1 boards (legacy branch)
   desktop-stable-ubuntu-riscv64-bianbu:
-    enabled: yes
+    enabled: no  # Bianbu desktop is broken
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha

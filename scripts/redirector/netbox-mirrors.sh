@@ -58,7 +58,14 @@ while IFS=$'\t' read -r key tag field fallback reference check; do
 		  | { key:       $key,
 		      reference: $ref,
 		      check:     $check,
-		      server:    (.name + "/" + (.custom_fields[$field] // $fb)),
+		      # download path = the custom field, or the fallback when null OR the
+		      # empty string (the // operator only catches null/false, so a present
+		      # but empty field would otherwise yield name + "/" + "" -> name//dists).
+		      # Strip leading and trailing slashes so the joined URL never doubles up.
+		      server:    (.name + "/" + (
+		                   ((.custom_fields[$field] // "") | if . == "" then $fb else . end)
+		                   | sub("^/+"; "") | sub("/+$"; "")
+		                 )),
 		      id:        (.id | tostring) } ]' <<<"${resp}")
 
 	nodes=$(jq -cn --argjson a "${nodes}" --argjson b "${part}" '$a + $b')
