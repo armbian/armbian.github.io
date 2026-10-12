@@ -7,6 +7,7 @@ release types based on board support levels and use cases.
 """
 
 import argparse
+import functools
 import json
 import os
 import re
@@ -732,16 +733,13 @@ def select_one_branch_per_board(boards):
 # ARM64 pool. Needs armbian/build#10967.
 ARM64_IMAGE_NATIVE_FACTOR = 1.5   # jobs per ARM64 'images' runner kept native
 ARM64_IMAGE_NATIVE_FALLBACK = 80  # used when the runner list is not readable
-_arm64_image_native_max = None
 
 
+@functools.lru_cache(maxsize=None)
 def arm64_image_native_max():
     """ARM64_IMAGE_NATIVE_FACTOR x the org's self-hosted runners labelled
     'images' and 'ARM64' (GH_RUNNERS_TOKEN, same as build-machinery-status).
     Falls back to ARM64_IMAGE_NATIVE_FALLBACK."""
-    global _arm64_image_native_max
-    if _arm64_image_native_max is not None:
-        return _arm64_image_native_max
     import urllib.request
     token = os.environ.get("GH_RUNNERS_TOKEN", "")
     value = ARM64_IMAGE_NATIVE_FALLBACK
@@ -768,7 +766,6 @@ def arm64_image_native_max():
             print(f"ARM64 'images' runners: {arm64}, image-arm64 native max: {value}", file=sys.stderr)
         except Exception as e:  # noqa: BLE001 - never fail target generation on this
             print(f"Runner lookup failed ({e}), image-arm64 native max: {value}", file=sys.stderr)
-    _arm64_image_native_max = value
     return value
 
 
