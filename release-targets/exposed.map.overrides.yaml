@@ -42,6 +42,12 @@
 # boardfamily rule without repeating its other blocks.
 
 overrides:
+  - boards: [eltay-rm66]
+    minimal:
+      suffix: ""
+    desktop:
+      suffix: kde-plasma_desktop
+
   - boardfamily: spacemit
     # SpacemiT K1 boards: desktop image lives on Ubuntu noble + legacy.
     # Bianbu's PVR DRI Mesa fork (24.01bbx) only ships for noble on

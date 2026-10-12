@@ -20,3 +20,6 @@ nanopi-r6c
 nanopi-m6
 nanopct6
 nanopct6-lts
+
+# Use the four manual RM66 images.
+eltay-rm66
