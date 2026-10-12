@@ -9,6 +9,7 @@ only threads started after it (and within LOOKBACK_HOURS).
 Env: GH_TOKEN, REPOS ("owner/repo ..."), LOOKBACK_HOURS (default 6),
 GRACE_HOURS (default 48), DRY_RUN.
 """
+import functools
 import json
 import os
 import re
@@ -41,7 +42,7 @@ query($owner: String!, $name: String!, $cursor: String) {
         }
         comments(last: 50) {
           pageInfo { hasPreviousPage startCursor }
-          nodes { createdAt body }
+          nodes { createdAt body author { login } }
         }
       }
     }
@@ -56,7 +57,7 @@ query($owner: String!, $name: String!, $number: Int!, $before: String) {
     pullRequest(number: $number) {
       comments(last: 100, before: $before) {
         pageInfo { hasPreviousPage startCursor }
-        nodes { createdAt body }
+        nodes { createdAt body author { login } }
       }
     }
   }
@@ -98,14 +99,27 @@ def open_prs(repo):
         cursor = prs["pageInfo"]["endCursor"]
 
 
+@functools.lru_cache(maxsize=None)
+def ping_login():
+    """The account that posts pings: the owner of GH_TOKEN."""
+    return graphql({}, "query { viewer { login } }")["viewer"]["login"]
+
+
 def pings_in(nodes):
-    """Cutoff of each ping: the stored cutoff, or the comment time for pings made before GRACE_HOURS."""
+    """Cutoff of each ping posted by ping_login(): the stored cutoff, but never
+    later than the comment, else the comment time (pings made before GRACE_HOURS)."""
     out = []
     for c in nodes:
         body = c.get("body") or ""
-        if MARKER in body:
-            m = CUTOFF_RE.search(body)
-            out.append(ts(m.group(1)) if m else ts(c["createdAt"]))
+        if MARKER not in body or (c.get("author") or {}).get("login") != ping_login():
+            continue
+        posted = ts(c["createdAt"])
+        m = CUTOFF_RE.search(body)
+        try:
+            cutoff = ts(m.group(1)) if m else posted
+        except ValueError:
+            cutoff = posted
+        out.append(min(cutoff, posted))
     return out
 
 
