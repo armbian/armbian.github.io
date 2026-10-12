@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """Ping PR authors about new unresolved review conversations.
 
-For each open, non-draft PR in REPOS: if a review thread was started after the
-last ping on that PR (or within LOOKBACK_HOURS, whichever is later) and is still
-unresolved, post one comment that asks the author to resolve or dismiss it.
+For each open, non-draft PR in REPOS: if a review thread is still unresolved
+GRACE_HOURS after it was started, post one comment that asks the author to
+resolve or dismiss it. Each ping stores its cutoff time, so the next run checks
+only threads started after it (and within LOOKBACK_HOURS).
 
-Env: GH_TOKEN, REPOS ("owner/repo ..."), LOOKBACK_HOURS (default 6), DRY_RUN.
+Env: GH_TOKEN, REPOS ("owner/repo ..."), LOOKBACK_HOURS (default 6),
+GRACE_HOURS (default 48), DRY_RUN.
 """
 import json
 import os
+import re
 import sys
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-MARKER = "<!-- unresolved-review-ping -->"
+MARKER = "<!-- unresolved-review-ping"  # prefix; new pings append " cutoff=<ISO time> -->"
+CUTOFF_RE = re.compile(re.escape(MARKER) + r" cutoff=(\S+) -->")
 API = "https://api.github.com"
 TOKEN = os.environ["GH_TOKEN"]
 DRY_RUN = os.environ.get("DRY_RUN", "false").lower() == "true"
 LOOKBACK = timedelta(hours=float(os.environ.get("LOOKBACK_HOURS", "6")))
+GRACE = timedelta(hours=float(os.environ.get("GRACE_HOURS", "48")))
 
 QUERY = """
 query($owner: String!, $name: String!, $cursor: String) {
@@ -94,7 +99,14 @@ def open_prs(repo):
 
 
 def pings_in(nodes):
-    return [ts(c["createdAt"]) for c in nodes if MARKER in (c.get("body") or "")]
+    """Cutoff of each ping: the stored cutoff, or the comment time for pings made before GRACE_HOURS."""
+    out = []
+    for c in nodes:
+        body = c.get("body") or ""
+        if MARKER in body:
+            m = CUTOFF_RE.search(body)
+            out.append(ts(m.group(1)) if m else ts(c["createdAt"]))
+    return out
 
 
 def last_ping(repo, pr):
@@ -111,34 +123,35 @@ def last_ping(repo, pr):
 
 
 def new_unresolved(repo, pr, now):
-    """Unresolved threads started after the last ping, by someone other than the author."""
+    """Threads unresolved for GRACE, started after the last ping cutoff, by someone other than the author."""
     author = (pr.get("author") or {}).get("login", "")
     if pr["reviewThreads"]["pageInfo"]["hasNextPage"]:
         print(f"warning: {repo}#{pr['number']} has more than 100 review threads, later ones are not checked")
     ping = last_ping(repo, pr)
-    since = max([now - LOOKBACK] + ([ping] if ping else []))
+    since = max([now - GRACE - LOOKBACK] + ([ping] if ping else []))
+    cutoff = now - GRACE
     found = []
     for thread in pr["reviewThreads"]["nodes"]:
         first = (thread["comments"]["nodes"] or [None])[0]
         if thread["isResolved"] or not first:
             continue
         reviewer = (first.get("author") or {}).get("login", "")
-        if reviewer == author or ts(first["createdAt"]) <= since:
+        if reviewer == author or not since < ts(first["createdAt"]) <= cutoff:
             continue
         found.append((reviewer, first["url"]))
     return found
 
 
-def comment(repo, pr, threads):
+def comment(repo, pr, threads, cutoff):
     author = pr["author"]["login"]
     lines = [
-        f"@{author} This PR has {len(threads)} new unresolved review "
-        f"conversation{'s' if len(threads) != 1 else ''}. "
+        f"@{author} This PR has {len(threads)} review "
+        f"conversation{'s' if len(threads) != 1 else ''} unresolved for more than {GRACE.total_seconds() / 3600:g} hours. "
         "Resolve each one, or reply why it does not apply and resolve it.",
         "",
     ]
     lines += [f"- {url} ({reviewer})" for reviewer, url in threads]
-    lines += ["", MARKER]
+    lines += ["", f"{MARKER} cutoff={cutoff.strftime('%Y-%m-%dT%H:%M:%SZ')} -->"]
     body = "\n".join(lines)
     if DRY_RUN:
         print(f"[dry-run] {repo}#{pr['number']}:\n{body}\n")
@@ -160,7 +173,7 @@ def main():
                 try:
                     threads = new_unresolved(repo, pr, now)
                     if threads:
-                        comment(repo, pr, threads)
+                        comment(repo, pr, threads, now - GRACE)
                         pinged += 1
                 except Exception as e:  # noqa: BLE001 - one PR must not stop the scan
                     print(f"error: {repo}#{pr['number']}: {e}")
