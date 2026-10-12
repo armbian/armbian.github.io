@@ -734,9 +734,10 @@ def select_one_branch_per_board(boards):
 ARM64_IMAGE_NATIVE_FACTOR = 1.5   # jobs per ARM64 'images' runner kept native
 ARM64_IMAGE_NATIVE_FALLBACK = 80  # used when the runner list is not readable
 
-# Kernel jobs fill the fast 'alfa' runners first. The first N kernel jobs per
-# arch need 'alfa'; the rest need 'beta', which alfa runners also carry, so
-# the whole pool shares a big rebuild. N = number of 'alfa' runners.
+# Kernel jobs build only on 'alfa' and 'beta' runners (alfa runners also carry
+# 'beta'). The first KERNEL_ALFA_FIRST kernel jobs per arch need 'alfa'; the
+# rest need 'beta', so a big rebuild uses the whole alfa+beta pool.
+KERNEL_ALFA_FIRST = 5
 KERNEL_ARCHES = ("arm64", "armhf", "amd64", "riscv64", "loong64")
 
 
@@ -790,16 +791,17 @@ def arm64_image_native_max():
 
 @functools.lru_cache(maxsize=None)
 def kernel_overflow_yaml():
-    """'by-name-and-arch-overflow-max' entries that send the first N kernel
-    jobs per arch to 'alfa' and the rest to 'beta'. Empty (kernels stay on
-    'alfa' only) until runners carry 'beta': overflow jobs would queue forever."""
-    alfa, beta = count_runners("alfa"), count_runners("beta")
-    print(f"'alfa' runners: {alfa}, 'beta' runners: {beta}", file=sys.stderr)
-    if not alfa or not beta:
+    """'by-name-and-arch-overflow-max' entries that send the first
+    KERNEL_ALFA_FIRST kernel jobs per arch to 'alfa' and the rest to 'beta'.
+    Empty (kernels stay on 'alfa' only) until runners carry 'beta': overflow
+    jobs would queue forever."""
+    beta = count_runners("beta")
+    print(f"'beta' runners: {beta}, kernel jobs first on 'alfa': {KERNEL_ALFA_FIRST}", file=sys.stderr)
+    if not beta:
         return ""
     return "".join(f"""
       kernel-{arch}:
-        max: {alfa}
+        max: {KERNEL_ALFA_FIRST}
         runs-on: [ "self-hosted", "Linux", "alfa" ]
         runs-on-over-max: [ "self-hosted", "Linux", "beta" ]""" for arch in KERNEL_ARCHES)
 
