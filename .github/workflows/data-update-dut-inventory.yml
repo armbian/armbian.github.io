@@ -63,8 +63,7 @@ jobs:
                               | capture("tcp/(?<p>[0-9]+)").p // null | if . then tonumber else null end) })
               | map(select(.value != null))
               | from_entries) as $cmap
-            | { generated: (now | todateiso8601),
-                count: ($dev[0].results | length),
+            | { count: ($dev[0].results | length),
                 duts: ( $dev[0].results | map({
                   netbox_id: .id,
                   name: .name,
