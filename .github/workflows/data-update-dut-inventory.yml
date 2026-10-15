@@ -1,0 +1,125 @@
+name: "Data: DUT inventory from NetBox"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'   # near-static: only changes when boards/consoles are added or removed
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    name: "Generate DUT inventory JSON from NetBox"
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
+
+    steps:
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v7
+        with:
+          repository: armbian/armbian.github.io
+          fetch-depth: 0
+          clean: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+
+      - name: "Generate DUT inventory from NetBox"
+        run: |
+          set -euo pipefail
+
+          # Developer/agent-facing map for every DUT (role "device-under-test"):
+          # the link between NetBox id, name and IP, plus the serial console
+          # TCP port so an agent can attach to the console directly.
+          # POWER is deliberately excluded: it is driven elsewhere by existing
+          # privileged scripts that key off netbox_id.
+          OUT="dut-inventory.json"
+          nb() {
+            curl -sS --fail --connect-timeout 10 --max-time 60 \
+              --retry 5 --retry-delay 2 --retry-all-errors \
+              -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+              -H "Accept: application/json; indent=4" "$1"
+          }
+
+          nb "${{ secrets.NETBOX_API }}/dcim/devices/?role=device-under-test&limit=0"       > devices.json
+          nb "${{ secrets.NETBOX_API }}/dcim/console-ports/?device_role=device-under-test&limit=0" > consoles.json
+
+          jq -n --slurpfile dev devices.json --slurpfile con consoles.json '
+            # console TCP port keyed by DUT device id. All consoles share one
+            # server; the real port is in the console-server-port description
+            # as "tcp/NNNN" (not a formula), so parse the number out. Cabled
+            # consoles only.
+            ($con[0].results
+              | map(select(.connected_endpoints != null and (.connected_endpoints|length>0)))
+              | map({ key: (.device.id|tostring),
+                      value: (.connected_endpoints[0].description
+                              | capture("tcp/(?<p>[0-9]+)").p // null | if . then tonumber else null end) })
+              | map(select(.value != null))
+              | from_entries) as $cmap
+            | { count: ($dev[0].results | length),
+                duts: ( $dev[0].results | map({
+                  netbox_id: .id,
+                  name: .name,
+                  board: (.custom_fields.armbian_board // .device_type.slug),
+                  model: .device_type.display,
+                  ip: (.primary_ip4.address // "" | split("/")[0]),
+                  console: ($cmap[(.id|tostring)] // null)
+                }) | sort_by(.name) )
+              }' > "$OUT"
+
+          count="$(jq '.count' "$OUT")"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::$OUT is empty (NetBox returned no device-under-test entries)"
+            exit 1
+          fi
+          echo "  -> $count DUT(s)"
+
+      - name: Display generated JSON
+        run: |
+          {
+            echo "### dut-inventory.json"
+            echo "\`\`\`json"
+            cat dut-inventory.json
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit changes if any
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github"
+
+          mkdir -p /tmp/json-files
+          cp dut-inventory.json /tmp/json-files/
+
+          git fetch origin data
+          git checkout data
+
+          mkdir -p data/duts
+          cp /tmp/json-files/dut-inventory.json data/duts/
+
+          git add data/duts/
+          if ! git diff --cached --quiet; then
+            git commit -m "Update DUT inventory from NetBox"
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+              echo "Push failed, attempting to pull and rebase..." >&2
+              git pull --rebase origin data || echo "Pull/rebase failed, will retry push..." >&2
+              attempt=$((attempt + 1))
+            done
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
+          fi

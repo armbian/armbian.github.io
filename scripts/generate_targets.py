@@ -2296,9 +2296,15 @@ def main():
 
     community_targets = yaml.safe_load(community_yaml)['targets']
     community_target_boards = set(collect_target_boards(community_targets))
+    exposed_overrides = load_exposed_overrides(output_dir / 'exposed.map.overrides.yaml')
+    # Manual targets can differ from the default recommended images. Only
+    # bypass their blacklist when recommendations are explicitly configured.
+    community_exposed_target_boards = community_target_boards & {
+        board for override in exposed_overrides for board in override.get('boards', [])
+    }
     _, community_exposed_boards = extract_boards_by_support_level(
         image_info, extensions_map, remove_extensions_map,
-        blacklist_community - community_target_boards,
+        blacklist_community - community_exposed_target_boards,
     )
 
     # exposed.map
@@ -2307,7 +2313,6 @@ def main():
     # by vendor BSPs whose desktop image lives on a non-default
     # branch/release/desktop combo) live next to the output file.
     exposed_map_path = output_dir / 'exposed.map'
-    exposed_overrides = load_exposed_overrides(output_dir / 'exposed.map.overrides.yaml')
     exposed_map = generate_exposed_map(
         conf_wip_boards_stable,
         community_exposed_boards,

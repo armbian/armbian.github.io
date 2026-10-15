@@ -105,6 +105,8 @@ bananapim5
 
 YAML fragment appended verbatim to the auto-generated targets section. Use the symbolic `RELEASE: UBUNTU` / `RELEASE: DEBIAN` tokens unless the block needs to pin to a specific codename regardless of the scope flag (see the Bianbu emit in `generate_targets.py` for that pattern).
 
+For a blacklisted community board built through manual targets, add an explicit `boards:` entry in `exposed.map.overrides.yaml` to include its recommended downloads. Configure the patterns to match the manual images; without this entry, the board stays excluded from recommendations because the automatic defaults may refer to images that are no longer built.
+
 ```yaml
 desktop-stable-ubuntu-cinnamon:
   enabled: yes

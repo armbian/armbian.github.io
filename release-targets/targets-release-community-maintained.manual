@@ -32,6 +32,7 @@ cli-stable-ubuntu:
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: aml-s9xx-box, BRANCH: edge }
+    - { BOARD: orangepi4pro, BRANCH: vendor }
 
 # Debian XFCE desktop
 desktop-stable-debian-xfce:
@@ -49,6 +50,7 @@ desktop-stable-debian-xfce:
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: eltay-rm66, BRANCH: current, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: orangepi4pro, BRANCH: vendor }
 
 # Ubuntu KDE Plasma desktop
 desktop-stable-ubuntu-kde-plasma:
