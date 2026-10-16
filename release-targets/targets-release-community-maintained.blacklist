@@ -21,6 +21,9 @@ nanopi-m6
 nanopct6
 nanopct6-lts
 
+# Use the four manual RM66 images.
+eltay-rm66
+
 # PowerVR desktop stack is X11 only, so GNOME and KDE images are not usable.
 # Built from the manual list instead: Ubuntu CLI and Debian XFCE.
 orangepi4pro
