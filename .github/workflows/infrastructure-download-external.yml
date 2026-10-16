@@ -718,6 +718,8 @@ jobs:
                 exit 1
                 ;;
             esac
+            # Architecture-independent packages install on every arch
+            PATTERNS+=('*_all.deb')
 
             # exception
             if [[ "${{ matrix.name }}" == "haos-supervised-installer" ]]; then
