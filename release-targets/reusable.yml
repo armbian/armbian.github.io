@@ -375,3 +375,15 @@ boards:
     uses: "friendlyelec-rk3588"
     branch: "current,vendor"
     file_extension: "img.xz"
+
+  - board_slug: "jetson-nano"
+    board_name: "NVIDIA Jetson Nano"
+    board_vendor: "nvidia"
+    board_support: "conf"
+    board_introduced: "2019"
+
+    # The generic UEFI/DT image boots it on the stock QSPI firmware: stubble
+    # selects tegra210-p3450-0000.dtb by machdb (armbian/build#11034).
+    uses: "uefi-arm64-dt"
+    branch: "current,edge"
+    file_extension: "img.xz"
