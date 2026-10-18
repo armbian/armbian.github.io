@@ -20,3 +20,14 @@
 ## Notes
 
 - Switch details: [NuMaker-IoT-MA35D1-A1 user manual](https://www.nuvoton.com/export/resource-files/en-us--UM_NuMaker_IoT_MA35D1_A1_EN_Rev1.12.pdf), section 3.11.
+
+## Rescue
+
+Use this if the board does not boot after a write to eMMC or SPI.
+
+1. Set SW7 for SD1 boot: SW7.1 ON, SW7.3 ON, SW7.4 OFF, SW7.7 ON. The board
+   boots the microSD card in slot SD1.
+2. Rewrite the internal flash from the running system.
+3. Set SW7 back to the device you want to boot.
+
+Switch details: [NuMaker-IoT-MA35D1-A1 user manual](https://www.nuvoton.com/export/resource-files/en-us--UM_NuMaker_IoT_MA35D1_A1_EN_Rev1.12.pdf), section 3.11.

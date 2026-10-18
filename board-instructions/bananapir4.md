@@ -10,3 +10,15 @@
 ## Notes
 
 - The serial console shows "System halt!" when the selected boot device holds no system. Check SW3 and the microSD card.
+
+## Rescue
+
+Use this if the board does not boot after a write to SPI-NAND or eMMC.
+
+1. Set SW3-A and SW3-B to "1". The board boots the microSD card, whatever the
+   internal flash holds.
+2. Rewrite the internal flash from the running system.
+3. Set SW3 back to the device you want to boot.
+
+"System halt!" on the serial console means the selected device holds no system.
+Check SW3 first.

@@ -10,3 +10,13 @@
 3. Select the internal disk as target.
 4. Select **Boot from SPI/MTD flash, system on this disk**.
 5. Power off the laptop and remove the microSD card.
+
+## Rescue
+
+Use this if the board does not boot after a write to the SPI flash.
+
+1. The K1 boot ROM waits for a USB download when the SPI flash holds no valid
+   bootloader. Connect the USB port to a host.
+2. Write the bootloader with `fastboot`. See the
+   [U-Boot SpacemiT documentation](https://docs.u-boot.org/en/latest/board/spacemit/index.html).
+3. Boot a microSD card and write the internal disk again.

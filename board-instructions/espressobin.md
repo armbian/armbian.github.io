@@ -22,3 +22,18 @@ bubt flash-image-<your-variant>.bin spi usb
 ## Serial console
 
 The Linux serial console is `ttyMV0`.
+
+## Rescue
+
+Use this if the board does not boot after a `bubt` write to SPI flash.
+
+1. Boot the board over the serial port. The Armada 3720 boot ROM waits for a
+   UART download when the SPI flash holds no valid image.
+2. Send a known good `flash-image-*.bin` with the Marvell
+   [A3700-utils](https://github.com/MarvellEmbeddedProcessors/A3700-utils-marvell)
+   UART download tool. The Armada 3720 does not use the Kirkwood `kwboot`
+   protocol.
+3. Write the image to SPI flash again with `bubt` from the U-Boot prompt.
+
+The image must match the RAM size, chip count and speed of your board. A
+mismatched image does not boot.
