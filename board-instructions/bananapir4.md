@@ -5,9 +5,7 @@
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Set SW3-A and SW3-B to "1".
-3. Insert the microSD card and power on the board.
+- Set SW3-A and SW3-B to "1".
 
 ## Notes
 

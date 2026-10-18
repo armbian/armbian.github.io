@@ -11,9 +11,7 @@ Set the boot source with the SW1 DIP switch before you power on the board.
 
 ## Installation
 
-1. Set SW1 to `00111` (OFF, OFF, ON, ON, ON).
-2. Write the image to a microSD card and insert it.
-3. Power on the board.
+- Set SW1 to `00111` (OFF, OFF, ON, ON, ON).
 
 ## Serial console
 

@@ -7,9 +7,7 @@ The microSD image has no SPL. The Secure Device Manager loads U-Boot SPL from QS
 
 ## Installation
 
-1. Program the QSPI flash with the `.jic` file that contains the Armbian SPL.
-2. Write the image to a microSD card.
-3. Insert the card and power on the board.
+- Program the QSPI flash with the `.jic` file that contains the Armbian SPL.
 
 ## Serial console
 

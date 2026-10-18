@@ -4,10 +4,8 @@ The board boots from eMMC first. Press the BOOT button at power-on to boot from 
 
 ## Installation
 
-1. Write the image to a microSD card and insert it.
-2. Hold the BOOT button.
-3. Connect power.
-4. Release the BOOT button after the power LED comes on.
+1. Hold the BOOT button.
+2. Release the BOOT button after the power LED comes on.
 
 ## Notes
 

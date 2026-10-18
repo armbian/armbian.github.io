@@ -9,7 +9,6 @@
 1. Write the image to a USB drive.
 2. Power off the board. Remove the eMMC module.
 3. Connect the USB drive to the USB socket furthest from the GPIO header.
-4. Power on the board.
 
 ## Install to internal storage
 

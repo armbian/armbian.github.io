@@ -4,10 +4,9 @@ The board boots from the onboard eMMC before the microSD card. Use the BOOT key 
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Insert the card into the board.
-3. Hold the BOOT key beside the Ethernet port.
-4. Connect the power supply.
+1. Insert the card into the board.
+2. Hold the BOOT key beside the Ethernet port.
+3. Connect the power supply.
 
 ## Install to internal storage
 

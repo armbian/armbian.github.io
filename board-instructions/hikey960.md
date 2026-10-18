@@ -5,9 +5,7 @@
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Insert the microSD card.
-3. Press **ESC** at power on. Select the SD card boot entry.
+- Press **ESC** at power on. Select the SD card boot entry.
 
 ## Serial console
 
