@@ -17,3 +17,15 @@ The JetHub D1 has no microSD slot. Write Armbian to the eMMC with Amlogic Burnin
 
 - To boot from a USB drive without a change to the eMMC, hold the FN button on the front panel while you connect power.
 - If flashing fails, use a USB 2.0 port on the computer.
+
+## Rescue
+
+Use this if the board does not boot after a write to eMMC or SPI.
+
+1. Stop the boot ROM from reading the internal flash. Hold the recovery button,
+   or short the eMMC clock pin to ground. Check the vendor documentation for the
+   button on your board.
+2. Connect the OTG port to the host and power on. The board enters USB boot mode.
+3. Write the vendor firmware. Use the Amlogic USB Burning Tool on Windows, or
+   [pyamlboot](https://github.com/superna9999/pyamlboot) on Linux.
+4. Power off, remove the short, and boot from a microSD card.

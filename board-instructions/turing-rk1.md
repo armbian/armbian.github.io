@@ -29,3 +29,20 @@ tpi power --node 1 on
 - The RK3588 cannot boot directly from NVMe. Keep the bootloader on eMMC when you install the system to NVMe.
 
 See the [Turing RK1 flashing guide](https://docs.turingpi.com/docs/turing-rk1-flashing-os).
+
+## Rescue
+
+Use this if the board does not boot after a write to SPI or eMMC.
+
+1. Put the board in MaskROM mode. Hold the MaskROM button, or short the flash
+   CLK pin to ground. Connect the OTG port to a Linux host and power on.
+2. Erase the broken flash:
+```sh
+sudo rkdeveloptool ld
+sudo rkdeveloptool db rk3588_spl_loader_v1.16.113.bin
+sudo rkdeveloptool ef
+```
+3. Power off, release the button or remove the short, and boot from a microSD card.
+
+The loader is in [armbian/rkbin](https://github.com/armbian/rkbin/tree/master/rk35).
+See [Writing the image](https://docs.armbian.com/getting-started/writing-the-image/#rockchip).
