@@ -22,3 +22,20 @@
 ## Serial console
 
 - Use 1500000 baud.
+
+## Rescue
+
+Use this if the board does not boot after a write to SPI or eMMC.
+
+1. Put the board in MaskROM mode. Hold the MaskROM button, or short the flash
+   CLK pin to ground. Connect the OTG port to a Linux host and power on.
+2. Erase the broken flash:
+```sh
+sudo rkdeveloptool ld
+sudo rkdeveloptool db <loader for your SoC>
+sudo rkdeveloptool ef
+```
+3. Power off, release the button or remove the short, and boot from a microSD card.
+
+Loaders are in [armbian/rkbin](https://github.com/armbian/rkbin).
+See [Writing the image](https://docs.armbian.com/getting-started/writing-the-image/#rockchip).

@@ -26,3 +26,15 @@ sudo boot-g12.py radxa-zero-2pro-erase-emmc.bin
 ## Notes
 
 - Radxa guide: [Install the system to eMMC](https://docs.radxa.com/en/zero/zero2pro/low-level-dev/install-os-on-emmc).
+
+## Rescue
+
+Use this if the board does not boot after a write to eMMC or SPI.
+
+1. Stop the boot ROM from reading the internal flash. Hold the recovery button,
+   or short the eMMC clock pin to ground. Check the vendor documentation for the
+   button on your board.
+2. Connect the OTG port to the host and power on. The board enters USB boot mode.
+3. Write the vendor firmware. Use the Amlogic USB Burning Tool on Windows, or
+   [pyamlboot](https://github.com/superna9999/pyamlboot) on Linux.
+4. Power off, remove the short, and boot from a microSD card.
