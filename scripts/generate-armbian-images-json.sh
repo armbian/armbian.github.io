@@ -10,6 +10,17 @@ OS_DIR="${OS_DIR:-./os}"
 BOARD_DIR="${BOARD_DIR:-./build/config/boards}"
 REUSABLE_FILE="${REUSABLE_FILE:-./release-targets/reusable.yml}"
 THIRD_PARTY_FILE="${THIRD_PARTY_FILE:-./release-targets/third-party.yml}"
+
+# Board documentation assets, published from this repository to the cache
+# mirrors. A field stays empty when the board has no such file.
+BOARD_ASSETS_DIR="${BOARD_ASSETS_DIR:-.}"
+BOARD_ASSETS_URL="${BOARD_ASSETS_URL:-https://cache.armbian.com}"
+
+# asset_url <dir> <slug> <extension>
+asset_url() {
+  [[ -f "${BOARD_ASSETS_DIR}/${1}/${2}.${3}" ]] && printf '%s/%s/%s.%s' "${BOARD_ASSETS_URL}" "${1}" "${2}" "${3}"
+  return 0
+}
 OUT="${OUT:-armbian-images.json}"
 
 # -----------------------------------------------------------------------------
@@ -704,7 +715,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"board_introduced"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"board_introduced"|"company_name"|"company_website"|"company_logo"|"board_pinout"|"board_schematic"|"board_instructions"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -832,6 +843,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       C_LOGO="https://cache.armbian.com/images/vendors/150/${BOARD_VENDOR}.png"
     fi
 
+    B_PINOUT="$(asset_url board-pinouts "$BOARD_SLUG" png)"
+    B_SCHEMATIC="$(asset_url board-schematics "$BOARD_SLUG" pdf)"
+    B_INSTRUCTIONS="$(asset_url board-instructions "$BOARD_SLUG" md)"
+
     PLAT_UNTIL="${PLATINUM_UNTIL_BY_BOARD[$BOARD_SLUG]:-}"
 
     PLAT="false"
@@ -846,7 +861,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       fi
     fi
     if [[ -z "${HIDDEN_BOARDS[$BOARD_SLUG]:-}" ]]; then
-      echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+      echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${B_PINOUT}|${B_SCHEMATIC}|${B_INSTRUCTIONS}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
     fi
 
     # Check if this board is used by any reusable boards
@@ -893,6 +908,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
           reusable_c_logo="https://cache.armbian.com/images/vendors/150/${reusable_vendor}.png"
         fi
 
+        reusable_pinout="$(asset_url board-pinouts "$reusable_slug" png)"
+        reusable_schematic="$(asset_url board-schematics "$reusable_slug" pdf)"
+        reusable_instructions="$(asset_url board-instructions "$reusable_slug" md)"
+
         # Get platinum support for reusable board
         reusable_plat_until="${PLATINUM_UNTIL_BY_BOARD[$reusable_slug]:-}"
         reusable_plat="false"
@@ -933,7 +952,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         fi
 
         # Output for reusable board
-        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${BOARD_INTRODUCED_MAP[$reusable_slug]:-}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
+        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${BOARD_INTRODUCED_MAP[$reusable_slug]:-}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${reusable_pinout}|${reusable_schematic}|${reusable_instructions}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
       fi
     done
   done <"$feed"
