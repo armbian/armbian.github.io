@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   publish:
@@ -31,50 +31,6 @@ jobs:
         with:
           ref: main
           path: main_wd
-
-      - name: "Checkout data branch"
-        uses: actions/checkout@v7
-        with:
-          ref: data
-          path: data_wd
-
-      # github.armbian.com serves the data/ tree of the data branch.
-      - name: "Publish to github.armbian.com"
-        shell: bash
-        working-directory: data_wd
-        run: |
-          set -euo pipefail
-
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          for dir in board-pinouts board-schematics board-instructions; do
-            src="${GITHUB_WORKSPACE}/main_wd/${dir}"
-            if [[ ! -d "${src}" ]]; then
-              echo "::notice::${dir} not present on main, skipping"
-              continue
-            fi
-            mkdir -p "data/${dir}"
-            rsync -a --delete "${src}/" "data/${dir}/"
-            git add "data/${dir}"
-          done
-
-          if git diff --cached --quiet; then
-            echo "No board asset changes."
-            exit 0
-          fi
-
-          git commit -m "Update board pinouts, schematics and instructions"
-
-          # The data branch takes concurrent writes from other workflows.
-          for attempt in 1 2 3; do
-            git push origin data && exit 0
-            echo "Push failed, rebasing (attempt ${attempt})…" >&2
-            git pull --rebase origin data || true
-          done
-
-          echo "Failed to push to data branch" >&2
-          exit 1
 
       - name: "Install SSH key"
         uses: shimataro/ssh-key-action@v2
