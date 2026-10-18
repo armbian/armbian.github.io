@@ -6,6 +6,8 @@ set -euo pipefail
 #   and (optional) object between MIN_OBJECT_PCT and MAX_OBJECT_PCT of the frame
 # - board-vendor-logos/: square (WxH equal), TRANSPARENT background, and object
 #   not larger than MAX_LOGO_OBJECT_PCT of the frame (default 80)
+# - board-pinouts/: PNG, at most MAX_PINOUT_PX on each side and MAX_PINOUT_KB
+# - board-schematics/: a readable PDF of at most MAX_SCHEMATIC_MB
 #
 # On a PR only the changed assets are checked; on schedule/workflow_dispatch the
 # WHOLE set is checked. Requires ImageMagick's `identify`/`convert`.
@@ -33,10 +35,12 @@ git fetch --no-tags --prune --depth=50 origin "+refs/heads/*:refs/remotes/origin
 # the whole set instead of an empty diff.
 if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
   mapfile -t CHANGED < <(git diff --name-only "${BASE_REF}...${HEAD_REF}" -- \
-    'board-images/**' 'board-vendor-logos/**' || true)
+    'board-images/**' 'board-vendor-logos/**' \
+    'board-pinouts/**' 'board-schematics/**' || true)
   echo "Mode: changed files (PR vs ${GITHUB_BASE_REF})"
 else
-  mapfile -t CHANGED < <(find board-images board-vendor-logos -type f | sort)
+  mapfile -t CHANGED < <(find board-images board-vendor-logos board-pinouts \
+    board-schematics -type f 2>/dev/null | sort)
   echo "Mode: all assets"
 fi
 
@@ -46,7 +50,7 @@ if [[ ${#CHANGED[@]} -eq 0 ]]; then
 fi
 
 # Filter to image files we can validate
-VALID_EXT_RE='\.(png|jpg|jpeg|webp)$'
+VALID_EXT_RE='\.(png|jpg|jpeg|webp|pdf)$'
 FILES=()
 for f in "${CHANGED[@]}"; do
   [[ "$f" =~ $VALID_EXT_RE ]] || continue
@@ -189,12 +193,57 @@ check_vendor_logo() {
   return 0
 }
 
-echo "Validating ${#FILES[@]} image(s)..."
+check_pinout() {
+  local file="$1" w h kb fmt max_px="${MAX_PINOUT_PX:-2400}" max_kb="${MAX_PINOUT_KB:-3072}"
+  if [[ "$file" != *.png ]]; then
+    echo "❌ $file: pinouts must be PNG"
+    return 1
+  fi
+  read -r fmt w h < <(identify -format '%m %w %h' "$file" 2>/dev/null || echo "x 0 0")
+  if [[ "$fmt" != PNG || "$w" -le 0 || "$h" -le 0 ]]; then
+    echo "❌ $file: not a readable PNG"
+    return 1
+  fi
+  if [[ "$w" -gt "$max_px" || "$h" -gt "$max_px" ]]; then
+    echo "❌ $file: larger than ${max_px}px (got ${w}x${h})"
+    return 1
+  fi
+  kb=$(( $(stat -c %s "$file") / 1024 ))
+  if [[ "$kb" -gt "$max_kb" ]]; then
+    echo "❌ $file: ${kb} KiB, max ${max_kb} KiB"
+    return 1
+  fi
+  echo "✅ $file: OK (${w}x${h}, ${kb} KiB)"
+}
+
+check_schematic() {
+  local file="$1" mb max_mb="${MAX_SCHEMATIC_MB:-30}"
+  if [[ "$file" != *.pdf || "$(head -c 4 "$file")" != "%PDF" ]]; then
+    echo "❌ $file: schematics must be PDF"
+    return 1
+  fi
+  if command -v pdfinfo >/dev/null 2>&1 && ! pdfinfo "$file" >/dev/null 2>&1; then
+    echo "❌ $file: not a readable PDF"
+    return 1
+  fi
+  mb=$(( $(stat -c %s "$file") / 1048576 ))
+  if [[ "$mb" -gt "$max_mb" ]]; then
+    echo "❌ $file: ${mb} MiB, max ${max_mb} MiB"
+    return 1
+  fi
+  echo "✅ $file: OK (${mb} MiB)"
+}
+
+echo "Validating ${#FILES[@]} file(s)..."
 for f in "${FILES[@]}"; do
   if [[ "$f" == board-images/* ]]; then
     check_board_image "$f" || fail=1
   elif [[ "$f" == board-vendor-logos/* ]]; then
     check_vendor_logo "$f" || fail=1
+  elif [[ "$f" == board-pinouts/* ]]; then
+    check_pinout "$f" || fail=1
+  elif [[ "$f" == board-schematics/* ]]; then
+    check_schematic "$f" || fail=1
   else
     # Shouldn't happen because of the diff filter, but keep it safe.
     echo "Skipping unrelated file: $f"
