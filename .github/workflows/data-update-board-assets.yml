@@ -42,13 +42,16 @@ jobs:
       # cache.armbian.com/<dir>/ maps to <path>/cache/<dir>/ on each mirror.
       - name: "Upload to cache servers"
         shell: bash
+        env:
+          NETBOX_TOKEN: ${{ secrets.NETBOX_TOKEN }}
+          NETBOX_API: ${{ secrets.NETBOX_API }}
         run: |
           set -euo pipefail
 
           curl -sS \
-            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Authorization: Token ${NETBOX_TOKEN}" \
             -H "Accept: application/json; indent=4" \
-            "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" \
+            "${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" \
           | jq '.results[]
                  | select([.tags[].name] | index("cache"))
                  | {id, name, custom_fields}' > servers.json
