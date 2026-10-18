@@ -1,4 +1,4 @@
-name: "Infrastructure: Validate board images, logos, pinouts & schematics"
+name: "Infrastructure: Validate board assets"
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
       - "board-vendor-logos/**"
       - "board-pinouts/**"
       - "board-schematics/**"
+      - "board-instructions/**"
   workflow_dispatch:
   schedule:
     - cron: '0 0 1 * *'  # Monthly on the 1st at 00:00 UTC
