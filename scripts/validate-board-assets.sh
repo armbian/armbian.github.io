@@ -8,6 +8,8 @@ set -euo pipefail
 #   not larger than MAX_LOGO_OBJECT_PCT of the frame (default 80)
 # - board-pinouts/: PNG, at most MAX_PINOUT_PX on each side and MAX_PINOUT_KB
 # - board-schematics/: a readable PDF of at most MAX_SCHEMATIC_MB
+# - board-instructions/: non-empty UTF-8 Markdown, no H1 (the site shows the
+#   board name), at most MAX_INSTRUCTIONS_KB
 #
 # On a PR only the changed assets are checked; on schedule/workflow_dispatch the
 # WHOLE set is checked. Requires ImageMagick's `identify`/`convert`.
@@ -36,16 +38,16 @@ git fetch --no-tags --prune --depth=50 origin "+refs/heads/*:refs/remotes/origin
 if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
   mapfile -t CHANGED < <(git diff --name-only "${BASE_REF}...${HEAD_REF}" -- \
     'board-images/**' 'board-vendor-logos/**' \
-    'board-pinouts/**' 'board-schematics/**' || true)
+    'board-pinouts/**' 'board-schematics/**' 'board-instructions/**' || true)
   echo "Mode: changed files (PR vs ${GITHUB_BASE_REF})"
 else
   mapfile -t CHANGED < <(find board-images board-vendor-logos board-pinouts \
-    board-schematics -type f 2>/dev/null | sort)
+    board-schematics board-instructions -type f 2>/dev/null | sort)
   echo "Mode: all assets"
 fi
 
 if [[ ${#CHANGED[@]} -eq 0 ]]; then
-  echo "No board-images/ or board-vendor-logos/ files to validate. ✅"
+  echo "No board asset files to validate. ✅"
   exit 0
 fi
 
@@ -53,8 +55,9 @@ fi
 VALID_EXT_RE='\.(png|jpg|jpeg|webp|pdf)$'
 FILES=()
 for f in "${CHANGED[@]}"; do
-  # Pinout and schematic checks reject wrong formats themselves.
-  [[ "$f" =~ $VALID_EXT_RE || "$f" == board-pinouts/* || "$f" == board-schematics/* ]] || continue
+  # Pinout, schematic and instruction checks reject wrong formats themselves.
+  [[ "$f" =~ $VALID_EXT_RE || "$f" == board-pinouts/* || "$f" == board-schematics/* \
+    || "$f" == board-instructions/* ]] || continue
   [[ -f "$f" ]] || continue
   FILES+=("$f")
 done
@@ -237,6 +240,28 @@ check_schematic() {
   echo "✅ $file: OK (${mb} MiB)"
 }
 
+check_instructions() {
+  local file="$1" bytes max_kb="${MAX_INSTRUCTIONS_KB:-16}"
+  if [[ "$file" != *.md ]]; then
+    echo "❌ $file: instructions must be Markdown (.md)"
+    return 1
+  fi
+  bytes=$(stat -c %s "$file")
+  if [[ "$bytes" -eq 0 || "$bytes" -gt $(( max_kb * 1024 )) ]]; then
+    echo "❌ $file: ${bytes} bytes, must be 1..$(( max_kb * 1024 ))"
+    return 1
+  fi
+  if ! iconv -f UTF-8 -t UTF-8 "$file" >/dev/null 2>&1; then
+    echo "❌ $file: not valid UTF-8"
+    return 1
+  fi
+  if grep -qE '^# ' "$file"; then
+    echo "❌ $file: no H1 allowed, start with ##"
+    return 1
+  fi
+  echo "✅ $file: OK (${bytes} bytes)"
+}
+
 echo "Validating ${#FILES[@]} file(s)..."
 for f in "${FILES[@]}"; do
   if [[ "$f" == board-images/* ]]; then
@@ -247,6 +272,8 @@ for f in "${FILES[@]}"; do
     check_pinout "$f" || fail=1
   elif [[ "$f" == board-schematics/* ]]; then
     check_schematic "$f" || fail=1
+  elif [[ "$f" == board-instructions/* ]]; then
+    check_instructions "$f" || fail=1
   else
     # Shouldn't happen because of the diff filter, but keep it safe.
     echo "Skipping unrelated file: $f"
@@ -255,8 +282,8 @@ done
 
 if [[ "$fail" -ne 0 ]]; then
   echo ""
-  echo "Image validation failed. Please resize/crop the files to match the rules above."
+  echo "Validation failed. Fix the files to match the rules above."
   exit 1
 fi
 
-echo "All image validations passed. ✅"
+echo "All validations passed. ✅"
