@@ -19,3 +19,15 @@ On the first boot, the root filesystem grows to fill the eMMC.
 
 - The UART is on the JCTL header, `ttyMSM0` at 115200 baud.
 - The UART uses 1.8 V logic. Do not use a 3.3 V or 5 V adapter.
+
+## Rescue
+
+Use this if the board does not boot after a write to eMMC.
+
+1. Power off the board and put a jumper on the **JCTL** pins.
+2. Connect the USB-C port to your computer. The board starts in EDL (Emergency
+   Download) mode, whatever the eMMC holds.
+3. Write the image again with [Armbian Imager](https://imager.armbian.com/).
+4. Remove the JCTL jumper. Disconnect and connect USB-C again.
+
+EDL mode is in the boot ROM. A broken eMMC image cannot stop it.

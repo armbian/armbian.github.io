@@ -19,3 +19,20 @@ sudo sophgo-emmc-install Armbian_*.img.xz
 4. Power off the board.
 5. Remove the microSD card. The board boots from the card when a card is present.
 6. Power on the board.
+
+## Rescue
+
+Use this if the board does not boot after a write to eMMC.
+
+1. Insert a microSD card with a working Armbian image. The board boots the card
+   when a card is present, whatever the eMMC holds.
+2. Run `sophgo-emmc-install` again, or erase the eMMC. Identify it with
+   `lsblk`; it is the `mmcblk*` device that is not the card you booted
+   from:
+```sh
+sudo blkdiscard -f /dev/mmcblkX
+```
+3. Power off and remove the microSD card.
+
+Check the ARM/RISC-V slide switch first. A wrong switch position looks like a
+dead board.
