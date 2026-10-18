@@ -1,0 +1,120 @@
+name: "Data: Publish board pinouts, schematics and instructions"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "board-pinouts/**"
+      - "board-schematics/**"
+      - "board-instructions/**"
+      - ".github/workflows/data-update-board-assets.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly, Sunday 02:00 UTC
+
+concurrency:
+  group: board-assets
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: "Publish board assets"
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
+
+    steps:
+      - name: "Checkout main"
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: main_wd
+
+      - name: "Checkout data branch"
+        uses: actions/checkout@v7
+        with:
+          ref: data
+          path: data_wd
+
+      # github.armbian.com serves the data/ tree of the data branch.
+      - name: "Publish to github.armbian.com"
+        shell: bash
+        working-directory: data_wd
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          for dir in board-pinouts board-schematics board-instructions; do
+            src="${GITHUB_WORKSPACE}/main_wd/${dir}"
+            if [[ ! -d "${src}" ]]; then
+              echo "::notice::${dir} not present on main, skipping"
+              continue
+            fi
+            mkdir -p "data/${dir}"
+            rsync -a --delete "${src}/" "data/${dir}/"
+            git add "data/${dir}"
+          done
+
+          if git diff --cached --quiet; then
+            echo "No board asset changes."
+            exit 0
+          fi
+
+          git commit -m "Update board pinouts, schematics and instructions"
+
+          # The data branch takes concurrent writes from other workflows.
+          for attempt in 1 2 3; do
+            git push origin data && exit 0
+            echo "Push failed, rebasing (attempt ${attempt})…" >&2
+            git pull --rebase origin data || true
+          done
+
+          echo "Failed to push to data branch" >&2
+          exit 1
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: "${{ secrets.KEY_UPLOAD }}"
+          known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
+          if_key_exists: replace
+
+      # cache.armbian.com/<dir>/ maps to <path>/cache/<dir>/ on each mirror.
+      - name: "Upload to cache servers"
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl -sS \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json; indent=4" \
+            "${{ secrets.NETBOX_API }}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" \
+          | jq '.results[]
+                 | select([.tags[].name] | index("cache"))
+                 | {id, name, custom_fields}' > servers.json
+
+          if [[ ! -s servers.json ]]; then
+            echo "No cache servers returned from NetBox query, nothing to upload."
+            exit 0
+          fi
+
+          for row in $(jq -r '@base64' servers.json); do
+            _jq() { echo "${row}" | base64 --decode | jq -r "${1}"; }
+
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            username=$(_jq '.custom_fields.username')
+
+            for dir in board-pinouts board-schematics board-instructions; do
+              src="${GITHUB_WORKSPACE}/main_wd/${dir}"
+              [[ -d "${src}" ]] || continue
+              echo "Uploading ${dir} to ${username}@${name}:${path}/cache/${dir}"
+              rsync -e "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+                -rP --delete "${src}/" "${username}@${name}:${path}/cache/${dir}/"
+            done
+          done
