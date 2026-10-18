@@ -53,7 +53,8 @@ fi
 VALID_EXT_RE='\.(png|jpg|jpeg|webp|pdf)$'
 FILES=()
 for f in "${CHANGED[@]}"; do
-  [[ "$f" =~ $VALID_EXT_RE ]] || continue
+  # Pinout and schematic checks reject wrong formats themselves.
+  [[ "$f" =~ $VALID_EXT_RE || "$f" == board-pinouts/* || "$f" == board-schematics/* ]] || continue
   [[ -f "$f" ]] || continue
   FILES+=("$f")
 done
@@ -194,7 +195,7 @@ check_vendor_logo() {
 }
 
 check_pinout() {
-  local file="$1" w h kb fmt max_px="${MAX_PINOUT_PX:-2400}" max_kb="${MAX_PINOUT_KB:-3072}"
+  local file="$1" w h kb bytes fmt max_px="${MAX_PINOUT_PX:-2400}" max_kb="${MAX_PINOUT_KB:-3072}"
   if [[ "$file" != *.png ]]; then
     echo "❌ $file: pinouts must be PNG"
     return 1
@@ -208,8 +209,9 @@ check_pinout() {
     echo "❌ $file: larger than ${max_px}px (got ${w}x${h})"
     return 1
   fi
-  kb=$(( $(stat -c %s "$file") / 1024 ))
-  if [[ "$kb" -gt "$max_kb" ]]; then
+  bytes=$(stat -c %s "$file")
+  kb=$(( (bytes + 1023) / 1024 ))
+  if [[ "$bytes" -gt $(( max_kb * 1024 )) ]]; then
     echo "❌ $file: ${kb} KiB, max ${max_kb} KiB"
     return 1
   fi
@@ -217,7 +219,7 @@ check_pinout() {
 }
 
 check_schematic() {
-  local file="$1" mb max_mb="${MAX_SCHEMATIC_MB:-30}"
+  local file="$1" mb bytes max_mb="${MAX_SCHEMATIC_MB:-30}"
   if [[ "$file" != *.pdf || "$(head -c 4 "$file")" != "%PDF" ]]; then
     echo "❌ $file: schematics must be PDF"
     return 1
@@ -226,8 +228,9 @@ check_schematic() {
     echo "❌ $file: not a readable PDF"
     return 1
   fi
-  mb=$(( $(stat -c %s "$file") / 1048576 ))
-  if [[ "$mb" -gt "$max_mb" ]]; then
+  bytes=$(stat -c %s "$file")
+  mb=$(( (bytes + 1048575) / 1048576 ))
+  if [[ "$bytes" -gt $(( max_mb * 1048576 )) ]]; then
     echo "❌ $file: ${mb} MiB, max ${max_mb} MiB"
     return 1
   fi
