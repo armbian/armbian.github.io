@@ -7,9 +7,7 @@
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Power off the board. Set the boot switch to MMC.
-3. Insert the card and power on the board.
+- Power off the board. Set the boot switch to MMC.
 
 ## Install to internal storage
 

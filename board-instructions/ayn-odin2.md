@@ -4,12 +4,11 @@ The device boots Android by default. Set the boot mode in the fastboot menu to s
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Insert the microSD card into the device.
-3. Hold **Vol -** and power on the device. The fastboot menu opens.
-4. Use **Vol -** and **Vol +** to select **Switch boot mode**.
-5. Press **Power** to confirm.
-6. Press **Power** again to start Armbian.
+1. Insert the microSD card into the device.
+2. Hold **Vol -** and power on the device. The fastboot menu opens.
+3. Use **Vol -** and **Vol +** to select **Switch boot mode**.
+4. Press **Power** to confirm.
+5. Press **Power** again to start Armbian.
 
 ## Notes
 

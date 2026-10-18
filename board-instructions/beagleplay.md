@@ -4,10 +4,9 @@ The board boots from eMMC by default. Press the USR button at power-on to boot f
 
 ## Installation
 
-1. Write the image to a microSD card and insert it.
-2. Hold the USR button.
-3. Connect USB-C power.
-4. Release the USR button when the power LED comes on.
+1. Hold the USR button.
+2. Connect USB-C power.
+3. Release the USR button when the power LED comes on.
 
 ## Notes
 

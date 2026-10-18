@@ -6,5 +6,4 @@
 ## Installation
 
 1. Install the MMC2 breakout board.
-2. Write the image to a microSD card.
-3. Insert the card into the breakout board and power on.
+2. Insert the card into the breakout board and power on.

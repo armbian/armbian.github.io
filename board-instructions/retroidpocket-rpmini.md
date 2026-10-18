@@ -4,9 +4,8 @@ The device boots Android from internal storage by default. Use the boot menu to 
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Insert the microSD card into the device.
-3. Power off the device, or reboot it from Android.
-4. Hold **Vol +** while the device powers on. A text menu opens. The menu can show sideways.
-5. Use **Vol +** and **Vol -** to select **Boot**.
-6. Press **Power** to confirm.
+1. Insert the microSD card into the device.
+2. Power off the device, or reboot it from Android.
+3. Hold **Vol +** while the device powers on. A text menu opens. The menu can show sideways.
+4. Use **Vol +** and **Vol -** to select **Boot**.
+5. Press **Power** to confirm.

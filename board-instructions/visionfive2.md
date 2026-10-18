@@ -7,8 +7,6 @@
 
 1. Update the QSPI firmware to VF2_v2.11.5 or newer. Follow **Updating SPL and U-Boot** in the [VisionFive 2 Quick Start Guide](https://doc-en.rvspace.org/VisionFive2/PDF/VisionFive2_QSG.pdf).
 2. Set the boot mode switches to QSPI flash: RGPIO_0 = 0, RGPIO_1 = 0.
-3. Write the image to a microSD card.
-4. Insert the microSD card and power on the board.
 
 ## Serial console
 

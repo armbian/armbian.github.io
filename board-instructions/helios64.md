@@ -7,10 +7,8 @@ The SoC boots in this order: SPI flash, eMMC, microSD. A system on the eMMC star
 
 ## Installation
 
-1. Write the image to a microSD card and insert it.
-2. Connect the power connector before you connect the power adapter to mains.
-3. If a UPS battery is installed, make sure the board is off. Hold the power button for about 4 seconds if the System ON LED is on.
-4. Power on the board.
+1. Connect the power connector before you connect the power adapter to mains.
+2. If a UPS battery is installed, make sure the board is off. Hold the power button for about 4 seconds if the System ON LED is on.
 
 ## Serial console
 

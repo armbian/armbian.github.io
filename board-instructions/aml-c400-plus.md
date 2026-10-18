@@ -4,10 +4,9 @@ The box starts the vendor u-boot on eMMC first. The image contains `u-boot.ext` 
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Insert the card. Push the reset button inside the AV jack with a toothpick.
-3. Hold the button and connect power. Release the button after some seconds.
-4. If Android starts, repeat steps 2 and 3 with a longer or shorter hold time.
+1. Insert the card. Push the reset button inside the AV jack with a toothpick.
+2. Hold the button and connect power. Release the button after some seconds.
+3. If Android starts, repeat steps 2 and 3 with a longer or shorter hold time.
 
 ## Install to internal storage
 

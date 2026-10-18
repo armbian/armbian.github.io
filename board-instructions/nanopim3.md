@@ -5,10 +5,9 @@ The NanoPC-T3 boots from the onboard eMMC before the microSD card. Use the BOOT 
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. Insert the card into the board.
-3. On the NanoPC-T3, hold the BOOT key.
-4. Connect the power supply.
+1. Insert the card into the board.
+2. On the NanoPC-T3, hold the BOOT key.
+3. Connect the power supply.
 
 ## Notes
 

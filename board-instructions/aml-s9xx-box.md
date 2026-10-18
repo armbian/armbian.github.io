@@ -5,16 +5,15 @@
 
 ## Installation
 
-1. Write the image to a microSD card.
-2. On the BOOT partition, open `extlinux/extlinux.conf`. Change the `fdt` line to the DTB for your box. The DTBs are in `dtb/amlogic/`.
-3. On the BOOT partition, copy the u-boot file for your SoC to `u-boot.ext`. Keep the original file.
+1. On the BOOT partition, open `extlinux/extlinux.conf`. Change the `fdt` line to the DTB for your box. The DTBs are in `dtb/amlogic/`.
+2. On the BOOT partition, copy the u-boot file for your SoC to `u-boot.ext`. Keep the original file.
    - `u-boot-s905`: S905
    - `u-boot-s905x-s912`: S905X, S905W, S905D, S905L, S805X, S912
    - `u-boot-s905x2-s922`: S905X2, S922X
    - `u-boot-s905x3`: S905X3
-4. Insert the card. Push the reset button inside the AV jack with a toothpick.
-5. Hold the button and connect power. Release the button after some seconds.
-6. If Android starts, repeat steps 4 and 5 with a longer or shorter hold time.
+3. Insert the card. Push the reset button inside the AV jack with a toothpick.
+4. Hold the button and connect power. Release the button after some seconds.
+5. If Android starts, repeat steps 4 and 5 with a longer or shorter hold time.
 
 ## Install to internal storage
 

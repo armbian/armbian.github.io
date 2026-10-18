@@ -12,7 +12,5 @@ sudo rkdeveloptool ld
 sudo rkdeveloptool ef
 ```
 
-3. Write the image to a microSD card.
-4. Insert the card and power on the board.
 
 If the board is in MASKROM mode, load the [RK3506 loader](https://github.com/armbian/rkbin/blob/master/rk35/rk3506_loader_v1.09.112.bin) first with `sudo rkdeveloptool db rk3506_loader_v1.09.112.bin`.
