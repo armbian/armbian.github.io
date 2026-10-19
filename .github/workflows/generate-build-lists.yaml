@@ -97,6 +97,8 @@ jobs:
           python3 -m pip install --upgrade pip
 
       - name: Run generate_targets.py
+        env:
+          GH_RUNNERS_TOKEN: ${{ secrets.RUNNERS }}
         # `inputs.*` is only populated on workflow_dispatch; push /
         # repository_dispatch fire with empty inputs, so each `||`
         # falls back to the same default the script's argparse uses.

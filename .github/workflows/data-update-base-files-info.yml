@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '45 3 * * *'
   workflow_dispatch:
+    inputs:
+      allow_removals:
+        description: "Publish even if releases/architectures disappear (use when upstream really dropped one)"
+        type: boolean
+        default: false
   repository_dispatch:
     types: ["Data: Update base-files info"]
 
@@ -39,6 +44,8 @@ jobs:
           ./scripts/generate-base-files-info-json.py base-files
       # Step 5: Commit changes if any
       - name: Commit changes if any
+        env:
+          ALLOW_REMOVALS: ${{ inputs.allow_removals || false }}
         run: |
           set -euo pipefail
 
@@ -49,6 +56,39 @@ jobs:
           git checkout data
 
           mkdir -p data
+
+          # Backstop. The generator already refuses to write a partial index
+          # when a mirror is unreachable; this catches anything that gets past
+          # it, because every build reads this file and one missing entry
+          # breaks every build of that release (armbian/build#10680).
+          if [ -f data/base-files.json ]; then
+            lost="$(jq -r --slurpfile new base-files.json '
+              . as $old
+              | $new[0] as $n
+              | [ $old
+                  | to_entries[]
+                  | .key as $rel
+                  | if ($n | has($rel) | not)
+                    then "release \($rel)"
+                    else ( .value | keys[] as $arch
+                           | select($n[$rel] | has($arch) | not)
+                           | "\($rel) (\($arch))" )
+                    end
+                ]
+              | .[]' data/base-files.json)"
+            if [ -n "$lost" ]; then
+              echo "::error::The generated index drops entries that are currently published:"
+              echo "$lost" | sed 's/^/  - /'
+              if [ "${ALLOW_REMOVALS}" = "true" ]; then
+                echo "::warning::allow_removals was set - publishing anyway"
+              else
+                echo "Refusing to publish. The currently published index stays in place."
+                echo "If upstream really dropped these, re-run this workflow with allow_removals=true."
+                exit 1
+              fi
+            fi
+          fi
+
           mv base-files.json data/base-files.json
 
           git add data/base-files.json

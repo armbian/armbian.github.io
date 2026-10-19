@@ -1,0 +1,79 @@
+name: "Data: Publish board pinouts, schematics and instructions"
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "board-pinouts/**"
+      - "board-schematics/**"
+      - "board-instructions/**"
+      - ".github/workflows/data-update-board-assets.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly, Sunday 02:00 UTC
+
+concurrency:
+  group: board-assets
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: "Publish board assets"
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'Armbian' }}
+
+    steps:
+      - name: "Checkout main"
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: main_wd
+
+      - name: "Install SSH key"
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: "${{ secrets.KEY_UPLOAD }}"
+          known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
+          if_key_exists: replace
+
+      # cache.armbian.com/<dir>/ maps to <path>/cache/<dir>/ on each mirror.
+      - name: "Upload to cache servers"
+        shell: bash
+        env:
+          NETBOX_TOKEN: ${{ secrets.NETBOX_TOKEN }}
+          NETBOX_API: ${{ secrets.NETBOX_API }}
+        run: |
+          set -euo pipefail
+
+          curl -sS \
+            -H "Authorization: Token ${NETBOX_TOKEN}" \
+            -H "Accept: application/json; indent=4" \
+            "${NETBOX_API}/virtualization/virtual-machines/?limit=500&name__empty=false&status=active" \
+          | jq '.results[]
+                 | select([.tags[].name] | index("cache"))
+                 | {id, name, custom_fields}' > servers.json
+
+          if [[ ! -s servers.json ]]; then
+            echo "No cache servers returned from NetBox query, nothing to upload."
+            exit 0
+          fi
+
+          for row in $(jq -r '@base64' servers.json); do
+            _jq() { echo "${row}" | base64 --decode | jq -r "${1}"; }
+
+            name=$(_jq '.name')
+            path=$(_jq '.custom_fields.path')
+            port=$(_jq '.custom_fields.port')
+            username=$(_jq '.custom_fields.username')
+
+            for dir in board-pinouts board-schematics board-instructions; do
+              src="${GITHUB_WORKSPACE}/main_wd/${dir}"
+              [[ -d "${src}" ]] || continue
+              echo "Uploading ${dir} to ${username}@${name}:${path}/cache/${dir}"
+              rsync -e "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
+                -rP --delete "${src}/" "${username}@${name}:${path}/cache/${dir}/"
+            done
+          done
