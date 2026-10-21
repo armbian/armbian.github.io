@@ -7,7 +7,7 @@
 ## Installation
 
 1. Write the image to a microSD card. Insert it and power on the board.
-2. Log in. Find the eMMC: it is the `mmcblk` device with `boot0` and `boot1` partitions.
+2. Log in. Find the eMMC: it is the `/dev/mmcblkX` device that also has the boot areas `/dev/mmcblkXboot0` and `/dev/mmcblkXboot1`. Use its number for `X` below.
 3. Back up the start of the eMMC, then erase the bootloader area. The eMMC partitions start at 16 MiB and stay intact:
 
 ```sh
