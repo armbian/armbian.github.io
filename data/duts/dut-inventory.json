@@ -1,0 +1,741 @@
+{
+  "count": 92,
+  "duts": [
+    {
+      "netbox_id": 490,
+      "name": "A64 OLinuXino 01",
+      "board": "lime-a64",
+      "model": "A64 OLinuXino",
+      "ip": "10.0.50.78",
+      "console": null
+    },
+    {
+      "netbox_id": 266,
+      "name": "Banana Pi CM4IO 01",
+      "board": "bananapicm4io",
+      "model": "Banana Pi CM4IO",
+      "ip": "10.0.50.64",
+      "console": null
+    },
+    {
+      "netbox_id": 358,
+      "name": "Banana Pi M2 Ultra 01",
+      "board": "bananapim2ultra",
+      "model": "Banana Pi M2 Ultra",
+      "ip": "10.0.50.83",
+      "console": 9001
+    },
+    {
+      "netbox_id": 281,
+      "name": "Banana Pi M2Pro 01",
+      "board": "bananapim2pro",
+      "model": "Banana Pi M2Pro",
+      "ip": "10.0.50.13",
+      "console": 9014
+    },
+    {
+      "netbox_id": 265,
+      "name": "Banana Pi M5 01",
+      "board": "bananapim5",
+      "model": "Banana Pi M5",
+      "ip": "10.0.50.63",
+      "console": null
+    },
+    {
+      "netbox_id": 439,
+      "name": "Banana Pi M7 01",
+      "board": "bananapim7",
+      "model": "Banana Pi M7",
+      "ip": "10.0.50.12",
+      "console": null
+    },
+    {
+      "netbox_id": 469,
+      "name": "Banana Pi R2 01",
+      "board": "bananapir2",
+      "model": "Banana Pi R2",
+      "ip": "10.0.50.46",
+      "console": null
+    },
+    {
+      "netbox_id": 446,
+      "name": "Banana Pi R3 Mini 01",
+      "board": "bananapir3mini",
+      "model": "Banana Pi R3 Mini",
+      "ip": "10.0.50.42",
+      "console": 7013
+    },
+    {
+      "netbox_id": 484,
+      "name": "Banana Pi R4 01",
+      "board": "bananapir4",
+      "model": "Banana Pi R4",
+      "ip": "10.0.50.66",
+      "console": null
+    },
+    {
+      "netbox_id": 461,
+      "name": "BananaPi BPI-F3 01",
+      "board": "musepipro",
+      "model": "MusePi Pro",
+      "ip": "10.0.50.23",
+      "console": 9012
+    },
+    {
+      "netbox_id": 470,
+      "name": "BananaPi BPI-M4-Zero 01",
+      "board": "bananapim4zero",
+      "model": "BananaPi BPI-M4-Zero",
+      "ip": "10.0.20.129",
+      "console": null
+    },
+    {
+      "netbox_id": 494,
+      "name": "BananaPi M4 01",
+      "board": "bananapim4",
+      "model": "BananaPi M4",
+      "ip": "10.0.50.84",
+      "console": null
+    },
+    {
+      "netbox_id": 486,
+      "name": "BananaPi W2 01",
+      "board": "bananapiw2",
+      "model": "BananaPi W2",
+      "ip": "10.0.50.24",
+      "console": 9010
+    },
+    {
+      "netbox_id": 406,
+      "name": "Cubie A5E 01",
+      "board": "radxa-cubie-a5e",
+      "model": "Cubie A5E",
+      "ip": "10.0.50.47",
+      "console": null
+    },
+    {
+      "netbox_id": 496,
+      "name": "Cubieboard 1 01",
+      "board": "cubieboard",
+      "model": "Cubieboard 1",
+      "ip": "10.0.50.86",
+      "console": null
+    },
+    {
+      "netbox_id": 489,
+      "name": "Cubieboard 4 01",
+      "board": "cubieboard4",
+      "model": "Cubieboard 4",
+      "ip": "10.0.50.72",
+      "console": null
+    },
+    {
+      "netbox_id": 355,
+      "name": "Cubietruck 01",
+      "board": "cubietruck",
+      "model": "Cubietruck",
+      "ip": "10.0.50.82",
+      "console": null
+    },
+    {
+      "netbox_id": 276,
+      "name": "Cubox i2eX/i4 01",
+      "board": "cubox-i",
+      "model": "Cubox i2eX/i4",
+      "ip": "10.0.50.81",
+      "console": null
+    },
+    {
+      "netbox_id": 411,
+      "name": "Dragon Q6A 01",
+      "board": "radxa-dragon-q6a",
+      "model": "Dragon Q6A",
+      "ip": "10.0.50.11",
+      "console": null
+    },
+    {
+      "netbox_id": 434,
+      "name": "Edge2 01",
+      "board": "khadas-edge2",
+      "model": "Edge2",
+      "ip": "10.0.50.121",
+      "console": null
+    },
+    {
+      "netbox_id": 350,
+      "name": "Espressobin 01",
+      "board": "espressobin",
+      "model": "Espressobin",
+      "ip": "10.0.50.56",
+      "console": 7001
+    },
+    {
+      "netbox_id": 317,
+      "name": "Helios4 01",
+      "board": "helios4",
+      "model": "Helios4",
+      "ip": "10.0.50.75",
+      "console": null
+    },
+    {
+      "netbox_id": 382,
+      "name": "K3 Pico-ITX 01",
+      "board": "k3picoitx",
+      "model": "K3 Pico-ITX",
+      "ip": "10.0.50.44",
+      "console": 7016
+    },
+    {
+      "netbox_id": 483,
+      "name": "MUSE Book 01",
+      "board": "musebook",
+      "model": "MUSE Book",
+      "ip": "10.0.50.89",
+      "console": 9004
+    },
+    {
+      "netbox_id": 467,
+      "name": "MusePi Pro 01",
+      "board": "musepipro",
+      "model": "MusePi Pro",
+      "ip": "10.0.50.14",
+      "console": 8005
+    },
+    {
+      "netbox_id": 476,
+      "name": "NanoPC T6 Plus 01",
+      "board": "friendlyelec-rk3588",
+      "model": "NanoPi R6/M6, NanoPC T6",
+      "ip": "10.0.50.36",
+      "console": 9009
+    },
+    {
+      "netbox_id": 443,
+      "name": "NanoPi Fire3 01",
+      "board": "nanopifire3",
+      "model": "NanoPi Fire3",
+      "ip": "10.0.50.16",
+      "console": 7007
+    },
+    {
+      "netbox_id": 298,
+      "name": "NanoPi K2 01",
+      "board": "nanopik2-s905",
+      "model": "NanoPi K2",
+      "ip": "10.0.50.34",
+      "console": null
+    },
+    {
+      "netbox_id": 499,
+      "name": "NanoPi M4 03",
+      "board": "nanopim4",
+      "model": "NanoPi M4",
+      "ip": "10.0.50.180",
+      "console": null
+    },
+    {
+      "netbox_id": 307,
+      "name": "NanoPi M4V2 01",
+      "board": "nanopim4v2",
+      "model": "NanoPi M4V2",
+      "ip": "10.0.50.49",
+      "console": null
+    },
+    {
+      "netbox_id": 333,
+      "name": "NanoPi M5 01",
+      "board": "nanopi-m5",
+      "model": "NanoPi M5",
+      "ip": "10.0.50.59",
+      "console": null
+    },
+    {
+      "netbox_id": 368,
+      "name": "NanoPi Neo 2 Black 01",
+      "board": "nanopineo2black",
+      "model": "NanoPi Neo 2 Black",
+      "ip": "10.0.50.62",
+      "console": null
+    },
+    {
+      "netbox_id": 308,
+      "name": "NanoPi Neo 3 01",
+      "board": "nanopineo3",
+      "model": "NanoPi Neo 3",
+      "ip": "10.0.50.43",
+      "console": null
+    },
+    {
+      "netbox_id": 481,
+      "name": "NanoPi R3S LTS 01",
+      "board": "nanopi-r3s-lts",
+      "model": "NanoPi R3S LTS",
+      "ip": "10.0.50.70",
+      "console": null
+    },
+    {
+      "netbox_id": 343,
+      "name": "NanoPi R6S 01",
+      "board": "nanopi-r6s",
+      "model": "NanoPi R6S",
+      "ip": "10.0.50.35",
+      "console": null
+    },
+    {
+      "netbox_id": 310,
+      "name": "NanoPi R76S 01",
+      "board": "nanopi-r76s",
+      "model": "NanoPi R76S",
+      "ip": "10.0.50.54",
+      "console": null
+    },
+    {
+      "netbox_id": 478,
+      "name": "Nanopi M6 01",
+      "board": "friendlyelec-rk3588",
+      "model": "NanoPi R6/M6, NanoPC T6",
+      "ip": "10.0.50.68",
+      "console": null
+    },
+    {
+      "netbox_id": 477,
+      "name": "Nanopi M6 V2 01",
+      "board": "friendlyelec-rk3588",
+      "model": "NanoPi R6/M6, NanoPC T6",
+      "ip": "10.0.50.76",
+      "console": 9002
+    },
+    {
+      "netbox_id": 272,
+      "name": "Odroid C2 01",
+      "board": "odroidc2",
+      "model": "Odroid C2",
+      "ip": "10.0.50.22",
+      "console": null
+    },
+    {
+      "netbox_id": 278,
+      "name": "Odroid C4 01",
+      "board": "odroidc4",
+      "model": "Odroid C4",
+      "ip": "10.0.50.26",
+      "console": 7002
+    },
+    {
+      "netbox_id": 295,
+      "name": "Odroid M1 01",
+      "board": "odroidm1",
+      "model": "Odroid M1",
+      "ip": "10.0.50.50",
+      "console": 7009
+    },
+    {
+      "netbox_id": 398,
+      "name": "Odroid N2 01",
+      "board": "odroidn2",
+      "model": "Odroid N2",
+      "ip": "10.0.50.15",
+      "console": null
+    },
+    {
+      "netbox_id": 362,
+      "name": "Odroid XU4 01",
+      "board": "odroidxu4",
+      "model": "Odroid XU4",
+      "ip": "10.0.50.20",
+      "console": 8011
+    },
+    {
+      "netbox_id": 367,
+      "name": "Orange Pi 3 01",
+      "board": "orangepi3",
+      "model": "Orange Pi 3",
+      "ip": "10.0.50.41",
+      "console": 7014
+    },
+    {
+      "netbox_id": 17,
+      "name": "Orange Pi 4",
+      "board": "orangepi4",
+      "model": "Orange Pi 4",
+      "ip": null,
+      "console": null
+    },
+    {
+      "netbox_id": 491,
+      "name": "Orange Pi 4 02",
+      "board": "orangepi4",
+      "model": "Orange Pi 4",
+      "ip": "10.0.50.77",
+      "console": null
+    },
+    {
+      "netbox_id": 492,
+      "name": "Orange Pi 4 LTS 01",
+      "board": "orangepi4-lts",
+      "model": "Orange Pi 4 LTS",
+      "ip": "10.0.50.80",
+      "console": null
+    },
+    {
+      "netbox_id": 460,
+      "name": "Orange Pi 5 01",
+      "board": "orangepi5",
+      "model": "Orange Pi 5",
+      "ip": "10.0.50.60",
+      "console": 9013
+    },
+    {
+      "netbox_id": 339,
+      "name": "Orange Pi 5+ 01",
+      "board": "orangepi5-plus",
+      "model": "Orange Pi 5+",
+      "ip": "10.0.50.55",
+      "console": null
+    },
+    {
+      "netbox_id": 465,
+      "name": "Orange Pi Lite 2 01",
+      "board": "orangepilite2",
+      "model": "Orange Pi Lite 2",
+      "ip": "10.0.20.125",
+      "console": 8014
+    },
+    {
+      "netbox_id": 365,
+      "name": "Orange Pi One+ 01",
+      "board": "orangepioneplus",
+      "model": "Orange Pi One+",
+      "ip": "10.0.50.37",
+      "console": null
+    },
+    {
+      "netbox_id": 468,
+      "name": "Orange Pi PC + 01",
+      "board": "orangepipcplus",
+      "model": "Orange Pi PC +",
+      "ip": "10.0.50.38",
+      "console": null
+    },
+    {
+      "netbox_id": 459,
+      "name": "Orange Pi Prime 01",
+      "board": "orangepiprime",
+      "model": "Orange Pi Prime",
+      "ip": "10.0.50.87",
+      "console": 7004
+    },
+    {
+      "netbox_id": 54,
+      "name": "Orange Pi Zero",
+      "board": "orangepizero",
+      "model": "Orange Pi Zero",
+      "ip": null,
+      "console": null
+    },
+    {
+      "netbox_id": 271,
+      "name": "Orange Pi Zero2 01",
+      "board": "orangepizero2",
+      "model": "Orange Pi Zero2",
+      "ip": "10.0.50.74",
+      "console": null
+    },
+    {
+      "netbox_id": 55,
+      "name": "Orange Pi+ 2E",
+      "board": "orangepiplus2e",
+      "model": "Orange Pi+ 2E",
+      "ip": null,
+      "console": null
+    },
+    {
+      "netbox_id": 495,
+      "name": "Orange Pi+ 2E 02",
+      "board": "orangepiplus2e",
+      "model": "Orange Pi+ 2E",
+      "ip": "10.0.50.85",
+      "console": null
+    },
+    {
+      "netbox_id": 370,
+      "name": "OrangePi 3 LTS 01",
+      "board": "orangepi3-lts",
+      "model": "OrangePi 3 LTS",
+      "ip": "10.0.50.30",
+      "console": null
+    },
+    {
+      "netbox_id": 293,
+      "name": "Quadra 01",
+      "board": "inovato-quadra",
+      "model": "Quadra",
+      "ip": "10.0.50.58",
+      "console": null
+    },
+    {
+      "netbox_id": 440,
+      "name": "R58HD 01",
+      "board": "mekotronics-r58hd",
+      "model": "R58HD",
+      "ip": "10.0.50.21",
+      "console": null
+    },
+    {
+      "netbox_id": 390,
+      "name": "R58S2 01",
+      "board": "mekotronics-r58s2",
+      "model": "R58S2",
+      "ip": "10.0.50.52",
+      "console": null
+    },
+    {
+      "netbox_id": 464,
+      "name": "ROCK 2F 01",
+      "board": "rock-2f",
+      "model": "ROCK 2F",
+      "ip": "10.0.20.164",
+      "console": 9016
+    },
+    {
+      "netbox_id": 277,
+      "name": "Raspberry Pi 3B",
+      "board": "rpi4b",
+      "model": "Raspberry Pi",
+      "ip": "10.0.50.17",
+      "console": null
+    },
+    {
+      "netbox_id": 275,
+      "name": "Raspberry Pi 5B",
+      "board": "rpi4b",
+      "model": "Raspberry Pi",
+      "ip": "10.0.50.10",
+      "console": null
+    },
+    {
+      "netbox_id": 447,
+      "name": "Raspberry Pi Zero 2W",
+      "board": "rpi4b",
+      "model": "Raspberry Pi",
+      "ip": "10.0.20.187",
+      "console": 7003
+    },
+    {
+      "netbox_id": 327,
+      "name": "Rock 5B 01",
+      "board": "rock-5b",
+      "model": "Rock 5B",
+      "ip": "10.0.50.53",
+      "console": null
+    },
+    {
+      "netbox_id": 334,
+      "name": "Rock 5B 02",
+      "board": "rock-5b",
+      "model": "Rock 5B",
+      "ip": "10.0.50.65",
+      "console": null
+    },
+    {
+      "netbox_id": 286,
+      "name": "Rock 5B+ 01",
+      "board": "rock-5b-plus",
+      "model": "Rock 5B+",
+      "ip": "10.0.50.27",
+      "console": null
+    },
+    {
+      "netbox_id": 273,
+      "name": "Rock 5T 01",
+      "board": "rock-5t",
+      "model": "Rock 5T",
+      "ip": "10.0.50.51",
+      "console": 9015
+    },
+    {
+      "netbox_id": 51,
+      "name": "Rock64",
+      "board": "rock64",
+      "model": "Rock64v2",
+      "ip": null,
+      "console": null
+    },
+    {
+      "netbox_id": 448,
+      "name": "RockPro 64 01",
+      "board": "rockpro64",
+      "model": "RockPro 64",
+      "ip": "10.0.50.31",
+      "console": 7010
+    },
+    {
+      "netbox_id": 497,
+      "name": "Rockpi 4B 01",
+      "board": "rockpi-4b",
+      "model": "Rockpi 4B",
+      "ip": "10.0.50.73",
+      "console": null
+    },
+    {
+      "netbox_id": 493,
+      "name": "Rockpi 4C 01",
+      "board": "rockpi-4c",
+      "model": "Rockpi 4C",
+      "ip": "10.0.50.79",
+      "console": null
+    },
+    {
+      "netbox_id": 53,
+      "name": "Rockpi E",
+      "board": "rockpi-e",
+      "model": "Rockpi E",
+      "ip": null,
+      "console": null
+    },
+    {
+      "netbox_id": 300,
+      "name": "Rockpi E 01",
+      "board": "rockpi-e",
+      "model": "Rockpi E",
+      "ip": "10.0.50.67",
+      "console": null
+    },
+    {
+      "netbox_id": 455,
+      "name": "Rockpi S 01",
+      "board": "rockpi-s",
+      "model": "Rockpi S",
+      "ip": "10.0.50.18",
+      "console": null
+    },
+    {
+      "netbox_id": 269,
+      "name": "Tinker Board 01",
+      "board": "tinkerboard",
+      "model": "Tinker Board",
+      "ip": "10.0.50.33",
+      "console": null
+    },
+    {
+      "netbox_id": 498,
+      "name": "Tinker Board 2 01",
+      "board": "tinkerboard-2",
+      "model": "Tinker Board 2",
+      "ip": "10.0.50.88",
+      "console": null
+    },
+    {
+      "netbox_id": 381,
+      "name": "UEFI arm64 01",
+      "board": "uefi-arm64",
+      "model": "UEFI arm64",
+      "ip": "10.0.50.45",
+      "console": null
+    },
+    {
+      "netbox_id": 432,
+      "name": "UEFI x86 01",
+      "board": "uefi-x86",
+      "model": "UEFI x86",
+      "ip": "10.0.50.40",
+      "console": null
+    },
+    {
+      "netbox_id": 487,
+      "name": "UEFI/DT arm64 01",
+      "board": "jetson-nano",
+      "model": "Jetson Nano",
+      "ip": "10.0.50.69",
+      "console": null
+    },
+    {
+      "netbox_id": 311,
+      "name": "UNO Q 01",
+      "board": "arduino-uno-q",
+      "model": "UNO Q",
+      "ip": "10.0.20.131",
+      "console": null
+    },
+    {
+      "netbox_id": 371,
+      "name": "Udoo 01",
+      "board": "udoo",
+      "model": "Udoo",
+      "ip": "10.0.50.25",
+      "console": 8012
+    },
+    {
+      "netbox_id": 314,
+      "name": "VIM1 01",
+      "board": "khadas-vim1",
+      "model": "VIM1",
+      "ip": "10.0.50.48",
+      "console": null
+    },
+    {
+      "netbox_id": 438,
+      "name": "VIM1S 01",
+      "board": "khadas-vim1s",
+      "model": "VIM1S",
+      "ip": "10.0.50.32",
+      "console": null
+    },
+    {
+      "netbox_id": 313,
+      "name": "VIM2 01",
+      "board": "khadas-vim2",
+      "model": "VIM2",
+      "ip": "10.0.50.28",
+      "console": null
+    },
+    {
+      "netbox_id": 456,
+      "name": "VIM3 01",
+      "board": "khadas-vim3",
+      "model": "VIM3",
+      "ip": "10.0.50.39",
+      "console": null
+    },
+    {
+      "netbox_id": 437,
+      "name": "VIM4 01",
+      "board": "khadas-vim4",
+      "model": "VIM4",
+      "ip": "10.0.50.19",
+      "console": 7012
+    },
+    {
+      "netbox_id": 304,
+      "name": "ZERO 3 01",
+      "board": "radxa-zero3",
+      "model": "ZERO 3",
+      "ip": "10.0.20.185",
+      "console": 8016
+    },
+    {
+      "netbox_id": 442,
+      "name": "ZeroPi 01",
+      "board": "zeropi",
+      "model": "ZeroPi",
+      "ip": "10.0.50.57",
+      "console": null
+    },
+    {
+      "netbox_id": 52,
+      "name": "lc-opi3",
+      "board": "orangepi3",
+      "model": "Orange Pi 3",
+      "ip": "172.17.27.233",
+      "console": null
+    },
+    {
+      "netbox_id": 104,
+      "name": "odroidhc4",
+      "board": "odroidhc4",
+      "model": "HC4",
+      "ip": null,
+      "console": null
+    }
+  ]
+}
