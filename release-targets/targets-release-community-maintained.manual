@@ -15,6 +15,7 @@ cli-stable-debian:
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
     - { BOARD: aml-s9xx-box, BRANCH: edge }
+    - { BOARD: eltay-rm66, BRANCH: vendor }
 
 # Ubuntu cli
 cli-stable-ubuntu:
@@ -47,4 +48,5 @@ desktop-stable-debian-xfce:
     DESKTOP_TIER: "mid"
   items:
     - { BOARD: aml-s9xx-box, BRANCH: current }
+    - { BOARD: eltay-rm66, BRANCH: current }
     - { BOARD: orangepi4pro, BRANCH: vendor }
