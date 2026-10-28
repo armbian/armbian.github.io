@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Collect PR authors from multiple Armbian repositories
         id: get-contributors
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -61,7 +61,7 @@ jobs:
 
 
       - name: Check if users are already members of Armbian org (display eligible users)
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.ORG_INVITE }}
           script: |

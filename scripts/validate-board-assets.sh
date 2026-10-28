@@ -1,11 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate images in PRs:
-# - board-images/: must be 16:9 AND either 1920x1080 or 3840x2160
-# - board-vendor-logos/: must be square (WxH equal)
+# Validate images:
+# - board-images/: 16:9 AND either 1920x1080 or 3840x2160, TRANSPARENT background,
+#   and (optional) object between MIN_OBJECT_PCT and MAX_OBJECT_PCT of the frame
+# - board-vendor-logos/: square (WxH equal), TRANSPARENT background, and object
+#   not larger than MAX_LOGO_OBJECT_PCT of the frame (default 80)
+# - board-pinouts/: PNG, at most MAX_PINOUT_PX on each side and MAX_PINOUT_KB
+# - board-schematics/: a readable PDF of at most MAX_SCHEMATIC_MB
+# - board-instructions/: non-empty UTF-8 Markdown, no H1 (the site shows the
+#   board name), at most MAX_INSTRUCTIONS_KB
 #
-# Requires ImageMagick's `identify`.
+# On a PR only the changed assets are checked; on schedule/workflow_dispatch the
+# WHOLE set is checked. Requires ImageMagick's `identify`/`convert`.
+#
+# env: MAX_OBJECT_PCT (int) — if set, fail a board image whose opaque-pixel fill
+#      exceeds this %. Unset = report only.
+#      MIN_OBJECT_PCT (int) — if set, fail a board image whose fill is below this
+#      %, i.e. a board floating small in a mostly empty frame. Unset = no floor.
+#      Board images currently fill 5-50%, median 22%.
+#      MIN_BBOX_PCT (int, default 25) — an image under MIN_OBJECT_PCT is only
+#      failed when its bounding box also covers less than this % of the canvas.
+#      Spares sparse-but-large boards, e.g. one filling 10% while spanning 70%.
+#      MAX_LOGO_OBJECT_PCT (int, default 80) — same cap for vendor logos. There
+#      is deliberately no floor for logos: wordmarks are legitimately sparse,
+#      median 11%, smallest 2%.
 
 BASE_REF="${BASE_REF:-origin/${GITHUB_BASE_REF:-main}}"
 HEAD_REF="${HEAD_REF:-HEAD}"
@@ -13,19 +32,32 @@ HEAD_REF="${HEAD_REF:-HEAD}"
 # Fetch base ref if needed (useful on CI with shallow clones)
 git fetch --no-tags --prune --depth=50 origin "+refs/heads/*:refs/remotes/origin/*" >/dev/null 2>&1 || true
 
-mapfile -t CHANGED < <(git diff --name-only "${BASE_REF}...${HEAD_REF}" -- \
-  'board-images/**' 'board-vendor-logos/**' || true)
+# On a PR, validate only the changed assets. On schedule / workflow_dispatch /
+# local (no PR base ref) validate EVERY asset, so the monthly run actually checks
+# the whole set instead of an empty diff.
+if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+  mapfile -t CHANGED < <(git diff --name-only "${BASE_REF}...${HEAD_REF}" -- \
+    'board-images/**' 'board-vendor-logos/**' \
+    'board-pinouts/**' 'board-schematics/**' 'board-instructions/**' || true)
+  echo "Mode: changed files (PR vs ${GITHUB_BASE_REF})"
+else
+  mapfile -t CHANGED < <(find board-images board-vendor-logos board-pinouts \
+    board-schematics board-instructions -type f 2>/dev/null | sort)
+  echo "Mode: all assets"
+fi
 
 if [[ ${#CHANGED[@]} -eq 0 ]]; then
-  echo "No changes in board-images/ or board-vendor-logos/. ✅"
+  echo "No board asset files to validate. ✅"
   exit 0
 fi
 
 # Filter to image files we can validate
-VALID_EXT_RE='\.(png|jpg|jpeg|webp)$'
+VALID_EXT_RE='\.(png|jpg|jpeg|webp|pdf)$'
 FILES=()
 for f in "${CHANGED[@]}"; do
-  [[ "$f" =~ $VALID_EXT_RE ]] || continue
+  # Pinout, schematic and instruction checks reject wrong formats themselves.
+  [[ "$f" =~ $VALID_EXT_RE || "$f" == board-pinouts/* || "$f" == board-schematics/* \
+    || "$f" == board-instructions/* ]] || continue
   [[ -f "$f" ]] || continue
   FILES+=("$f")
 done
@@ -39,6 +71,38 @@ if ! command -v identify >/dev/null 2>&1; then
   echo "ERROR: 'identify' not found. Install ImageMagick."
   exit 2
 fi
+
+# Background is transparent iff there's an alpha channel AND all four corners are
+# (near) fully transparent. Returns 0 when transparent.
+bg_transparent() {
+  local f="$1" a tl tr bl br
+  a="$(identify -format '%A' "$f" 2>/dev/null || echo None)"
+  case "$a" in True|Blend|true|blend) : ;; *) return 1 ;; esac
+  tl=$(convert "$f" -format '%[fx:p{0,0}.a]'     info: 2>/dev/null || echo 1)
+  tr=$(convert "$f" -format '%[fx:p{w-1,0}.a]'   info: 2>/dev/null || echo 1)
+  bl=$(convert "$f" -format '%[fx:p{0,h-1}.a]'   info: 2>/dev/null || echo 1)
+  br=$(convert "$f" -format '%[fx:p{w-1,h-1}.a]' info: 2>/dev/null || echo 1)
+  awk -v a="$tl" -v b="$tr" -v c="$bl" -v d="$br" \
+    'BEGIN{exit !(a<0.04 && b<0.04 && c<0.04 && d<0.04)}'
+}
+
+# Object fill = % of the canvas that is opaque (non-transparent) pixels.
+object_fill_pct() {
+  convert "$1" -alpha extract -format '%[fx:round(mean*100)]' info: 2>/dev/null || return 1
+}
+
+# Object extent = % of the canvas covered by the object's bounding box. Fill and
+# extent answer different questions: a long thin board, or one shot at an angle,
+# can span most of the frame while colouring few of its pixels. Only something
+# low on BOTH is actually small in frame.
+object_bbox_pct() {
+  local dim bb W H bw bh
+  dim=$(identify -format '%wx%h' "$1" 2>/dev/null) || return 1
+  bb=$(convert "$1" -trim -format '%wx%h' info: 2>/dev/null) || return 1
+  W=${dim%x*}; H=${dim#*x}; bw=${bb%x*}; bh=${bb#*x}
+  [[ -z "$bw" || -z "$bh" || "$W" -eq 0 || "$H" -eq 0 ]] && return 1
+  awk -v w="$bw" -v h="$bh" -v W="$W" -v H="$H" 'BEGIN{printf "%d", (w*h*100)/(W*H)}'
+}
 
 fail=0
 
@@ -63,7 +127,40 @@ check_board_image() {
     return 1
   fi
 
-  echo "✅ $file: OK (${w}x${h})"
+  # Background must be transparent (board photo cut out, not a flat backdrop).
+  if ! bg_transparent "$file"; then
+    echo "❌ $file: background must be transparent (no alpha channel or opaque corners)"
+    return 1
+  fi
+
+  # Object size: report the opaque-pixel fill %, and fail only if a limit is set.
+  local fill
+  if ! fill=$(object_fill_pct "$file"); then
+    echo "❌ $file: could not measure object fill"
+    return 1
+  fi
+  if [[ -n "${MAX_OBJECT_PCT:-}" && "$fill" -gt "${MAX_OBJECT_PCT}" ]]; then
+    echo "❌ $file: object too large — fills ${fill}% of the frame (max ${MAX_OBJECT_PCT}%)"
+    return 1
+  fi
+  if [[ -n "${MIN_OBJECT_PCT:-}" && "$fill" -lt "${MIN_OBJECT_PCT}" ]]; then
+    # Sparse shapes fill little while still spanning the frame, so confirm the
+    # object really is small before failing. Only computed on the few that get
+    # this far, since trimming costs more than reading the alpha mean.
+    local bbox min_bbox="${MIN_BBOX_PCT:-25}"
+    if ! bbox=$(object_bbox_pct "$file"); then
+      echo "❌ $file: could not calculate object bounding box"
+      return 1
+    fi
+    if [[ "$bbox" -lt "$min_bbox" ]]; then
+      echo "❌ $file: object too small — fills ${fill}% of the frame, bounding box ${bbox}% (min ${MIN_OBJECT_PCT}% fill)"
+      return 1
+    fi
+    echo "✅ $file: OK (${w}x${h}, transparent, object ${fill}% but spans ${bbox}% — sparse, not small)"
+    return 0
+  fi
+
+  echo "✅ $file: OK (${w}x${h}, transparent, object ${fill}%)"
   return 0
 }
 
@@ -82,16 +179,101 @@ check_vendor_logo() {
     return 1
   fi
 
-  echo "✅ $file: OK (${w}x${h})"
+  # Background must be transparent (logo on transparent canvas, not a backdrop).
+  if ! bg_transparent "$file"; then
+    echo "❌ $file: background must be transparent (no alpha channel or opaque corners)"
+    return 1
+  fi
+
+  # Object size: logos may fill more than a board photo — cap at MAX_LOGO_OBJECT_PCT.
+  local fill limit="${MAX_LOGO_OBJECT_PCT:-80}"
+  fill=$(object_fill_pct "$file")
+  if [[ "$fill" -gt "$limit" ]]; then
+    echo "❌ $file: object too large — fills ${fill}% of the frame (max ${limit}%)"
+    return 1
+  fi
+
+  echo "✅ $file: OK (${w}x${h}, transparent, object ${fill}%)"
   return 0
 }
 
-echo "Validating ${#FILES[@]} image(s)..."
+check_pinout() {
+  local file="$1" w h kb bytes fmt max_px="${MAX_PINOUT_PX:-2400}" max_kb="${MAX_PINOUT_KB:-3072}"
+  if [[ "$file" != *.png ]]; then
+    echo "❌ $file: pinouts must be PNG"
+    return 1
+  fi
+  read -r fmt w h < <(identify -format '%m %w %h' "$file" 2>/dev/null || echo "x 0 0")
+  if [[ "$fmt" != PNG || "$w" -le 0 || "$h" -le 0 ]]; then
+    echo "❌ $file: not a readable PNG"
+    return 1
+  fi
+  if [[ "$w" -gt "$max_px" || "$h" -gt "$max_px" ]]; then
+    echo "❌ $file: larger than ${max_px}px (got ${w}x${h})"
+    return 1
+  fi
+  bytes=$(stat -c %s "$file")
+  kb=$(( (bytes + 1023) / 1024 ))
+  if [[ "$bytes" -gt $(( max_kb * 1024 )) ]]; then
+    echo "❌ $file: ${kb} KiB, max ${max_kb} KiB"
+    return 1
+  fi
+  echo "✅ $file: OK (${w}x${h}, ${kb} KiB)"
+}
+
+check_schematic() {
+  local file="$1" mb bytes max_mb="${MAX_SCHEMATIC_MB:-30}"
+  if [[ "$file" != *.pdf || "$(head -c 4 "$file")" != "%PDF" ]]; then
+    echo "❌ $file: schematics must be PDF"
+    return 1
+  fi
+  if command -v pdfinfo >/dev/null 2>&1 && ! pdfinfo "$file" >/dev/null 2>&1; then
+    echo "❌ $file: not a readable PDF"
+    return 1
+  fi
+  bytes=$(stat -c %s "$file")
+  mb=$(( (bytes + 1048575) / 1048576 ))
+  if [[ "$bytes" -gt $(( max_mb * 1048576 )) ]]; then
+    echo "❌ $file: ${mb} MiB, max ${max_mb} MiB"
+    return 1
+  fi
+  echo "✅ $file: OK (${mb} MiB)"
+}
+
+check_instructions() {
+  local file="$1" bytes max_kb="${MAX_INSTRUCTIONS_KB:-16}"
+  if [[ "$file" != *.md ]]; then
+    echo "❌ $file: instructions must be Markdown (.md)"
+    return 1
+  fi
+  bytes=$(stat -c %s "$file")
+  if [[ "$bytes" -eq 0 || "$bytes" -gt $(( max_kb * 1024 )) ]]; then
+    echo "❌ $file: ${bytes} bytes, must be 1..$(( max_kb * 1024 ))"
+    return 1
+  fi
+  if ! iconv -f UTF-8 -t UTF-8 "$file" >/dev/null 2>&1; then
+    echo "❌ $file: not valid UTF-8"
+    return 1
+  fi
+  if grep -qE '^# ' "$file"; then
+    echo "❌ $file: no H1 allowed, start with ##"
+    return 1
+  fi
+  echo "✅ $file: OK (${bytes} bytes)"
+}
+
+echo "Validating ${#FILES[@]} file(s)..."
 for f in "${FILES[@]}"; do
   if [[ "$f" == board-images/* ]]; then
     check_board_image "$f" || fail=1
   elif [[ "$f" == board-vendor-logos/* ]]; then
     check_vendor_logo "$f" || fail=1
+  elif [[ "$f" == board-pinouts/* ]]; then
+    check_pinout "$f" || fail=1
+  elif [[ "$f" == board-schematics/* ]]; then
+    check_schematic "$f" || fail=1
+  elif [[ "$f" == board-instructions/* ]]; then
+    check_instructions "$f" || fail=1
   else
     # Shouldn't happen because of the diff filter, but keep it safe.
     echo "Skipping unrelated file: $f"
@@ -100,8 +282,8 @@ done
 
 if [[ "$fail" -ne 0 ]]; then
   echo ""
-  echo "Image validation failed. Please resize/crop the files to match the rules above."
+  echo "Validation failed. Fix the files to match the rules above."
   exit 1
 fi
 
-echo "All image validations passed. ✅"
+echo "All validations passed. ✅"

@@ -9,6 +9,18 @@ SOURCE_OF_TRUTH="${SOURCE_OF_TRUTH:-rsync://fi.mirror.armbian.de}"
 OS_DIR="${OS_DIR:-./os}"
 BOARD_DIR="${BOARD_DIR:-./build/config/boards}"
 REUSABLE_FILE="${REUSABLE_FILE:-./release-targets/reusable.yml}"
+THIRD_PARTY_FILE="${THIRD_PARTY_FILE:-./release-targets/third-party.yml}"
+
+# Board documentation assets, published from this repository to the cache
+# mirrors. A field stays empty when the board has no such file.
+BOARD_ASSETS_DIR="${BOARD_ASSETS_DIR:-.}"
+BOARD_ASSETS_URL="${BOARD_ASSETS_URL:-https://cache.armbian.com}"
+
+# asset_url <dir> <slug> <extension>
+asset_url() {
+  [[ -f "${BOARD_ASSETS_DIR}/${1}/${2}.${3}" ]] && printf '%s/%s/%s.%s' "${BOARD_ASSETS_URL}" "${1}" "${2}" "${3}"
+  return 0
+}
 OUT="${OUT:-armbian-images.json}"
 
 # -----------------------------------------------------------------------------
@@ -63,6 +75,7 @@ extract_cfg_var() {
 declare -A BOARD_NAME_MAP=()
 declare -A BOARD_VENDOR_MAP=()
 declare -A BOARD_SUPPORT_MAP=()
+declare -A BOARD_INTRODUCED_MAP=()
 
 MISSING_META_FILE="$(mktemp)"
 trap 'rm -f "$MISSING_META_FILE"' EXIT
@@ -73,19 +86,21 @@ while IFS= read -r cfg; do
 
   name="$(extract_cfg_var "$cfg" BOARD_NAME)"
   vendor="$(extract_cfg_var "$cfg" BOARD_VENDOR)"
+  introduced="$(extract_cfg_var "$cfg" INTRODUCED)"
   support="${cfg##*.}"; support="${support,,}"
 
 
   [[ -n "$name" ]]   && BOARD_NAME_MAP["$slug"]="$name"
   [[ -n "$vendor" ]] && BOARD_VENDOR_MAP["$slug"]="$vendor"
   [[ -n "$support" ]] && BOARD_SUPPORT_MAP["$slug"]="$support"
+  [[ -n "$introduced" ]] && BOARD_INTRODUCED_MAP["$slug"]="$introduced"
 
   if [[ -z "$name" || -z "$vendor" ]]; then
     printf '%s\n' "$slug" >>"$MISSING_META_FILE"
   fi
 done < <(
   find "$BOARD_DIR" -maxdepth 1 -type f \
-    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" \) \
+    \( -name "*.conf" -o -name "*.csc" -o -name "*.wip" -o -name "*.tvb" -o -name "*.eos" \) \
   | sort
 )
 
@@ -97,11 +112,12 @@ declare -A REUSABLE_BOARD_USES=()       # board_slug -> target_board_slug
 declare -A REUSABLE_BOARD_BRANCH=()     # board_slug -> branch_filter (optional)
 declare -A REUSABLE_BOARD_EXT=()        # board_slug -> file_extension_filter (optional)
 declare -A REUSABLE_BOARD_META=()       # board_slug -> "name|vendor|support"
+declare -A HIDDEN_BOARDS=()             # board_slug -> 1 (no own download entries)
 
 if [[ -f "$REUSABLE_FILE" ]]; then
   echo "▶ Loading reusable board definitions from ${REUSABLE_FILE}…" >&2
 
-  while IFS=$'\t' read -r slug name vendor support uses branch ext; do
+  while IFS=$'\t' read -r slug name vendor support uses branch ext introduced; do
     slug="${slug,,}"
     [[ -z "$slug" ]] && continue
 
@@ -115,6 +131,7 @@ if [[ -f "$REUSABLE_FILE" ]]; then
     [[ -n "$name" ]] && BOARD_NAME_MAP["$slug"]="$name"
     [[ -n "$vendor" ]] && BOARD_VENDOR_MAP["$slug"]="$vendor"
     [[ -n "$support" ]] && BOARD_SUPPORT_MAP["$slug"]="$support"
+    [[ -n "$introduced" ]] && BOARD_INTRODUCED_MAP["$slug"]="$introduced"
 
     ext_msg="${ext:+ (ext: ${ext})}"
     echo "  - ${slug} → ${uses}${branch:+ (branch: ${branch})}${ext_msg}" >&2
@@ -132,7 +149,8 @@ try:
             str(b.get('board_support', '')),
             str(b.get('uses', '')),
             str(b.get('branch', '')),
-            str(b.get('file_extension', ''))
+            str(b.get('file_extension', '')),
+            str(b.get('board_introduced', ''))
         ]))
 except Exception as e:
     sys.stderr.write(f'Error loading reusable.yml: {e}\n')
@@ -141,6 +159,21 @@ except Exception as e:
   )
 
   echo "  - Reusable boards loaded: ${#REUSABLE_BOARD_USES[@]}" >&2
+
+  # Boards listed under "hide:" get no download entries of their own. Their
+  # images still reach every reusable board that uses them.
+  while IFS= read -r slug; do
+    [[ -n "$slug" ]] && HIDDEN_BOARDS["${slug,,}"]=1
+  done < <(
+    python3 -c "
+import yaml
+with open('$REUSABLE_FILE') as f:
+    data = yaml.safe_load(f) or {}
+for s in data.get('hide') or []:
+    print(s)
+" 2>/dev/null || true
+  )
+  echo "  - Hidden boards: ${!HIDDEN_BOARDS[*]}" >&2
 else
   echo "ℹ️  Reusable board file not found: ${REUSABLE_FILE}" >&2
 fi
@@ -339,11 +372,29 @@ fi
 is_version_token() { [[ "$1" =~ ^[0-9]{2}\.[0-9] ]]; }
 
 is_preinstalled_app() {
-  case "$1" in kali|homeassistant|openhab|omv) return 0 ;; *) return 1 ;; esac
+  case "$1" in kali|homeassistant|omv) return 0 ;; *) return 1 ;; esac
+}
+
+split_desktop_tail() {
+  local tail="$1"
+  local variant="$tail" app=""
+
+  case "$tail" in
+    *-backported-mesa)
+      variant="${tail%-backported-mesa}"
+      app="backported-mesa"
+      ;;
+    *-ufs)
+      variant="${tail%-ufs}"
+      app="ufs"
+      ;;
+  esac
+
+  printf '%s\n' "$variant" "$app"
 }
 
 strip_img_ext() {
-  sed -E 's/(\.img(\.(xz|zst|gz))?)$//' <<<"$1"
+  sed -E 's/(\.img(\.(xz|zst|gz))?|\.iso|\.tar\.(xz|zst|gz))$//' <<<"$1"
 }
 
 extract_file_extension() {
@@ -373,9 +424,31 @@ extract_file_extension() {
     return
   fi
 
+  # LK bootloader artifacts
+  #   ...minimal.lk.bin.xz  -> lk.bin.xz
+  #   ...minimal.lk.bin     -> lk.bin
+  if [[ "$n" == *".lk.bin" ]] || [[ "$n" == *".lk.bin."* ]]; then
+    if [[ "$n" == *".lk.bin."* ]]; then
+      echo "lk.bin.${n##*.lk.bin.}"
+    else
+      echo "lk.bin"
+    fi
+    return
+  fi
+
   # rootfs images
   if [[ "$n" == *".rootfs.img."* ]]; then
     echo "rootfs.img.${n##*.rootfs.img.}"
+    return
+  fi
+
+  # fip images
+  if [[ "$n" == *".fip.img."* ]]; then
+    echo "fip.img.${n##*.fip.img.}"
+    return
+  fi
+  if [[ "$n" == *.fip.img ]]; then
+    echo "fip.img"
     return
   fi
 
@@ -412,6 +485,36 @@ extract_file_extension() {
     return
   fi
 
+  # hyperv cloud images: minimal.hyperv.zip.xz -> hyperv.zip.xz
+  if [[ "$n" == *".hyperv.zip."* ]]; then
+    echo "hyperv.zip.${n##*.hyperv.zip.}"
+    return
+  fi
+  if [[ "$n" == *.hyperv.zip ]]; then
+    echo "hyperv.zip"
+    return
+  fi
+
+  # live ISO images (UEFI cloud): shipped uncompressed -> iso
+  if [[ "$n" == *.iso ]]; then
+    echo "iso"
+    return
+  fi
+
+  # tar archives (e.g. Arduino UNO Q images): *.tar.xz / *.tar.gz / *.tar.zst
+  if [[ "$n" == *.tar.xz ]]; then
+    echo "tar.xz"
+    return
+  fi
+  if [[ "$n" == *.tar.gz ]]; then
+    echo "tar.gz"
+    return
+  fi
+  if [[ "$n" == *.tar.zst ]]; then
+    echo "tar.zst"
+    return
+  fi
+
   # fallback
   echo "${n##*.}"
 }
@@ -434,9 +537,30 @@ get_download_repository() {
 # -----------------------------------------------------------------------------
 EXPOSED_MAP_FILE="${OS_DIR}/exposed.map"
 
+# exposed.map lists images by their .img.xz name, so only the .xz can ever be
+# promoted - which is why none of the ISOs on the download pages are flagged,
+# even when the same image is recommended.
+#
+# Compare stems instead: drop the format suffix from both the pattern and the
+# candidate. Only .img.xz and .iso are stripped, so those two are the formats a
+# single exposed.map entry can promote; .img.qcow2, .hyperv.zip.xz and the
+# variant-specific ones (oowow, recovery, fip...) keep their suffix, fail the
+# anchored match, and stay unpromoted unless someone lists them deliberately.
+#
+# The suffix is also what terminates these unanchored patterns, so removing it
+# without anchoring would let '..._minimal' match '..._minimal_something' -
+# hence the '$' the stripped patterns end with.
+IMAGE_FORMAT_SUFFIX_RE='\.(img\.xz|iso)$'
+
+EXPOSED_MAP_MATCH_FILE="$(mktemp)"
+trap '{ rm -f -- "$EXPOSED_MAP_MATCH_FILE"; }' EXIT
+sed -E "s#${IMAGE_FORMAT_SUFFIX_RE}#\$#" "$EXPOSED_MAP_FILE" > "$EXPOSED_MAP_MATCH_FILE"
+
 is_promoted_candidate() {
   local candidate="$1"
-  grep -Eq -f "$EXPOSED_MAP_FILE" <<<"$candidate"
+  # strip the format suffix so the stem is what gets matched
+  candidate="$(sed -E "s#${IMAGE_FORMAT_SUFFIX_RE}##" <<<"$candidate")"
+  grep -Eq -f "$EXPOSED_MAP_MATCH_FILE" <<<"$candidate"
 }
 
 is_promoted() {
@@ -475,6 +599,7 @@ parse_image_name() {
 
   local ver="" board="" distro="" branch="" kernel="" tail=""
   local variant="server" app="" storage=""
+  local desktop_variant="" desktop_app=""
 
   if is_version_token "${p[1]:-}"; then
     ver="${p[1]}"; board="${p[2]}"; distro="${p[3]}"
@@ -485,16 +610,33 @@ parse_image_name() {
   fi
 
   if [[ "$kernel" == *-* ]]; then
-    suffix="$(strip_img_ext "${kernel#*-}")"
+    # Use longest match from left (`##*-`) so that kernel fields with
+    # rc / beta / snapshot markers in the middle still pick up the
+    # *last* dash-separated token. Examples:
+    #   6.19.0-rc5-omv   → "omv"   (not "rc5-omv", which the shortest
+    #                               match would produce and which then
+    #                               fails the whole-string
+    #                               is_preinstalled_app case match)
+    #   6.6.62-omv       → "omv"
+    #   6.6.62-current   → "current" (not a preinstalled app, no ufs,
+    #                                 app stays empty)
+    #   6.19.0-rc5-ufs   → "ufs"
+    suffix="$(strip_img_ext "${kernel##*-}")"
     if is_preinstalled_app "$suffix"; then
       app="$suffix"
     else
-      [[ "${suffix##*-}" == "ufs" ]] && storage="ufs"
+      [[ "$suffix" == "ufs" ]] && app="ufs"
     fi
   fi
 
   [[ "$tail" == minimal* ]] && variant="minimal"
-  [[ "$name" == *_desktop.img.* ]] && variant="$tail"
+  if [[ "$name" == *_desktop* ]]; then
+    mapfile -t desktop_parts < <(split_desktop_tail "$tail")
+    desktop_variant="${desktop_parts[0]:-$tail}"
+    desktop_app="${desktop_parts[1]:-}"
+    variant="$desktop_variant"
+    app="$desktop_app"
+  fi
 
   printf '%s\n' "$ver" "$board" "$distro" "$branch" "$variant" "$app" "$storage"
 }
@@ -517,16 +659,50 @@ awk '
   if (url ~ /\/[^\/]+\/archive\/Armbian/ &&
       url !~ /\.txt$/ &&
       url !~ /\.(asc|sha|torrent)$/ &&
-      url !~ /(homeassistant|openhab|kali|omv)/) {
+      url !~ /(homeassistant|kali|omv)/) {
     dt=$3 "T" $4 "Z"; gsub("/", "-", dt)
     print size "|" url "|" dt
   }
 }' >"$tmpdir/a.txt"
 
 # GitHub feed
+# community  -> community images
+# ci         -> nightly (trunk) images   (moved here from armbian/os)
+# distribution -> stable release images
 : >"$tmpdir/bcd.txt"
-for repo in community os distribution; do
-  gh release view --json assets --repo "github.com/armbian/$repo" |
+for repo in community ci distribution; do
+  tag=""
+  if [[ "$repo" == "ci" ]]; then
+    # armbian/ci holds X.Y.Z-trunk.N nightlies AND clean X.Y.Z stable version
+    # markers (which carry no image assets). Its GitHub "latest" is frequently
+    # one of those stable markers, so `gh release view` with no tag reads a
+    # 0-asset release and the nightly feed comes out EMPTY. Resolve the highest
+    # promoted (non-pre-release) -trunk.N tag that actually has assets instead.
+    #
+    # The --jq filter runs per page, so it only ever *filters* - it prints every
+    # matching tag and the ordering is done once, afterwards, over all pages.
+    # Picking a maximum inside the filter would yield one winner per page.
+    #
+    # sort -V, not the trunk ordinal: comparing only N makes 26.10.0-trunk.100
+    # look newer than 26.11.0-trunk.19. Version sort compares major, minor,
+    # patch and then the ordinal, matching the -v:refname ordering used
+    # elsewhere. The pattern is anchored so only exact X.Y.Z-trunk.N qualifies.
+    tag="$(gh api --paginate "repos/armbian/$repo/releases" --jq '
+      .[]
+      | select((.tag_name | test("^[0-9]+[.][0-9]+[.][0-9]+-trunk[.][0-9]+$"))
+               and (.prerelease == false)
+               and ((.assets | length) > 0))
+      | .tag_name' | sort -V | tail -n1)"
+    if [[ -z "$tag" ]]; then
+      # Falling through would call `gh release view` with no tag, which is the
+      # very thing this block exists to avoid: it resolves to "latest" and can
+      # feed stable assets into the nightly section.
+      echo "WARNING: no armbian/$repo -trunk.N release with assets found; skipping nightly feed" >&2
+      continue
+    fi
+    echo "Nightly feed: using armbian/$repo release $tag" >&2
+  fi
+  gh release view ${tag:+"$tag"} --json assets --repo "github.com/armbian/$repo" |
   jq -r '.assets[]
     | select(.url | test("\\.txt($|\\?)") | not)
     | select(.url | test("\\.(asc|sha|torrent)($|\\?)") | not)
@@ -539,7 +715,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"company_name"|"company_website"|"company_logo"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"board_introduced"|"company_name"|"company_website"|"company_logo"|"board_pinout"|"board_schematic"|"board_instructions"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -570,10 +746,15 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     [[ -z "$BOARD" ]] && continue
     BOARD_SLUG="${BOARD,,}"
 
+    # Skip end-of-support boards
+    [[ "${BOARD_SUPPORT_MAP[$BOARD_SLUG]:-}" == "eos" ]] && continue
+
     REPO="$(get_download_repository "$URL")"
     [[ -z "$REPO" ]] && continue
 
-    PREFIX=""; [[ "$REPO" == "os" ]] && PREFIX="nightly/"
+    # Nightly (trunk) images now release under armbian/ci (moved from armbian/os);
+    # they are served under the dl.armbian.com nightly/ path.
+    PREFIX=""; [[ "$REPO" == "ci" ]] && PREFIX="nightly/"
 
     BASE_EXT="$(extract_file_extension "$IMAGE_NAME")"
     if [[ -n "$STORAGE" ]]; then
@@ -597,7 +778,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     esac
     # ignore non-boot pseudo prefixes
     case "$BOOT_SUFFIX" in
-      ""|img|oowow) BOOT_SUFFIX="";;
+      ""|img|oowow|fip) BOOT_SUFFIX="";;
     esac
 
     # U-Boot ROM suffix
@@ -612,6 +793,14 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 
     if [[ "$FILE_EXTENSION" == img.qcow2* ]]; then
       REDI_VARIANT="${VARIANT}-qcow2"
+    elif [[ "$FILE_EXTENSION" == iso* ]]; then
+      REDI_VARIANT="${VARIANT}-iso"
+    elif [[ "$FILE_EXTENSION" == hyperv.zip* ]]; then
+      REDI_VARIANT="${VARIANT}-hyperv"
+    elif [[ "$FILE_EXTENSION" == fip.img* ]]; then
+      REDI_VARIANT="${REDI_VARIANT}-fip"
+    elif [[ "$FILE_EXTENSION" == lk.bin* ]]; then
+      REDI_VARIANT="${REDI_VARIANT}-lk-bin"
     else
       # Append boot flavor for non-cloud images
       [[ -n "$BOOT_SUFFIX" ]] && REDI_VARIANT="${REDI_VARIANT}-${BOOT_SUFFIX}"
@@ -621,7 +810,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 
     REDI_URL="https://dl.armbian.com/${PREFIX}${BOARD_SLUG}/${DISTRO^}_${REDI_BRANCH}_${REDI_VARIANT}"
 
-    # file_url must remain the original URL (GitHub Releases for community/os/distribution)
+    # file_url must remain the original URL (GitHub Releases for community/ci/distribution)
     FILE_URL="$URL"
 
     if [[ "$URL" == https://github.com/armbian/* ]]; then
@@ -654,6 +843,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       C_LOGO="https://cache.armbian.com/images/vendors/150/${BOARD_VENDOR}.png"
     fi
 
+    B_PINOUT="$(asset_url board-pinouts "$BOARD_SLUG" png)"
+    B_SCHEMATIC="$(asset_url board-schematics "$BOARD_SLUG" pdf)"
+    B_INSTRUCTIONS="$(asset_url board-instructions "$BOARD_SLUG" md)"
+
     PLAT_UNTIL="${PLATINUM_UNTIL_BY_BOARD[$BOARD_SLUG]:-}"
 
     PLAT="false"
@@ -667,7 +860,9 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         PLAT_EXPIRED="false"
       fi
     fi
-    echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${C_NAME}|${C_WEB}|${C_LOGO}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+    if [[ -z "${HIDDEN_BOARDS[$BOARD_SLUG]:-}" ]]; then
+      echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${B_PINOUT}|${B_SCHEMATIC}|${B_INSTRUCTIONS}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+    fi
 
     # Check if this board is used by any reusable boards
     for reusable_slug in "${!REUSABLE_BOARD_USES[@]}"; do
@@ -678,8 +873,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         branch_filter="${REUSABLE_BOARD_BRANCH[$reusable_slug]:-}"
         ext_filter="${REUSABLE_BOARD_EXT[$reusable_slug]:-}"
 
-        # Apply branch filter if specified
-        if [[ -n "$branch_filter" && "$BRANCH" != "$branch_filter" ]]; then
+        # Apply branch filter if specified. Accepts a comma-separated list
+        # (e.g. "current,vendor") — include the image if its branch is any of
+        # them. A single value keeps its original exact-match behaviour.
+        if [[ -n "$branch_filter" && ",${branch_filter//[[:space:]]/}," != *",${BRANCH},"* ]]; then
           continue
         fi
 
@@ -710,6 +907,10 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         if [[ -n "$reusable_vendor" ]]; then
           reusable_c_logo="https://cache.armbian.com/images/vendors/150/${reusable_vendor}.png"
         fi
+
+        reusable_pinout="$(asset_url board-pinouts "$reusable_slug" png)"
+        reusable_schematic="$(asset_url board-schematics "$reusable_slug" pdf)"
+        reusable_instructions="$(asset_url board-instructions "$reusable_slug" md)"
 
         # Get platinum support for reusable board
         reusable_plat_until="${PLATINUM_UNTIL_BY_BOARD[$reusable_slug]:-}"
@@ -745,13 +946,80 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
           reusable_promoted=true
         fi
 
+        # Skip end-of-support reusable boards
+        if [[ "${reusable_support,,}" == "eos" ]]; then
+          continue
+        fi
+
         # Output for reusable board
-        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
+        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${BOARD_INTRODUCED_MAP[$reusable_slug]:-}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${reusable_pinout}|${reusable_schematic}|${reusable_instructions}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
       fi
     done
   done <"$feed"
 
 } | jc --csv | jq '{assets:.}' >"$OUT"
+
+# -----------------------------------------------------------------------------
+# Merge third-party manifests
+# -----------------------------------------------------------------------------
+# Each entry in THIRD_PARTY_FILE points at an external `armbian-images.json`
+# (already in canonical schema). Their `.assets` arrays are concatenated
+# onto $OUT — no enrichment or row rewriting is done. Failures are logged
+# but do not abort the run.
+if [[ -f "$THIRD_PARTY_FILE" ]]; then
+  echo "▶ Merging third-party manifests from ${THIRD_PARTY_FILE}…" >&2
+
+  added_total=0
+  while IFS= read -r src; do
+    src="${src#"${src%%[![:space:]]*}"}"  # ltrim
+    src="${src%"${src##*[![:space:]]}"}"  # rtrim
+    [[ -z "$src" ]] && continue
+
+    if [[ "$src" == http://* || "$src" == https://* ]]; then
+      url="$src"
+    else
+      url="https://github.com/${src}/releases/latest/download/armbian-images.json"
+    fi
+
+    echo "  - ${src} → ${url}" >&2
+
+    tp_json="$(mktemp)"
+    if ! curl -fsSL --retry 3 --connect-timeout 10 "$url" -o "$tp_json"; then
+      echo "    WARNING: failed to fetch ${url}, skipping" >&2
+      rm -f "$tp_json"
+      continue
+    fi
+
+    if ! jq -e '.assets | type == "array"' "$tp_json" >/dev/null 2>&1; then
+      echo "    WARNING: ${url} is not in the expected schema (.assets array missing), skipping" >&2
+      rm -f "$tp_json"
+      continue
+    fi
+
+    added="$(jq '.assets | length' "$tp_json")"
+    jq -s '{assets: (.[0].assets + .[1].assets)}' "$OUT" "$tp_json" > "${OUT}.merged"
+    mv "${OUT}.merged" "$OUT"
+    added_total=$((added_total + added))
+    echo "    + ${added} assets" >&2
+    rm -f "$tp_json"
+  done < <(
+    python3 -c "
+import yaml, sys
+try:
+    with open('$THIRD_PARTY_FILE') as f:
+        data = yaml.safe_load(f) or {}
+    for src in (data.get('sources') or []):
+        if src is not None and str(src).strip():
+            print(str(src).strip())
+except Exception as e:
+    sys.stderr.write(f'Error loading third-party.yml: {e}\n')
+" 2>/dev/null || true
+  )
+
+  echo "  - Third-party assets added: ${added_total}" >&2
+else
+  echo "ℹ️  Third-party source list not found: ${THIRD_PARTY_FILE}" >&2
+fi
 
 # -----------------------------------------------------------------------------
 # Emit warnings for incomplete board metadata (non-fatal)

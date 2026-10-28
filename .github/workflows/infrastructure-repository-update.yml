@@ -41,8 +41,18 @@ jobs:
           TEAM: "Release manager"
 
   external:
-    name: "Download external"
+    name: "Download external (chunk ${{ matrix.chunk_index }}/4)"
     needs: Check
+    # Fan out across 4 chunks. The child workflow filters its matrix to
+    # only entries where `index % CHUNK_COUNT == CHUNK_INDEX`, so each
+    # invocation stays under GitHub Actions' 256-entry strategy.matrix
+    # cap. Effective concurrency is 4 × max-parallel (180) = 720.
+    # Bump `chunk_index` and `CHUNK_COUNT` together when total packages
+    # × arches × releases approaches 4 × 256 = 1024.
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk_index: [0, 1, 2, 3]
     uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
     with:
       ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
@@ -51,6 +61,8 @@ jobs:
       BUILD_RUNNER: "docker"
       HOST_DEPLOY: "repo.armbian.com"
       PURGE: ${{ inputs.purge_external || false }}
+      CHUNK_INDEX: ${{ matrix.chunk_index }}
+      CHUNK_COUNT: 4
     secrets:
       GPG_KEY1: ${{ secrets.GPG_KEY3 }}
       GPG_KEY2: ${{ secrets.GPG_KEY4 }}
@@ -65,6 +77,20 @@ jobs:
     needs: external
     runs-on: repository
     steps:
+
+      # Reclaim workspace before the later actions/checkout@v7 runs
+      # with clean: true. The self-hosted `repository` runner pool is
+      # shared across workflows, and any previous run that left
+      # root-owned files under $GITHUB_WORKSPACE (e.g. the reusable
+      # download-external workflow's postclean, which runs sudo
+      # operations on the repo tree) would trip checkout's unlink
+      # with EACCES on files like build/.coderabbit.yaml. Same
+      # defensive chown the update-repository / Sync / Index jobs
+      # already do as their first step.
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Delete empty folders in INCOMING_PATH
         run: |
@@ -98,7 +124,7 @@ jobs:
           done
 
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Copy operations
         run: |
@@ -181,15 +207,21 @@ jobs:
     needs: Copying
     runs-on: repository
     steps:
+      # See Copying's identical step for rationale.
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           path: build
           clean: false
 
       - name: Checkout armbian.github.io repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/armbian.github.io
           path: armbian-github-io
@@ -394,21 +426,21 @@ jobs:
         uses: armbian/actions/runner-clean@main
 
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_KEY3 }}
 
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_KEY4 }}
 
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: singlemode
+          ref: main
           clean: false
 
       - name: "Update repository ${{ matrix.repository.name }}"
@@ -462,6 +494,24 @@ jobs:
           DEB_COUNT=$(find "$INPUT_DIR" -type f -name "*.deb" 2>/dev/null | wc -l)
           echo "Found ${DEB_COUNT} .deb files" | tee -a "$GITHUB_STEP_SUMMARY"
           echo ""
+
+          # Stable changes rarely, but this workflow runs several times a day. Publish
+          # stable only for a stable release or when the last publish is older than
+          # STABLE_REPOSITORY_UPDATE days, so slow mirrors can catch up. 0 or unset:
+          # publish every run.
+          INTERVAL_DAYS="${{ vars.STABLE_REPOSITORY_UPDATE }}"
+          TARGET="${{ github.event.client_payload.target }}"
+          if [ "$REPO_NAME" = "debs" ] && [ "${INTERVAL_DAYS:-0}" -gt 0 ] && [ "$TARGET" != "stable/" ]; then
+            LAST=$(find "$OUTPUT_DIR/public/dists" -maxdepth 2 -name InRelease -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+            if [ -n "$LAST" ]; then
+              AGE_DAYS=$(( ( $(date +%s) - ${LAST%.*} ) / 86400 ))
+              if [ "$AGE_DAYS" -lt "$INTERVAL_DAYS" ]; then
+                echo "::notice::Stable repository published ${AGE_DAYS} day(s) ago, less than ${INTERVAL_DAYS}: skipping" | tee -a "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              echo "Stable repository published ${AGE_DAYS} day(s) ago: updating" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
 
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
@@ -713,7 +763,7 @@ jobs:
           sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
@@ -761,7 +811,7 @@ jobs:
           sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2

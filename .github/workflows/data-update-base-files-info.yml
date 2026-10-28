@@ -3,11 +3,16 @@ on:
   schedule:
     - cron: '45 3 * * *'
   workflow_dispatch:
+    inputs:
+      allow_removals:
+        description: "Publish even if releases/architectures disappear (use when upstream really dropped one)"
+        type: boolean
+        default: false
   repository_dispatch:
     types: ["Data: Update base-files info"]
 
 concurrency:
-  group: base-files-info
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -21,12 +26,12 @@ jobs:
     steps:
       # Step 1: Checkout the repository
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # Step 2: Set up Python environment
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: 3.x
       # Step 3: Install dependencies (if you have any)
@@ -39,15 +44,77 @@ jobs:
           ./scripts/generate-base-files-info-json.py base-files
       # Step 5: Commit changes if any
       - name: Commit changes if any
+        env:
+          ALLOW_REMOVALS: ${{ inputs.allow_removals || false }}
         run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
           git checkout data
-          mkdir -p data/
+
+          mkdir -p data
+
+          # Backstop. The generator already refuses to write a partial index
+          # when a mirror is unreachable; this catches anything that gets past
+          # it, because every build reads this file and one missing entry
+          # breaks every build of that release (armbian/build#10680).
+          if [ -f data/base-files.json ]; then
+            lost="$(jq -r --slurpfile new base-files.json '
+              . as $old
+              | $new[0] as $n
+              | [ $old
+                  | to_entries[]
+                  | .key as $rel
+                  | if ($n | has($rel) | not)
+                    then "release \($rel)"
+                    else ( .value | keys[] as $arch
+                           | select($n[$rel] | has($arch) | not)
+                           | "\($rel) (\($arch))" )
+                    end
+                ]
+              | .[]' data/base-files.json)"
+            if [ -n "$lost" ]; then
+              echo "::error::The generated index drops entries that are currently published:"
+              echo "$lost" | sed 's/^/  - /'
+              if [ "${ALLOW_REMOVALS}" = "true" ]; then
+                echo "::warning::allow_removals was set - publishing anyway"
+              else
+                echo "Refusing to publish. The currently published index stays in place."
+                echo "If upstream really dropped these, re-run this workflow with allow_removals=true."
+                exit 1
+              fi
+            fi
+          fi
+
           mv base-files.json data/base-files.json
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add data/base-files.json
-          git diff --cached --quiet || git commit -m "Update base-files package info"
-          git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Update base-files package info"
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
+          fi
 
       - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4

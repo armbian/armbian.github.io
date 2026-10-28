@@ -7,8 +7,8 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || 'cli/cli' }}" # username/repository
-  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'os' }}" # folder on server
+  PULL_REPOSITORY: "${{ github.event.client_payload.pull_repository || 'armbian/ci' }}" # username/repository
+  CDN_TAG: "${{ github.event.client_payload.cdn_tag || 'ci' }}" # folder on server
   PULL_TAG: "" # leave empty for latest
 
 jobs:
@@ -61,7 +61,7 @@ jobs:
           EOT
           python3 split.py
       - name: "Upload JSON parts"
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: parts
           path: |
@@ -104,7 +104,7 @@ jobs:
           known_hosts: "${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}"
           if_key_exists: replace
       - name: Download ${{ matrix.name }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: parts
           pattern: part*
@@ -143,7 +143,7 @@ jobs:
             "ssh -p ${port} -o StrictHostKeyChecking=accept-new" \
             -rvP ${tempfolder}/ "${username}@${name}:${path}/cache/${CDN_TAG}" --exclude=${LATEST}
           done
-      - uses: geekyeggo/delete-artifact@v5
+      - uses: geekyeggo/delete-artifact@v6
         with:
           name: |
             parts*

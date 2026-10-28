@@ -1,7 +1,7 @@
 # Manual target additions for standard support builds
 # This content will be appended to the auto-generated targets-release-standard-support.yaml
 
-# Debian trixie minimal - UEFI only
+# Debian minimal - UEFI only
 minimal-stable-debian-uefi:
   enabled: yes
   configs: [ armbian-images ]
@@ -9,14 +9,69 @@ minimal-stable-debian-uefi:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: trixie
+    RELEASE: DEBIAN
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
 
-# Ubuntu noble GNOME desktop - UEFI only
+# Debian sid minimal - loong64 UEFI only.
+# LoongArch has no Debian stable port (it lives in sid), so uefi-loong64 is
+# blacklisted from the stable auto-generated targets and its one buildable
+# image - Debian sid CLI minimal - is defined here explicitly.
+minimal-stable-debian-loong64-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: sid
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-loong64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-loong64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+
+# Ubuntu minimal with current kernel - UEFI only
+minimal-stable-ubuntu-current-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+
+# Ubuntu GNOME desktop - UEFI only
 desktop-stable-ubuntu-gnome-uefi:
   enabled: yes
   configs: [ armbian-images ]
@@ -24,12 +79,106 @@ desktop-stable-ubuntu-gnome-uefi:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: noble
+    RELEASE: UBUNTU
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "gnome"
-    DESKTOP_ENVIRONMENT_CONFIG_NAME: "config_base"
-    DESKTOP_APPGROUPS_SELECTED: "browsers,programming"
+    DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge }
-    - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
+    - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+
+# Ubuntu Cinnamon desktop - UEFI only
+desktop-stable-ubuntu-cinnamon-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "cinnamon"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
+    - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+
+# Ubuntu KDE Plasma desktop - UEFI only
+desktop-stable-ubuntu-kde-plasma-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "kde-plasma"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+
+# Ubuntu MATE desktop - UEFI only
+desktop-stable-ubuntu-mate-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "mate"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+
+# Ubuntu Xfce desktop - UEFI only
+desktop-stable-ubuntu-xfce-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "xfce"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+
+# Ubuntu i3 window-manager - UEFI only
+desktop-stable-ubuntu-i3-wm-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "i3-wm"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }

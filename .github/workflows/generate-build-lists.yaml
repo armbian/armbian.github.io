@@ -1,7 +1,45 @@
 name: "Infrastructure: Generate image build lists"
 
 on:
-  workflow_dispatch:  # Manually triggered via GitHub Actions UI
+  workflow_dispatch:
+    # Per-output-file release codename overrides. Defaults match
+    # scripts/generate_targets.py SCOPE_DEFAULTS, so dispatching with
+    # all defaults reproduces the previous literal-pin behaviour.
+    # Set any of these to a different codename to promote that
+    # release line without touching the script or release-targets/*.
+    inputs:
+      debian_standard:
+        description: "Debian codename for standard-support builds"
+        required: false
+        default: "trixie"
+      ubuntu_standard:
+        description: "Ubuntu codename for standard-support builds"
+        required: false
+        default: "resolute"
+      debian_nightly:
+        description: "Debian codename for nightly builds"
+        required: false
+        default: "forky"
+      ubuntu_nightly:
+        description: "Ubuntu codename for nightly builds"
+        required: false
+        default: "resolute"
+      debian_community:
+        description: "Debian codename for community-maintained builds"
+        required: false
+        default: "trixie"
+      ubuntu_community:
+        description: "Ubuntu codename for community-maintained builds"
+        required: false
+        default: "resolute"
+      debian_apps:
+        description: "Debian codename for apps builds (HA / OMV; not Kali, which stays sid)"
+        required: false
+        default: "trixie"
+      ubuntu_apps:
+        description: "Ubuntu codename for apps builds"
+        required: false
+        default: "noble"
   repository_dispatch:
     types: ["Generate lists"]
   push:
@@ -12,6 +50,10 @@ on:
 env:
   IMAGE_INFO_URL: "https://github.armbian.com/image-info.json"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
 
   Check:
@@ -20,7 +62,12 @@ jobs:
     if: ${{ github.repository_owner == 'Armbian' }}
     steps:
 
+      # Only gate MANUAL runs on team membership. repository_dispatch is fired by
+      # a trusted Armbian workflow (actor = github-actions[bot], which team-check
+      # can't resolve as a user) and push already requires write access — neither
+      # should hit the human-authorization gate.
       - name: "Check membership"
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: armbian/actions/team-check@main
         with:
           ORG_MEMBERS: ${{ secrets.ORG_MEMBERS }}
@@ -37,7 +84,7 @@ jobs:
     steps:
 
       - name: Checkout armbian.github.io repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -50,8 +97,24 @@ jobs:
           python3 -m pip install --upgrade pip
 
       - name: Run generate_targets.py
+        env:
+          GH_RUNNERS_TOKEN: ${{ secrets.RUNNERS }}
+        # `inputs.*` is only populated on workflow_dispatch; push /
+        # repository_dispatch fire with empty inputs, so each `||`
+        # falls back to the same default the script's argparse uses.
+        # Net effect: codename promotion is a workflow_dispatch knob;
+        # automatic re-runs use the script's pinned defaults.
         run: |
-          python3 scripts/generate_targets.py image-info.json release-targets 2>&1 | tee -a generation.log
+          python3 scripts/generate_targets.py image-info.json release-targets \
+            --debian-standard  "${{ inputs.debian_standard  || 'trixie'   }}" \
+            --ubuntu-standard  "${{ inputs.ubuntu_standard  || 'resolute' }}" \
+            --debian-nightly   "${{ inputs.debian_nightly   || 'forky'    }}" \
+            --ubuntu-nightly   "${{ inputs.ubuntu_nightly   || 'resolute' }}" \
+            --debian-community "${{ inputs.debian_community || 'trixie'   }}" \
+            --ubuntu-community "${{ inputs.ubuntu_community || 'resolute' }}" \
+            --debian-apps      "${{ inputs.debian_apps      || 'trixie'   }}" \
+            --ubuntu-apps      "${{ inputs.ubuntu_apps      || 'noble'    }}" \
+            2>&1 | tee -a generation.log
 
       - name: Generate kernel descriptions
         run: |
@@ -71,7 +134,7 @@ jobs:
           done
 
       - name: Checkout data branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: data
           path: data-branch
@@ -86,15 +149,38 @@ jobs:
 
       - name: Commit to data branch
         run: |
+          set -euo pipefail
           cd data-branch
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
+          git checkout data
+
           git add data/release-targets/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "Update release targets and kernel descriptions [skip ci]"
-            git push
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
 
       - name: "Generate directory"

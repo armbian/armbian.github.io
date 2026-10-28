@@ -12,13 +12,26 @@ on:
         required: false
         default: "Europe/Ljubljana"
       period:
-        description: "Digest period (weekly by default). Choose 'monthly' or 'quarterly' for larger windows."
+        description: "Digest period"
         required: false
         default: "weekly"
+        type: choice
+        options:
+          - weekly
+          - monthly
+          - quarterly
+      release_date:
+        description: "Release date for the docs page, e.g. '29 May 2026' (default: the day this runs)"
+        required: false
+        default: ""
       publish_release:
-        description: "Publish a GitHub release (true/false)."
+        description: "Publish a GitHub release (weekly only; monthly and quarterly never do)"
         required: false
         default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
   schedule:
     - cron: "5 6 * * MON"   # weekly, Mondays 06:05 UTC
@@ -32,26 +45,117 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GITHUB_TOKEN: ${{ secrets.AI_MODELS }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       SCOPE: ${{ inputs.scope || 'org:armbian' }}
       TZ: ${{ inputs.tz || 'Europe/Ljubljana' }}
       PERIOD: ${{ inputs.period || 'weekly' }}
       RELEASE_ENABLED: ${{ inputs.publish_release || 'true' }}
+      RELEASE_DATE_INPUT: ${{ inputs.release_date || '' }}
 
     steps:
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.10'
 
-      - name: Install OpenAI SDK
-        run: pip install 'openai>=1.0.0'
+      - name: Install Anthropic SDK
+        run: pip install 'anthropic>=0.40.0'
+
+      - name: Install Google Gen AI SDK
+        run: pip install 'google-genai>=1.0.0'
 
       - name: Ensure dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq
+          sudo apt-get install -y jq pngquant imagemagick
+
+      - name: "Read version from armbian/ci tags (nightly = latest *trunk* tag, else stable)"
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Nightly images now release under armbian/ci, so derive the version
+          # from its tags instead of the old os/{nightly,stable}.json files:
+          # the newest tag with 'trunk' in the name is the nightly version, the
+          # newest without it is stable. -v:refname yields version order, so
+          # 26.8.0-trunk.6 > 26.8.0-trunk.5 and 26.8.0 > its prereleases.
+          TAGS=$(git ls-remote --tags --refs --sort=-v:refname \
+            https://github.com/armbian/ci | sed 's#.*refs/tags/##')
+          if [[ -z "$TAGS" ]]; then
+            echo "::error::No tags found in armbian/ci"
+            exit 1
+          fi
+          if [[ "$PERIOD" == "monthly" || "$PERIOD" == "quarterly" ]]; then
+            VERSION=$(grep -v -- trunk <<<"$TAGS" | head -n1 || true)   # stable
+          else
+            VERSION=$(grep -- trunk <<<"$TAGS" | head -n1 || true)      # nightly
+          fi
+          if [[ -z "$VERSION" ]]; then
+            echo "::error::No matching armbian/ci tag for period=$PERIOD"
+            exit 1
+          fi
+          VERSION="${VERSION#v}"   # downstream re-adds the 'v' prefix
+          echo "Selected ${PERIOD} version from armbian/ci tags: ${VERSION}"
+          echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: "Docs: check out this repository for the generator scripts"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v7
+        with:
+          path: self
+          persist-credentials: false
+
+      # Checked out ahead of the resolver below, which reads the previous
+      # quarter's page to date this one and to anchor its window.
+      #
+      # ACCESS_TOKEN_ARMBIANWORKER, not RELEASE_TOKEN: the latter can write
+      # releases to armbian/build but has no write access to
+      # armbian/documentation, so the push at the end of this job 403s after
+      # every expensive step has already run. armbianworker has write on
+      # armbian/documentation and already opens PRs this way elsewhere.
+      - name: "Docs: check out armbian/documentation"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v7
+        with:
+          repository: armbian/documentation
+          path: documentation
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          persist-credentials: false
+
+      - name: "Docs: resolve the release date and the docs version"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          # Armbian ships one stable per quarter and then patches it. The digest
+          # describes the quarter, not the patch, so the docs page is keyed on
+          # MAJOR.MINOR: 26.8.1 and a later 26.8.3 rewrite one page on one branch
+          # instead of publishing the same three months twice.
+          #
+          # Strip the patch only when there is one, so a bare "26.8" survives
+          # intact -- ${VERSION_OVERRIDE%.*} would turn it into "26".
+          DOCS_VERSION=$(sed -E 's/^([0-9]+\.[0-9]+)\.[0-9]+$/\1/' <<<"$VERSION_OVERRIDE")
+          echo "DOCS_VERSION=$DOCS_VERSION" >> "$GITHUB_ENV"
+          echo "Docs version: $DOCS_VERSION (from $VERSION_OVERRIDE)"
+
+          # Only quarters published back when quarterly still created a GitHub
+          # release have one to read. gh writes its error body to stdout, so a 404
+          # would otherwise be mistaken for a date; keep only a real timestamp.
+          PUBLISHED=$(gh api "repos/armbian/build/releases/tags/v${VERSION_OVERRIDE}" \
+            --jq '.published_at' 2>/dev/null || true)
+          if [[ ! "$PUBLISHED" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]]; then
+            PUBLISHED=""
+          fi
+
+          # Resolves the date and the PR window together, because the window is
+          # anchored to the releases either side of it. See the script for why
+          # neither may be read from the clock once a quarter has been published.
+          python3 self/scripts/resolve-release-window.py \
+            --releases-dir documentation/docs/releases \
+            --docs-version "$DOCS_VERSION" \
+            --release-date "${RELEASE_DATE_INPUT:-}" \
+            --published-at "$PUBLISHED" \
+            | tee -a "$GITHUB_ENV"
+
 
       - name: Compute time window (UTC) from period
         id: when
@@ -62,17 +166,44 @@ jobs:
           UNTIL_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           if [[ "$PERIOD" == "monthly" ]]; then
             SINCE_UTC="$(date -u -d '1 month ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Monthly digest"
+            LABEL="Armbian Monthly digest"
           elif [[ "$PERIOD" == "quarterly" ]]; then
-            SINCE_UTC="$(date -u -d '3 months ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Quarterly digest"
+            LABEL="Armbian Quarterly digest"
           else
             SINCE_UTC="$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)"
-            LABEL="Weekly digest"
+            LABEL="Armbian Weekly digest"
           fi
-          echo "UNTIL_UTC=$UNTIL_UTC" >> "$GITHUB_ENV"
-          echo "SINCE_UTC=$SINCE_UTC" >> "$GITHUB_ENV"
+
+          # Weekly and monthly are digests of a period, so the clock is the
+          # right source. Quarterly is the record of one release, so its
+          # window was already anchored to the releases either side of it by
+          # the resolver step -- leave those values alone. A clock-based
+          # window slides: regenerating 26.8 three weeks late would drop
+          # three weeks of PRs off the start, PRs that belong to 26.8 and
+          # would then appear in no release note at all, and pull in three
+          # weeks of work belonging to the next quarter.
+          if [[ "$PERIOD" != "quarterly" ]]; then
+            echo "UNTIL_UTC=$UNTIL_UTC" >> "$GITHUB_ENV"
+            echo "SINCE_UTC=$SINCE_UTC" >> "$GITHUB_ENV"
+          fi
           echo "LABEL=$LABEL" >> "$GITHUB_ENV"
+
+          # Only the weekly digest becomes a GitHub release on armbian/build.
+          #
+          # The quarterly note now lives on docs.armbian.com, which is the only
+          # copy search engines can see -- GitHub serves release pages noindex.
+          # Publishing both left two copies competing, and the GitHub one had to
+          # invent a v<version> tag in armbian/build that exists only in
+          # armbian/ci, then move the "Latest" badge onto it.
+          #
+          # Monthly stops publishing too: it selects the same stable tag as the
+          # quarterly, so whichever ran first won the tag and skipIfReleaseExists
+          # made the other a silent no-op.
+          if [[ "$PERIOD" != "weekly" ]]; then
+            RELEASE_ENABLED=false
+          fi
+          echo "RELEASE_ENABLED=$RELEASE_ENABLED" >> "$GITHUB_ENV"
+          echo "Period ${PERIOD}: GitHub release enabled = ${RELEASE_ENABLED}"
 
       - name: Prepare workspace
         run: mkdir -p out
@@ -123,14 +254,18 @@ jobs:
             title=$(jq -r .title <<<"$pr")
             author=$(jq -r .user.login <<<"$pr")
             pr_url=$(jq -r .html_url <<<"$pr")
+            # Labels ride along in a sixth column so the docs publish step can
+            # find 'Breaking change' / 'user-visible' PRs without a second pass
+            # over the API. The digest body ignores this column.
+            labels=$(jq -r '[.labels[].name] | join(",")' <<<"$pr")
 
             # Skip bots and worker accounts
             if [[ "$author" == "github-actions[bot]" || "$author" == "dependabot[bot]" || "$author" == "armbianworker" || "$author" == "armbianworker[bot]" ]]; then
               continue
             fi
 
-            # Output tab-separated: title, author, repo, pr_number, pr_url
-            printf "%s\t%s\t%s\t%s\t%s\n" "$title" "$author" "$repo" "$num" "$pr_url"
+            # Output tab-separated: title, author, repo, pr_number, pr_url, labels
+            printf "%s\t%s\t%s\t%s\t%s\t%s\n" "$title" "$author" "$repo" "$num" "$pr_url" "$labels"
           done | LC_ALL=C sort -f -t $'\t' -k1,1 > "$outfile"
           EOF
           chmod +x pr_fetch.sh
@@ -141,93 +276,394 @@ jobs:
       - name: "Write Markdown digest"
         shell: bash
         run: |
-
-            echo "" >> summary.md
-            echo "## " >> summary.md
+          {
+            echo "## Changes"
+            echo ""
             if [[ ! -s out/pr-digest.tsv ]]; then
-              echo "_No merged PRs in this period._" >> summary.md
+              echo "_No merged PRs in this period._"
             else
-              while IFS=$'\t' read -r title author repo num pr_url; do
-                echo "* ${title}.  by @${author} in [${repo}#${num}](${pr_url})" >> summary.md
+              while IFS=$'\t' read -r title author repo num pr_url labels; do
+                echo "* ${title}. by @${author} in [${repo}#${num}](${pr_url})"
               done < out/pr-digest.tsv
             fi
-            echo "# " >> summary.md
-            echo "<a href='https://blog.armbian.com/#/portal/signup' target='_blank'>
-                  <img src='https://img.shields.io/badge/Subscribe-blog.armbian.com-red?style=for-the-badge&logo=rss' alt='Subscribe to Blog'/></a>" >> summary.md
-            echo "<p><br>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox." >> summary.md
+            echo ""
+            echo "---"
+            echo ""
+            echo "<a href='https://blog.armbian.com/#/portal/signup' target='_blank'>"
+            echo "  <img src='https://img.shields.io/badge/Subscribe-blog.armbian.com-red?style=for-the-badge&logo=rss' alt='Subscribe to Blog'/>"
+            echo "</a>"
+            echo ""
+            echo "<p>Stay up to date with the latest Armbian news, development highlights, and tips — delivered straight to your inbox.</p>"
+          } > summary.md
 
       - name: Upload raw data (artifacts)
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pr-digest
           path: out/
           if-no-files-found: warn
 
-      - name: "Checkout OS repository to get version"
-        uses: actions/checkout@v6
-        with:
-          repository: armbian/os
-          fetch-depth: 0
-          clean: false
-          path: os
-
-      - name: "Read version from nightly or stable based on period"
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "${PERIOD:-weekly}" == "monthly" || "${PERIOD:-weekly}" == "quarterly" ]]; then
-            FILE="os/stable.json"
-          else
-            FILE="os/nightly.json"
-          fi
-          if [[ ! -f "$FILE" ]]; then
-            echo "::error file=$FILE::Version file not found"
-            exit 1
-          fi
-          VERSION=$(jq -r '.version' "$FILE")
-          echo "VERSION_OVERRIDE=${VERSION}" >> "$GITHUB_ENV"
-
       - name: "Write a short journalistic intro with AI"
-        if: ${{ env.PERIOD == 'weekly' }}
         run: |
           set -euo pipefail
           python3 <<'PY'
           import os
-          from openai import OpenAI
+          from anthropic import Anthropic
 
-          token = os.environ["GITHUB_TOKEN"]
           label = os.environ["LABEL"]
 
           with open("summary.md", "r", encoding="utf-8") as f:
               content = f.read().strip()
 
-          client = OpenAI(base_url="https://models.github.ai/inference", api_key=token)
+          # Reads ANTHROPIC_API_KEY from the env. claude-opus-4-7 doesn't accept
+          # temperature/top_p/top_k (those 400 on this model). Adaptive thinking
+          # is enabled so Claude plans the thematic structure before drafting —
+          # noticeably better narrative flow than a one-shot completion.
+          client = Anthropic()
+
+          system = (
+              f"You are a professional technical editor writing the {label} for an "
+              "embedded Linux audience.\n\n"
+
+              "Priority:\n"
+              "1) Accuracy and signal over completeness\n"
+              "2) Clear thematic grouping\n"
+              "3) Professional tone\n\n"
+
+              "Voice:\n"
+              "Clear, precise, and business-professional. No slang or casual phrasing. "
+              "Avoid expressive or playful language (e.g., 'glow-up', 'shown the door'). "
+              "Do not use filler openings.\n\n"
+
+              "Style:\n"
+              "Use controlled rhetorical structure for clarity — parallelism and "
+              "rule-of-three phrasing are encouraged. Avoid metaphors and figurative language. "
+              "Use light contrast only where it improves understanding.\n\n"
+
+              "Content selection:\n"
+              "- Group changes into 2–3 dominant themes\n"
+              "- Highlight only the most impactful or representative changes\n"
+              "- Do not enumerate all items\n"
+              "- Prefer architectural, platform, and user-visible changes over minor fixes\n\n"
+
+              "Structure:\n"
+              "- First sentence names the main themes\n"
+              "- Then 2–3 short paragraphs, one per theme\n"
+              "- Each paragraph expands the theme with key examples\n"
+              "- Use **bold phrases (3–6 words)** for emphasis sparingly\n"
+              "- Separate paragraphs with a blank line\n"
+          )
 
           prompt = (
-              "Read the following Markdown changelog and write a short journalistic intro paragraph (5–7 sentences) "
-              "that summarizes the main activity. Be concise, professional, and factual. Output only the intro.\n\n"
+              "Below is a Markdown changelog of merged pull requests.\n\n"
+              "Write a concise professional summary following the system instructions. "
+              "Use 2–3 paragraphs, each covering one theme. End with a single line of "
+              "relevant hashtags after a blank line.\n\n"
+              "Output only the summary and hashtags.\n\n"
               f"{content}"
           )
 
-          resp = client.chat.completions.create(
-              model="openai/gpt-4.1",
-              messages=[
-                  {"role": "system", "content": "You are a " + label + "digest editor."},
-                  {"role": "user", "content": prompt},
-              ],
-              temperature=0.3,
-              top_p=1.0,
+          resp = client.messages.create(
+              model="claude-opus-4-7",
+              max_tokens=4096,
+              thinking={"type": "adaptive"},
+              system=system,
+              messages=[{"role": "user", "content": prompt}],
           )
 
-          intro = resp.choices[0].message.content.strip()
+          intro = next((b.text for b in resp.content if b.type == "text"), "").strip()
 
           with open("summary.md", "w", encoding="utf-8") as f:
               f.write(intro + "\n\n" + content)
 
+          # The docs release page wants the narrative without the change list,
+          # the cover image or the subscribe badge that get added below.
+          os.makedirs("out", exist_ok=True)
+          with open("out/intro.md", "w", encoding="utf-8") as f:
+              f.write(intro + "\n")
+
           print("Prepended AI intro:")
           print(intro)
           PY
-          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Output summary to step summary"
+        run: cat summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Generate AI cover image"
+        # 10m ceiling = headroom for 2x 240s SDK timeout + 30s retry wait + buffer.
+        timeout-minutes: 10
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          # NOTE: Gemini 3.1 Flash Image Preview requires PAID TIER
+          # Free tier does not support image generation (quota: 0)
+          # To enable: Add GEMINI_API_KEY secret with paid tier key
+          # Get key: https://aistudio.google.com/app/apikey
+          # Pricing: https://ai.google.dev/gemini-api/docs/pricing
+          python3 <<'PY'
+          import os
+          import sys
+          from google import genai
+          from google.genai import types
+          from google.genai.errors import ClientError
+
+          # Check if API key is available
+          token = os.environ.get("GEMINI_API_KEY")
+          if not token:
+              print("GEMINI_API_KEY not set - skipping image generation")
+              sys.exit(0)
+
+          label = os.environ["LABEL"]
+
+          # Get current date for subtitle
+          from datetime import datetime
+          current_date = datetime.now().strftime("%B %d, %Y")
+
+          # Read the summary to extract key themes
+          with open("summary.md", "r", encoding="utf-8") as f:
+              summary_content = f.read().strip()
+
+          # Extract tagline based on content
+          import re
+          pr_count = len(re.findall(r'^\*', summary_content, re.MULTILINE))
+          if pr_count > 1:
+              tagline = f"{pr_count} Pull Requests Merged"
+          else:
+              tagline = "Building the future"
+
+          # Use the LABEL verbatim ("Armbian Weekly digest", "Armbian Monthly digest")
+          # so the image title matches the release name.
+          digest_title = label
+
+          # Generate variation seed based on date to ensure unique images
+          import hashlib
+          date_seed = int(hashlib.md5(current_date.encode()).hexdigest(), 16) % 1000
+
+          # Rotating visual themes for variety (cycles weekly)
+          visual_themes = [
+              "abstract circuit traces with glowing data flow",
+              "layered silicon wafers with kernel rings",
+              "geometric data streams in wave patterns",
+              "hexagonal chip architecture floating in space",
+              "branching code trees with syntax-highlighted nodes",
+              "interconnected server nodes with network topology",
+              "floating motherboard components in zero gravity",
+              "cylindrical data columns with holographic interfaces"
+          ]
+          theme_index = date_seed % len(visual_themes)
+          selected_theme = visual_themes[theme_index]
+
+          # Rotating composition styles
+          # Title and subtitle render as a single centered text block; the
+          # focal theme acts as backdrop or vertical accent, never competing
+          # with the centered text for horizontal real estate.
+          composition_styles = [
+              "centered text block; focal theme as full-frame backdrop / texture across the entire image",
+              "centered text block; focal element placed above the text, smaller and supporting",
+              "centered text block; focal element placed below the text, smaller and supporting",
+              "centered text block; focal motifs softly mirrored on the far left and far right margins, framing the text",
+          ]
+          composition_index = (date_seed // 8) % len(composition_styles)
+          selected_composition = composition_styles[composition_index]
+
+          # Rotating lighting moods
+          lighting_moods = [
+              "soft rim lighting from top-left",
+              "dramatic side lighting with strong contrasts",
+              "even ambient glow with subtle highlights",
+              "backlit with forward glow emanating from center"
+          ]
+          lighting_index = (date_seed // 32) % len(lighting_moods)
+          selected_lighting = lighting_moods[lighting_index]
+
+          # Dynamic content focus based on PR themes
+          content_focus = f"""embedded Linux ecosystem, single-board computing, kernel development,
+          system infrastructure, and community-driven innovation.
+
+          UNIQUE ELEMENT FOR THIS WEEK:
+          {selected_theme} as the primary visual anchor, {selected_composition},
+          with {selected_lighting}."""
+
+          # Create a high-end, professional prompt
+          prompt = f"""Create a high-end, modern tech illustration in a consistent visual identity for {digest_title}.
+
+          STYLE:
+          - premium, minimalistic, futuristic
+          - dark background with soft gradients (navy, deep blue)
+          - strong orange accent highlights (Armbian identity)
+          - subtle glow, cinematic lighting
+          - isometric / semi-3D composition
+          - extremely clean, no clutter
+          - UNIQUE VARIATION: Each week features different arrangement of brand elements
+
+          BRANDING:
+          - inspired by embedded Linux, SBC boards, infrastructure
+          - abstract circuits, silicon, data flow, kernel layers
+          - DO NOT include any real logos
+          - consistent visual identity across weeks
+
+          CONTENT FOCUS:
+          {content_focus}
+
+          TEXT IN IMAGE:
+          - title: "{digest_title}" — LARGE bold typography occupying ~14% of frame height, dominant in the layout
+          - subtitle: "{current_date}" — supporting text at ~6% of frame height, clearly readable
+          - optional small caption: "{tagline}" — supporting text at ~4% of frame height
+          - title, subtitle, and caption render as ONE centered text block — stacked vertically, all lines horizontally centered, group as a whole centered horizontally and vertically in the frame
+          - the title itself is a SINGLE CONTINUOUS line — never split or interrupted by graphics
+          - graphics never overlap or pass through the centered text block; keep the text zone clean
+          - all text must be highly readable at thumbnail size; treat typography as the primary focal element
+          - high contrast against background; no thin or condensed typefaces
+
+          COMPOSITION:
+          - ultrawide cinematic format (21:9 aspect ratio)
+          - {selected_composition}
+          - strong focal object featuring {selected_theme}
+          - {selected_lighting}
+          - clean negative space directly behind the centered text block (no busy graphics under the text)
+          - panoramic, sweeping composition
+
+          QUALITY:
+          - ultra sharp, production-ready marketing image
+          - correct typography (no broken text)
+          - consistent style across all outputs but with unique weekly variations
+          """
+
+          # 4 min HTTP timeout — Gemini 3.1 Flash Image Preview routinely takes
+          # 60-180 s for 21:9 / 1K with our detailed prompt. Step ceiling is 8m
+          # (above), so the SDK fails first with a useful message instead of the
+          # runner killing the step.
+          client = genai.Client(
+              api_key=token,
+              http_options=types.HttpOptions(timeout=240_000),
+          )
+
+          # Retry up to 2 times on transient errors (504 DEADLINE_EXCEEDED,
+          # 503 UNAVAILABLE, network blips). 429 quota and other 4xx are NOT
+          # retried — they won't succeed on a second try.
+          import time
+          response = None
+          last_err = None
+          for attempt in range(1, 3):
+              if attempt > 1:
+                  wait = 30
+                  print(f"::warning title=Cover image::Attempt {attempt - 1} failed ({last_err}); retrying in {wait}s")
+                  time.sleep(wait)
+              try:
+                  response = client.models.generate_content(
+                      model="gemini-3.1-flash-image-preview",
+                      contents=[prompt],
+                      config=types.GenerateContentConfig(
+                          response_modalities=['IMAGE'],
+                          image_config=types.ImageConfig(
+                              aspect_ratio="21:9",
+                              image_size="1K"
+                          )
+                      )
+                  )
+                  break
+              except ClientError as e:
+                  if e.status_code == 429:
+                      print("::warning title=Cover image::Skipped — Gemini image model requires paid tier (free tier quota exceeded). See https://ai.google.dev/gemini-api/docs/pricing")
+                      sys.exit(0)
+                  # Other 4xx (400 invalid prompt, 401 auth, 403 forbidden) — don't retry.
+                  print(f"::warning title=Cover image::Gemini client error: {e}")
+                  sys.exit(0)
+              except Exception as e:
+                  # Server-side 5xx (504 DEADLINE_EXCEEDED, 503 UNAVAILABLE) and
+                  # transport errors land here — worth retrying.
+                  last_err = e
+
+          if response is None:
+              print(f"::warning title=Cover image::Generation failed after retries: {last_err}")
+              sys.exit(0)
+
+          try:
+              # google.genai.types.Image is a raw-bytes wrapper, not a PIL.Image:
+              # .save(path) writes the bytes verbatim, ignoring the extension. So
+              # if Gemini returns JPEG (which it sometimes does even when we ask
+              # for PNG), naming the file cover.png puts JPEG bytes in a PNG-named
+              # file and pngquant rejects it with "Not a PNG file (libpng failed)".
+              #
+              # Inspect the actual mime_type on inline_data and normalise to PNG
+              # via ImageMagick when needed, so cover.png is always a real PNG.
+              import subprocess
+              for part in response.parts:
+                  if hasattr(part, 'inline_data') and part.inline_data is not None:
+                      mime = (part.inline_data.mime_type or "").lower()
+                      image = part.as_image()
+                      ext_map = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
+                      src_ext = ext_map.get(mime)
+                      if src_ext is None:
+                          print(f"::warning title=Cover image::Unsupported mime_type '{mime}' from Gemini; skipping cover")
+                          sys.exit(0)
+                      if src_ext == "png":
+                          image.save("cover.png")
+                      else:
+                          src = f"cover.src.{src_ext}"
+                          image.save(src)
+                          subprocess.run(["convert", src, "cover.png"], check=True)
+                          os.remove(src)
+                      size_kb = os.path.getsize("cover.png") // 1024
+                      print(f"Cover image generated successfully: cover.png ({size_kb} KB, source mime={mime})")
+                      break
+              else:
+                  print("::warning title=Cover image::No image returned by Gemini (API may have rejected the prompt)")
+                  sys.exit(0)
+          except subprocess.CalledProcessError as e:
+              print(f"::warning title=Cover image::ImageMagick conversion failed: {e}")
+              sys.exit(0)
+          except Exception as e:
+              print(f"::warning title=Cover image::Failed to encode/save image: {e}")
+              sys.exit(0)
+          PY
+
+      - name: Optimize cover image
+        # Lossy palette quantization, same algorithm class as tinypng.com.
+        # ~60-70% smaller PNG with no perceptible quality loss for these
+        # marketing covers. No API key, no rate limit.
+        if: hashFiles('cover.png') != ''
+        run: |
+          set -euo pipefail
+          before=$(stat -c %s cover.png)
+          pngquant --quality=70-90 --speed 1 --strip --force --output cover.png cover.png
+          after=$(stat -c %s cover.png)
+          saved=$((100 - (after * 100 / before)))
+          printf 'cover.png: %d B -> %d B (-%d%%)\n' "$before" "$after" "$saved"
+
+      - name: Upload cover image as artifact
+        if: hashFiles('cover.png') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: cover-image
+          path: cover.png
+          if-no-files-found: ignore
+
+      - name: Check if cover image exists
+        id: check_cover
+        run: |
+          if [ -f "cover.png" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "Prepend cover image to release notes"
+        if: ${{ steps.check_cover.outputs.exists == 'true' && env.RELEASE_ENABLED == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # URL is deterministic: ncipollo uploads cover.png to the same release
+          # in the same step, so the link resolves as soon as the release is live.
+          IMAGE_URL="https://github.com/armbian/build/releases/download/v${VERSION_OVERRIDE}/cover.png"
+          {
+            echo "![${LABEL}](${IMAGE_URL})"
+            echo ""
+            cat summary.md
+          } > summary.md.new
+          mv summary.md.new summary.md
 
       - uses: ncipollo/release-action@v1
         if: ${{ env.RELEASE_ENABLED == 'true' }}
@@ -240,6 +676,155 @@ jobs:
           prerelease: "false"
           makeLatest: "true"
           bodyFile: "summary.md"
+          artifacts: ${{ steps.check_cover.outputs.exists == 'true' && 'cover.png' || '' }}
           allowUpdates: "true"
           skipIfReleaseExists: "true"
           token: ${{ secrets.RELEASE_TOKEN }}
+
+      # ----------------------------------------------------------------------
+      # Quarterly only: publish the digest to docs.armbian.com.
+      #
+      # GitHub serves release pages with 'noindex', so the quarterly digest is
+      # invisible to search engines. docs.armbian.com is where it becomes
+      # findable, so the stable release note is mirrored there as one page per
+      # version. Weekly and monthly digests stay on GitHub releases only.
+      # ----------------------------------------------------------------------
+
+      - name: "Docs: check out armbian/build for board and family names"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: actions/checkout@v7
+        with:
+          repository: armbian/build
+          path: build-tree
+          # Blobless: the tier scan needs full history over config/boards, but
+          # none of the file contents. Checkout of the tip is enough for the
+          # board/family name vocabulary.
+          filter: blob:none
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: "Docs: collect board support-tier changes"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          python3 self/scripts/collect-board-tier-changes.py \
+            --build-tree build-tree \
+            --since "$SINCE_UTC" --until "$UNTIL_UTC" \
+            --digest out/pr-digest.tsv \
+            --out out/board-changes.tsv
+
+      - name: "Docs: collect open known issues"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          # Empty result is normal and means the section is omitted, so a repo
+          # without the label must not fail the run.
+          gh search issues --owner armbian --label known-issue --state open \
+            --limit 100 --json title,repository,number,url \
+            --jq '.[] | [.title, "armbian/\(.repository.name)#\(.number)", .url] | @tsv' \
+            > out/known-issues.tsv || : > out/known-issues.tsv
+          echo "known issues: $(wc -l < out/known-issues.tsv)"
+
+      - name: "Docs: write the page description with AI"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import os
+          from anthropic import Anthropic
+
+          version = os.environ["VERSION_OVERRIDE"]
+          with open("out/intro.md", encoding="utf-8") as f:
+              narrative = f.read().strip()
+
+          # Every other page on docs.armbian.com inherits mkdocs' site_description,
+          # so they all share one meta description and compete with each other in
+          # search results. Each release page gets its own instead.
+          client = Anthropic()
+          resp = client.messages.create(
+              model="claude-opus-4-7",
+              max_tokens=1024,
+              system=(
+                  "You write meta descriptions for documentation pages. Output one "
+                  "single line of plain text, between 140 and 155 characters "
+                  "inclusive, no markdown, no quotes, no trailing newline commentary."
+              ),
+              messages=[{"role": "user", "content": (
+                  f"Write the meta description for the Armbian {version} release "
+                  f"notes page, released {os.environ['RELEASE_DATE']}. Name the "
+                  "version, the release date, and the two or three headline themes "
+                  "from the summary below. Between 140 and 155 characters.\n\n"
+                  f"{narrative}"
+              )}],
+          )
+          text = " ".join(
+              next((b.text for b in resp.content if b.type == "text"), "").split()
+          )
+          if not 140 <= len(text) <= 155:
+              print(f"::warning title=Release page::AI description was {len(text)} "
+                    "chars, outside 140-155; falling back to the generated form")
+          else:
+              with open("out/description.txt", "w", encoding="utf-8") as f:
+                  f.write(text)
+              print(f"description ({len(text)} chars): {text}")
+          PY
+
+      - name: "Docs: render the release page"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        run: |
+          set -euo pipefail
+          # Writing to a fixed path keeps this idempotent: a re-run for the same
+          # quarter overwrites its page instead of adding a second one. The page
+          # is named for the quarter but titled with the precise version, so
+          # --version stays the full VERSION_OVERRIDE.
+          python3 self/scripts/generate-release-doc.py \
+            --version "$VERSION_OVERRIDE" \
+            --date "$RELEASE_DATE" \
+            --intro out/intro.md \
+            --digest out/pr-digest.tsv \
+            --board-changes out/board-changes.tsv \
+            --known-issues out/known-issues.tsv \
+            --description out/description.txt \
+            --build-tree build-tree \
+            --out "documentation/docs/releases/${DOCS_VERSION}.md"
+          # -f, not -x: the script is run through python3, so the executable
+          # bit is irrelevant. Testing -x would skip the refresh and report the
+          # file missing whenever a checkout dropped the mode bit.
+          if [[ -f documentation/tools/generate-release-index.py ]]; then
+            python3 documentation/tools/generate-release-index.py --docs documentation/docs
+          else
+            echo "::warning title=Release page::documentation/tools/generate-release-index.py \
+          is missing on armbian/documentation main; the release page is published but \
+          docs/releases/index.md is not refreshed"
+          fi
+
+      - name: "Docs: open or update the pull request"
+        if: ${{ env.PERIOD == 'quarterly' }}
+        uses: peter-evans/create-pull-request@v8
+        with:
+          path: documentation
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          # One branch per quarter, so a re-run -- including for a later patch
+          # release in the same quarter -- updates the open PR in place rather
+          # than opening a second one.
+          branch: "release-notes/${{ env.DOCS_VERSION }}"
+          base: main
+          commit-message: "releases: add Armbian ${{ env.VERSION_OVERRIDE }} release notes"
+          title: "releases: Armbian ${{ env.VERSION_OVERRIDE }} release notes"
+          body: |
+            Generated by [Reporting: Release summary](https://github.com/armbian/armbian.github.io/actions/workflows/reporting-release-summary.yml)
+            for Armbian ${{ env.VERSION_OVERRIDE }}, from the pull requests
+            merged across the org in the release window.
+
+            This page is the canonical release note. The quarterly digest is no
+            longer published as a GitHub release, because GitHub serves release
+            pages `noindex` and this one has to be findable.
+
+            The narrative body, the change list and the board status changes all
+            come from PR metadata and the digest; nothing here is hand-written.
+
+            Re-running the workflow for this version updates this PR in place.
+          delete-branch: true
+          add-paths: |
+            docs/releases/**

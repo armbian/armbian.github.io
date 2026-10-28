@@ -1,7 +1,7 @@
 # Manual target additions for nightly builds
 # This content will be appended to the auto-generated targets-release-nightly.yaml
 
-# Ubuntu stable minimal cloud
+# Ubuntu minimal cloud
 minimal-cli-stable-ubuntu-cloud:
   enabled: yes
   configs: [ armbian-cloud ]
@@ -9,28 +9,88 @@ minimal-cli-stable-ubuntu-cloud:
     gha: *armbian-gha
   build-image: "yes"
   vars:
-    RELEASE: plucky
+    RELEASE: UBUNTU
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
 
-# Debian unstable minimal cloud
+# Debian minimal cloud
 minimal-cli-unstable-debian-cloud:
   enabled: yes
   configs: [ armbian-cloud ]
   pipeline:
     gha: *armbian-gha
-    build-image: "yes"
+  build-image: "yes"
   vars:
-    RELEASE: forky
+    RELEASE: DEBIAN
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
+# Debian minimal cloud (legacy duplicate of minimal-cli-unstable-debian-cloud
+# above — both blocks resolve to RELEASE: DEBIAN under the substitution
+# model, so they build the same image. Kept for now until a follow-up
+# decides whether to drop, or to introduce a second per-scope token to
+# carry an explicit "stable vs testing" Debian split inside nightly.)
+minimal-cli-stable-debian-cloud-trixie:
+  enabled: yes
+  configs: [ armbian-cloud ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-vhdx" }
+
+# Khadas VIM1S / VIM4 on mainline (edge).
+# Both boards are in targets-release-nightly.blacklist, so the auto-generated
+# section skips them. Explicit targets: Ubuntu minimal CLI and GNOME desktop.
+nightly-ubuntu-minimal-khadas-vims:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: khadas-vim1s, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
+    - { BOARD: khadas-vim4, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
+
+nightly-ubuntu-gnome-khadas-vims:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "gnome"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: khadas-vim1s, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
+    - { BOARD: khadas-vim4, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }

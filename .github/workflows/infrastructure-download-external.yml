@@ -1,6 +1,5 @@
 name: "Composite: Sync 3rd party packages"
 on:
-  workflow_dispatch:
   workflow_call:
     inputs:
       ENABLED:
@@ -43,6 +42,18 @@ on:
         required: false
         type: boolean
         default: false
+      CHUNK_INDEX:
+        # Which slice of the matrix this invocation processes (0..CHUNK_COUNT-1).
+        # Used to keep strategy.matrix under GitHub Actions' 256-entry cap when
+        # the number of packages × arches × releases grows past that. Defaults
+        # to 0/1 so the workflow still works when called un-chunked.
+        required: false
+        type: number
+        default: 0
+      CHUNK_COUNT:
+        required: false
+        type: number
+        default: 1
     secrets:
       GPG_KEY1:
         required: true
@@ -82,13 +93,24 @@ jobs:
   preclean:
     name: "Purge"
     needs: perm
-    if: ${{ inputs.PURGE == true }}
+    # Purge only in chunk 0. The preclean/postclean pair doesn't use
+    # CHUNK_INDEX to filter its matrix — it builds the same
+    # (release × package) list on every chunk and runs repo.sh -c delete
+    # against /publishing/repository-debs. With 4 chunks that meant 4
+    # parallel invocations of aptly's delete op racing on the same
+    # repository state; aptly serialises via its own lockfile but the
+    # fanout is still pure waste at best and a corruption hazard when a
+    # held lock times out. Package download IS parallel-friendly (each
+    # chunk fetches its own slice of debs into /incoming/debs/external),
+    # but the repo-side purge is a single-threaded operation on shared
+    # state. Gate it to chunk 0 so it runs exactly once per workflow.
+    if: ${{ inputs.PURGE == true && inputs.CHUNK_INDEX == 0 }}
     runs-on: ubuntu-latest
     outputs:
       matrix:  ${{steps.json.outputs.JSON_CONTENT}}
     steps:
       - name: "Checkout Armbian build Framework"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           ref: ${{ inputs.REFERENCE || inputs.branch || 'main' }}
@@ -113,7 +135,12 @@ jobs:
 
   postclean:
     needs: preclean
-    if: ${{ inputs.PURGE == true }}
+    # Same chunk-0 gate as preclean (see its comment): this is the
+    # repo.sh -c delete pass, which mutates shared aptly state and
+    # MUST run single-threaded. The inner matrix already has
+    # max-parallel: 1; the chunk gate here prevents 4 parallel
+    # copies of that same serialised matrix from racing each other.
+    if: ${{ inputs.PURGE == true && inputs.CHUNK_INDEX == 0 }}
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -125,8 +152,20 @@ jobs:
     runs-on: repository
     steps:
 
+      # Pre-chown before checkout. The Purge step below runs sudo
+      # against /publishing/repository-debs and against the runner's
+      # workspace-relative tools/repository/repo.sh output — both can
+      # leave root-owned files under $GITHUB_WORKSPACE, so a later
+      # non-root actions/checkout@v7 with clean: true (in the caller
+      # workflow's Copying job) fails with EACCES. Reclaim ownership
+      # first so the workspace is always deletable by the runner user.
+      - name: Fix workspace ownership
+        if: always()
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" "$GITHUB_WORKSPACE" || true
+
       - name: Checkout build repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           fetch-depth: 1
@@ -185,6 +224,13 @@ jobs:
     name: "Mirror"
     outputs:
       matrix: ${{steps.lists.outputs.matrix}}
+      # 'true' when the matrix has real work; 'false' when start
+      # only emitted the {name:none,...} placeholder (empty slice
+      # for this chunk, or no actionable changes at all). The
+      # download job gates on this via a job-level `if:` so an
+      # empty chunk skips the entire matrix expansion instead of
+      # trying to source os/external/none.conf.
+      has_work: ${{steps.lists.outputs.has_work}}
     steps:
 
       - name: Fix workspace ownership
@@ -208,9 +254,9 @@ jobs:
           echo "artifacts/${{ env.PR_NUMBER }}/" > path.txt
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-          name: assets-for-download
+          name: assets-for-download-${{ inputs.CHUNK_INDEX }}
           path: downloads
           overwrite: true
           retention-days: 5
@@ -223,7 +269,7 @@ jobs:
             "rm -rf ${UPLOAD_PATH}/artifacts/*"
 
       - name: Checkout Armbian OS repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/os
           path: os
@@ -288,7 +334,7 @@ jobs:
             # Expand releases
             if [[ "${RELEASE}" == "all" ]]; then
               # Default releases for "all"
-              releases=("bookworm" "trixie" "forky" "jammy" "noble")
+              releases=("bookworm" "trixie" "forky" "jammy" "noble" "resolute")
             elif [[ "${RELEASE}" == *":"* ]]; then
               # Colon-separated releases
               IFS=':' read -ra releases <<< "$RELEASE"
@@ -356,23 +402,87 @@ jobs:
           # Check if matrix is valid
           MATRIX_COUNT=$(echo "${MATRIX_JSON}" | jq '.include | length')
 
+          # has_work tracks whether the resulting matrix has any real
+          # entries vs the {name:none,...} placeholder. The download
+          # job's job-level `if:` reads this output and skips the
+          # whole matrix expansion when has_work='false', avoiding the
+          # source of os/external/none.conf that would otherwise hard-
+          # fail on the placeholder entry.
+          HAS_WORK="true"
+
           # Handle empty matrix - add a dummy entry that will be skipped
           if [[ "${MATRIX_COUNT}" -eq 0 ]]; then
             echo "::warning::No matrix entries generated, adding placeholder" >&2
             MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+            HAS_WORK="false"
           else
-            # Debug: Show raw matrix JSON
-            echo "::debug::Raw matrix JSON: ${MATRIX_JSON}" >&2
+            # Chunk the matrix so each invocation keeps strategy.matrix
+            # below GitHub Actions' 256-entry cap. Callers that don't
+            # know about chunking get CHUNK_COUNT=1 and pass the whole
+            # thing through (legacy behavior).
+            #
+            # Validate the inputs explicitly. workflow_call input
+            # `type: number` is only enforced at the YAML boundary;
+            # direct API / curl invocations or templated callers can
+            # send anything that ends up as a string in the env. Bash's
+            # arithmetic context silently treats non-numeric as 0,
+            # which would let "abc" pass `-lt 1` and reset CHUNK_COUNT
+            # to 1 with no warning. Regex-check first, then range.
+            CHUNK_INDEX="${{ inputs.CHUNK_INDEX }}"
+            CHUNK_COUNT="${{ inputs.CHUNK_COUNT }}"
 
-            # Compact the JSON for GitHub Actions
-            MATRIX_JSON_COMPACTED=$(echo "${MATRIX_JSON}" | jq -c)
+            if [[ ! "${CHUNK_INDEX}" =~ ^[0-9]+$ ]]; then
+              echo "::error::CHUNK_INDEX=${CHUNK_INDEX} is not a non-negative integer" >&2
+              exit 1
+            fi
+            if [[ ! "${CHUNK_COUNT}" =~ ^[0-9]+$ ]]; then
+              echo "::error::CHUNK_COUNT=${CHUNK_COUNT} is not a non-negative integer" >&2
+              exit 1
+            fi
+            if [[ "${CHUNK_COUNT}" -lt 1 ]]; then
+              echo "::error::CHUNK_COUNT=${CHUNK_COUNT} must be >= 1" >&2
+              exit 1
+            fi
+            if [[ "${CHUNK_INDEX}" -ge "${CHUNK_COUNT}" ]]; then
+              echo "::error::CHUNK_INDEX=${CHUNK_INDEX} must be < CHUNK_COUNT=${CHUNK_COUNT}" >&2
+              exit 1
+            fi
+
+            # Slice jq: split includes into CHUNK_COUNT roughly-equal
+            # groups by modular index (not contiguous ranges) so a
+            # slow package type doesn't cluster into one chunk.
+            SLICED=$(echo "${MATRIX_JSON}" | jq -c \
+              --argjson idx "${CHUNK_INDEX}" \
+              --argjson cnt "${CHUNK_COUNT}" \
+              '{include: [.include | to_entries[] | select(.key % $cnt == $idx) | .value]}')
+
+            SLICE_COUNT=$(echo "${SLICED}" | jq '.include | length')
+            echo "::notice::chunk ${CHUNK_INDEX}/${CHUNK_COUNT}: ${SLICE_COUNT} of ${MATRIX_COUNT} entries" >&2
+
+            # Empty slice still needs a placeholder so strategy.matrix
+            # is a valid (non-empty) value — but we set HAS_WORK=false
+            # so the download job's job-level `if:` skips it before
+            # the matrix even expands.
+            if [[ "${SLICE_COUNT}" -eq 0 ]]; then
+              MATRIX_JSON_COMPACTED='{"include":[{"name":"none","arch":"amd64","release":"bookworm"}]}'
+              HAS_WORK="false"
+            else
+              MATRIX_JSON_COMPACTED="${SLICED}"
+            fi
             echo "::debug::Compacted matrix JSON: ${MATRIX_JSON_COMPACTED}" >&2
           fi
 
           echo "matrix=${MATRIX_JSON_COMPACTED}" >> $GITHUB_OUTPUT
+          echo "has_work=${HAS_WORK}" >> $GITHUB_OUTPUT
 
   download:
     needs: [start]
+    # Skip the whole job when start emitted a placeholder matrix
+    # (no work for this chunk, or no actionable changes at all).
+    # Job-level `if:` cannot reference `matrix.*` because matrix
+    # is expanded after if-evaluation; using a needs.* output works
+    # because those resolve at job-graph time.
+    if: needs.start.outputs.has_work == 'true'
     outputs:
       project: ${{steps.make.outputs.project}}
     strategy:
@@ -398,7 +508,7 @@ jobs:
           if_key_exists: replace
 
       - name: Import GPG key 1
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         env:
           HOME: /root
           GNUPGHOME: /root/.gnupg
@@ -406,12 +516,12 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_KEY1 }}
 
       - name: Import GPG key 2
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         with:
           gpg_private_key: ${{ secrets.GPG_KEY2 }}
 
       - name: Checkout Armbian OS scripts
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/os
           path: os
@@ -420,7 +530,7 @@ jobs:
           clean: false
 
       - name: Checkout Armbian build script
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           path: build
@@ -518,6 +628,29 @@ jobs:
           # Load configuration
           . os/external/${{ matrix.name }}.conf
 
+          # `warn_skip` — bail out of this matrix slot on a broken
+          # upstream (404, deleted release, dead mirror, …) without
+          # failing the slot. Emits a ::warning:: annotation visible
+          # on the run summary, appends a "skipped" row to the step
+          # summary so the failure is tracked alongside successful
+          # updates, then exits 0 so the matrix slot stays green and
+          # the workflow's other slots keep running.
+          #
+          # Using `exit 0` (rather than `continue-on-error: true` at
+          # the step level) because we also want the upload + repo
+          # publishing logic AFTER this script to be skipped — we
+          # have no .debs to push.
+          warn_skip() {
+            local reason="$*"
+            echo "::warning::skipping ${{ matrix.name }} ${{ matrix.release }}/${{ matrix.arch }}: ${reason}" >&2
+            {
+              echo '| name | method | arch | release | needs_qemu | target | before | after | updating |'
+              echo '|------|--------|------|---------|------------|--------|--------|-------|----------|'
+              echo "| ${{ matrix.name }} | ${{ matrix.method }} | ${{ matrix.arch }} | ${{ matrix.release }} | ${{ matrix.needs_qemu }} | ${{ matrix.target }} | ${BEFORE_VERSION:-?} | — | ⚠️ skipped: ${reason} |"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          }
+
           SOURCE="temp/"
           rm -rf ${SOURCE}
           mkdir -p ${SOURCE}
@@ -585,6 +718,8 @@ jobs:
                 exit 1
                 ;;
             esac
+            # Architecture-independent packages install on every arch
+            PATTERNS+=('*_all.deb')
 
             # exception
             if [[ "${{ matrix.name }}" == "haos-supervised-installer" ]]; then
@@ -608,17 +743,17 @@ jobs:
 
             # Check if any .deb files were downloaded
             if ! ls "${SOURCE}"*.deb &> /dev/null; then
-              echo "::error::No .deb files were downloaded for ${{ matrix.name }} on ${{ matrix.arch }}" >&2
-              echo "Patterns tried: ${PATTERNS[*]}" >&2
-              exit 1
+              warn_skip "no .deb matched for arch ${{ matrix.arch }} (release ${TAG}, repo ${URL}, patterns: ${PATTERNS[*]})"
             fi
           elif [[ ${METHOD} == direct ]]; then
-            # Direct download method
-            wget -O ${SOURCE}${{ matrix.name }}.deb ${URL}
-            # Check if any .deb files were downloaded
+            # Direct download method — wget the URL into the source dir.
+            # `warn_skip` handles both transport failures (404, DNS,
+            # connection reset) and the rare "200 OK, empty body" case.
+            if ! wget -O "${SOURCE}${{ matrix.name }}.deb" "${URL}"; then
+              warn_skip "wget '${URL}' failed (transport / 404 / dead mirror)"
+            fi
             if ! ls "${SOURCE}"*.deb &> /dev/null; then
-              echo "::error::No .deb files were downloaded for ${{ matrix.name }} on ${{ matrix.arch }}" >&2
-              exit 1
+              warn_skip "${URL} produced no .deb"
             fi
           else
             # Aptly mirror method
@@ -631,8 +766,6 @@ jobs:
             mkdir -p "$APTLY_ROOT"
             printf '{ "rootDir": "%s" }\n' "$APTLY_ROOT" > "$APTLY_CFG"
 
-            echo "::debug::APTLY_ROOT=$APTLY_ROOT"
-            echo "::debug::APTLY_CFG=$APTLY_CFG"
             echo "::debug::Config file contents:"
             cat "$APTLY_CFG" >&2
 
@@ -656,7 +789,6 @@ jobs:
             MIRROR="${{ matrix.name }}-${{ matrix.release }}-${{ matrix.arch }}"
 
             echo "::debug::MIRROR_NAME=$MIRROR"
-            echo "::debug::Original KEY='${KEY:-}'"
 
             # KEY may be:
             #   - "unstable contrib non-free"  (suite + components)
@@ -665,9 +797,6 @@ jobs:
             read -r DIST REST <<<"${KEY:-}"
             COMPONENTS="$REST"
 
-            echo "::debug::DIST='$DIST'"
-            echo "::debug::REST='$REST'"
-            echo "::debug::COMPONENTS='$COMPONENTS'"
 
             # Special/flat cases: do not pass components
             case "${KEY:-}" in
@@ -690,12 +819,58 @@ jobs:
             URL="${URL/http:\/\//https:\/\/}"
 
             echo "::debug::URL='$URL'"
-            echo "::debug::FILTER_ARGS='${FILTER_ARGS[*]}'"
             echo "::debug::ADDITIONAL_FILTER='$ADDITIONAL_FILTER'"
             echo "::debug::ARCH='${{ matrix.arch }}'"
 
+            # Some upstreams advertise every historical build: ~50 versions of
+            # "code" pass GLOB, 7.9 GiB, of which the prune below keeps 210 MiB.
+            # aptly queues from the filtered index, so pin the filter to the newest
+            # version of each name first -- same index aptly is about to read.
+            # Engages only where the index actually holds duplicates.
+            PINNED_FILTER=""
+            pin_newest() {
+              local comp stem body name ver entries=0
+              local -A newest=()
+              local -a comps=()
+              if [[ -n "$COMPONENTS" ]]; then
+                read -r -a comps <<< "$COMPONENTS"
+              else
+                comps=("")
+              fi
+              for comp in "${comps[@]}"; do
+                if [[ -n "$comp" ]]; then
+                  stem="${URL%/}/dists/${DIST}/${comp}/binary-${{ matrix.arch }}/Packages"
+                else
+                  stem="${URL%/}/Packages"
+                fi
+                body=""
+                body="$(curl -fsSL --max-time 60 "${stem}.gz" 2>/dev/null | gzip -dc 2>/dev/null)" || true
+                [[ -n "$body" ]] || body="$(curl -fsSL --max-time 60 "${stem}.xz" 2>/dev/null | xz -dc 2>/dev/null)" || true
+                [[ -n "$body" ]] || body="$(curl -fsSL --max-time 60 "${stem}" 2>/dev/null)" || true
+                # 2 = index unreadable; caller must not run unpinned
+                [[ -n "$body" ]] || return 2
+                while read -r name ver; do
+                  [[ -n "$name" && -n "$ver" ]] || continue
+                  entries=$((entries + 1))
+                  if [[ -z "${newest[$name]:-}" ]] || dpkg --compare-versions "$ver" gt "${newest[$name]}"; then
+                    newest["$name"]="$ver"
+                  fi
+                done < <(awk '/^Package: /{p=$2} /^Version: /{if (p != "") {print p, $2; p=""}}' <<< "$body")
+              done
+              # nothing to gain when the index already holds one version per name,
+              # and a filter naming hundreds of packages is not worth building
+              (( entries > ${#newest[@]} )) || return 1
+              (( ${#newest[@]} > 0 && ${#newest[@]} <= 500 )) || return 1
+              local q=""
+              for name in "${!newest[@]}"; do
+                q+="${q:+ | }${name} (= ${newest[$name]})"
+              done
+              PINNED_FILTER="$q"
+              echo "::notice::pinning ${#newest[@]} package(s) to newest of ${entries} versions"
+            }
+            pin_newest || { [[ $? == 2 ]] && warn_skip "index unreadable: $URL $DIST"; true; }
+
             # Drop mirror if it already exists from previous run
-            echo "::debug::Checking if mirror exists..."
             if aptly -config="$APTLY_CFG" mirror show "$MIRROR" &>/dev/null; then
               echo "::notice::Dropping existing mirror: $MIRROR"
               aptly -config="$APTLY_CFG" mirror drop "$MIRROR" || true
@@ -703,59 +878,64 @@ jobs:
               echo "::debug::Mirror does not exist yet"
             fi
 
-            # Create mirror (distribution + optional components)
-            echo "::debug::Creating mirror..."
-            if [[ -n "$COMPONENTS" ]]; then
-              echo "::debug::aptly -config="$APTLY_CFG" -ignore-signatures ${FILTER_ARGS[*]} ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS"
+            # $COMPONENTS unquoted on purpose: empty means "no components".
+            mk_mirror() {
               # shellcheck disable=SC2086
-              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS
-            else
-              echo "::debug::aptly -config="$APTLY_CFG" -ignore-signatures ${FILTER_ARGS[*]} ${ADDITIONAL_FILTER} -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST""
-              # shellcheck disable=SC2086
-              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST"
+              aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER \
+                -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS \
+                || warn_skip "aptly mirror create failed (URL='$URL' DIST='$DIST' COMPONENTS='$COMPONENTS')"
+            }
+
+            # Swap in the pinned filter.
+            PINNED_APPLIED=0
+            if [[ -n "$PINNED_FILTER" ]]; then
+              [[ -n "${GLOB:-}" ]] \
+                && FILTER_ARGS=(-filter="( ${GLOB} ), ( ${PINNED_FILTER} )") \
+                || FILTER_ARGS=(-filter="${PINNED_FILTER}")
+              PINNED_APPLIED=1
             fi
-            echo "::debug::Mirror created successfully"
+
+            echo "::debug::Creating mirror..."
+            mk_mirror
 
             # Update mirror with retry logic for EOF errors
-            echo "::debug::Updating mirror..."
             MAX_RETRIES=3
             RETRY_COUNT=0
             UPDATE_SUCCESS=false
-
             while [[ $RETRY_COUNT -lt $MAX_RETRIES && "$UPDATE_SUCCESS" == "false" ]]; do
               if aptly -config="$APTLY_CFG" -max-tries=20 -ignore-signatures mirror update "$MIRROR"; then
-                echo "::debug::Mirror updated successfully"
                 UPDATE_SUCCESS=true
               else
                 RETRY_COUNT=$((RETRY_COUNT + 1))
                 if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
                   echo "::warning::Mirror update failed (attempt $RETRY_COUNT/$MAX_RETRIES), retrying..."
                   sleep 2
-                  # Recreate mirror if it got corrupted
-                  echo "::debug::Recreating mirror after failure..."
                   aptly -config="$APTLY_CFG" mirror drop "$MIRROR" || true
-                  if [[ -n "$COMPONENTS" ]]; then
-                    # shellcheck disable=SC2086
-                    aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST" $COMPONENTS
-                  else
-                    # shellcheck disable=SC2086
-                    aptly -config="$APTLY_CFG" -ignore-signatures "${FILTER_ARGS[@]}" $ADDITIONAL_FILTER -architectures="${{ matrix.arch }}" mirror create "$MIRROR" "$URL" "$DIST"
-                  fi
+                  mk_mirror
                 else
-                  echo "::error::Mirror update failed after $MAX_RETRIES attempts"
-                  exit 1
+                  warn_skip "aptly mirror update failed after $MAX_RETRIES attempts (URL='$URL' DIST='$DIST')"
                 fi
               fi
             done
 
-            # Snapshot
+            # A pinned filter matching nothing would publish an empty repository.
+            if [[ "$PINNED_APPLIED" == "1" ]] && [[ "$(aptly -config="$APTLY_CFG" mirror show "$MIRROR" \
+                 2>/dev/null | awk -F': *' '/^Number of packages/{print $2;exit}')" == "0" ]]; then
+              warn_skip "newest-version pin matched no packages (URL='$URL' DIST='$DIST')"
+            fi
+
+            # Snapshot. Failure here is rare (local aptly state op,
+            # not a remote fetch) but `set -e` would still kill the
+            # job, so route through warn_skip for consistency.
             echo "::debug::Creating snapshot..."
-            aptly -config="$APTLY_CFG" snapshot create "$MIRROR" from mirror "$MIRROR"
+            aptly -config="$APTLY_CFG" snapshot create "$MIRROR" from mirror "$MIRROR" \
+              || warn_skip "aptly snapshot create failed (MIRROR='$MIRROR')"
             echo "::debug::Snapshot created successfully"
 
-            # Publish
+            # Publish.
             echo "::debug::Publishing snapshot..."
-            aptly -config="$APTLY_CFG" publish -architectures="${{ matrix.arch }}" -batch=true snapshot "$MIRROR"
+            aptly -config="$APTLY_CFG" publish -architectures="${{ matrix.arch }}" -batch=true snapshot "$MIRROR" \
+              || warn_skip "aptly publish snapshot failed (MIRROR='$MIRROR')"
             echo "::debug::Snapshot published successfully"
 
             # Keep only latest version of each package
@@ -896,7 +1076,7 @@ jobs:
     steps:
 
       - name: Clean artifacts
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
-          name: assets-for-download
+          name: assets-for-download-${{ inputs.CHUNK_INDEX }}
           failOnError: false

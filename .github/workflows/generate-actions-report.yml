@@ -10,6 +10,10 @@ on:
         required: false
         default: ".github"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   scan-repositories:
     name: "Scan"
@@ -20,26 +24,26 @@ jobs:
 
     strategy:
       matrix:
-        repo: ["armbian.github.io", "build", "imager", "os", "sdk", "documentation", "shallow", "docker-armbian-build", "configng"]
+        repo: ["armbian.github.io", "build", "imager", "ci", "sdk", "documentation", "shallow", "docker-armbian-build", "configng"]
       fail-fast: false
       max-parallel: 1 # free api is very limited
 
     steps:
       - name: Checkout ${{ matrix.repo }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/${{ matrix.repo }}
           path: repo-source
           fetch-depth: 0
 
       - name: Checkout script repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/armbian.github.io
           path: script-repo
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 20
 
@@ -49,7 +53,7 @@ jobs:
           npm i fast-glob js-yaml
 
       - name: Restore AI description cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: repo-source/.ai-cache
           key: ai-descriptions-${{ matrix.repo }}-${{ hashFiles('repo-source/.github/**/*.yml', 'repo-source/.github/**/*.yaml') }}
@@ -68,7 +72,7 @@ jobs:
           AI_MODEL: gpt-4o-mini
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: actions-report-${{ matrix.repo }}
           path: actions-report-${{ matrix.repo }}.json
@@ -81,13 +85,13 @@ jobs:
 
     steps:
       - name: Checkout data branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: data
           path: data-branch
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
@@ -118,15 +122,38 @@ jobs:
 
       - name: Commit to data branch
         run: |
+          set -euo pipefail
           cd data-branch
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin data
+          git checkout data
+
           git add data/actions-report/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "Update actions reports [skip ci]"
-            git push
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
 
       # Run website generation
@@ -135,4 +162,4 @@ jobs:
         with:
           token: ${{ secrets.DISPATCH }}
           repository: armbian/actions
-          event-type: "Web: Directory listing"
+          event-type: "Generate website"

@@ -27,14 +27,14 @@ jobs:
 
     steps:
       - name: Checkout data branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: data
           fetch-depth: 0
           path: data_wd
 
       - name: Checkout main branch (workflow source)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0
@@ -86,7 +86,7 @@ jobs:
           FOLDER: "data_wd/data"
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: "data_wd/data"
 
@@ -103,7 +103,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
       - name: Install SSH key + known_hosts (task two)
         uses: shimataro/ssh-key-action@v2

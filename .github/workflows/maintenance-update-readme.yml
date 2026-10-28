@@ -1,0 +1,144 @@
+# AI-driven README updater (central, cross-repo).
+#
+# Runs scripts/generate_readme.py against one or more target repositories: checks
+# each out, (re)generates its README.md with Claude from the repo's own files, and
+# opens a pull request there. Never pushes to a default branch, never edits anything
+# but README.md. peter-evans/create-pull-request makes no PR when the generated
+# README is byte-identical to the current one, so re-runs are cheap.
+#
+# Feedback loop: if a previous README PR is still open, its human review comments
+# are collected and fed back into the next generation, so reviewer fixes survive a
+# regeneration instead of being silently overwritten.
+#
+# Secrets (already present on this repo):
+#   ANTHROPIC_API_KEY  - Claude API key (same one reporting-release-summary uses)
+#   ACCESS_TOKEN_ARMBIANWORKER
+#                      - armbianworker PAT with `repo` scope on the target repos
+#                        (the builtin GITHUB_TOKEN cannot push branches / open PRs
+#                        cross-repo). Must be the worker account, not a person:
+#                        reporting-release-summary.yml filters the release digest
+#                        by PR author, and a human author lands these in the notes.
+name: "Maintenance: Update README (AI)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: "Comma-separated owner/repo targets (leave empty for the full default set)"
+        required: false
+        default: ""
+      model:
+        description: "Claude model id"
+        required: false
+        default: "claude-opus-4-7"
+  schedule:
+    - cron: "20 5 * * MON"   # weekly, Mondays 05:20 UTC
+
+concurrency:
+  group: update-readme
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: "Resolve target list"
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        env:
+          # Route the dispatch input through env (not inline ${{ }}) to avoid shell injection.
+          REPOS: ${{ github.event.inputs.repos || 'armbian/build,armbian/configng,armbian/ci,armbian/imager,armbian/documentation,armbian/distribution,armbian/actions,armbian/armbian.github.io,armbian/armbian-router,armbian/shallow,armbian/docker-armbian-build,armbian/autotests,armbian/sdk,armbian/hastebin-ansi,armbian/infra' }}
+        run: |
+          set -euo pipefail
+          matrix="$(echo "$REPOS" | tr ',' '\n' | sed 's/[[:space:]]//g' | grep -v '^$' | jq -R . | jq -s -c .)"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Targets: $matrix"
+
+  update:
+    name: "README: ${{ matrix.repo }}"
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - name: Checkout tooling (this repo)
+        uses: actions/checkout@v7
+
+      - name: Checkout target repository
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          path: target
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      - name: Install Anthropic SDK
+        run: pip install 'anthropic>=0.40.0'
+
+      # If a previous "chore/update-readme" PR is still open, fold in review comments
+      # from TRUSTED reviewers so regenerating doesn't silently drop their fixes.
+      # Gated on author_association (OWNER/MEMBER/COLLABORATOR = write access) so a
+      # random commenter on the public PR cannot inject text into the prompt. Fails
+      # closed: any gh/API error aborts the run rather than proceeding feedback-less.
+      - name: Collect reviewer feedback from the open README PR
+        env:
+          GH_TOKEN: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          REPO: ${{ matrix.repo }}
+        run: |
+          set -euo pipefail
+          : > feedback.txt
+          pr="$(gh pr list -R "$REPO" --head chore/update-readme --state open \
+                  --json number --jq '.[0].number // empty')"
+          if [ -n "$pr" ]; then
+            gh api "repos/$REPO/pulls/$pr/comments" \
+              --jq '.[] | select((.user.login|test("\\[bot\\]|coderabbit";"i")|not) and (.author_association=="OWNER" or .author_association=="MEMBER" or .author_association=="COLLABORATOR")) | "- (\(.path):\(.line // .original_line)) \(.user.login): \(.body)"' >> feedback.txt
+            gh api "repos/$REPO/issues/$pr/comments" \
+              --jq '.[] | select((.user.login|test("\\[bot\\]|coderabbit";"i")|not) and (.author_association=="OWNER" or .author_association=="MEMBER" or .author_association=="COLLABORATOR")) | "- \(.user.login): \(.body)"' >> feedback.txt
+            echo "Collected feedback from $REPO#$pr ($(wc -l < feedback.txt) trusted line(s))"
+          else
+            echo "No open README PR for $REPO"
+          fi
+
+      - name: Generate README
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MODEL: ${{ github.event.inputs.model || 'claude-opus-4-7' }}
+          # Route matrix.repo through env (not inline ${{ }}) to avoid shell injection.
+          REPO_NAME: ${{ matrix.repo }}
+        run: |
+          python3 scripts/generate_readme.py \
+            --repo-dir target \
+            --repo-name "$REPO_NAME" \
+            --feedback feedback.txt
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }}
+          path: target
+          branch: chore/update-readme
+          delete-branch: true
+          commit-message: "docs: refresh README (AI-assisted)"
+          title: "`Automatic` refresh repository README"
+          labels: documentation
+          body: |
+            Automated README refresh generated by the **Maintenance: Update README (AI)**
+            workflow in [`armbian.github.io`](https://github.com/armbian/armbian.github.io/blob/main/.github/workflows/maintenance-update-readme.yml).
+
+            The content is generated by Claude from this repository's own files (file tree,
+            manifests, workflows, existing README). **Please review for accuracy** before
+            merging — edit or close if anything is wrong.
+
+            Leave review comments here: while this PR stays open, the next run reads them
+            and folds your fixes into the regenerated README (they won't be overwritten).

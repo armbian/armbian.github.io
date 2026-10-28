@@ -1,10 +1,13 @@
-name: "Infrastructure: Validate board images & vendor logos"
+name: "Infrastructure: Validate board assets"
 
 on:
   pull_request:
     paths:
       - "board-images/**"
       - "board-vendor-logos/**"
+      - "board-pinouts/**"
+      - "board-schematics/**"
+      - "board-instructions/**"
   workflow_dispatch:
   schedule:
     - cron: '0 0 1 * *'  # Monthly on the 1st at 00:00 UTC
@@ -14,18 +17,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Install ImageMagick
         run: |
           sudo apt-get update
-          sudo apt-get install -y imagemagick
+          sudo apt-get install -y imagemagick poppler-utils
 
       - name: Validate images
         env:
           BASE_REF: "origin/${{ github.base_ref }}"
           HEAD_REF: "${{ github.sha }}"
+          # object (opaque pixels) must not fill more than this % of the frame
+          MAX_OBJECT_PCT: "50"        # board images
+          # ...and must not be lost in an empty frame. Board images sit at a
+          # median of 22%; 12% is the 10th percentile.
+          MIN_OBJECT_PCT: "12"        # board images
+          MAX_LOGO_OBJECT_PCT: "80"   # vendor logos (denser, allowed to fill more)
         run: |
           scripts/validate-board-assets.sh

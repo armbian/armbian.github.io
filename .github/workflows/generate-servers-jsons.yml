@@ -3,10 +3,14 @@ name: "Infrastructure: Cache servers JSONs"
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '0 2 * * *'
 
 permissions:
   contents: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   generate:
@@ -19,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout armbian.github.io repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/armbian.github.io
           fetch-depth: 0
@@ -87,13 +91,83 @@ jobs:
 
             echo "Generating $outfile from $url"
 
-            timeout 10 curl -s \
+            # Retry on transient failures; --fail turns HTTP 4xx/5xx into errors.
+            # -sS: quiet progress but still print the error reason on failure.
+            response="$(curl -sS --fail \
+              --connect-timeout 10 --max-time 60 \
+              --retry 5 --retry-delay 2 --retry-all-errors \
               -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
               -H "Accept: application/json; indent=4" \
-              "$url" \
-            | jq "$JQ_FILTER" > "$outfile"
+              "$url")"
+
+            echo "$response" | jq "$JQ_FILTER" > "$outfile"
+
+            # Guard against a valid-but-empty result set.
+            count="$(jq 'length' "$outfile")"
+            if [ "$count" -eq 0 ]; then
+              echo "::error::$outfile is empty (NetBox returned no '$kind' servers from $url)"
+              exit 1
+            fi
+            echo "  -> $count server(s)"
 
           done
+
+          # --- Self-hosted GitHub runners ---
+          # Self-hosted runner VMs: role "Userlevel runner", OR any VM tagged
+          # "github runner". The tag catches dual-purpose hosts whose single
+          # NetBox role must be something else -- e.g. the netcup VPSes are role
+          # "Mirror" (they serve apt/images mirrors) but also run build jobs, so
+          # they carry the "github runner" tag and need their cache endpoints in
+          # this file too. NetBox's virtual-machines endpoint ignores
+          # `device_role` (a Device filter), so we fetch all active VMs and
+          # filter in jq (role name or tag) to avoid unrelated roles.
+          runners_url="$BASE_URL"
+          runners_outfile="github-runners.jq"
+
+          RUNNERS_JQ_FILTER='
+            .results
+            | map(
+                select(.name != null and (
+                    ((.role.name? // "") == "Userlevel runner")
+                    or (any((.tags // [])[]?;
+                          (.name? // "") == "github runner" or (.slug? // "") == "github-runner"))
+                  ))
+                | {
+                    host: ((.custom_fields["github_label"] // "" | gsub("^\\s+|\\s+$";"") | select(. != "")) // .name),
+                    runners: (.custom_fields["runners"] // 0),
+                    vcpus: ((.vcpus // 0) | round),
+                    memory: (.memory // 0),
+                    apt_proxy: (.custom_fields["apt_proxy"] // ""),
+                    oci_cache: (.custom_fields["oci_cache"] // ""),
+                    redis_cache: (.custom_fields["redis_cache"] // ""),
+                    git_proxy: (.custom_fields["git_proxy"] // ""),
+                    cputhreads: (.custom_fields["cputhreads"] // "")
+                  }
+              )
+            | sort_by(.host)
+          '
+
+          echo "Generating $runners_outfile from $runners_url"
+
+          # Retry on transient failures; --fail turns HTTP 4xx/5xx into errors.
+          # -sS: quiet progress but still print the error reason on failure.
+          response="$(curl -sS --fail \
+            --connect-timeout 10 --max-time 60 \
+            --retry 5 --retry-delay 2 --retry-all-errors \
+            -H "Authorization: Token ${{ secrets.NETBOX_TOKEN }}" \
+            -H "Accept: application/json; indent=4" \
+            "$runners_url")"
+
+          echo "$response" | jq "$RUNNERS_JQ_FILTER" > "$runners_outfile"
+
+          # Guard against a valid-but-empty result set: committing an empty
+          # runner list to the data branch would poison every downstream reader.
+          count="$(jq 'length' "$runners_outfile")"
+          if [ "$count" -eq 0 ]; then
+            echo "::error::$runners_outfile is empty (NetBox returned no runner VMs - role 'Userlevel runner' or tag 'github runner' - from $runners_url)"
+            exit 1
+          fi
+          echo "  -> $count runner host(s)"
 
       - name: Display generated JSON files
         run: |
@@ -118,6 +192,14 @@ jobs:
             echo "\`\`\`json"
             cat upload.jq
             echo "\`\`\`"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+          {
+            echo "### github-runners.jq"
+            echo "\`\`\`json"
+            cat github-runners.jq
+            echo "\`\`\`"
           } >> $GITHUB_STEP_SUMMARY
 
       - name: Commit changes if any
@@ -133,7 +215,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           # Restore the generated files
           mkdir -p data/servers
@@ -142,9 +223,26 @@ jobs:
           git add data/servers/
           if ! git diff --cached --quiet; then
             git commit -m "Update server JSONs from NetBox"
-            # rebase once more right before push to reduce race window
-            git pull --rebase origin data
-            git push origin data
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
 
       - name: Trigger webindex-update workflow

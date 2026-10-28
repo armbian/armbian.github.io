@@ -1,0 +1,52 @@
+# Manual target additions for community maintained builds
+# This content will be appended to the auto-generated targets-release-community-maintained.yaml
+
+# Debian cli
+cli-stable-debian:
+  enabled: yes
+  configs: [ armbian-community ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: aml-s9xx-box, BRANCH: current }
+    - { BOARD: aml-s9xx-box, BRANCH: edge }
+    - { BOARD: eltay-rm66, BRANCH: vendor }
+
+# Ubuntu cli
+cli-stable-ubuntu:
+  enabled: yes
+  configs: [ armbian-community ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: aml-s9xx-box, BRANCH: current }
+    - { BOARD: aml-s9xx-box, BRANCH: edge }
+    - { BOARD: orangepi4pro, BRANCH: vendor }
+
+# Debian XFCE desktop
+desktop-stable-debian-xfce:
+  enabled: yes
+  configs: [ armbian-community ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "xfce"
+    DESKTOP_TIER: "mid"
+  items:
+    - { BOARD: aml-s9xx-box, BRANCH: current }
+    - { BOARD: eltay-rm66, BRANCH: current }
+    - { BOARD: orangepi4pro, BRANCH: vendor }

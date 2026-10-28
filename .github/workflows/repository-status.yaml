@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: repository-status
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
     steps:
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: armbian.github.io
@@ -102,7 +102,7 @@ jobs:
 
       - name: Commit changes if any
         run: |
-
+          set -euo pipefail
           cd armbian.github.io
 
           # Fetch the data branch with proper error handling
@@ -121,26 +121,25 @@ jobs:
             git rm -rf . || true
           fi
 
+          git pull --rebase origin data
+
           # Ensure data directory exists
-          mkdir -p data/
+          mkdir -p data
 
           # Move generated files to data directory
-          mv ${{ github.workspace }}/current.svg data/
-          mv ${{ github.workspace }}/edge.svg data/
-          mv ${{ github.workspace }}/kernel-versions.json data/
+          mv "${{ github.workspace }}/current.svg" data/
+          mv "${{ github.workspace }}/edge.svg" data/
+          mv "${{ github.workspace }}/kernel-versions.json" data/
 
           # Configure git
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-          # Commit and push changes with proper error handling
-          git add data/.
+          # Commit and push changes
+          git add data/current.svg data/edge.svg data/kernel-versions.json
 
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "Update repository data"
-
             # Push with retry logic
             max_attempts=3
             attempt=1
@@ -152,7 +151,9 @@ jobs:
 
               # Pull with rebase to resolve conflicts
               echo "Push failed, attempting to pull and rebase..." >&2
-              git pull --rebase origin data
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
 
               attempt=$((attempt + 1))
             done

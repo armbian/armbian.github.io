@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: redirector
-  cancel-in-progress: false
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 env:
   SOURCE_OF_TRUTH: "rsync://fi.mirror.armbian.de"
@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout build framework repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/build
           fetch-depth: 1
@@ -34,7 +34,7 @@ jobs:
           path: build
 
       - name: Checkout OS repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/os
           fetch-depth: 1
@@ -42,7 +42,7 @@ jobs:
           path: os
 
       - name: Checkout armbian.github.io repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: armbian/armbian.github.io
           fetch-depth: 0
@@ -50,7 +50,7 @@ jobs:
           path: armbian.github.io
 
       - name: Checkout this repo (script)
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
           clean: false
@@ -114,7 +114,6 @@ jobs:
 
           git fetch origin data
           git checkout data
-          git pull --rebase origin data
 
           mkdir -p data
           cp "${GITHUB_WORKSPACE}/armbian-images.json" data/
@@ -123,13 +122,36 @@ jobs:
           git add data/armbian-images.json data/all-torrents.zip
           if ! git diff --cached --quiet; then
             git commit -m "Update armbian-images.json and all-torrents.zip"
-            # rebase once more right before push to reduce race window
-            git pull --rebase origin data
-            git push origin data
+            # Push with retry logic
+            max_attempts=3
+            attempt=1
+            while [ $attempt -le $max_attempts ]; do
+              if git push origin data; then
+                echo "Successfully pushed to data branch"
+                exit 0
+              fi
+
+              # Pull with rebase to resolve conflicts
+              echo "Push failed, attempting to pull and rebase..." >&2
+              if ! git pull --rebase origin data; then
+                echo "Pull/rebase failed, will retry push..." >&2
+              fi
+
+              attempt=$((attempt + 1))
+            done
+
+            echo "Failed to push after $max_attempts attempts" >&2
+            exit 1
           fi
+
+      - name: "Update redirector config"
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.DISPATCH }}
+          event-type: "Infrastructure: Update redirector"
 
       - name: "Generate directory"
         uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.DISPATCH }}
-          event-type: "Infrastructure: Update redirector"
+          event-type: "Web: Directory listing"
