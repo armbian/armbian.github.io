@@ -162,11 +162,11 @@ def news():
             break
     # Add the date only to recurring titles ("Github Highlights"), so a long
     # title keeps its full width. Shorten the title, never the date.
-    titles = [e["motd"]["line"] for e in out]
-    for e in out:
-        if titles.count(e["motd"]["line"]) > 1 and e.get("published"):
+    titles = [plain(e["title"]) for e in out]
+    for e, title in zip(out, titles):
+        if titles.count(title) > 1 and e.get("published"):
             date = f" ({_short_date(e['published'])})"
-            e["motd"]["line"] = shorten(e["motd"]["line"], MOTD_WIDTH - len(date)) + date
+            e["motd"]["line"] = shorten(f"Blog: {title}", MOTD_WIDTH - len(date)) + date
     return out
 
 
