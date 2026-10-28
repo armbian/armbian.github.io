@@ -13,7 +13,9 @@ Sources, one function each:
   announcement  active www.armbian.com CMS announcements   their own expiresAt
   software      install entries of armbian-config          no expiry
   sponsor       public GitHub sponsors of the armbian org  no expiry
-  service       scripts/featured/manual.yml                optional expires
+  service       scripts/featured/manual.yml "services"     optional expires
+  contribute    scripts/featured/manual.yml "contribute"   optional expires
+  build         scripts/featured/manual.yml "build"        optional expires
 
 A source that fails keeps its entries from the previous feed (--previous), so
 one outage does not empty a section. The run fails only if the feed would be
@@ -43,7 +45,8 @@ BLOG_RSS = "https://blog.armbian.com/rss/"
 ANNOUNCEMENTS = "https://www.armbian.com/api/announcements?where[active][equals]=true&limit=50&depth=0"
 RELEASES = "https://api.github.com/repos/armbian/build/releases?per_page=100"
 SOFTWARE_JSON = "https://raw.githubusercontent.com/armbian/configng/main/tools/json/config.software.json"
-SOFTWARE_DOCS = "https://docs.armbian.com/User-Guide_Armbian-Software/"
+DOCS = "https://docs.armbian.com"
+DOCS_SITEMAP = f"{DOCS}/sitemap.xml"
 
 NEWS_LIMIT = 5
 RELEASE_LIMIT = 2
@@ -193,8 +196,19 @@ def announcements():
     return out
 
 
+def _docs_pages():
+    """Paths of all docs pages, to link an app to its own page when it has one."""
+    try:
+        root = ET.fromstring(fetch(DOCS_SITEMAP))
+    except Exception as e:
+        log(f"docs sitemap not loaded: {e}")
+        return set()
+    return {loc.text.replace(DOCS, "") for loc in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc") if loc.text}
+
+
 def software(path=None):
     data = json.load(open(path)) if path else json.loads(fetch(SOFTWARE_JSON))
+    pages = _docs_pages()
     out = []
 
     def walk(items, group):
@@ -209,8 +223,10 @@ def software(path=None):
             if re.search(r"\b(remove|purge|uninstall|disable)\b", name, re.I):
                 continue
             cmd = f"armbian-config --cmd {iid}"
+            slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+            url = f"{DOCS}/software/{slug}/" if f"/software/{slug}/" in pages else f"{DOCS}/software/"
             out.append(entry(
-                f"software-{iid}", "software", name, i.get("help") or i.get("description", ""), SOFTWARE_DOCS,
+                f"software-{iid}", "software", name, i.get("help") or i.get("description", ""), url,
                 cmd=cmd, tags=[t for t in (group, i.get("status", "").lower()) if t],
                 motd_line=_software_line(name, i.get("description", "")),
                 motd_hint=f"sudo {cmd}",
@@ -269,12 +285,12 @@ def sponsors():
     return out
 
 
-def manual(path):
+def manual(path, section, type):
     out = []
-    for m in (yaml.safe_load(open(path)) or {}).get("entries", []):
+    for m in (yaml.safe_load(open(path)) or {}).get(section) or []:
         motd = m.get("motd") or {}
         out.append(entry(
-            m["id"], "service", m["title"], m["summary"], m["url"],
+            m["id"], type, m["title"], m["summary"], m["url"],
             published=day(str(m["published"])) if m.get("published") else None,
             expires=day(str(m["expires"])) if m.get("expires") else None,
             tags=m.get("tags", []), motd_line=motd.get("line"), motd_hint=motd.get("hint"),
@@ -310,7 +326,9 @@ def main():
         "announcement": announcements,
         "software": lambda: software(args.software),
         "sponsor": sponsors,
-        "service": lambda: manual(args.manual),
+        "service": lambda: manual(args.manual, "services", "service"),
+        "contribute": lambda: manual(args.manual, "contribute", "contribute"),
+        "build": lambda: manual(args.manual, "build", "build"),
     }
     entries, failed = [], []
     for kind, fn in sources.items():
