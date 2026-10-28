@@ -249,12 +249,12 @@ def software(path=None):
 
 
 def _software_line(name, description):
-    """'Name: description', or just the description when it already names the app."""
+    """'App: name - description', or 'App: description' when it names the app."""
     if not description:
-        return name
+        return f"App: {name}"
     if name.lower() in description.lower():
-        return description
-    return f"{name}: {description}"
+        return f"App: {description}"
+    return f"App: {name} - {description}"
 
 
 def _gh_headers():
