@@ -57,7 +57,10 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # Only main publishes. A manual run on another branch is a
+      # dry run: the feed is built and summarised, nothing is pushed.
       - name: Commit to the data branch
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           set -euo pipefail
           git config user.name "github-actions"

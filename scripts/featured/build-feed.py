@@ -23,7 +23,8 @@ empty.
 
 Entry:
   id, type, title, summary, url       always
-  image, published, expires, cmd      when known (dates are YYYY-MM-DD)
+  image, published, expires, cmd      when known (dates are YYYY-MM-DD;
+                                      expires is the last day to show it)
   tags                                list, may be empty
   motd: {line, hint}                  one short line + a URL or command
 """
@@ -34,6 +35,7 @@ import html
 import html.parser
 import json
 import os
+import pathlib
 import re
 import sys
 import urllib.request
@@ -184,8 +186,12 @@ def _lexical_text(node):
 
 
 def announcements():
+    now = dt.datetime.now(dt.timezone.utc)
     out = []
     for a in json.loads(fetch(ANNOUNCEMENTS)).get("docs", []):
+        # expiresAt is a timestamp: compare it exactly, not just its date
+        if a.get("expiresAt") and dt.datetime.fromisoformat(a["expiresAt"].replace("Z", "+00:00")) <= now:
+            continue
         summary = _lexical_text((a.get("content") or {}).get("root", {}))
         out.append(entry(
             f"announcement-{a['id']}", "announcement", a.get("title", ""), summary or a.get("title", ""),
@@ -207,7 +213,7 @@ def _docs_pages():
 
 
 def software(path=None):
-    data = json.load(open(path)) if path else json.loads(fetch(SOFTWARE_JSON))
+    data = json.loads(pathlib.Path(path).read_text() if path else fetch(SOFTWARE_JSON))
     pages = _docs_pages()
     out = []
 
@@ -287,12 +293,18 @@ def sponsors():
 
 def manual(path, section, type):
     out = []
-    for m in (yaml.safe_load(open(path)) or {}).get(section) or []:
+    for m in (yaml.safe_load(pathlib.Path(path).read_text()) or {}).get(section) or []:
         motd = m.get("motd") or {}
+        dates = {}
+        for field in ("published", "expires"):
+            if m.get(field):
+                dates[field] = day(str(m[field]))
+                # a mistyped expiry would otherwise keep the entry forever
+                if not dates[field]:
+                    raise ValueError(f"{m['id']}: {field} '{m[field]}' is not a YYYY-MM-DD date")
         out.append(entry(
             m["id"], type, m["title"], m["summary"], m["url"],
-            published=day(str(m["published"])) if m.get("published") else None,
-            expires=day(str(m["expires"])) if m.get("expires") else None,
+            published=dates.get("published"), expires=dates.get("expires"),
             tags=m.get("tags", []), motd_line=motd.get("line"), motd_hint=motd.get("hint"),
         ))
     return out
@@ -304,7 +316,7 @@ def load_previous(src):
     if not src:
         return []
     try:
-        text = fetch(src) if src.startswith("http") else open(src).read()
+        text = fetch(src) if src.startswith("http") else pathlib.Path(src).read_text()
         return json.loads(text).get("entries", [])
     except Exception as e:  # first run, or the old feed is unreachable
         log(f"previous feed not loaded ({src}): {e}")
@@ -342,7 +354,8 @@ def main():
         entries += got
 
     today = TODAY.isoformat()
-    entries = [e for e in entries if not e.get("expires") or e["expires"] > today]
+    # "expires" is the last day an entry is shown
+    entries = [e for e in entries if not e.get("expires") or e["expires"] >= today]
     if not entries:
         sys.exit("featured feed would be empty, refusing to write it")
 

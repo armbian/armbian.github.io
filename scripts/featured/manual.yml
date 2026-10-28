@@ -6,7 +6,8 @@
 #   build       -> "build"       the Armbian build framework
 #
 # Fields: id, title, summary, url (required); tags, published, expires
-# (YYYY-MM-DD, optional); motd.line / motd.hint (optional, generated from
+# (YYYY-MM-DD, optional; expires is the last day shown, a date that does
+# not parse fails the run); motd.line / motd.hint (optional, generated from
 # title / url when missing). Entries past their expiry date are dropped.
 
 services:
