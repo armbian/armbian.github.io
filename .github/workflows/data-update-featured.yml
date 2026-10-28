@@ -89,3 +89,10 @@ jobs:
           done
           echo "::error::Could not push to the data branch"
           exit 1
+
+      - name: "Generate directory"
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Web: Directory listing"
