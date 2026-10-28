@@ -148,7 +148,7 @@ build:
     url: https://docs.armbian.com/build-framework/getting-started/
     tags: [build-framework, getting-started]
     motd:
-      line: "Build an image: git clone armbian/build; ./compile.sh"
+      line: "Build Armbian images on any Linux PC or Docker host"
 
   - id: build-framework-userpatches
     title: "Customize images with userpatches"

@@ -114,6 +114,12 @@ def day(value):
     return d.date().isoformat()
 
 
+def _short_date(date):
+    """YYYY-MM-DD -> 'Oct 7' (portable: no %-d)."""
+    d = dt.date.fromisoformat(date)
+    return f"{d:%b} {d.day}"
+
+
 def plus_days(date, days):
     return (dt.date.fromisoformat(date) + dt.timedelta(days=days)).isoformat() if date else None
 
@@ -152,7 +158,7 @@ def news():
             tags=[c.text for c in item.findall("category") if c.text],
             # the date tells apart recurring titles ("Github Highlights")
             motd_line=f"Blog: {plain(item.findtext('title', ''))}"
-                      + (f" ({dt.date.fromisoformat(published):%b %-d})" if published else ""),
+                      + (f" ({_short_date(published)})" if published else ""),
         ))
         if len(out) >= NEWS_LIMIT:
             break
@@ -203,12 +209,12 @@ def announcements():
 
 
 def _docs_pages():
-    """Paths of all docs pages, to link an app to its own page when it has one."""
-    try:
-        root = ET.fromstring(fetch(DOCS_SITEMAP))
-    except Exception as e:
-        log(f"docs sitemap not loaded: {e}")
-        return set()
+    """Paths of all docs pages, to link an app to its own page when it has one.
+
+    A failure propagates, so the software source is marked failed and keeps
+    its previous (per-app) links instead of falling back to /software/.
+    """
+    root = ET.fromstring(fetch(DOCS_SITEMAP))
     return {loc.text.replace(DOCS, "") for loc in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc") if loc.text}
 
 
