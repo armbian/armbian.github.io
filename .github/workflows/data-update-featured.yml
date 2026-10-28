@@ -1,0 +1,88 @@
+name: "Data: Update featured feed"
+
+# Builds featured.json, one feed of "what's new / worth a look" for the
+# website, the imager and the motd tips: blog posts, stable releases, website
+# announcements, armbian-config software, public sponsors and the hand-written
+# entries in scripts/featured/manual.yml. See scripts/featured/build-feed.py.
+#
+# Served at https://github.armbian.com/featured.json (data branch).
+
+on:
+  repository_dispatch:
+    types: ["Data: Update featured feed"]
+  workflow_dispatch:
+  schedule:
+    - cron: '15 6 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  featured:
+    name: "Build featured feed"
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'Armbian' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout armbian.github.io repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Build featured.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Sponsors need a token that can read the org's sponsorships
+          SPONSORS_TOKEN: ${{ secrets.SPONSORS }}
+        run: |
+          set -euo pipefail
+          python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
+          # A source that fails keeps its entries from the published feed
+          python3 scripts/featured/build-feed.py \
+            --previous https://github.armbian.com/featured.json \
+            --output "${RUNNER_TEMP}/featured.json"
+
+          {
+            echo "# Featured feed"
+            echo
+            echo "| Type | Entries |"
+            echo "|------|---------|"
+            jq -r '.entries | group_by(.type)[] | "| \(.[0].type) | \(length) |"' "${RUNNER_TEMP}/featured.json"
+            failed=$(jq -r '.failed_sources | join(", ")' "${RUNNER_TEMP}/featured.json")
+            if [[ -n "$failed" ]]; then
+              echo
+              echo "Failed sources (kept from the previous feed): ${failed}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit to the data branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git fetch --depth=1 origin data
+          git checkout -B data FETCH_HEAD
+
+          mkdir -p data
+          # Ignore the timestamp, so an unchanged feed makes no commit
+          if [[ -f data/featured.json ]] && \
+             diff -q <(jq 'del(.generated)' data/featured.json) <(jq 'del(.generated)' "${RUNNER_TEMP}/featured.json") >/dev/null; then
+            echo "Featured feed unchanged"
+            exit 0
+          fi
+          cp "${RUNNER_TEMP}/featured.json" data/featured.json
+          git add data/featured.json
+          git commit -m "Update featured feed"
+
+          for attempt in 1 2 3; do
+            if git push origin data; then
+              exit 0
+            fi
+            echo "Push failed (attempt ${attempt}), rebasing"
+            sleep $((attempt * 5))
+            git pull --rebase origin data
+          done
+          echo "::error::Could not push to the data branch"
+          exit 1

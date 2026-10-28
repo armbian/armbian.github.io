@@ -1,0 +1,54 @@
+# Hand-written entries for the featured feed (scripts/featured/build-feed.py).
+#
+# Fields: id, title, summary, url (required); tags, published, expires
+# (YYYY-MM-DD, optional); motd.line / motd.hint (optional, generated from
+# title / url when missing). Entries past their expiry date are dropped.
+
+entries:
+  - id: armbian-actions
+    title: "Armbian build infrastructure"
+    summary: "Check build status, download the latest images and follow releases across all supported boards."
+    url: https://actions.armbian.com/
+    tags: [infrastructure, build]
+    motd:
+      line: "Track Armbian builds and releases"
+
+  - id: armbian-mirrors
+    title: "Armbian mirror network"
+    summary: "Armbian packages and images are served from mirrors worldwide. Find the nearest one, or host your own."
+    url: https://docs.armbian.com/Mirrors/
+    tags: [infrastructure, mirrors]
+    motd:
+      line: "Host an Armbian mirror"
+
+  - id: armbian-documentation
+    title: "Armbian documentation"
+    summary: "Installation, configuration, hardware support and troubleshooting for every Armbian user."
+    url: https://docs.armbian.com/
+    tags: [documentation]
+    motd:
+      line: "Armbian documentation"
+
+  - id: armbian-forum
+    title: "Armbian forum"
+    summary: "Get help, share your projects and follow Armbian development with the community."
+    url: https://forum.armbian.com/
+    tags: [community]
+    motd:
+      line: "Questions? Ask on the Armbian forum"
+
+  - id: armbian-github
+    title: "Armbian on GitHub"
+    summary: "The build framework, armbian-config, the imager and board configurations are all open source. Contributions welcome."
+    url: https://github.com/armbian/
+    tags: [community, development]
+    motd:
+      line: "Contribute to Armbian on GitHub"
+
+  - id: armbian-sponsors
+    title: "Support Armbian"
+    summary: "Armbian is built by volunteers. Sponsorship pays for build servers, test hardware and maintenance."
+    url: https://github.com/sponsors/armbian
+    tags: [support, sponsorship]
+    motd:
+      line: "Support Armbian: become a sponsor"
