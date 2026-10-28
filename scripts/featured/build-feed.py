@@ -145,7 +145,9 @@ def news():
             image=image.get("url") if image is not None else None,
             published=published, expires=plus_days(published, NEWS_DAYS),
             tags=[c.text for c in item.findall("category") if c.text],
-            motd_line=f"Blog: {plain(item.findtext('title', ''))}",
+            # the date tells apart recurring titles ("Github Highlights")
+            motd_line=f"Blog: {plain(item.findtext('title', ''))}"
+                      + (f" ({dt.date.fromisoformat(published):%b %-d})" if published else ""),
         ))
         if len(out) >= NEWS_LIMIT:
             break
@@ -210,12 +212,21 @@ def software(path=None):
             out.append(entry(
                 f"software-{iid}", "software", name, i.get("help") or i.get("description", ""), SOFTWARE_DOCS,
                 cmd=cmd, tags=[t for t in (group, i.get("status", "").lower()) if t],
-                motd_line=f"{name}: {i.get('description', '')}" if i.get("description") else name,
+                motd_line=_software_line(name, i.get("description", "")),
                 motd_hint=f"sudo {cmd}",
             ))
 
     walk(data.get("menu", []), "")
     return out
+
+
+def _software_line(name, description):
+    """'Name: description', or just the description when it already names the app."""
+    if not description:
+        return name
+    if name.lower() in description.lower():
+        return description
+    return f"{name}: {description}"
 
 
 def _gh_headers():
@@ -241,9 +252,11 @@ def sponsors():
     out = []
     for n in resp["data"]["organization"]["sponsorshipsAsMaintainer"]["nodes"]:
         s = n.get("sponsorEntity") or {}
-        if not s.get("login"):
+        # Skip sponsors without a display name: a bare login reads badly in a
+        # "Thanks to ..." line
+        if not s.get("login") or not s.get("name"):
             continue
-        name = s.get("name") or s.get("login")
+        name = s["name"]
         tier = (n.get("tier") or {}).get("name")
         out.append(entry(
             f"sponsor-{s['login'].lower()}", "sponsor", name,
