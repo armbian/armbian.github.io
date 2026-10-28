@@ -156,12 +156,17 @@ def news():
             image=image.get("url") if image is not None else None,
             published=published, expires=plus_days(published, NEWS_DAYS),
             tags=[c.text for c in item.findall("category") if c.text],
-            # the date tells apart recurring titles ("Github Highlights")
-            motd_line=f"Blog: {plain(item.findtext('title', ''))}"
-                      + (f" ({_short_date(published)})" if published else ""),
+            motd_line=f"Blog: {plain(item.findtext('title', ''))}",
         ))
         if len(out) >= NEWS_LIMIT:
             break
+    # Add the date only to recurring titles ("Github Highlights"), so a long
+    # title keeps its full width. Shorten the title, never the date.
+    titles = [e["motd"]["line"] for e in out]
+    for e in out:
+        if titles.count(e["motd"]["line"]) > 1 and e.get("published"):
+            date = f" ({_short_date(e['published'])})"
+            e["motd"]["line"] = shorten(e["motd"]["line"], MOTD_WIDTH - len(date)) + date
     return out
 
 
