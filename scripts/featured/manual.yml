@@ -1,0 +1,183 @@
+# Hand-written entries for the featured feed (scripts/featured/build-feed.py).
+#
+# Sections become the entry type:
+#   services    -> "service"     Armbian services and documentation
+#   contribute  -> "contribute"  ways to get involved (docs.armbian.com/contribute/)
+#   build       -> "build"       the Armbian build framework
+#
+# Fields: id, title, summary, url (required); tags, published, expires
+# (YYYY-MM-DD, optional; expires is the last day shown, a date that does
+# not parse fails the run); motd.line / motd.hint (optional, generated from
+# title / url when missing). Entries past their expiry date are dropped.
+
+services:
+  - id: armbian-getting-started
+    title: "Getting started with Armbian"
+    summary: "Choose an image, write it to an SD card or eMMC, log in on first boot, move to internal storage and keep the system updated."
+    url: https://docs.armbian.com/getting-started/
+    tags: [documentation, getting-started]
+    motd:
+      line: "New to Armbian? Start here"
+
+  - id: armbian-config
+    title: "armbian-config"
+    summary: "The setup tool on every Armbian image: networking, kernels, storage, users, localisation and one-click software."
+    url: https://docs.armbian.com/config/
+    tags: [documentation, armbian-config]
+    motd:
+      line: "Set up networking, kernels, storage and apps"
+      hint: "sudo armbian-config"
+
+  - id: armbian-autoconfig
+    title: "Preconfigure the first boot"
+    summary: "Preset the root password, user, IP address and Wi-Fi before the first boot, for headless and unattended setups."
+    url: https://docs.armbian.com/user-guide/autoconfig/
+    tags: [documentation, headless]
+    motd:
+      line: "Set up boards headless with first-boot presets"
+
+  - id: armbian-documentation
+    title: "Armbian documentation"
+    summary: "Installation, configuration, software, hardware support and troubleshooting for every Armbian user."
+    url: https://docs.armbian.com/
+    tags: [documentation]
+    motd:
+      line: "Armbian documentation"
+
+  - id: armbian-status
+    title: "Armbian project status"
+    summary: "Live status of tested boards, download images, the package repository, the mirror network and the build servers."
+    url: https://docs.armbian.com/status/
+    tags: [infrastructure, status]
+    motd:
+      line: "Armbian status: boards, downloads and mirrors"
+
+  - id: armbian-forum
+    title: "Armbian forum"
+    summary: "Get help, share your projects and follow Armbian development with the community."
+    url: https://forum.armbian.com/
+    tags: [community]
+    motd:
+      line: "Questions? Ask on the Armbian forum"
+
+  - id: armbian-sponsors
+    title: "Support Armbian"
+    summary: "Armbian is built by volunteers. Sponsorship pays for build servers, test hardware and maintenance."
+    url: https://github.com/sponsors/armbian
+    tags: [support, sponsorship]
+    motd:
+      line: "Support Armbian: become a sponsor"
+
+contribute:
+  - id: armbian-github
+    title: "Contribute to Armbian"
+    summary: "The build framework, armbian-config, the imager and the documentation are all open source. Fork, open issues and send pull requests."
+    url: https://docs.armbian.com/contribute/
+    tags: [community, development]
+    motd:
+      line: "Contribute to Armbian on GitHub"
+
+  - id: armbian-board-maintainer
+    title: "Become a board maintainer"
+    summary: "Own a board you care about: test images, sign off releases and keep it supported. No development experience required."
+    url: https://docs.armbian.com/contribute/board-maintainer/
+    tags: [community, contribute]
+    motd:
+      line: "Maintain your board in Armbian"
+
+  - id: armbian-mirrors
+    title: "Host an Armbian mirror"
+    summary: "Armbian images and packages are served from mirrors worldwide. Sync over rsync, register with the redirector and speed up downloads near you."
+    url: https://docs.armbian.com/contribute/run-a-mirror/
+    tags: [infrastructure, mirrors, contribute]
+    motd:
+      line: "Host an Armbian mirror"
+
+  - id: armbian-build-server
+    title: "Donate a build server"
+    summary: "Armbian builds run on donated hardware. A machine with 16 cores and 64 GB RAM or more can host CI runners for the project."
+    url: https://docs.armbian.com/contribute/run-a-build-server/
+    tags: [infrastructure, contribute]
+    motd:
+      line: "Spare server? Host Armbian build runners"
+
+  - id: contribute-armbian-config
+    title: "Add an app to armbian-config"
+    summary: "Package a self-hosted app for everyone: test the install by hand, add a JSON menu entry and write an install and remove module for armbian-config."
+    url: https://docs.armbian.com/contribute/armbian-config/
+    tags: [contribute, armbian-config]
+    motd:
+      line: "Missing an app? Add it to armbian-config"
+
+  - id: contribute-datacenter
+    title: "Test on real hardware in the Armbian lab"
+    summary: "Board maintainers can reach the Armbian Datacenter over VPN to debug and test images on real boards, with remote power and serial console."
+    url: https://docs.armbian.com/contribute/datacenter/
+    tags: [contribute, boards, testing]
+    motd:
+      line: "Board maintainers: test in the Armbian lab"
+
+  - id: contribute-board-support
+    title: "Board support levels"
+    summary: "How Armbian supports a board: Platinum, Standard and community-maintained tiers, what each gives users and vendors, and what maintainers commit to."
+    url: https://docs.armbian.com/contribute/board-support-rules/
+    tags: [contribute, boards, vendors]
+    motd:
+      line: "How Armbian supports a board"
+
+  - id: contribute-storage
+    title: "Share test builds"
+    summary: "Armbian organization members get public storage over SFTP for test images, packages and custom builds, each with a plain download link."
+    url: https://docs.armbian.com/contribute/storage/
+    tags: [contribute, testing]
+    motd:
+      line: "Members: share test builds via Armbian storage"
+
+build:
+  - id: build-framework
+    title: "Build your own Armbian"
+    summary: "The Armbian build framework turns a board config into a complete Debian or Ubuntu image: kernel, U-Boot, root filesystem and packages, from one command."
+    url: https://docs.armbian.com/build-framework/
+    tags: [build-framework]
+    motd:
+      line: "Build your own Armbian image"
+
+  - id: build-framework-getting-started
+    title: "Build Armbian on any Linux host"
+    summary: "Clone armbian/build and run ./compile.sh on Debian 13, or anywhere with Docker. Prebuilt kernel and U-Boot artifacts are fetched from cache, so most builds are quick."
+    url: https://docs.armbian.com/build-framework/getting-started/
+    tags: [build-framework, getting-started]
+    motd:
+      line: "Build Armbian images on any Linux PC or Docker host"
+
+  - id: build-framework-userpatches
+    title: "Customize images with userpatches"
+    summary: "Add kernel and U-Boot patches, a custom kernel config, extra packages, first-boot presets and image scripts without touching the build framework itself."
+    url: https://docs.armbian.com/build-framework/user-configurations/
+    tags: [build-framework, customization]
+    motd:
+      line: "Make custom images with Armbian userpatches"
+
+  - id: build-framework-extensions
+    title: "Extend the build with hooks"
+    summary: "Extensions hook into every stage of a build with plain Bash functions, so features like ZFS, Docker or a custom bootloader stay out of the core."
+    url: https://docs.armbian.com/build-framework/extensions/
+    tags: [build-framework, extensions]
+    motd:
+      line: "Extend Armbian builds with Bash hooks"
+
+  - id: build-framework-adding-a-board
+    title: "Bring up a new board"
+    summary: "Add a board or a whole SoC family to Armbian: board config fields, family configs and a worked example."
+    url: https://docs.armbian.com/build-framework/adding-a-board/
+    tags: [build-framework, boards]
+    motd:
+      line: "Add your board to Armbian"
+
+  - id: build-framework-how-it-runs
+    title: "How an Armbian build runs"
+    summary: "From configuration to finished image: how the build framework aggregates config, reuses cached artifacts, creates the root filesystem and assembles the image."
+    url: https://docs.armbian.com/build-framework/how-a-build-runs/
+    tags: [build-framework]
+    motd:
+      line: "Inside the Armbian build framework"
