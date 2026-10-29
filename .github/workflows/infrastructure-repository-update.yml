@@ -135,18 +135,73 @@ jobs:
             TARGET="cron/"
           fi
 
-          case "$TARGET" in
-            "stable/")
-              if [ -d "${INCOMING_PATH}/stable" ]; then
-                COPY_UBOOT=false \
-                DRY_RUN=true \
-                SELECT=':edge' \
-                SRC_DIR="${{ env.INCOMING_PATH }}"/nightly/debs-beta/ \
-                DST_DIR=/tmp/x \
-                scripts/copy-kernel-packages.sh 2>&1 | tee -a $GITHUB_STEP_SUMMARY
-              else
-                echo "## Source folder INCOMING/stable does not exist, skipping" >> $GITHUB_STEP_SUMMARY
+          # Copy the kernels named in config/repository-kernel-selection.conf
+          # from incoming/stable, then drop incoming/stable.
+          ingest_stable_kernels() {
+            local ST_REPO ST_RC
+            if [ ! -d "${INCOMING_PATH}/stable" ]; then
+              echo "## No stable in incoming" >> "$GITHUB_STEP_SUMMARY"
+              return 0
+            fi
+            . config/repository-kernel-selection.conf
+            echo "## Stable kernel selection: ${KERNEL_SELECT}" >> "$GITHUB_STEP_SUMMARY"
+            for ST_REPO in debs debs-beta; do
+              [ -d "${INCOMING_PATH}/stable/${ST_REPO}" ] || continue
+              SELECT="${KERNEL_SELECT}" \
+              UBOOT_SELECT="${UBOOT_SELECT}" \
+              COPY_UBOOT="${COPY_UBOOT}" \
+              INCLUDE_LIBC_DEV="${INCLUDE_LIBC_DEV}" \
+              DRY_RUN=false \
+              SRC_DIR="${INCOMING_PATH}/stable/${ST_REPO}" \
+              DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
+              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              ST_RC=${PIPESTATUS[0]}
+              if [ "${ST_RC}" -ne 0 ]; then
+                echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
+                return 1
               fi
+            done
+            echo "## Drop incoming/stable" >> "$GITHUB_STEP_SUMMARY"
+            rm -rf "${INCOMING_PATH:?}/stable"
+          }
+
+          # Move the generic packages (base-files, firmware, bsp-cli, ...) from
+          # incoming into storage. armbian/ci uploads them there.
+          GENERIC_INCOMING="base-files"
+
+          ingest_generic_packages() {
+            local GP_DIR GP_REPO GP_RC SRC
+            for GP_DIR in ${GENERIC_INCOMING}; do
+              for GP_REPO in debs debs-beta; do
+                SRC="${INCOMING_PATH}/${GP_DIR}/${GP_REPO}"
+                if [ ! -d "${SRC}" ]; then
+                  echo "## No ${GP_DIR}/${GP_REPO} in incoming" >> "$GITHUB_STEP_SUMMARY"
+                  continue
+                fi
+                echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
+                rsync -av --remove-source-files \
+                  --include='*/' --include='*.deb' --exclude='*' \
+                  --omit-dir-times --no-perms --no-group \
+                  "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
+                  2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+                # Exit 23 (attributes not copied) is expected. Stop on other errors.
+                GP_RC=${PIPESTATUS[0]}
+                if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
+                  echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
+                  return 1
+                fi
+                find "${SRC}" -type d -empty -delete
+              done
+              rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
+            done
+          }
+
+          case "$TARGET" in
+            # base-files/ is the last step of the weekly stable chain.
+            # The cron/ target feeds the nightly repository, so it skips both.
+            "stable/"|"base-files/")
+              ingest_stable_kernels || exit 1
+              ingest_generic_packages || exit 1
               ;;
             "cron/")
               # move what is inside incoming
@@ -177,35 +232,6 @@ jobs:
               :
               ;;
           esac
-
-          # Move the generic packages (base-files, firmware, bsp-cli, ...) from
-          # incoming into storage on every run. armbian/ci uploads them there.
-          # Kernel and u-boot packages are not here: they need a selection.
-          GENERIC_INCOMING="base-files"
-
-          for GP_DIR in ${GENERIC_INCOMING}; do
-            for GP_REPO in debs debs-beta; do
-              SRC="${INCOMING_PATH}/${GP_DIR}/${GP_REPO}"
-              if [ ! -d "${SRC}" ]; then
-                echo "## No ${GP_DIR}/${GP_REPO} in incoming" >> "$GITHUB_STEP_SUMMARY"
-                continue
-              fi
-              echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
-              rsync -av --remove-source-files \
-                --include='*/' --include='*.deb' --exclude='*' \
-                --omit-dir-times --no-perms --no-group \
-                "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
-                2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-              # Exit 23 (attributes not copied) is expected. Stop on other errors.
-              GP_RC=${PIPESTATUS[0]}
-              if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
-                echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
-                exit 1
-              fi
-              find "${SRC}" -type d -empty -delete
-            done
-            rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
-          done
 
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
