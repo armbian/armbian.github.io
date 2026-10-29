@@ -178,6 +178,35 @@ jobs:
               ;;
           esac
 
+          # Move the generic packages (base-files, firmware, bsp-cli, ...) from
+          # incoming into storage on every run. armbian/ci uploads them there.
+          # Kernel and u-boot packages are not here: they need a selection.
+          GENERIC_INCOMING="base-files"
+
+          for GP_DIR in ${GENERIC_INCOMING}; do
+            for GP_REPO in debs debs-beta; do
+              SRC="${INCOMING_PATH}/${GP_DIR}/${GP_REPO}"
+              if [ ! -d "${SRC}" ]; then
+                echo "## No ${GP_DIR}/${GP_REPO} in incoming" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
+              rsync -av --remove-source-files \
+                --include='*/' --include='*.deb' --exclude='*' \
+                --omit-dir-times --no-perms --no-group \
+                "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
+                2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              # Exit 23 (attributes not copied) is expected. Stop on other errors.
+              GP_RC=${PIPESTATUS[0]}
+              if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
+                echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
+                exit 1
+              fi
+              find "${SRC}" -type d -empty -delete
+            done
+            rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
+          done
+
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
               echo "## Copy external debs "
