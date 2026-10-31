@@ -1,0 +1,1681 @@
+{
+  "version": 1,
+  "generated": "2026-10-29T12:56:25Z",
+  "failed_sources": [],
+  "entries": [
+    {
+      "id": "news-armbian-imager-2-5-is-out",
+      "type": "news",
+      "title": "Armbian Imager 2.5 is out",
+      "summary": "Armbian Imager 2.5 sets up your board from a few simple questions, double-checks your storage before it writes, and now speaks Greek and Serbian.",
+      "url": "https://blog.armbian.com/armbian-imager-2-5-is-out/",
+      "image": "https://blog.armbian.com/content/images/2026/10/armbian-imager-2.5-cover.webp",
+      "published": "2026-10-28",
+      "expires": "2026-11-27",
+      "tags": [
+        "release",
+        "Armbian imager",
+        "imager",
+        "Tools"
+      ],
+      "motd": {
+        "line": "Blog: Armbian Imager 2.5 is out",
+        "hint": "https://blog.armbian.com/armbian-imager-2-5-is-out/"
+      }
+    },
+    {
+      "id": "news-armbian-newsletter-october-2026",
+      "type": "news",
+      "title": "Armbian Newsletter October 2026",
+      "summary": "Welcome to the latest Armbian newsletter! This development cycle brings a massive wave of progress across the entire ecosystem, packed with broad new board enablement, major platform maturation, and essential tooling upgrades. Highlights include: Extensive Board Enablement...",
+      "url": "https://blog.armbian.com/armbian-newsletter-october-2026/",
+      "image": "https://blog.armbian.com/content/images/2026/10/armbian_oct_fixed.jpeg",
+      "published": "2026-10-28",
+      "expires": "2026-11-27",
+      "tags": [],
+      "motd": {
+        "line": "Blog: Armbian Newsletter October 2026",
+        "hint": "https://blog.armbian.com/armbian-newsletter-october-2026/"
+      }
+    },
+    {
+      "id": "news-your-whole-smart-home-on-a-new-board-before-the-coffee-gets-cold",
+      "type": "news",
+      "title": "Your whole smart home, on a new board, before the coffee gets cold",
+      "summary": "We moved our Home Assistant to a bigger board, and nothing needed re-pairing Our house runs on Armbian, and it has for years. Its Home Assistant setup started on an Allwinner H5 NanoPi K1 Plus. In 2025, it moved to the Rockchip NanoPi R3S LTS as soon as that",
+      "url": "https://blog.armbian.com/your-whole-smart-home-on-a-new-board-before-the-coffee-gets-cold/",
+      "image": "https://blog.armbian.com/content/images/2026/10/Home-Assistant-Hardware-Upgrade-1.png",
+      "published": "2026-10-28",
+      "expires": "2026-11-27",
+      "tags": [],
+      "motd": {
+        "line": "Blog: Your whole smart home, on a new board, before the coffee gets cold",
+        "hint": "https://blog.armbian.com/your-whole-smart-home-on-a-new-board-before-the-coffee-gets-cold/"
+      }
+    },
+    {
+      "id": "news-github-highlights-48",
+      "type": "news",
+      "title": "Github Highlights",
+      "summary": "This cycle is defined by three themes: broad new board enablement, a coordinated U-Boot v2026.10 refresh across Rockchip and Allwinner platforms, and substantial Rockchip kernel, media, and wireless work. Board support expanded on multiple SoC families, including the EasePi...",
+      "url": "https://blog.armbian.com/github-highlights-48/",
+      "image": "https://blog.armbian.com/content/images/2026/10/news_black_armbian.png",
+      "published": "2026-10-27",
+      "expires": "2026-11-26",
+      "tags": [],
+      "motd": {
+        "line": "Blog: Github Highlights (Oct 27)",
+        "hint": "https://blog.armbian.com/github-highlights-48/"
+      }
+    },
+    {
+      "id": "news-github-highlights-47",
+      "type": "news",
+      "title": "Github Highlights",
+      "summary": "This week's work centers on expanded board support, Rockchip and Realtek platform maturation, and continued refinement of installation and BSP tooling. New hardware enablement spans several SoC families. Initial build support arrives for the Altera Agilex 5 SoCDK, Banana Pi...",
+      "url": "https://blog.armbian.com/github-highlights-47/",
+      "image": "https://blog.armbian.com/content/images/2026/10/oct19_fixed.png",
+      "published": "2026-10-20",
+      "expires": "2026-11-19",
+      "tags": [],
+      "motd": {
+        "line": "Blog: Github Highlights (Oct 20)",
+        "hint": "https://blog.armbian.com/github-highlights-47/"
+      }
+    },
+    {
+      "id": "software-ABU001",
+      "type": "software",
+      "title": "Actual Budget",
+      "summary": "Do your finances with Actual Budget",
+      "url": "https://docs.armbian.com/software/actual-budget/",
+      "cmd": "armbian-config --cmd ABU001",
+      "tags": [
+        "Manage your finances",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Do your finances with Actual Budget",
+        "hint": "sudo armbian-config --cmd ABU001"
+      }
+    },
+    {
+      "id": "software-ADG001",
+      "type": "software",
+      "title": "AdGuardHome",
+      "summary": "AdGuard Home is a network-wide software that functions as a DNS server and ad blocker.",
+      "url": "https://docs.armbian.com/software/adguardhome/",
+      "cmd": "armbian-config --cmd ADG001",
+      "tags": [
+        "Network-wide ad blockers servers",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: AdGuardHome DNS sinkhole",
+        "hint": "sudo armbian-config --cmd ADG001"
+      }
+    },
+    {
+      "id": "software-APT001",
+      "type": "software",
+      "title": "apt-cacher-ng",
+      "summary": "apt-cacher-ng caches .deb files on your LAN so each apt-get install / dist-upgrade across multiple hosts only downloads each package once from the upstream mirror.",
+      "url": "https://docs.armbian.com/software/apt-cacher-ng/",
+      "cmd": "armbian-config --cmd APT001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: apt-cacher-ng caching proxy install",
+        "hint": "sudo armbian-config --cmd APT001"
+      }
+    },
+    {
+      "id": "software-ART001",
+      "type": "software",
+      "title": "CDN router",
+      "summary": "The Armbian Router is an intelligent redirector system that optimizes file downloads.",
+      "url": "https://docs.armbian.com/software/cdn-router/",
+      "cmd": "armbian-config --cmd ART001",
+      "tags": [
+        "Armbian infrastructure services",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: CDN router - Router for repository mirror automation",
+        "hint": "sudo armbian-config --cmd ART001"
+      }
+    },
+    {
+      "id": "software-AVH001",
+      "type": "software",
+      "title": "avahi-daemon",
+      "summary": "avahi-daemon hostname broadcast via mDNS",
+      "url": "https://docs.armbian.com/software/avahi-daemon/",
+      "cmd": "armbian-config --cmd AVH001",
+      "tags": [
+        "Console network tools for measuring load and bandwidth",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: avahi-daemon hostname broadcast via mDNS",
+        "hint": "sudo armbian-config --cmd AVH001"
+      }
+    },
+    {
+      "id": "software-BAZ001",
+      "type": "software",
+      "title": "Bazarr",
+      "summary": "Bazarr is a companion application to Sonarr and Radarr.",
+      "url": "https://docs.armbian.com/software/bazarr/",
+      "cmd": "armbian-config --cmd BAZ001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Bazarr automatic subtitles downloader for Sonarr and Radarr",
+        "hint": "sudo armbian-config --cmd BAZ001"
+      }
+    },
+    {
+      "id": "software-COD001",
+      "type": "software",
+      "title": "Code-server",
+      "summary": "Code-server is VS Code running on a remote server, accessible through the browser.",
+      "url": "https://docs.armbian.com/software/code-server/",
+      "cmd": "armbian-config --cmd COD001",
+      "tags": [
+        "Applications and tools for development",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Code-server VS Code in browser",
+        "hint": "sudo armbian-config --cmd COD001"
+      }
+    },
+    {
+      "id": "software-CON001",
+      "type": "software",
+      "title": "Docker",
+      "summary": "What is Docker.",
+      "url": "https://docs.armbian.com/software/docker/",
+      "cmd": "armbian-config --cmd CON001",
+      "tags": [
+        "Docker containerization and KVM virtual machines",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Docker",
+        "hint": "sudo armbian-config --cmd CON001"
+      }
+    },
+    {
+      "id": "software-CPT001",
+      "type": "software",
+      "title": "Cockpit",
+      "summary": "Cockpit is a web-based graphical interface for servers, intended for everyone.",
+      "url": "https://docs.armbian.com/software/cockpit/",
+      "cmd": "armbian-config --cmd CPT001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Cockpit OS and VM management tool",
+        "hint": "sudo armbian-config --cmd CPT001"
+      }
+    },
+    {
+      "id": "software-DAT001",
+      "type": "software",
+      "title": "Mariadb",
+      "summary": "MariaDB is a fast, open-source relational database server developed by the original creators of MySQL.",
+      "url": "https://docs.armbian.com/software/mariadb/",
+      "cmd": "armbian-config --cmd DAT001",
+      "tags": [
+        "SQL database servers and web interface managers",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Mariadb SQL database server",
+        "hint": "sudo armbian-config --cmd DAT001"
+      }
+    },
+    {
+      "id": "software-DEL001",
+      "type": "software",
+      "title": "Deluge",
+      "summary": "Deluge⁠ is a lightweight, Free Software, cross-platform BitTorrent client.",
+      "url": "https://docs.armbian.com/software/deluge/",
+      "cmd": "armbian-config --cmd DEL001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Deluge BitTorrent client",
+        "hint": "sudo armbian-config --cmd DEL001"
+      }
+    },
+    {
+      "id": "software-DOM001",
+      "type": "software",
+      "title": "Domoticz",
+      "summary": "Domoticz is an open-source home automation platform that allows you to control and monitor smart home.",
+      "url": "https://docs.armbian.com/software/domoticz/",
+      "cmd": "armbian-config --cmd DOM001",
+      "tags": [
+        "Home Automation for control home appliances",
+        "preview"
+      ],
+      "motd": {
+        "line": "App: Domoticz open source home automation",
+        "hint": "sudo armbian-config --cmd DOM001"
+      }
+    },
+    {
+      "id": "software-DOZ001",
+      "type": "software",
+      "title": "Dozzle",
+      "summary": "Dozzle is a lightweight, real-time Docker log viewer for all containers.",
+      "url": "https://docs.armbian.com/software/dozzle/",
+      "cmd": "armbian-config --cmd DOZ001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Dozzle real-time Docker log viewer",
+        "hint": "sudo armbian-config --cmd DOZ001"
+      }
+    },
+    {
+      "id": "software-DPL001",
+      "type": "software",
+      "title": "Duplicati",
+      "summary": "Duplicati is a versatile and secure backup tool designed for everyone.",
+      "url": "https://docs.armbian.com/software/duplicati/",
+      "cmd": "armbian-config --cmd DPL001",
+      "tags": [
+        "Backup solutions for your data",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Duplicati install",
+        "hint": "sudo armbian-config --cmd DPL001"
+      }
+    },
+    {
+      "id": "software-EMB001",
+      "type": "software",
+      "title": "Emby",
+      "summary": "Emby organizes video, music, live TV, and photos from personal media libraries and streams them.",
+      "url": "https://docs.armbian.com/software/emby/",
+      "cmd": "armbian-config --cmd EMB001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Emby organizes video, music, live TV, and photos",
+        "hint": "sudo armbian-config --cmd EMB001"
+      }
+    },
+    {
+      "id": "software-FIL001",
+      "type": "software",
+      "title": "Filebrowser",
+      "summary": "Filebrowser is a lightweight, web-based file manager that gives you direct access to your files.",
+      "url": "https://docs.armbian.com/software/filebrowser/",
+      "cmd": "armbian-config --cmd FIL001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Filebrowser provides a web-based file manager accessible via a...",
+        "hint": "sudo armbian-config --cmd FIL001"
+      }
+    },
+    {
+      "id": "software-GCD001",
+      "type": "software",
+      "title": "gitcdn",
+      "summary": "gitcdn is a git+http(s) proxy that mirrors an upstream git server (GitHub) on your LAN, so repeated clones/fetches of the same repo across multiple hosts only pull new objects from upstream once.",
+      "url": "https://docs.armbian.com/software/git-cdn/",
+      "cmd": "armbian-config --cmd GCD001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: gitcdn GitHub caching proxy install",
+        "hint": "sudo armbian-config --cmd GCD001"
+      }
+    },
+    {
+      "id": "software-GHR001",
+      "type": "software",
+      "title": "GH runners",
+      "summary": "This module automates the installation, removal, and status checking of GitHub self-hosted.",
+      "url": "https://docs.armbian.com/software/gh-runners/",
+      "cmd": "armbian-config --cmd GHR001",
+      "tags": [
+        "Armbian infrastructure services",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: GH runners - GitHub runners for Armbian automation",
+        "hint": "sudo armbian-config --cmd GHR001"
+      }
+    },
+    {
+      "id": "software-GIT001",
+      "type": "software",
+      "title": "Git CLI",
+      "summary": "Command-line tool for version control and source code management",
+      "url": "https://docs.armbian.com/software/git-cli/",
+      "cmd": "armbian-config --cmd GIT001",
+      "tags": [
+        "Applications and tools for development",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Git CLI - Install tools for cloning and managing repositories (git)",
+        "hint": "sudo armbian-config --cmd GIT001"
+      }
+    },
+    {
+      "id": "software-GRA001",
+      "type": "software",
+      "title": "Grafana",
+      "summary": "Grafana is a multi-platform open source analytics and interactive visualization web application.",
+      "url": "https://docs.armbian.com/software/grafana/",
+      "cmd": "armbian-config --cmd GRA001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Grafana data analytics",
+        "hint": "sudo armbian-config --cmd GRA001"
+      }
+    },
+    {
+      "id": "software-HAB001",
+      "type": "software",
+      "title": "openHAB",
+      "summary": "openHAB is a home automation platform",
+      "url": "https://docs.armbian.com/software/openhab/",
+      "cmd": "armbian-config --cmd HAB001",
+      "tags": [
+        "Home Automation for control home appliances",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: openHAB empowering the smart home",
+        "hint": "sudo armbian-config --cmd HAB001"
+      }
+    },
+    {
+      "id": "software-HAS001",
+      "type": "software",
+      "title": "Home Assistant",
+      "summary": "Home Assistant is an open source smart home platform that allows you to connect your smart home.",
+      "url": "https://docs.armbian.com/software/home-assistant/",
+      "cmd": "armbian-config --cmd HAS001",
+      "tags": [
+        "Home Automation for control home appliances",
+        "preview"
+      ],
+      "motd": {
+        "line": "App: Home Assistant open source home automation",
+        "hint": "sudo armbian-config --cmd HAS001"
+      }
+    },
+    {
+      "id": "software-HPG001",
+      "type": "software",
+      "title": "Homepage",
+      "summary": "Homepage startpage / application dashboard.",
+      "url": "https://docs.armbian.com/software/homepage/",
+      "cmd": "armbian-config --cmd HPG001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Install Homepage startpage / application dashboard",
+        "hint": "sudo armbian-config --cmd HPG001"
+      }
+    },
+    {
+      "id": "software-HPS001",
+      "type": "software",
+      "title": "Hastebin",
+      "summary": "Hastebin is a fast and simple self-hosted pastebin server.",
+      "url": "https://docs.armbian.com/software/hastebin/",
+      "cmd": "armbian-config --cmd HPS001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Hastebin Paste Server",
+        "hint": "sudo armbian-config --cmd HPS001"
+      }
+    },
+    {
+      "id": "software-IMM001",
+      "type": "software",
+      "title": "Immich",
+      "summary": "High-performance self-hosted photo and video backup solution.",
+      "url": "https://docs.armbian.com/software/immich/",
+      "cmd": "armbian-config --cmd IMM001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "preview"
+      ],
+      "motd": {
+        "line": "App: Immich - high-performance self-hosted photo and video backup...",
+        "hint": "sudo armbian-config --cmd IMM001"
+      }
+    },
+    {
+      "id": "software-IPR001",
+      "type": "software",
+      "title": "iperf3",
+      "summary": "iperf3 bandwidth measuring tool",
+      "url": "https://docs.armbian.com/software/iperf3/",
+      "cmd": "armbian-config --cmd IPR001",
+      "tags": [
+        "Console network tools for measuring load and bandwidth",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: iperf3 bandwidth measuring tool",
+        "hint": "sudo armbian-config --cmd IPR001"
+      }
+    },
+    {
+      "id": "software-IPT001",
+      "type": "software",
+      "title": "iptraf-ng",
+      "summary": "iptraf-ng IP LAN monitor",
+      "url": "https://docs.armbian.com/software/iptraf-ng/",
+      "cmd": "armbian-config --cmd IPT001",
+      "tags": [
+        "Console network tools for measuring load and bandwidth",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: iptraf-ng IP LAN monitor",
+        "hint": "sudo armbian-config --cmd IPT001"
+      }
+    },
+    {
+      "id": "software-JEL001",
+      "type": "software",
+      "title": "Jellyseerr",
+      "summary": "Jellyseerr is a free and open source software application for managing requests for your media.",
+      "url": "https://docs.armbian.com/software/jellyseerr/",
+      "cmd": "armbian-config --cmd JEL001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Jellyseerr Jellyfin/Emby/Plex integration install",
+        "hint": "sudo armbian-config --cmd JEL001"
+      }
+    },
+    {
+      "id": "software-JMS001",
+      "type": "software",
+      "title": "Jellyfin",
+      "summary": "Jellyfin is a Free Software Media System that puts you in control of managing and streaming your.",
+      "url": "https://docs.armbian.com/software/jellyfin/",
+      "cmd": "armbian-config --cmd JMS001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "preview"
+      ],
+      "motd": {
+        "line": "App: Jellyfin Media System",
+        "hint": "sudo armbian-config --cmd JMS001"
+      }
+    },
+    {
+      "id": "software-LID001",
+      "type": "software",
+      "title": "Lidarr",
+      "summary": "Lidarr is a music collection manager for Usenet and BitTorrent users.",
+      "url": "https://docs.armbian.com/software/lidarr/",
+      "cmd": "armbian-config --cmd LID001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Lidarr automatic music downloader",
+        "hint": "sudo armbian-config --cmd LID001"
+      }
+    },
+    {
+      "id": "software-MDS001",
+      "type": "software",
+      "title": "Medusa",
+      "summary": "Medusa is an automatic Video Library Manager for TV Shows.",
+      "url": "https://docs.armbian.com/software/medusa/",
+      "cmd": "armbian-config --cmd MDS001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Medusa automatic downloader for TV shows",
+        "hint": "sudo armbian-config --cmd MDS001"
+      }
+    },
+    {
+      "id": "software-MYA001",
+      "type": "software",
+      "title": "phpMyAdmin",
+      "summary": "Web-based MySQL/MariaDB administration interface for managing databases",
+      "url": "https://docs.armbian.com/software/phpmyadmin/",
+      "cmd": "armbian-config --cmd MYA001",
+      "tags": [
+        "SQL database servers and web interface managers",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: phpMyAdmin web interface manager",
+        "hint": "sudo armbian-config --cmd MYA001"
+      }
+    },
+    {
+      "id": "software-NAV001",
+      "type": "software",
+      "title": "Navidrome",
+      "summary": "Navidrome is a modern, lightweight, and self-hosted music server and streamer.",
+      "url": "https://docs.armbian.com/software/navidrome/",
+      "cmd": "armbian-config --cmd NAV001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Navidrome music server and streamer compatible with...",
+        "hint": "sudo armbian-config --cmd NAV001"
+      }
+    },
+    {
+      "id": "software-NAX001",
+      "type": "software",
+      "title": "NetAlertX",
+      "summary": "NetAlertX is an open-source network monitoring and intruder detection tool.",
+      "url": "https://docs.armbian.com/software/netalertx/",
+      "cmd": "armbian-config --cmd NAX001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: NetAlertX network scanner & notification framework",
+        "hint": "sudo armbian-config --cmd NAX001"
+      }
+    },
+    {
+      "id": "software-NCT001",
+      "type": "software",
+      "title": "Nextcloud",
+      "summary": "Nextcloud gives you access to all your files wherever you are.",
+      "url": "https://docs.armbian.com/software/nextcloud/",
+      "cmd": "armbian-config --cmd NCT001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Nextcloud content collaboration platform",
+        "hint": "sudo armbian-config --cmd NCT001"
+      }
+    },
+    {
+      "id": "software-NLD001",
+      "type": "software",
+      "title": "nload",
+      "summary": "nload - realtime console network usage monitor",
+      "url": "https://docs.armbian.com/software/nload/",
+      "cmd": "armbian-config --cmd NLD001",
+      "tags": [
+        "Console network tools for measuring load and bandwidth",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: nload - realtime console network usage monitor",
+        "hint": "sudo armbian-config --cmd NLD001"
+      }
+    },
+    {
+      "id": "software-NTD001",
+      "type": "software",
+      "title": "Netdata",
+      "summary": "Netdata is a partially open source tool designed to collect real-time metrics.",
+      "url": "https://docs.armbian.com/software/netdata/",
+      "cmd": "armbian-config --cmd NTD001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Netdata - monitoring real-time metrics",
+        "hint": "sudo armbian-config --cmd NTD001"
+      }
+    },
+    {
+      "id": "software-OCT001",
+      "type": "software",
+      "title": "OctoPrint",
+      "summary": "OctoPrint is an open source 3D printer controller application, which provides a web interface.",
+      "url": "https://docs.armbian.com/software/octoprint/",
+      "cmd": "armbian-config --cmd OCT001",
+      "tags": [
+        "Tools for printing and 3D printing",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: OctoPrint web-based 3D printers management tool",
+        "hint": "sudo armbian-config --cmd OCT001"
+      }
+    },
+    {
+      "id": "software-OMV001",
+      "type": "software",
+      "title": "OMV",
+      "summary": "OpenMediaVault (OMV) is a powerful, open-source network-attached storage (NAS) operating system.",
+      "url": "https://docs.armbian.com/software/omv/",
+      "cmd": "armbian-config --cmd OMV001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: OMV - Deploy NAS using OpenMediaVault",
+        "hint": "sudo armbian-config --cmd OMV001"
+      }
+    },
+    {
+      "id": "software-OWC001",
+      "type": "software",
+      "title": "Owncloud",
+      "summary": "ownCloud is a free and open-source software project for content collaboration and sharing.",
+      "url": "https://docs.armbian.com/software/owncloud/",
+      "cmd": "armbian-config --cmd OWC001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Owncloud share files and folders, easy and secure",
+        "hint": "sudo armbian-config --cmd OWC001"
+      }
+    },
+    {
+      "id": "software-PIH001",
+      "type": "software",
+      "title": "Pi-hole",
+      "summary": "Pi-hole is a network-wide ad blocker that acts as a DNS (Domain Name System) sinkhole.",
+      "url": "https://docs.armbian.com/software/pi-hole/",
+      "cmd": "armbian-config --cmd PIH001",
+      "tags": [
+        "Network-wide ad blockers servers",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Pi-hole DNS ad blocker with Unbound support",
+        "hint": "sudo armbian-config --cmd PIH001"
+      }
+    },
+    {
+      "id": "software-POR001",
+      "type": "software",
+      "title": "Portainer",
+      "summary": "Portainer simplifies your Docker container management via Portainer web interface.",
+      "url": "https://docs.armbian.com/software/portainer/",
+      "cmd": "armbian-config --cmd POR001",
+      "tags": [
+        "Docker containerization and KVM virtual machines",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Portainer container management platform",
+        "hint": "sudo armbian-config --cmd POR001"
+      }
+    },
+    {
+      "id": "software-PRO001",
+      "type": "software",
+      "title": "Prometheus",
+      "summary": "Prometheus is an open-source monitoring and alerting toolkit.",
+      "url": "https://docs.armbian.com/software/prometheus/",
+      "cmd": "armbian-config --cmd PRO001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Prometheus monitoring and alerting toolkit",
+        "hint": "sudo armbian-config --cmd PRO001"
+      }
+    },
+    {
+      "id": "software-PRW001",
+      "type": "software",
+      "title": "Prowlarr",
+      "summary": "Prowlarr is a indexer manager/proxy built on the popular arr.",
+      "url": "https://docs.armbian.com/software/prowlarr/",
+      "cmd": "armbian-config --cmd PRW001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Prowlarr index manager and proxy for PVR",
+        "hint": "sudo armbian-config --cmd PRW001"
+      }
+    },
+    {
+      "id": "software-PVE001",
+      "type": "software",
+      "title": "Proxmox VE",
+      "summary": "Install Proxmox VE 9 from the official repo on Debian trixie (amd64/arm64), without the Proxmox kernel.",
+      "url": "https://docs.armbian.com/software/proxmox-ve/",
+      "cmd": "armbian-config --cmd PVE001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Proxmox VE virtualization platform (keeps the Armbian kernel)",
+        "hint": "sudo armbian-config --cmd PVE001"
+      }
+    },
+    {
+      "id": "software-QBT001",
+      "type": "software",
+      "title": "qBittorrent",
+      "summary": "The Qbittorrent⁠ project aims to provide an open-source software alternative to µTorrent.",
+      "url": "https://docs.armbian.com/software/qbittorrent/",
+      "cmd": "armbian-config --cmd QBT001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: qBittorrent BitTorrent client",
+        "hint": "sudo armbian-config --cmd QBT001"
+      }
+    },
+    {
+      "id": "software-RAD001",
+      "type": "software",
+      "title": "Radarr",
+      "summary": "Radarr - A fork of Sonarr to work with movies à la Couchpotato.",
+      "url": "https://docs.armbian.com/software/radarr/",
+      "cmd": "armbian-config --cmd RAD001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Radarr automatic downloader for movies",
+        "hint": "sudo armbian-config --cmd RAD001"
+      }
+    },
+    {
+      "id": "software-REG001",
+      "type": "software",
+      "title": "registry-cache",
+      "summary": "registry-cache mirrors ghcr.io locally, so OCI artifacts (such as Armbian's cached kernel, u-boot and rootfs packages) pulled by many builds or hosts are downloaded from upstream only once.",
+      "url": "https://docs.armbian.com/software/registry-cache/",
+      "cmd": "armbian-config --cmd REG001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: registry-cache - OCI registry cache (ghcr.io mirror) install",
+        "hint": "sudo armbian-config --cmd REG001"
+      }
+    },
+    {
+      "id": "software-RSD001",
+      "type": "software",
+      "title": "Rsyncd server",
+      "summary": "Rsyncd server",
+      "url": "https://docs.armbian.com/software/rsyncd-server/",
+      "cmd": "armbian-config --cmd RSD001",
+      "tags": [
+        "Armbian infrastructure services",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Rsyncd server",
+        "hint": "sudo armbian-config --cmd RSD001"
+      }
+    },
+    {
+      "id": "software-SHL001",
+      "type": "software",
+      "title": "Shlink",
+      "summary": "Shlink self-hosted URL shortener with a REST API.",
+      "url": "https://docs.armbian.com/software/shlink/",
+      "cmd": "armbian-config --cmd SHL001",
+      "tags": [
+        "Web server, LEMP, reverse proxy, Let's Encrypt SSL",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Shlink URL shortener",
+        "hint": "sudo armbian-config --cmd SHL001"
+      }
+    },
+    {
+      "id": "software-SMB001",
+      "type": "software",
+      "title": "Samba",
+      "summary": "Samba is an open-source software suite that enables seamless file and printer sharing between.",
+      "url": "https://docs.armbian.com/software/samba/",
+      "cmd": "armbian-config --cmd SMB001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: SAMBA Remote File share",
+        "hint": "sudo armbian-config --cmd SMB001"
+      }
+    },
+    {
+      "id": "software-SON001",
+      "type": "software",
+      "title": "Sonarr",
+      "summary": "Sonarr (formerly NZBdrone) is a PVR for usenet and bittorrent users.",
+      "url": "https://docs.armbian.com/software/sonarr/",
+      "cmd": "armbian-config --cmd SON001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Sonarr automatic downloader for TV shows",
+        "hint": "sudo armbian-config --cmd SON001"
+      }
+    },
+    {
+      "id": "software-SPG001",
+      "type": "software",
+      "title": "SolidPing",
+      "summary": "SolidPing self-hosted uptime and synthetic monitoring.",
+      "url": "https://docs.armbian.com/software/solidping/",
+      "cmd": "armbian-config --cmd SPG001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: SolidPing uptime and synthetic monitoring",
+        "hint": "sudo armbian-config --cmd SPG001"
+      }
+    },
+    {
+      "id": "software-STC001",
+      "type": "software",
+      "title": "Syncthing",
+      "summary": "Syncthing replaces proprietary sync and cloud services with something open and trustworthy.",
+      "url": "https://docs.armbian.com/software/syncthing/",
+      "cmd": "armbian-config --cmd STC001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Syncthing continuous file synchronization",
+        "hint": "sudo armbian-config --cmd STC001"
+      }
+    },
+    {
+      "id": "software-STM001",
+      "type": "software",
+      "title": "Steam",
+      "summary": "On arm64, install Valve's public-beta client and an extracted FEX Arch rootfs. On amd64, install the steam-launcher package from Valve's official repository. Proton-CachyOS and Proton-GE are separate menu entries.",
+      "url": "https://docs.armbian.com/software/steam/",
+      "cmd": "armbian-config --cmd STM001",
+      "tags": [
+        "Steam",
+        "preview"
+      ],
+      "motd": {
+        "line": "App: Install Steam",
+        "hint": "sudo armbian-config --cmd STM001"
+      }
+    },
+    {
+      "id": "software-STR001",
+      "type": "software",
+      "title": "Stirling",
+      "summary": "Stirling-PDF is a robust, locally hosted web-based PDF manipulation tool.",
+      "url": "https://docs.armbian.com/software/stirling/",
+      "cmd": "armbian-config --cmd STR001",
+      "tags": [
+        "Media servers, organizers and editors",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Stirling PDF tools for viewing and editing PDF files",
+        "hint": "sudo armbian-config --cmd STR001"
+      }
+    },
+    {
+      "id": "software-TRA001",
+      "type": "software",
+      "title": "Transmission",
+      "summary": "Transmission⁠ is designed for easy, powerful use.",
+      "url": "https://docs.armbian.com/software/transmission/",
+      "cmd": "armbian-config --cmd TRA001",
+      "tags": [
+        "Download apps for movies, TV shows, music and subtitles",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Transmission BitTorrent client",
+        "hint": "sudo armbian-config --cmd TRA001"
+      }
+    },
+    {
+      "id": "software-UNB001",
+      "type": "software",
+      "title": "Unbound",
+      "summary": "Unbound is a high-performance, open-source DNS resolver.",
+      "url": "https://docs.armbian.com/software/unbound/",
+      "cmd": "armbian-config --cmd UNB001",
+      "tags": [
+        "Network-wide ad blockers servers",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Unbound caching DNS resolver",
+        "hint": "sudo armbian-config --cmd UNB001"
+      }
+    },
+    {
+      "id": "software-UPK001",
+      "type": "software",
+      "title": "Uptime Kuma",
+      "summary": "Uptime Kuma self-hosted monitoring tool.",
+      "url": "https://docs.armbian.com/software/uptime-kuma/",
+      "cmd": "armbian-config --cmd UPK001",
+      "tags": [
+        "Real-time monitoring, collecting metrics, up-time status",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Uptime Kuma self-hosted monitoring tool",
+        "hint": "sudo armbian-config --cmd UPK001"
+      }
+    },
+    {
+      "id": "software-WAL001",
+      "type": "software",
+      "title": "Wallos",
+      "summary": "Install Wallos finance tracker for subscription and expense management",
+      "url": "https://docs.armbian.com/software/wallos/",
+      "cmd": "armbian-config --cmd WAL001",
+      "tags": [
+        "Manage your finances",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Install Wallos subscription tracker",
+        "hint": "sudo armbian-config --cmd WAL001"
+      }
+    },
+    {
+      "id": "software-WBM001",
+      "type": "software",
+      "title": "Webmin",
+      "summary": "Webmin is a web-based system administration tool for Unix-like servers.",
+      "url": "https://docs.armbian.com/software/webmin/",
+      "cmd": "armbian-config --cmd WBM001",
+      "tags": [
+        "Remote File & Management tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: Webmin web-based management tool",
+        "hint": "sudo armbian-config --cmd WBM001"
+      }
+    },
+    {
+      "id": "software-WRG001",
+      "type": "software",
+      "title": "WireGuard",
+      "summary": "WireGuard is an extremely simple yet fast and modern VPN.",
+      "url": "https://docs.armbian.com/software/wireguard/",
+      "cmd": "armbian-config --cmd WRG001",
+      "tags": [
+        "Virtual Private Network tools",
+        "enabled"
+      ],
+      "motd": {
+        "line": "App: WireGuard VPN server",
+        "hint": "sudo armbian-config --cmd WRG001"
+      }
+    },
+    {
+      "id": "software-ZTR001",
+      "type": "software",
+      "title": "ZeroTier",
+      "summary": "Secure peer-to-peer virtual private network (VPN) with easy setup",
+      "url": "https://docs.armbian.com/software/zerotier/",
+      "cmd": "armbian-config --cmd ZTR001",
+      "tags": [
+        "Virtual Private Network tools",
+        "stable"
+      ],
+      "motd": {
+        "line": "App: ZeroTier connect devices over your own private network in the...",
+        "hint": "sudo armbian-config --cmd ZTR001"
+      }
+    },
+    {
+      "id": "sponsor-ahoneybun",
+      "type": "sponsor",
+      "title": "Aaron Honeycutt",
+      "summary": "Aaron Honeycutt sponsors Armbian ($5 a month).",
+      "url": "https://ahoneybun.net/",
+      "image": "https://avatars.githubusercontent.com/u/4884946?u=2fdb7e87d7a96c50f031762f20a946b48f73bcb2&v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Aaron Honeycutt for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-arkadijs",
+      "type": "sponsor",
+      "title": "Arkadi Shishlov",
+      "summary": "Arkadi Shishlov sponsors Armbian ($5 a month).",
+      "url": "https://bitbucket.org/arkadi/",
+      "image": "https://avatars.githubusercontent.com/u/1263169?v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Arkadi Shishlov for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-austinhiggs2",
+      "type": "sponsor",
+      "title": "Austin Higgs",
+      "summary": "Austin Higgs sponsors Armbian ($5 a month).",
+      "url": "about:blank",
+      "image": "https://avatars.githubusercontent.com/u/14023090?u=d5db3a82204e6cb9c7561ad36f95e7249fbbb686&v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Austin Higgs for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-beskhu",
+      "type": "sponsor",
+      "title": "Fabien Auréjac",
+      "summary": "Fabien Auréjac sponsors Armbian ($5 a month).",
+      "url": "https://www.laplumesurlatoile.com",
+      "image": "https://avatars.githubusercontent.com/u/3319343?u=4bba4da6d2282d6a81b673804ed7fa75e3591ee0&v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Fabien Auréjac for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-bfutrell70",
+      "type": "sponsor",
+      "title": "Brian Futrell",
+      "summary": "Brian Futrell sponsors Armbian ($5 a month).",
+      "url": "https://github.com/bfutrell70",
+      "image": "https://avatars.githubusercontent.com/u/14021233?v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Brian Futrell for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-egidijus",
+      "type": "sponsor",
+      "title": "Egidijus Ligeika",
+      "summary": "Egidijus Ligeika sponsors Armbian ($5 a month).",
+      "url": "http://tomato.cat/",
+      "image": "https://avatars.githubusercontent.com/u/6087967?u=714c5503aec9c3eb2ad7e0fe263832eaea7b7685&v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Egidijus Ligeika for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-ilikeorangutans",
+      "type": "sponsor",
+      "title": "Jakob Külzer",
+      "summary": "Jakob Külzer sponsors Armbian ($10 a month).",
+      "url": "http://ilikeorangutans.github.com",
+      "image": "https://avatars.githubusercontent.com/u/68387?u=5a7e4a6b793ef61869899d83e0d80d19b9452a4c&v=4",
+      "tags": [
+        "sponsor",
+        "$10 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Jakob Külzer for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-jclark",
+      "type": "sponsor",
+      "title": "James Clark",
+      "summary": "James Clark sponsors Armbian ($100 one time).",
+      "url": "http://www.jclark.com",
+      "image": "https://avatars.githubusercontent.com/u/499966?u=f010b7a8bfd81706dfecc197f699ba63019cd0ca&v=4",
+      "tags": [
+        "sponsor",
+        "$100 one time"
+      ],
+      "motd": {
+        "line": "Thanks to James Clark for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-kaidokert",
+      "type": "sponsor",
+      "title": "Kaido Kert",
+      "summary": "Kaido Kert sponsors Armbian ($20 a month).",
+      "url": "https://github.com/kaidokert",
+      "image": "https://avatars.githubusercontent.com/u/2791653?u=52e83b02d6cc0b88adee605b0b320d9b670dfc71&v=4",
+      "tags": [
+        "sponsor",
+        "$20 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Kaido Kert for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-markun8633",
+      "type": "sponsor",
+      "title": "markun8633",
+      "summary": "markun8633 sponsors Armbian ($10 a month).",
+      "url": "https://github.com/markun8633",
+      "image": "https://avatars.githubusercontent.com/u/76949963?u=158b49756848cd44d663454069c8bd99b5a34302&v=4",
+      "tags": [
+        "sponsor",
+        "$10 a month"
+      ],
+      "motd": {
+        "line": "Thanks to markun8633 for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-mastr",
+      "type": "sponsor",
+      "title": "Matthias Strubel",
+      "summary": "Matthias Strubel sponsors Armbian ($5 a month).",
+      "url": "http://www.bisquitbox.de",
+      "image": "https://avatars.githubusercontent.com/u/1036501?v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Matthias Strubel for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-naltatis",
+      "type": "sponsor",
+      "title": "Michael Geers",
+      "summary": "Michael Geers sponsors Armbian ($5 a month).",
+      "url": "https://geers.tv",
+      "image": "https://avatars.githubusercontent.com/u/152287?v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Michael Geers for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-phlak",
+      "type": "sponsor",
+      "title": "Chris Kankiewicz",
+      "summary": "Chris Kankiewicz sponsors Armbian ($5 a month).",
+      "url": "https://www.ChrisKankiewicz.com",
+      "image": "https://avatars.githubusercontent.com/u/53531?v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Chris Kankiewicz for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-ryderbaus",
+      "type": "sponsor",
+      "title": "rb",
+      "summary": "rb sponsors Armbian ($5 a month).",
+      "url": "https://github.com/ryderbaus",
+      "image": "https://avatars.githubusercontent.com/u/123962648?v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to rb for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-sowzoo",
+      "type": "sponsor",
+      "title": "Michael Barber",
+      "summary": "Michael Barber sponsors Armbian ($5 a month).",
+      "url": "https://github.com/sowzoo",
+      "image": "https://avatars.githubusercontent.com/u/146950242?u=51ab80db8b5218ab11541c5db57069057d454b8e&v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Michael Barber for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-superkali",
+      "type": "sponsor",
+      "title": "SuperKali",
+      "summary": "SuperKali sponsors Armbian ($10 a month).",
+      "url": "superkali.me",
+      "image": "https://avatars.githubusercontent.com/u/19473898?u=caecce9aa3fe6660168563b3b4addc6148510310&v=4",
+      "tags": [
+        "sponsor",
+        "$10 a month"
+      ],
+      "motd": {
+        "line": "Thanks to SuperKali for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "sponsor-telyn",
+      "type": "sponsor",
+      "title": "Telyn",
+      "summary": "Telyn sponsors Armbian ($5 a month).",
+      "url": "http://telynz.uk",
+      "image": "https://avatars.githubusercontent.com/u/175827?u=d63d39d147beecde1c04a34b2f2c5a01a74b5c25&v=4",
+      "tags": [
+        "sponsor",
+        "$5 a month"
+      ],
+      "motd": {
+        "line": "Thanks to Telyn for sponsoring Armbian",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "armbian-autoconfig",
+      "type": "service",
+      "title": "Preconfigure the first boot",
+      "summary": "Preset the root password, user, IP address and Wi-Fi before the first boot, for headless and unattended setups.",
+      "url": "https://docs.armbian.com/user-guide/autoconfig/",
+      "tags": [
+        "documentation",
+        "headless"
+      ],
+      "motd": {
+        "line": "Set up boards headless with first-boot presets",
+        "hint": "https://docs.armbian.com/user-guide/autoconfig/"
+      }
+    },
+    {
+      "id": "armbian-config",
+      "type": "service",
+      "title": "armbian-config",
+      "summary": "The setup tool on every Armbian image: networking, kernels, storage, users, localisation and one-click software.",
+      "url": "https://docs.armbian.com/config/",
+      "tags": [
+        "documentation",
+        "armbian-config"
+      ],
+      "motd": {
+        "line": "Set up networking, kernels, storage and apps",
+        "hint": "sudo armbian-config"
+      }
+    },
+    {
+      "id": "armbian-documentation",
+      "type": "service",
+      "title": "Armbian documentation",
+      "summary": "Installation, configuration, software, hardware support and troubleshooting for every Armbian user.",
+      "url": "https://docs.armbian.com/",
+      "tags": [
+        "documentation"
+      ],
+      "motd": {
+        "line": "Armbian documentation",
+        "hint": "https://docs.armbian.com/"
+      }
+    },
+    {
+      "id": "armbian-forum",
+      "type": "service",
+      "title": "Armbian forum",
+      "summary": "Get help, share your projects and follow Armbian development with the community.",
+      "url": "https://forum.armbian.com/",
+      "tags": [
+        "community"
+      ],
+      "motd": {
+        "line": "Questions? Ask on the Armbian forum",
+        "hint": "https://forum.armbian.com/"
+      }
+    },
+    {
+      "id": "armbian-getting-started",
+      "type": "service",
+      "title": "Getting started with Armbian",
+      "summary": "Choose an image, write it to an SD card or eMMC, log in on first boot, move to internal storage and keep the system updated.",
+      "url": "https://docs.armbian.com/getting-started/",
+      "tags": [
+        "documentation",
+        "getting-started"
+      ],
+      "motd": {
+        "line": "New to Armbian? Start here",
+        "hint": "https://docs.armbian.com/getting-started/"
+      }
+    },
+    {
+      "id": "armbian-sponsors",
+      "type": "service",
+      "title": "Support Armbian",
+      "summary": "Armbian is built by volunteers. Sponsorship pays for build servers, test hardware and maintenance.",
+      "url": "https://github.com/sponsors/armbian",
+      "tags": [
+        "support",
+        "sponsorship"
+      ],
+      "motd": {
+        "line": "Support Armbian: become a sponsor",
+        "hint": "https://github.com/sponsors/armbian"
+      }
+    },
+    {
+      "id": "armbian-status",
+      "type": "service",
+      "title": "Armbian project status",
+      "summary": "Live status of tested boards, download images, the package repository, the mirror network and the build servers.",
+      "url": "https://docs.armbian.com/status/",
+      "tags": [
+        "infrastructure",
+        "status"
+      ],
+      "motd": {
+        "line": "Armbian status: boards, downloads and mirrors",
+        "hint": "https://docs.armbian.com/status/"
+      }
+    },
+    {
+      "id": "armbian-board-maintainer",
+      "type": "contribute",
+      "title": "Become a board maintainer",
+      "summary": "Own a board you care about: test images, sign off releases and keep it supported. No development experience required.",
+      "url": "https://docs.armbian.com/contribute/board-maintainer/",
+      "tags": [
+        "community",
+        "contribute"
+      ],
+      "motd": {
+        "line": "Maintain your board in Armbian",
+        "hint": "https://docs.armbian.com/contribute/board-maintainer/"
+      }
+    },
+    {
+      "id": "armbian-build-server",
+      "type": "contribute",
+      "title": "Donate a build server",
+      "summary": "Armbian builds run on donated hardware. A machine with 16 cores and 64 GB RAM or more can host CI runners for the project.",
+      "url": "https://docs.armbian.com/contribute/run-a-build-server/",
+      "tags": [
+        "infrastructure",
+        "contribute"
+      ],
+      "motd": {
+        "line": "Spare server? Host Armbian build runners",
+        "hint": "https://docs.armbian.com/contribute/run-a-build-server/"
+      }
+    },
+    {
+      "id": "armbian-github",
+      "type": "contribute",
+      "title": "Contribute to Armbian",
+      "summary": "The build framework, armbian-config, the imager and the documentation are all open source. Fork, open issues and send pull requests.",
+      "url": "https://docs.armbian.com/contribute/",
+      "tags": [
+        "community",
+        "development"
+      ],
+      "motd": {
+        "line": "Contribute to Armbian on GitHub",
+        "hint": "https://docs.armbian.com/contribute/"
+      }
+    },
+    {
+      "id": "armbian-mirrors",
+      "type": "contribute",
+      "title": "Host an Armbian mirror",
+      "summary": "Armbian images and packages are served from mirrors worldwide. Sync over rsync, register with the redirector and speed up downloads near you.",
+      "url": "https://docs.armbian.com/contribute/run-a-mirror/",
+      "tags": [
+        "infrastructure",
+        "mirrors",
+        "contribute"
+      ],
+      "motd": {
+        "line": "Host an Armbian mirror",
+        "hint": "https://docs.armbian.com/contribute/run-a-mirror/"
+      }
+    },
+    {
+      "id": "contribute-armbian-config",
+      "type": "contribute",
+      "title": "Add an app to armbian-config",
+      "summary": "Package a self-hosted app for everyone: test the install by hand, add a JSON menu entry and write an install and remove module for armbian-config.",
+      "url": "https://docs.armbian.com/contribute/armbian-config/",
+      "tags": [
+        "contribute",
+        "armbian-config"
+      ],
+      "motd": {
+        "line": "Missing an app? Add it to armbian-config",
+        "hint": "https://docs.armbian.com/contribute/armbian-config/"
+      }
+    },
+    {
+      "id": "contribute-board-support",
+      "type": "contribute",
+      "title": "Board support levels",
+      "summary": "How Armbian supports a board: Platinum, Standard and community-maintained tiers, what each gives users and vendors, and what maintainers commit to.",
+      "url": "https://docs.armbian.com/contribute/board-support-rules/",
+      "tags": [
+        "contribute",
+        "boards",
+        "vendors"
+      ],
+      "motd": {
+        "line": "How Armbian supports a board",
+        "hint": "https://docs.armbian.com/contribute/board-support-rules/"
+      }
+    },
+    {
+      "id": "contribute-datacenter",
+      "type": "contribute",
+      "title": "Test on real hardware in the Armbian lab",
+      "summary": "Board maintainers can reach the Armbian Datacenter over VPN to debug and test images on real boards, with remote power and serial console.",
+      "url": "https://docs.armbian.com/contribute/datacenter/",
+      "tags": [
+        "contribute",
+        "boards",
+        "testing"
+      ],
+      "motd": {
+        "line": "Board maintainers: test in the Armbian lab",
+        "hint": "https://docs.armbian.com/contribute/datacenter/"
+      }
+    },
+    {
+      "id": "contribute-storage",
+      "type": "contribute",
+      "title": "Share test builds",
+      "summary": "Armbian organization members get public storage over SFTP for test images, packages and custom builds, each with a plain download link.",
+      "url": "https://docs.armbian.com/contribute/storage/",
+      "tags": [
+        "contribute",
+        "testing"
+      ],
+      "motd": {
+        "line": "Members: share test builds via Armbian storage",
+        "hint": "https://docs.armbian.com/contribute/storage/"
+      }
+    },
+    {
+      "id": "build-framework",
+      "type": "build",
+      "title": "Build your own Armbian",
+      "summary": "The Armbian build framework turns a board config into a complete Debian or Ubuntu image: kernel, U-Boot, root filesystem and packages, from one command.",
+      "url": "https://docs.armbian.com/build-framework/",
+      "tags": [
+        "build-framework"
+      ],
+      "motd": {
+        "line": "Build your own Armbian image",
+        "hint": "https://docs.armbian.com/build-framework/"
+      }
+    },
+    {
+      "id": "build-framework-adding-a-board",
+      "type": "build",
+      "title": "Bring up a new board",
+      "summary": "Add a board or a whole SoC family to Armbian: board config fields, family configs and a worked example.",
+      "url": "https://docs.armbian.com/build-framework/adding-a-board/",
+      "tags": [
+        "build-framework",
+        "boards"
+      ],
+      "motd": {
+        "line": "Add your board to Armbian",
+        "hint": "https://docs.armbian.com/build-framework/adding-a-board/"
+      }
+    },
+    {
+      "id": "build-framework-extensions",
+      "type": "build",
+      "title": "Extend the build with hooks",
+      "summary": "Extensions hook into every stage of a build with plain Bash functions, so features like ZFS, Docker or a custom bootloader stay out of the core.",
+      "url": "https://docs.armbian.com/build-framework/extensions/",
+      "tags": [
+        "build-framework",
+        "extensions"
+      ],
+      "motd": {
+        "line": "Extend Armbian builds with Bash hooks",
+        "hint": "https://docs.armbian.com/build-framework/extensions/"
+      }
+    },
+    {
+      "id": "build-framework-getting-started",
+      "type": "build",
+      "title": "Build Armbian on any Linux host",
+      "summary": "Clone armbian/build and run ./compile.sh on Debian 13, or anywhere with Docker. Prebuilt kernel and U-Boot artifacts are fetched from cache, so most builds are quick.",
+      "url": "https://docs.armbian.com/build-framework/getting-started/",
+      "tags": [
+        "build-framework",
+        "getting-started"
+      ],
+      "motd": {
+        "line": "Build Armbian images on any Linux PC or Docker host",
+        "hint": "https://docs.armbian.com/build-framework/getting-started/"
+      }
+    },
+    {
+      "id": "build-framework-how-it-runs",
+      "type": "build",
+      "title": "How an Armbian build runs",
+      "summary": "From configuration to finished image: how the build framework aggregates config, reuses cached artifacts, creates the root filesystem and assembles the image.",
+      "url": "https://docs.armbian.com/build-framework/how-a-build-runs/",
+      "tags": [
+        "build-framework"
+      ],
+      "motd": {
+        "line": "Inside the Armbian build framework",
+        "hint": "https://docs.armbian.com/build-framework/how-a-build-runs/"
+      }
+    },
+    {
+      "id": "build-framework-userpatches",
+      "type": "build",
+      "title": "Customize images with userpatches",
+      "summary": "Add kernel and U-Boot patches, a custom kernel config, extra packages, first-boot presets and image scripts without touching the build framework itself.",
+      "url": "https://docs.armbian.com/build-framework/user-configurations/",
+      "tags": [
+        "build-framework",
+        "customization"
+      ],
+      "motd": {
+        "line": "Make custom images with Armbian userpatches",
+        "hint": "https://docs.armbian.com/build-framework/user-configurations/"
+      }
+    }
+  ]
+}

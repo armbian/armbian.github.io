@@ -1,0 +1,60 @@
+{
+  "organization": "armbian",
+  "repository": "shallow",
+  "actions": [
+    {
+      "name": "Generate shallow Linux kernel bundles",
+      "filename": "maintenance-git-trees-oras.yml",
+      "category": "Maintenance",
+      "description": "AI description failed: fetch failed",
+      "execution_method": "Triggered on: schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/shallow/actions/workflows/maintenance-git-trees-oras.yml",
+      "script_link": "https://github.com/armbian/shallow/blob/main/.github/workflows/maintenance-git-trees-oras.yml",
+      "filelength": 4479,
+      "edited": "2026-10-30T08:57:13.000Z",
+      "executed": "2026-10-31T07:05:40Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 1962,
+      "last_run_duration_seconds": 1962,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 1:00"
+    },
+    {
+      "name": "Generate u-boot git tree",
+      "filename": "maintenance-git-trees-uboot-oras.yml",
+      "category": "Maintenance",
+      "description": "AI description failed: fetch failed",
+      "execution_method": "Triggered on: schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/shallow/actions/workflows/maintenance-git-trees-uboot-oras.yml",
+      "script_link": "https://github.com/armbian/shallow/blob/main/.github/workflows/maintenance-git-trees-uboot-oras.yml",
+      "filelength": 2931,
+      "edited": "2026-08-27T13:26:53.000Z",
+      "executed": "2026-10-31T09:14:22Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 82,
+      "last_run_duration_seconds": 82,
+      "total_runs": 10,
+      "cron_schedule": "at 0 minutes past the hour, at 3:00"
+    },
+    {
+      "name": "Watchdog",
+      "filename": "maintenance-watchdog.yml",
+      "category": "Maintenance",
+      "description": "AI description failed: fetch failed",
+      "execution_method": "Triggered on: schedule, workflow_dispatch",
+      "status_link": "https://github.com/armbian/shallow/actions/workflows/maintenance-watchdog.yml",
+      "script_link": "https://github.com/armbian/shallow/blob/main/.github/workflows/maintenance-watchdog.yml",
+      "filelength": 3132,
+      "edited": "2026-08-27T13:26:53.000Z",
+      "executed": "2026-10-31T18:59:52Z",
+      "last_run_status": "success",
+      "retry_count": 0,
+      "total_run_time_seconds": 7,
+      "last_run_duration_seconds": 7,
+      "total_runs": 10,
+      "cron_schedule": "every 30 minutes"
+    }
+  ]
+}
