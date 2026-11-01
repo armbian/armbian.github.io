@@ -6,6 +6,6 @@ This is a generic UEFI image for Cix P1 (CD8180/CD8160) boards. It boots with AC
 
 ## Installation
 
-1. Write the image to a USB drive.
+1. Write the image to a USB drive. See [Writing the image](https://docs.armbian.com/getting-started/writing-the-image/).
 2. Insert the USB drive and power on the board.
 3. The UEFI firmware starts GRUB from the USB drive. GRUB starts Armbian.
