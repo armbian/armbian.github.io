@@ -27,9 +27,7 @@ import yaml
 # moving from forky to whatever the next Debian testing is) becomes a
 # single flag flip, not a 30-place codename rename, and the four output
 # files (standard / nightly / community / apps) can each be on their
-# own (debian, ubuntu) pair — e.g. standard on trixie + noble while
-# nightly is on forky + resolute, which is exactly the current state
-# the defaults below preserve.
+# own (debian, ubuntu) pair.
 RELEASE_TOKEN_DEBIAN = "DEBIAN"
 RELEASE_TOKEN_UBUNTU = "UBUNTU"
 
@@ -48,7 +46,7 @@ RISCV64_UBUNTU_CODENAME = "noble"
 # with no flags reproduces the previous behaviour exactly.
 SCOPE_DEFAULTS = {
     "standard":  {"debian": "trixie", "ubuntu": "resolute"},
-    "nightly":   {"debian": "forky",  "ubuntu": "resolute"},
+    "nightly":   {"debian": "trixie", "ubuntu": "resolute"},
     "community": {"debian": "trixie", "ubuntu": "resolute"},
     "apps":      {"debian": "trixie", "ubuntu": "noble"},
 }
@@ -1434,12 +1432,9 @@ targets:
 
 def generate_nightly_yaml(conf_wip_boards, manual_content=""):
     """
-    Generate nightly.yml with:
-    - One minimal Debian Forky CLI image for all boards
-    - For fast HDMI: Ubuntu Resolute GNOME desktop
-    - For slow HDMI: Ubuntu Resolute XFCE desktop
-    - For headless and exotics (riscv64, loongarch): Ubuntu Resolute minimal CLI
-    One image per board for conf/wip boards.
+    Generate nightly.yml with minimal CLI images only, no desktops:
+    - Debian minimal for all boards
+    - Ubuntu minimal for all boards except loongarch
     Separates fast, slow, riscv64, loongarch, and headless boards based on CPU performance.
     manual_content: Additional YAML to append inside the targets section
     """
@@ -1496,7 +1491,7 @@ def generate_nightly_yaml(conf_wip_boards, manual_content=""):
 
 targets:
   # Debian minimal CLI for all boards
-  nightly-forky-all:
+  nightly-debian-minimal:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
@@ -1508,7 +1503,6 @@ targets:
       BUILD_DESKTOP: "no"
     items:
 """
-    # Combine all lists for Debian Forky
     yaml += '      - *nightly-fast-hdmi\n'
     if slow_boards:
         yaml += '      - *nightly-slow-hdmi\n'
@@ -1520,68 +1514,8 @@ targets:
         yaml += '      - *nightly-loongarch\n'
 
     yaml += """
-  # Ubuntu GNOME desktop for fast HDMI boards
-  nightly-resolute-gnome:
-    enabled: yes
-    configs: [ armbian-images ]
-    pipeline:
-      gha: *armbian-gha
-    build-image: "yes"
-    vars:
-      RELEASE: UBUNTU
-      BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "gnome"
-      DESKTOP_TIER: "minimal"
-    items:
-      - *nightly-fast-hdmi
-"""
-
-    # Ubuntu XFCE desktop for slow HDMI boards
-    if slow_boards:
-        yaml += """
-  # Ubuntu XFCE desktop for slow HDMI boards
-  nightly-resolute-xfce:
-    enabled: yes
-    configs: [ armbian-images ]
-    pipeline:
-      gha: *armbian-gha
-    build-image: "yes"
-    vars:
-      RELEASE: UBUNTU
-      BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_TIER: "minimal"
-    items:
-      - *nightly-slow-hdmi
-"""
-
-    # Ubuntu XFCE desktop for RISC-V boards
-    if riscv64_boards:
-        yaml += """
-  # Ubuntu XFCE desktop for RISC-V boards (noble; resolute riscv64 is broken)
-  nightly-resolute-riscv64-xfce:
-    enabled: yes
-    configs: [ armbian-images ]
-    pipeline:
-      gha: *armbian-gha
-    build-image: "yes"
-    vars:
-      RELEASE: UBUNTU_RISCV64
-      BUILD_MINIMAL: "no"
-      BUILD_DESKTOP: "yes"
-      DESKTOP_ENVIRONMENT: "xfce"
-      DESKTOP_TIER: "minimal"
-    items:
-      - *nightly-riscv64
-"""
-
-    # Ubuntu minimal CLI for headless boards only
-    if headless_boards:
-        yaml += """
-  # Ubuntu minimal CLI for headless boards
-  nightly-resolute-minimal:
+  # Ubuntu minimal CLI for all boards except riscv64 and loongarch
+  nightly-ubuntu-minimal:
     enabled: yes
     configs: [ armbian-images ]
     pipeline:
@@ -1592,10 +1526,32 @@ targets:
       BUILD_MINIMAL: "yes"
       BUILD_DESKTOP: "no"
     items:
-      - *nightly-headless
+"""
+    yaml += '      - *nightly-fast-hdmi\n'
+    if slow_boards:
+        yaml += '      - *nightly-slow-hdmi\n'
+    if headless_boards:
+        yaml += '      - *nightly-headless\n'
+
+    # Ubuntu minimal CLI for RISC-V boards
+    if riscv64_boards:
+        yaml += """
+  # Ubuntu minimal CLI for RISC-V boards (noble; resolute riscv64 is broken)
+  nightly-ubuntu-riscv64-minimal:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: UBUNTU_RISCV64
+      BUILD_MINIMAL: "yes"
+      BUILD_DESKTOP: "no"
+    items:
+      - *nightly-riscv64
 """
 
-    # Note: loongarch boards don't get resolute images, only bookworm minimal
+    # Note: loongarch boards get no Ubuntu image, only Debian minimal
 
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:

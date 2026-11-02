@@ -19,7 +19,7 @@ on:
       debian_nightly:
         description: "Debian codename for nightly builds"
         required: false
-        default: "forky"
+        default: "trixie"
       ubuntu_nightly:
         description: "Ubuntu codename for nightly builds"
         required: false
@@ -108,7 +108,7 @@ jobs:
           python3 scripts/generate_targets.py image-info.json release-targets \
             --debian-standard  "${{ inputs.debian_standard  || 'trixie'   }}" \
             --ubuntu-standard  "${{ inputs.ubuntu_standard  || 'resolute' }}" \
-            --debian-nightly   "${{ inputs.debian_nightly   || 'forky'    }}" \
+            --debian-nightly   "${{ inputs.debian_nightly   || 'trixie'   }}" \
             --ubuntu-nightly   "${{ inputs.ubuntu_nightly   || 'resolute' }}" \
             --debian-community "${{ inputs.debian_community || 'trixie'   }}" \
             --ubuntu-community "${{ inputs.ubuntu_community || 'resolute' }}" \
