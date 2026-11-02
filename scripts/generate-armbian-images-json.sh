@@ -473,6 +473,14 @@ extract_file_extension() {
     return
   fi
 
+  # companion files exported next to the image:
+  #   ...minimal.bl2.img.xz  -> bl2.img.xz
+  #   ...minimal.fip.bin.xz  -> fip.bin.xz
+  if [[ "$n" =~ \.([a-z][a-z0-9-]*)\.(img|bin)(\.(xz|gz|zst))?$ ]]; then
+    echo "${BASH_REMATCH[1]}.${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
+    return
+  fi
+
   # qcow2 (or other img.*) -> canonical img.<rest>
   if [[ "$n" == *".img."* ]]; then
     echo "img.${n##*.img.}"
@@ -715,7 +723,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
 # JSON generation
 # -----------------------------------------------------------------------------
 {
-  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"board_introduced"|"company_name"|"company_website"|"company_logo"|"board_pinout"|"board_schematic"|"board_instructions"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
+  echo '"board_slug"|"board_name"|"board_vendor"|"board_support"|"board_introduced"|"company_name"|"company_website"|"company_logo"|"board_pinout"|"board_schematic"|"board_instructions"|"armbian_version"|"file_url"|"file_url_asc"|"file_url_sha"|"file_url_torrent"|"redi_url"|"redi_url_asc"|"redi_url_sha"|"redi_url_torrent"|"file_size"|"file_date"|"distro"|"branch"|"variant"|"file_application"|"promoted"|"download_repository"|"file_extension"|"file_companion"|"kernel_version"|"platinum"|"platinum_expired"|"platinum_until"'
 
   while IFS="|" read -r SIZE URL DATE; do
     IMAGE_SIZE="${SIZE//[.,]/}"
@@ -779,6 +787,18 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     # ignore non-boot pseudo prefixes
     case "$BOOT_SUFFIX" in
       ""|img|oowow|fip) BOOT_SUFFIX="";;
+    esac
+    # Companion binaries take their type as suffix, e.g. "fip" from "fip.bin.xz"
+    case "$FILE_EXTENSION" in
+      u-boot.*|lk.bin*) ;;
+      *.bin|*.bin.*) BOOT_SUFFIX="${FILE_EXTENSION%%.bin*}";;
+    esac
+
+    # Companion type of files shipped next to the main image, empty for the image itself
+    FILE_COMPANION=""
+    case "$FILE_EXTENSION" in
+      img|img.*|rootfs.*|oowow.*|burn.*|hyperv.*|iso*|tar.*) ;;
+      *.img|*.img.*|*.bin|*.bin.*|u-boot.rom*) FILE_COMPANION="${FILE_EXTENSION%%.*}";;
     esac
 
     # U-Boot ROM suffix
@@ -861,7 +881,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
       fi
     fi
     if [[ -z "${HIDDEN_BOARDS[$BOARD_SLUG]:-}" ]]; then
-      echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${B_PINOUT}|${B_SCHEMATIC}|${B_INSTRUCTIONS}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
+      echo "${BOARD_SLUG}|${BOARD_NAME_MAP[$BOARD_SLUG]:-}|${BOARD_VENDOR}|${BOARD_SUPPORT}|${BOARD_INTRODUCED_MAP[$BOARD_SLUG]:-}|${C_NAME}|${C_WEB}|${C_LOGO}|${B_PINOUT}|${B_SCHEMATIC}|${B_INSTRUCTIONS}|${VER}|${FILE_URL}|${ASC}|${SHA}|${TOR}|${REDI_URL}|${REDI_URL}.asc|${REDI_URL}.sha|${REDI_URL}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${PROMOTED}|${REPO}|${FILE_EXTENSION}|${FILE_COMPANION}|${KERNEL_VERSION}|${PLAT}|${PLAT_EXPIRED}|${PLAT_UNTIL}"
     fi
 
     # Check if this board is used by any reusable boards
@@ -952,7 +972,7 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
         fi
 
         # Output for reusable board
-        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${BOARD_INTRODUCED_MAP[$reusable_slug]:-}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${reusable_pinout}|${reusable_schematic}|${reusable_instructions}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
+        echo "${reusable_slug}|${reusable_name}|${reusable_vendor}|${reusable_support}|${BOARD_INTRODUCED_MAP[$reusable_slug]:-}|${reusable_c_name}|${reusable_c_web}|${reusable_c_logo}|${reusable_pinout}|${reusable_schematic}|${reusable_instructions}|${VER}|${FILE_URL}|${reusable_asc}|${reusable_sha}|${reusable_tor}|${reusable_redi_url}|${reusable_redi_url}.asc|${reusable_redi_url}.sha|${reusable_redi_url}.torrent|${IMAGE_SIZE}|${DATE}|${DISTRO}|${BRANCH}|${VARIANT}|${APP}|${reusable_promoted}|${REPO}|${FILE_EXTENSION}|${FILE_COMPANION}|${KERNEL_VERSION}|${reusable_plat}|${reusable_plat_expired}|${reusable_plat_until}"
       fi
     done
   done <"$feed"
