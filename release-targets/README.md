@@ -177,7 +177,7 @@ python3 scripts/generate_targets.py image-info.json release-targets/ \
 |---|---|---|
 | `--debian-standard` | `trixie` | `targets-release-standard-support.yaml` |
 | `--ubuntu-standard` | `resolute` | `targets-release-standard-support.yaml` |
-| `--debian-nightly` | `forky` | `targets-release-nightly.yaml` |
+| `--debian-nightly` | `trixie` | `targets-release-nightly.yaml` |
 | `--ubuntu-nightly` | `resolute` | `targets-release-nightly.yaml` |
 | `--debian-community` | `trixie` | `targets-release-community-maintained.yaml` |
 | `--ubuntu-community` | `resolute` | `targets-release-community-maintained.yaml` |
