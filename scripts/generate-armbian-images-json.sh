@@ -780,8 +780,8 @@ cat "$tmpdir/a.txt" "$tmpdir/bcd.txt" >"$feed"
     # Boot "flavor" suffix comes from FILE_EXTENSION like "boe.img.xz"
     BOOT_SUFFIX=""
     case "$FILE_EXTENSION" in
-      *.img.*)
-        BOOT_SUFFIX="${FILE_EXTENSION%%.img.*}"   # e.g. "boe" from "boe.img.xz"
+      *.img|*.img.*)
+        BOOT_SUFFIX="${FILE_EXTENSION%%.img*}"   # e.g. "boe" from "boe.img.xz"
         ;;
     esac
     # ignore non-boot pseudo prefixes
