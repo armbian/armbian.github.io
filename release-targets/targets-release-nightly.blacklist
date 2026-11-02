@@ -4,12 +4,10 @@
 # (.conf / .wip) board. List a board here only to skip it.
 #
 # Boards built from targets-release-nightly.manual instead:
-#   - uefi-*: cloud images
+#   - uefi-arm64, uefi-x86: cloud images
 #   - khadas-vim1s, khadas-vim4: edge images with the oowow extension
 #
 uefi-arm64
-uefi-arm64-dt
-uefi-loong64
 uefi-x86
 khadas-vim1s
 khadas-vim4
