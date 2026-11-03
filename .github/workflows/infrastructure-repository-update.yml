@@ -1,6 +1,11 @@
 name: "Infrastructure: APT repositories update"
 on:
   workflow_dispatch:
+    inputs:
+      build_ref:
+        description: "armbian/build branch for the repository tools (test a change)"
+        type: string
+        default: main
   repository_dispatch:
     types: ["Repository update"]
 
@@ -273,6 +278,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: armbian/build
+          ref: ${{ inputs.build_ref || 'main' }}
           path: build
           clean: false
 
@@ -496,7 +502,7 @@ jobs:
         with:
           repository: armbian/build
           fetch-depth: 1
-          ref: main
+          ref: ${{ inputs.build_ref || 'main' }}
           clean: false
 
       - name: "Update repository ${{ matrix.repository.name }}"
