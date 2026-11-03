@@ -182,6 +182,34 @@ jobs:
             done
           }
 
+          # Do not copy while CI uploads to incoming (armbian/ci, marker
+          # .locks/upload-<epoch>-<run>). Our marker .locks/copying-<epoch>-<run>
+          # makes new uploads wait. Mark first, then wait: an upload that
+          # starts at the same moment sees our marker and backs off.
+          # A marker older than 2 hours is from a dead job.
+          LOCKS="${INCOMING_PATH}/.locks"
+          sudo mkdir -p "${LOCKS}"
+          sudo chmod 1777 "${LOCKS}"
+          COPYING="${LOCKS}/copying-$(date +%s)-${GITHUB_RUN_ID}"
+          sudo touch "${COPYING}"
+          trap 'sudo rm -f "${COPYING}"' EXIT
+          for i in $(seq 1 60); do
+            uploads=0
+            for f in "${LOCKS}"/upload-*; do
+              [ -e "$f" ] || continue
+              t="${f##*/upload-}"; t="${t%%-*}"
+              if [[ "$t" =~ ^[0-9]+$ ]] && [ $(( $(date +%s) - t )) -lt 7200 ]; then
+                uploads=$((uploads + 1))
+              else
+                sudo rm -f "$f"
+              fi
+            done
+            [ "${uploads}" = "0" ] && break
+            [ "$i" = "60" ] && { echo "::warning::CI upload still running after 30 min: copying the files that are there"; break; }
+            echo "CI upload: ${uploads} running, waiting"
+            sleep 30
+          done
+
           case "$TARGET" in
             # base-files/ is the daily base-files build. It also ingests stable
             # kernels when a stable/ run was cancelled in the concurrency queue.
@@ -219,6 +247,8 @@ jobs:
               :
               ;;
           esac
+          # incoming is copied: CI can upload again.
+          sudo rm -f "${COPYING}"
 
           # External packages: armbian/external (Sync) keeps the current set in
           # incoming/external-next. Each Sync shard writes .sync/shard-<n>.json
