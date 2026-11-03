@@ -154,15 +154,23 @@ jobs:
               DRY_RUN=false \
               SRC_DIR="${INCOMING_PATH}/stable/${ST_REPO}" \
               DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
-              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" "${RUNNER_TEMP}/copy-${ST_REPO}.log"
               ST_RC=${PIPESTATUS[0]}
               if [ "${ST_RC}" -ne 0 ]; then
                 echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
                 return 1
               fi
+              # The script only reports missing packages. A missing kernel image
+              # must stop here, before incoming/stable is removed.
+              if grep -q "MISSING: linux-image-" "${RUNNER_TEMP}/copy-${ST_REPO}.log"; then
+                echo "::error::stable/${ST_REPO}: a selected kernel image is missing. incoming/stable is kept."
+                return 1
+              fi
             done
             echo "## Drop incoming/stable" >> "$GITHUB_STEP_SUMMARY"
             rm -rf "${INCOMING_PATH:?}/stable"
+            # Publish stable on this run, also when the target is not stable/.
+            sudo touch "${STORAGE_PATH}/debs/.stable-ingested"
           }
 
           # Move the generic packages (base-files, firmware, bsp-cli, ...) from
@@ -197,7 +205,8 @@ jobs:
           }
 
           case "$TARGET" in
-            # base-files/ is the last step of the weekly stable chain.
+            # base-files/ is the daily base-files build. It also ingests stable
+            # kernels when a stable/ run was cancelled in the concurrency queue.
             # The cron/ target feeds the nightly repository, so it skips both.
             "stable/"|"base-files/")
               ingest_stable_kernels || exit 1
@@ -556,6 +565,11 @@ jobs:
           # publish every run.
           INTERVAL_DAYS="${{ vars.STABLE_REPOSITORY_UPDATE }}"
           TARGET="${{ github.event.client_payload.target }}"
+          # Stable kernels were ingested on this run: publish as for stable/.
+          if [ "$REPO_NAME" = "debs" ] && [ -f "${INPUT_DIR}/.stable-ingested" ]; then
+            sudo rm -f "${INPUT_DIR}/.stable-ingested"
+            TARGET="stable/"
+          fi
           if [ "$REPO_NAME" = "debs" ] && [ "${INTERVAL_DAYS:-0}" -gt 0 ] && [ "$TARGET" != "stable/" ]; then
             LAST=$(find "$OUTPUT_DIR/public/dists" -maxdepth 2 -name InRelease -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
             if [ -n "$LAST" ]; then
