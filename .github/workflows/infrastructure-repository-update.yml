@@ -306,7 +306,8 @@ jobs:
               2>&1 | tee "${RUNNER_TEMP}/external-${REPO}.log" || \
               echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
             # --stats counts only completed transfers; -v lists a name before its data.
-            echo "$(sed -n 's/^Number of regular files transferred: //p' "${RUNNER_TEMP}/external-${REPO}.log") files copied" >> "$GITHUB_STEP_SUMMARY"
+            copied="$(sed -n 's/^Number of regular files transferred: //p' "${RUNNER_TEMP}/external-${REPO}.log")"
+            echo "${copied:-unknown} files copied" >> "$GITHUB_STEP_SUMMARY"
           done
 
   prepare-repos:
