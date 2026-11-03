@@ -368,6 +368,9 @@ jobs:
       matrix:
         repository:
           - name: debs
+          # Beta keeps its aptly database between runs: each runner user
+          # must be able to open it.
+          - name: debs-beta
     steps:
       - name: "Set group write permissions for ${{ matrix.repository.name }}"
         shell: bash
