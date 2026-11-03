@@ -203,13 +203,9 @@ jobs:
                 echo "## Rsync $(wc -l < "${CRON_LIST}") files from INCOMING/cron to STORAGE_PATH" >> $GITHUB_STEP_SUMMARY
                 rsync -av --omit-dir-times --no-perms --no-group --files-from="${CRON_LIST}" \
                   "${INCOMING_PATH}/cron/" "${STORAGE_PATH}/" 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
-                # Remove a file only when storage has it with the same size.
                 # sudo: the upload user owns these files, not the runner user.
                 echo "## Removing copied files from INCOMING/cron" >> $GITHUB_STEP_SUMMARY
-                while IFS= read -r f; do
-                  [ "$(stat -c %s "${INCOMING_PATH}/cron/${f}")" = "$(stat -c %s "${STORAGE_PATH}/${f}" 2>/dev/null)" ] \
-                    && printf '%s\0' "${INCOMING_PATH}/cron/${f}"
-                done < "${CRON_LIST}" | sudo xargs -r -0 rm -f --
+                (cd "${INCOMING_PATH}/cron" && sudo xargs -r -d '\n' rm -f -- < "${CRON_LIST}")
                 sudo find "${INCOMING_PATH}/cron" -mindepth 1 -type d -empty -delete
               else
                 echo "## Source folder INCOMING/cron does not exist, skipping" >> $GITHUB_STEP_SUMMARY
