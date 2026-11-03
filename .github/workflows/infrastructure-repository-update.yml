@@ -536,11 +536,16 @@ jobs:
               AGE_DAYS=$(( ( $(date +%s) - ${LAST%.*} ) / 86400 ))
               if [ "$AGE_DAYS" -lt "$INTERVAL_DAYS" ]; then
                 echo "::notice::Stable repository published ${AGE_DAYS} day(s) ago, less than ${INTERVAL_DAYS}: skipping" | tee -a "$GITHUB_STEP_SUMMARY"
+                # Tell cleanup to keep the packages for the next publish.
+                sudo touch "${INPUT_DIR}/.publish-skipped"
                 exit 0
               fi
               echo "Stable repository published ${AGE_DAYS} day(s) ago: updating" | tee -a "$GITHUB_STEP_SUMMARY"
             fi
           fi
+
+          # This run publishes: cleanup can remove the packages.
+          sudo rm -f "${INPUT_DIR}/.publish-skipped"
 
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
@@ -608,6 +613,13 @@ jobs:
           if [ -f "${INPUT_DIR}" ]; then
             echo "::error::Path exists but is a file, not a directory: $INPUT_DIR"
             exit 1
+          fi
+
+          # update-repository skipped the publish: keep the packages for the next one.
+          if [ -f "${INPUT_DIR}/.publish-skipped" ]; then
+            sudo rm -f "${INPUT_DIR}/.publish-skipped"
+            echo "Publish skipped: keeping the packages" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
           # Count .deb files before deletion (use sudo since files are owned by different user)
