@@ -178,6 +178,46 @@ jobs:
               ;;
           esac
 
+          # Move the generic packages (base-files, firmware, bsp-cli, ...) from
+          # incoming into storage on every run. armbian/ci uploads them there.
+          # Kernel and u-boot packages are not here: they need a selection.
+          GENERIC_INCOMING="base-files"
+
+          for GP_DIR in ${GENERIC_INCOMING}; do
+            for GP_REPO in debs debs-beta; do
+              SRC="${INCOMING_PATH}/${GP_DIR}/${GP_REPO}"
+              if [ ! -d "${SRC}" ]; then
+                echo "## No ${GP_DIR}/${GP_REPO} in incoming" >> "$GITHUB_STEP_SUMMARY"
+                continue
+              fi
+              echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
+              rsync -av --remove-source-files \
+                --include='*/' --include='*.deb' --exclude='*' \
+                --omit-dir-times --no-perms --no-group \
+                "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
+                2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+              GP_RC=${PIPESTATUS[0]}
+              if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
+                echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
+                exit 1
+              fi
+              # Exit 23 is a partial transfer. rsync keeps each source .deb that it
+              # did not move. Same content in storage: only an attribute failed.
+              if [ "${GP_RC}" -eq 23 ]; then
+                while IFS= read -r -d '' GP_DEB; do
+                  if cmp -s "${GP_DEB}" "${STORAGE_PATH}/${GP_REPO}/${GP_DEB#"${SRC}/"}"; then
+                    rm -f "${GP_DEB}"
+                  else
+                    echo "::error::${GP_DEB#"${SRC}/"} did not reach storage"
+                    exit 1
+                  fi
+                done < <(find "${SRC}" -type f -name '*.deb' -print0)
+              fi
+              find "${SRC}" -type d -empty -delete
+            done
+            rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
+          done
+
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
               echo "## Copy external debs "
@@ -507,11 +547,16 @@ jobs:
               AGE_DAYS=$(( ( $(date +%s) - ${LAST%.*} ) / 86400 ))
               if [ "$AGE_DAYS" -lt "$INTERVAL_DAYS" ]; then
                 echo "::notice::Stable repository published ${AGE_DAYS} day(s) ago, less than ${INTERVAL_DAYS}: skipping" | tee -a "$GITHUB_STEP_SUMMARY"
+                # Tell cleanup to keep the packages for the next publish.
+                sudo touch "${INPUT_DIR}/.publish-skipped"
                 exit 0
               fi
               echo "Stable repository published ${AGE_DAYS} day(s) ago: updating" | tee -a "$GITHUB_STEP_SUMMARY"
             fi
           fi
+
+          # This run publishes: cleanup can remove the packages.
+          sudo rm -f "${INPUT_DIR}/.publish-skipped"
 
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
@@ -579,6 +624,13 @@ jobs:
           if [ -f "${INPUT_DIR}" ]; then
             echo "::error::Path exists but is a file, not a directory: $INPUT_DIR"
             exit 1
+          fi
+
+          # update-repository skipped the publish: keep the packages for the next one.
+          if [ -f "${INPUT_DIR}/.publish-skipped" ]; then
+            sudo rm -f "${INPUT_DIR}/.publish-skipped"
+            echo "Publish skipped: keeping the packages" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
 
           # Count .deb files before deletion (use sudo since files are owned by different user)
