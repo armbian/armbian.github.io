@@ -6,6 +6,10 @@ on:
         description: "armbian/build branch for the repository tools (test a change)"
         type: string
         default: main
+      publish_stable:
+        description: "Publish stable now: run as a build-all-stable update (target stable/)"
+        type: boolean
+        default: false
       rebuild_beta:
         description: "Rebuild the beta repository from scratch (recovery)"
         type: boolean
@@ -96,7 +100,7 @@ jobs:
       - name: Copy operations
         run: |
 
-          TARGET="${{ github.event.client_payload.target }}"
+          TARGET="${{ inputs.publish_stable && 'stable/' || github.event.client_payload.target }}"
           # Default to cron/ if target is not set
           if [ -z "$TARGET" ]; then
             TARGET="cron/"
@@ -617,7 +621,7 @@ jobs:
           # STABLE_REPOSITORY_UPDATE days, so slow mirrors can catch up. 0 or unset:
           # publish every run.
           INTERVAL_DAYS="${{ vars.STABLE_REPOSITORY_UPDATE }}"
-          TARGET="${{ github.event.client_payload.target }}"
+          TARGET="${{ inputs.publish_stable && 'stable/' || github.event.client_payload.target }}"
           # Stable kernels were ingested on this run: publish as for stable/.
           if [ "$REPO_NAME" = "debs" ] && [ -f "${INPUT_DIR}/.stable-ingested" ]; then
             sudo rm -f "${INPUT_DIR}/.stable-ingested"
