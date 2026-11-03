@@ -222,16 +222,22 @@ jobs:
           now = datetime.datetime.now(datetime.timezone.utc)
           n = 0
           for f in glob.glob(sys.argv[1] + "/shard-*.json"):
+              # A broken status file must never stop the publish: skip it.
               try:
-                  d = json.load(open(f))
+                  with open(f) as fh:
+                      d = json.load(fh)
+                  if d.get("state") != "running":
+                      continue
                   started = datetime.datetime.fromisoformat(d["started"])
-              except (OSError, ValueError, KeyError):
+                  if started.tzinfo is None:
+                      started = started.replace(tzinfo=datetime.timezone.utc)
+                  if (now - started).total_seconds() < 7200:
+                      n += 1
+              except (OSError, ValueError, KeyError, TypeError, AttributeError):
                   continue
-              if d.get("state") == "running" and (now - started).total_seconds() < 7200:
-                  n += 1
           print(n)
           PY
-            )
+            ) || running=0
             [ "${running}" = "0" ] && break
             [ "$i" = "40" ] && { echo "::warning::External sync still running after 20 min: copying the files that are there"; break; }
             echo "External sync: ${running} shard(s) running, waiting"
