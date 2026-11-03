@@ -588,6 +588,11 @@ jobs:
           # Only run repo.sh if there are files to process
           if [ "${DEB_COUNT}" -gt 0 ]; then
             echo "Running sequential repository update..." | tee -a "$GITHUB_STEP_SUMMARY"
+            # Kernel, dtb and headers versions to keep: beta 2, stable 10.
+            # repo.sh before the -K option ignores this variable.
+            KERNEL_VERSIONS_TO_KEEP=10
+            [ "${REPO_NAME}" = "debs-beta" ] && KERNEL_VERSIONS_TO_KEEP=2
+            export KERNEL_VERSIONS_TO_KEEP
             tools/repository/repo.sh \
               -c update \
               -k \
