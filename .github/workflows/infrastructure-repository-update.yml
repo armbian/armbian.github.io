@@ -196,11 +196,22 @@ jobs:
                 --omit-dir-times --no-perms --no-group \
                 "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
                 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-              # Exit 23 (attributes not copied) is expected. Stop on other errors.
               GP_RC=${PIPESTATUS[0]}
               if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
                 echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
                 exit 1
+              fi
+              # Exit 23 is a partial transfer. rsync keeps each source .deb that it
+              # did not move. Same content in storage: only an attribute failed.
+              if [ "${GP_RC}" -eq 23 ]; then
+                while IFS= read -r -d '' GP_DEB; do
+                  if cmp -s "${GP_DEB}" "${STORAGE_PATH}/${GP_REPO}/${GP_DEB#"${SRC}/"}"; then
+                    rm -f "${GP_DEB}"
+                  else
+                    echo "::error::${GP_DEB#"${SRC}/"} did not reach storage"
+                    exit 1
+                  fi
+                done < <(find "${SRC}" -type f -name '*.deb' -print0)
               fi
               find "${SRC}" -type d -empty -delete
             done
