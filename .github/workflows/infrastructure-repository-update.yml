@@ -135,18 +135,93 @@ jobs:
             TARGET="cron/"
           fi
 
-          case "$TARGET" in
-            "stable/")
-              if [ -d "${INCOMING_PATH}/stable" ]; then
-                COPY_UBOOT=false \
-                DRY_RUN=true \
-                SELECT=':edge' \
-                SRC_DIR="${{ env.INCOMING_PATH }}"/nightly/debs-beta/ \
-                DST_DIR=/tmp/x \
-                scripts/copy-kernel-packages.sh 2>&1 | tee -a $GITHUB_STEP_SUMMARY
-              else
-                echo "## Source folder INCOMING/stable does not exist, skipping" >> $GITHUB_STEP_SUMMARY
+          # Copy the kernels named in config/repository-kernel-selection.conf
+          # from incoming/stable, then drop incoming/stable.
+          ingest_stable_kernels() {
+            local ST_REPO ST_RC
+            if [ ! -d "${INCOMING_PATH}/stable" ]; then
+              echo "## No stable in incoming" >> "$GITHUB_STEP_SUMMARY"
+              return 0
+            fi
+            . config/repository-kernel-selection.conf
+            echo "## Stable kernel selection: ${KERNEL_SELECT}" >> "$GITHUB_STEP_SUMMARY"
+            for ST_REPO in debs debs-beta; do
+              [ -d "${INCOMING_PATH}/stable/${ST_REPO}" ] || continue
+              SELECT="${KERNEL_SELECT}" \
+              UBOOT_SELECT="${UBOOT_SELECT}" \
+              COPY_UBOOT="${COPY_UBOOT}" \
+              INCLUDE_LIBC_DEV="${INCLUDE_LIBC_DEV}" \
+              DRY_RUN=false \
+              SRC_DIR="${INCOMING_PATH}/stable/${ST_REPO}" \
+              DST_DIR="${STORAGE_PATH}/${ST_REPO}" \
+              scripts/copy-kernel-packages.sh 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" "${RUNNER_TEMP}/copy-${ST_REPO}.log"
+              ST_RC=${PIPESTATUS[0]}
+              if [ "${ST_RC}" -ne 0 ]; then
+                echo "::error::copy-kernel-packages.sh failed for stable/${ST_REPO} (exit ${ST_RC})"
+                return 1
               fi
+              # The script only reports missing packages. A missing kernel image
+              # must stop here, before incoming/stable is removed.
+              if grep -q "MISSING: linux-image-" "${RUNNER_TEMP}/copy-${ST_REPO}.log"; then
+                echo "::error::stable/${ST_REPO}: a selected kernel image is missing. incoming/stable is kept."
+                return 1
+              fi
+            done
+            echo "## Drop incoming/stable" >> "$GITHUB_STEP_SUMMARY"
+            rm -rf "${INCOMING_PATH:?}/stable"
+            # Publish stable on this run, also when the target is not stable/.
+            sudo touch "${STORAGE_PATH}/debs/.stable-ingested"
+          }
+
+          # Move the generic packages (base-files, firmware, bsp-cli, ...) from
+          # incoming into storage. armbian/ci uploads them there.
+          GENERIC_INCOMING="base-files"
+
+          ingest_generic_packages() {
+            local GP_DIR GP_REPO GP_RC GP_DEB SRC
+            for GP_DIR in ${GENERIC_INCOMING}; do
+              for GP_REPO in debs debs-beta; do
+                SRC="${INCOMING_PATH}/${GP_DIR}/${GP_REPO}"
+                if [ ! -d "${SRC}" ]; then
+                  echo "## No ${GP_DIR}/${GP_REPO} in incoming" >> "$GITHUB_STEP_SUMMARY"
+                  continue
+                fi
+                echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
+                rsync -av --remove-source-files \
+                  --include='*/' --include='*.deb' --exclude='*' \
+                  --omit-dir-times --no-perms --no-group \
+                  "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
+                  2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+                GP_RC=${PIPESTATUS[0]}
+                if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
+                  echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
+                  return 1
+                fi
+                # Exit 23 is a partial transfer. rsync keeps each source .deb that it
+                # did not move. Same content in storage: only an attribute failed.
+                if [ "${GP_RC}" -eq 23 ]; then
+                  while IFS= read -r -d '' GP_DEB; do
+                    if cmp -s "${GP_DEB}" "${STORAGE_PATH}/${GP_REPO}/${GP_DEB#"${SRC}/"}"; then
+                      rm -f "${GP_DEB}"
+                    else
+                      echo "::error::${GP_DEB#"${SRC}/"} did not reach storage"
+                      return 1
+                    fi
+                  done < <(find "${SRC}" -type f -name '*.deb' -print0)
+                fi
+                find "${SRC}" -type d -empty -delete
+              done
+              rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
+            done
+          }
+
+          case "$TARGET" in
+            # base-files/ is the daily base-files build. It also ingests stable
+            # kernels when a stable/ run was cancelled in the concurrency queue.
+            # The cron/ target feeds the nightly repository, so it skips both.
+            "stable/"|"base-files/")
+              ingest_stable_kernels || exit 1
+              ingest_generic_packages || exit 1
               ;;
             "cron/")
               # move what is inside incoming
@@ -177,46 +252,6 @@ jobs:
               :
               ;;
           esac
-
-          # Move the generic packages (base-files, firmware, bsp-cli, ...) from
-          # incoming into storage on every run. armbian/ci uploads them there.
-          # Kernel and u-boot packages are not here: they need a selection.
-          GENERIC_INCOMING="base-files"
-
-          for GP_DIR in ${GENERIC_INCOMING}; do
-            for GP_REPO in debs debs-beta; do
-              SRC="${INCOMING_PATH}/${GP_DIR}/${GP_REPO}"
-              if [ ! -d "${SRC}" ]; then
-                echo "## No ${GP_DIR}/${GP_REPO} in incoming" >> "$GITHUB_STEP_SUMMARY"
-                continue
-              fi
-              echo "## Move ${GP_DIR}/${GP_REPO} into storage" >> "$GITHUB_STEP_SUMMARY"
-              rsync -av --remove-source-files \
-                --include='*/' --include='*.deb' --exclude='*' \
-                --omit-dir-times --no-perms --no-group \
-                "${SRC}/" "${STORAGE_PATH}/${GP_REPO}/" \
-                2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-              GP_RC=${PIPESTATUS[0]}
-              if [ "${GP_RC}" -ne 0 ] && [ "${GP_RC}" -ne 23 ]; then
-                echo "::error::rsync of ${GP_DIR}/${GP_REPO} failed (exit ${GP_RC})"
-                exit 1
-              fi
-              # Exit 23 is a partial transfer. rsync keeps each source .deb that it
-              # did not move. Same content in storage: only an attribute failed.
-              if [ "${GP_RC}" -eq 23 ]; then
-                while IFS= read -r -d '' GP_DEB; do
-                  if cmp -s "${GP_DEB}" "${STORAGE_PATH}/${GP_REPO}/${GP_DEB#"${SRC}/"}"; then
-                    rm -f "${GP_DEB}"
-                  else
-                    echo "::error::${GP_DEB#"${SRC}/"} did not reach storage"
-                    exit 1
-                  fi
-                done < <(find "${SRC}" -type f -name '*.deb' -print0)
-              fi
-              find "${SRC}" -type d -empty -delete
-            done
-            rmdir "${INCOMING_PATH}/${GP_DIR}" 2>/dev/null || true
-          done
 
           # Always sync external
           if [ -d "${INCOMING_PATH}/external/debs" ]; then
@@ -541,6 +576,11 @@ jobs:
           # publish every run.
           INTERVAL_DAYS="${{ vars.STABLE_REPOSITORY_UPDATE }}"
           TARGET="${{ github.event.client_payload.target }}"
+          # Stable kernels were ingested on this run: publish as for stable/.
+          if [ "$REPO_NAME" = "debs" ] && [ -f "${INPUT_DIR}/.stable-ingested" ]; then
+            sudo rm -f "${INPUT_DIR}/.stable-ingested"
+            TARGET="stable/"
+          fi
           if [ "$REPO_NAME" = "debs" ] && [ "${INTERVAL_DAYS:-0}" -gt 0 ] && [ "$TARGET" != "stable/" ]; then
             LAST=$(find "$OUTPUT_DIR/public/dists" -maxdepth 2 -name InRelease -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
             if [ -n "$LAST" ]; then
