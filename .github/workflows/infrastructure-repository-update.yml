@@ -248,14 +248,17 @@ jobs:
             [ -d "${EXT}/${REPO}" ] || continue
             echo "## Copy external ${REPO}" >> "$GITHUB_STEP_SUMMARY"
             # Only complete .deb files: rsync uploads under a temporary name.
+            # The file list goes to the log: a full copy is larger than the
+            # 1 MiB step summary limit.
             rsync -av \
               --include='*/' \
               --include='*.deb' \
               --exclude='*' \
               --omit-dir-times --no-perms --no-group \
               "${EXT}/${REPO}/" "${STORAGE_PATH}/${REPO}/" \
-              2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
+              2>&1 | tee "${RUNNER_TEMP}/external-${REPO}.log" || \
               echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
+            echo "$(grep -c '\.deb$' "${RUNNER_TEMP}/external-${REPO}.log") files copied" >> "$GITHUB_STEP_SUMMARY"
           done
 
   prepare-repos:
