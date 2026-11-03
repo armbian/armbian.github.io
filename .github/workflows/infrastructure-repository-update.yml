@@ -1,17 +1,6 @@
 name: "Infrastructure: APT repositories update"
 on:
   workflow_dispatch:
-    inputs:
-      purge_external:
-        description: 'Purge external packages before download'
-        required: true
-        type: boolean
-        default: true
-      download_external:
-        description: 'Download external packages'
-        required: true
-        type: boolean
-        default: true
   repository_dispatch:
     types: ["Repository update"]
 
@@ -40,41 +29,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEAM: "Release manager"
 
-  external:
-    name: "Download external (chunk ${{ matrix.chunk_index }}/4)"
-    needs: Check
-    # Fan out across 4 chunks. The child workflow filters its matrix to
-    # only entries where `index % CHUNK_COUNT == CHUNK_INDEX`, so each
-    # invocation stays under GitHub Actions' 256-entry strategy.matrix
-    # cap. Effective concurrency is 4 × max-parallel (180) = 720.
-    # Bump `chunk_index` and `CHUNK_COUNT` together when total packages
-    # × arches × releases approaches 4 × 256 = 1024.
-    strategy:
-      fail-fast: false
-      matrix:
-        chunk_index: [0, 1, 2, 3]
-    uses: armbian/armbian.github.io/.github/workflows/infrastructure-download-external.yml@main
-    with:
-      ENABLED: ${{ inputs.download_external != false || github.event.client_payload.download_external != false }}
-      SKIP_VERSION_CHECK: false
-      ACCESS_NAME: armbian
-      BUILD_RUNNER: "docker"
-      HOST_DEPLOY: "repo.armbian.com"
-      PURGE: ${{ inputs.purge_external || false }}
-      CHUNK_INDEX: ${{ matrix.chunk_index }}
-      CHUNK_COUNT: 4
-    secrets:
-      GPG_KEY1: ${{ secrets.GPG_KEY3 }}
-      GPG_KEY2: ${{ secrets.GPG_KEY4 }}
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      KEY_UPLOAD: ${{ secrets.KEY_UPLOAD }}
-      HOST_UPLOAD: ${{ secrets.HOST_UPLOAD }}
-      HOST_UPLOAD_USER: ${{ secrets.HOST_UPLOAD_USER }}
-      HOST_UPLOAD_PORT: ${{ secrets.HOST_UPLOAD_PORT }}
-      KNOWN_HOSTS_ARMBIAN_UPLOAD: ${{ secrets.KNOWN_HOSTS_ARMBIAN_UPLOAD }}
-
   Copying:
-    needs: external
+    # External packages come from armbian/external (Sync), uploaded to
+    # incoming/external-next. A failed download there never blocks a publish.
+    needs: Check
     runs-on: repository
     steps:
 
@@ -253,29 +211,46 @@ jobs:
               ;;
           esac
 
-          # Always sync external
-          if [ -d "${INCOMING_PATH}/external/debs" ]; then
-              echo "## Copy external debs "
-              rsync -av \
+          # External packages: armbian/external (Sync) keeps the current set in
+          # incoming/external-next. Each Sync shard writes .sync/shard-<n>.json
+          # (running, done, failed). Wait while a shard uploads; a "running"
+          # file older than 2 h is a dead runner. Wait at most 20 min.
+          EXT="${INCOMING_PATH}/external-next"
+          for i in $(seq 1 40); do
+            running=$(python3 - "${EXT}/.sync" <<'PY'
+          import datetime, glob, json, sys
+          now = datetime.datetime.now(datetime.timezone.utc)
+          n = 0
+          for f in glob.glob(sys.argv[1] + "/shard-*.json"):
+              try:
+                  d = json.load(open(f))
+                  started = datetime.datetime.fromisoformat(d["started"])
+              except (OSError, ValueError, KeyError):
+                  continue
+              if d.get("state") == "running" and (now - started).total_seconds() < 7200:
+                  n += 1
+          print(n)
+          PY
+            )
+            [ "${running}" = "0" ] && break
+            [ "$i" = "40" ] && { echo "::warning::External sync still running after 20 min: copying the files that are there"; break; }
+            echo "External sync: ${running} shard(s) running, waiting"
+            sleep 30
+          done
+
+          for REPO in debs debs-beta; do
+            [ -d "${EXT}/${REPO}" ] || continue
+            echo "## Copy external ${REPO}" >> "$GITHUB_STEP_SUMMARY"
+            # Only complete .deb files: rsync uploads under a temporary name.
+            rsync -av \
               --include='*/' \
               --include='*.deb' \
               --exclude='*' \
               --omit-dir-times --no-perms --no-group \
-              "${INCOMING_PATH}/external/debs/" "${STORAGE_PATH}/debs/" \
+              "${EXT}/${REPO}/" "${STORAGE_PATH}/${REPO}/" \
               2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
               echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -d "${INCOMING_PATH}/external/debs-beta" ]; then
-              echo "## Copy external debs-beta "
-              rsync -av \
-              --include='*/' \
-              --include='*.deb' \
-              --exclude='*' \
-              --omit-dir-times --no-perms --no-group \
-              "${INCOMING_PATH}/external/debs-beta/" "${STORAGE_PATH}/debs-beta/" \
-              2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || \
-              echo "Warning: Some files/attrs were not transferred (code 23)" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          done
 
   prepare-repos:
     name: "Prepare repositories"
