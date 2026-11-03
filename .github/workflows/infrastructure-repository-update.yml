@@ -6,6 +6,10 @@ on:
         description: "armbian/build branch for the repository tools (test a change)"
         type: string
         default: main
+      rebuild_beta:
+        description: "Rebuild the beta repository from scratch (recovery)"
+        type: boolean
+        default: false
   repository_dispatch:
     types: ["Repository update"]
 
@@ -412,7 +416,10 @@ jobs:
     needs: fix-permissions
     runs-on: repository
     steps:
-      - name: "Remove and recreate beta repository"
+      # Beta keeps its aptly database between runs, like stable: a run adds
+      # only new files, and unchanged files keep their timestamps on mirrors.
+      # rebuild_beta deletes it and starts again from this run's files.
+      - name: "Prepare beta repository"
         shell: bash
         run: |
           set -e
@@ -439,7 +446,9 @@ jobs:
           echo ""
 
           # Remove existing beta repository to start fresh
-          if [ -d "$BETA_REPO_PATH" ]; then
+          if [ "${{ inputs.rebuild_beta }}" != "true" ]; then
+            echo "Keeping the beta repository" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ -d "$BETA_REPO_PATH" ]; then
             echo "Removing existing beta repository: $BETA_REPO_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
 
             # Additional safety check: ensure it's a symlink or directory, not a file
