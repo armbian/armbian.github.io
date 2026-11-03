@@ -33,14 +33,6 @@ jobs:
           clean: false
           path: build
 
-      - name: Checkout OS repository
-        uses: actions/checkout@v7
-        with:
-          repository: armbian/os
-          fetch-depth: 1
-          clean: false
-          path: os
-
       - name: Checkout armbian.github.io repository
         uses: actions/checkout@v7
         with:
