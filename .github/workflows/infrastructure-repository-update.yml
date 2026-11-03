@@ -195,10 +195,22 @@ jobs:
               if [ -d "${INCOMING_PATH}/cron" ]; then
                 echo "## Fixing STORAGE_PATH permissions" >> $GITHUB_STEP_SUMMARY
                 sudo chmod -R g+w ${STORAGE_PATH} 2>&1 | tee -a $GITHUB_STEP_SUMMARY
-                echo "## Rsync from INCOMING/cron to STORAGE_PATH" >> $GITHUB_STEP_SUMMARY
-                rsync -av --omit-dir-times --no-perms --no-group ${INCOMING_PATH}/cron/ ${STORAGE_PATH} 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
-                echo "## Removing source INCOMING/cron" >> $GITHUB_STEP_SUMMARY
-                rm -rf ${INCOMING_PATH}/cron 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+                # CI keeps uploading while this runs, as another user. Copy and
+                # remove only the files that are here now. Complete files only:
+                # rsync uploads under a temporary name.
+                CRON_LIST="${RUNNER_TEMP}/cron-files"
+                (cd "${INCOMING_PATH}/cron" && find . -type f -name '*.deb' -printf '%P\n') > "${CRON_LIST}"
+                echo "## Rsync $(wc -l < "${CRON_LIST}") files from INCOMING/cron to STORAGE_PATH" >> $GITHUB_STEP_SUMMARY
+                rsync -av --omit-dir-times --no-perms --no-group --files-from="${CRON_LIST}" \
+                  "${INCOMING_PATH}/cron/" "${STORAGE_PATH}/" 2>&1 | tee -a $GITHUB_STEP_SUMMARY || echo "Warning: Some files/attrs were not transferred (code 23)" >> $GITHUB_STEP_SUMMARY
+                # Remove a file only when storage has it with the same size.
+                # sudo: the upload user owns these files, not the runner user.
+                echo "## Removing copied files from INCOMING/cron" >> $GITHUB_STEP_SUMMARY
+                while IFS= read -r f; do
+                  [ "$(stat -c %s "${INCOMING_PATH}/cron/${f}")" = "$(stat -c %s "${STORAGE_PATH}/${f}" 2>/dev/null)" ] \
+                    && printf '%s\0' "${INCOMING_PATH}/cron/${f}"
+                done < "${CRON_LIST}" | sudo xargs -r -0 rm -f --
+                sudo find "${INCOMING_PATH}/cron" -mindepth 1 -type d -empty -delete
               else
                 echo "## Source folder INCOMING/cron does not exist, skipping" >> $GITHUB_STEP_SUMMARY
               fi
