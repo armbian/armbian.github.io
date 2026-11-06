@@ -182,3 +182,25 @@ desktop-stable-ubuntu-i3-wm-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+
+# Debian forky Hyprland desktop - UEFI x86 only
+# Btrfs root with zstd, LUKS encrypted with automatic unlock.
+desktop-stable-debian-hyprland-uefi:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: forky
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "hyprland"
+    DESKTOP_TIER: "mid"
+    ROOTFS_TYPE: "btrfs"
+    BTRFS_COMPRESSION: "zstd"
+    CRYPTROOT_ENABLE: "yes"
+    CRYPTROOT_AUTOUNLOCK: "yes"
+    CRYPTROOT_SSH_UNLOCK: "no"
+  items:
+    - { BOARD: uefi-x86, BRANCH: edge }
