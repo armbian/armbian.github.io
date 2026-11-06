@@ -196,7 +196,7 @@ desktop-stable-debian-hyprland-uefi:
     BUILD_MINIMAL: "no"
     BUILD_DESKTOP: "yes"
     DESKTOP_ENVIRONMENT: "hyprland"
-    DESKTOP_TIER: "mid"
+    DESKTOP_TIER: "full"
     ROOTFS_TYPE: "btrfs"
     BTRFS_COMPRESSION: "zstd"
     CRYPTROOT_ENABLE: "yes"
