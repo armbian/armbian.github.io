@@ -205,4 +205,4 @@ desktop-stable-debian-hyprland-uefi:
     # Hyprland packages exist only in the beta repository for now.
     BETA: "yes"
   items:
-    - { BOARD: uefi-x86, BRANCH: edge }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
