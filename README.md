@@ -7,13 +7,13 @@
 
 ## Purpose of This Repository
 
-This repository is the central **automation and orchestration hub** for the Armbian project. It coordinates CI workflows, maintains board assets and metadata, syncs external data sources, and generates machine-readable artifacts that drive [armbian.com](https://www.armbian.com), [docs.armbian.com](https://docs.armbian.com), the download index, and related Armbian infrastructure.
+This repository is the central **automation and orchestration hub** for the Armbian project. It coordinates CI workflows, maintains board assets and metadata, syncs external data sources, and generates the machine-readable artifacts that drive [armbian.com](https://www.armbian.com), [docs.armbian.com](https://docs.armbian.com), the download index, and related Armbian infrastructure.
 
 Generated outputs are published to the `data` branch and surfaced through [github.armbian.com](https://github.armbian.com/) for consumption by downstream automation, reporting, and content delivery.
 
 ## Workflow Status & Monitoring
 
-**[GitHub actions dashboard →](https://actions.armbian.com/?repo=armbian.github.io)**
+**[GitHub Actions dashboard →](https://actions.armbian.com/?repo=armbian.github.io)**
 
 Monitor all automation workflows with real-time status tracking:
 
@@ -34,6 +34,7 @@ Monitor all automation workflows with real-time status tracking:
 | `release-targets/` | Inputs and generated outputs for the CI/CD build-target YAML matrix. See [`release-targets/README.md`](release-targets/README.md). |
 | `scripts/` | Python, Node.js and shell helpers invoked by the workflows (JSON index generators, Jira exporter, keyring collector, ping scripts, etc.). |
 | `templates/` | Shared templates used by generator scripts. |
+| `config/` | Supporting configuration for generators. |
 | `.github/workflows/` | GitHub Actions definitions driving automation, data refresh, infrastructure, monitoring and release reporting. |
 
 The `data` branch is used as a publication target: most workflows regenerate a JSON / YAML / HTML artifact on `main` and commit it to `data/` on the `data` branch (served from [github.armbian.com](https://github.armbian.com/)).
@@ -51,13 +52,14 @@ The automation here maintains, among other things:
 - **Raspberry Pi Imager JSON** — `rpi-imager.json` manifest for use with the official RPi Imager.
 - **Board & vendor thumbnails** — Multi-width thumbnails rendered from `board-images/` and `board-vendor-logos/` and pushed to the Armbian cache mirrors.
 - **Jira excerpts** — `jira-current.html` / `jira-next.html` HTML snippets listing the current and next planned release's open issues.
+- **Featured feed** — `featured.json`, built by `scripts/featured/build-feed.py`, aggregates blog posts, releases, announcements, armbian-config software and sponsors for the website, imager and motd tips.
 - **Automation status reports** — Per-repository `actions-report-*.json` dumps aggregated for the actions dashboard.
 
 ## Technologies
 
 The repository is intentionally polyglot — each generator uses the tooling best suited to its data source:
 
-- **Python 3** — most data generators and the release-target engine (`scripts/generate_targets.py`, `scripts/generate_kernel_descriptions.py`, `scripts/generate-base-files-info-json.py`, `scripts/generate-rpi-imager-json.py`, `scripts/ping-unresolved-reviews.py`, `scripts/days_since_last_commit.py`, Jira exporter).
+- **Python 3** — most data generators and the release-target engine (`scripts/generate_targets.py`, `scripts/generate_kernel_descriptions.py`, `scripts/generate-base-files-info-json.py`, `scripts/generate-rpi-imager-json.py`, `scripts/ping-unresolved-reviews.py`, `scripts/days_since_last_commit.py`, Jira exporter, featured-feed builder).
 - **Bash / shell** — mirror and index pipelines (e.g. `scripts/generate-armbian-images-json.sh`) and the shell logic inside workflow `run:` steps.
 - **Node.js** — the actions-report scanner (`scripts/generate-actions-report.mjs`) using `fast-glob` and `js-yaml`.
 - **YAML** — GitHub Actions workflow definitions under `.github/workflows/` and the generated build-target matrices under `release-targets/`.
