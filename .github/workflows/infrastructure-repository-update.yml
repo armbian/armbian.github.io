@@ -118,6 +118,8 @@ jobs:
             echo "## Stable kernel selection: ${KERNEL_SELECT}" >> "$GITHUB_STEP_SUMMARY"
             for ST_REPO in debs debs-beta; do
               [ -d "${INCOMING_PATH}/stable/${ST_REPO}" ] || continue
+              # The runner user cannot write to storage: copy as root.
+              sudo env \
               SELECT="${KERNEL_SELECT}" \
               UBOOT_SELECT="${UBOOT_SELECT}" \
               COPY_UBOOT="${COPY_UBOOT}" \

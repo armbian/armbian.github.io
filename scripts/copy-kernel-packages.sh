@@ -200,7 +200,7 @@ copy_flat() {
     if [[ "$DRY_RUN" == "true" ]]; then
       echo "  WOULD COPY: $(basename "$f")"
     else
-      cp -a "$f" "$DST_DIR/"
+      cp -a "$f" "$DST_DIR/" || die "cannot copy $(basename "$f") to $DST_DIR"
       echo "  COPIED:     $(basename "$f")"
     fi
   done
@@ -220,7 +220,7 @@ copy_recursive() {
     if [[ "$DRY_RUN" == "true" ]]; then
       echo "  WOULD COPY: $(basename "$f")"
     else
-      cp -a "$f" "$DST_DIR/"
+      cp -a "$f" "$DST_DIR/" || die "cannot copy $(basename "$f") to $DST_DIR"
       echo "  COPIED:     $(basename "$f")"
     fi
   done
