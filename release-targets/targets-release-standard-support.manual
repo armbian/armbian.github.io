@@ -200,12 +200,10 @@ desktop-stable-debian-hyprland-uefi:
     ROOTFS_TYPE: "btrfs"
     BTRFS_COMPRESSION: "zstd"
     BOOTSIZE: "2048"
-    KERNEL_CONFIGURE: "no"
     CRYPTROOT_ENABLE: "yes"
     CRYPTROOT_AUTOUNLOCK: "yes"
     CRYPTROOT_SSH_UNLOCK: "no"
     # Hyprland packages exist only in the beta repository for now.
     BETA: "yes"
-    SHARE_LOG: "yes"
   items:
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
