@@ -87,7 +87,7 @@ desktop-stable-ubuntu-gnome-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
-    - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
+    - { BOARD: thinkpad-x13s, BRANCH: edge }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
@@ -109,7 +109,7 @@ desktop-stable-ubuntu-cinnamon-uefi:
   items:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
-    - { BOARD: thinkpad-x13s, BRANCH: sc8280xp }
+    - { BOARD: thinkpad-x13s, BRANCH: edge }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
@@ -183,7 +183,7 @@ desktop-stable-ubuntu-i3-wm-uefi:
     - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
 
-# Debian forky Hyprland desktop - UEFI x86 only
+# Debian forky Hyprland desktop - UEFI x86 and ThinkPad X13s
 # Btrfs root with zstd, LUKS encrypted with automatic unlock.
 desktop-stable-debian-hyprland-uefi:
   enabled: yes
@@ -207,3 +207,4 @@ desktop-stable-debian-hyprland-uefi:
     BETA: "yes"
   items:
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: thinkpad-x13s, BRANCH: edge }
