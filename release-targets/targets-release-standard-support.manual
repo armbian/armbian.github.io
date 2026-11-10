@@ -203,8 +203,7 @@ desktop-stable-debian-hyprland-uefi:
     CRYPTROOT_ENABLE: "yes"
     CRYPTROOT_AUTOUNLOCK: "yes"
     CRYPTROOT_SSH_UNLOCK: "no"
-    # Hyprland packages exist only in the beta repository for now.
-    BETA: "yes"
   items:
     - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
     - { BOARD: thinkpad-x13s, BRANCH: edge }
