@@ -1296,6 +1296,34 @@ targets:
         if edge_fast:
             yaml += '      - *stable-edge-fast-hdmi\n'
 
+    # Debian forky Hyprland desktop (fast HDMI only). Same boards as
+    # KDE Plasma. configng hyprland.yaml ships only on forky, so RELEASE
+    # is literal. Btrfs root as in the UEFI Hyprland target.
+    if current_fast or edge_fast:
+        yaml += """
+  # Debian forky Hyprland desktop (fast HDMI only)
+  desktop-stable-debian-hyprland:
+    enabled: yes
+    configs: [ armbian-images ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: forky
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "hyprland"
+      DESKTOP_TIER: "full"
+      ROOTFS_TYPE: "btrfs"
+      BTRFS_COMPRESSION: "zstd"
+    items:
+      - *stable-current-fast-hdmi
+"""
+        if vendor_fast:
+            yaml += '      - *stable-vendor-fast-hdmi\n'
+        if edge_fast:
+            yaml += '      - *stable-edge-fast-hdmi\n'
+
     # Ubuntu stable XFCE desktop for legacy fast HDMI boards
     if legacy_fast:
         yaml += """
