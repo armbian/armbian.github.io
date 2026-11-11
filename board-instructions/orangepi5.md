@@ -27,9 +27,25 @@ sudo flashcp -v -p /usr/lib/linux-u-boot-*/u-boot-rockchip-spi-sata.bin /dev/mtd
 
 On board revisions matching exactly v1.3.2, NVME power support is broken on the regular U-Boot firmware. You must use a different U-Boot firmware on these boards to get NVME drives working.
 
-1. Boot Armbian from the microSD card.
+The image for revision v1.3.2 boards was only added recently, so you will need to flash a new build to the microSD card, or install the U-Boot package on a running system by manually compiling it on a recent commit of main and then installing the resulting dpkg on a booted Armbian install.
 
-Write the firmware **ONLY** for v1.3.2 boards:
+Compile:
+```sh
+./compile.sh uboot BOARD=orangepi5 BRANCH=vendor
+```
+
+and then install the dpkg on a booted Armbian install from `output/debs`:
+
+```sh
+sudo dpkg -i linux-u-boot-orangepi5-vendor_26.11.0-trunk_arm64__2026.10-S5508-Pdcf1-H2e28-V8bcd-B3ba1-R448a.deb
+```
+
+Steps:
+1. Boot Armbian from the microSD card.
+2. Run `armbian-install` and select the SATA SSD.
+3. Select **Boot from SPI/MTD flash, system on this disk**.
+
+Write the firmware meant **ONLY** for v1.3.2 boards:
 ```sh
 sudo flashcp -v -p /usr/lib/linux-u-boot-*/u-boot-rockchip-spi-v132.bin /dev/mtd0
 ```
