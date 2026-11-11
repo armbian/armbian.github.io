@@ -23,6 +23,17 @@ sudo flashcp -v -p /usr/lib/linux-u-boot-*/u-boot-rockchip-spi-sata.bin /dev/mtd
 
 7. Power off the board. Remove the microSD card.
 
+### Install the patched U-Boot for borked NVME on board revision v1.3.2
+
+On board revisions matching exactly v1.3.2, NVME power support is broken on the regular U-Boot firmware. You must use a different U-Boot firmware on these boards to get NVME drives working.
+
+1. Boot Armbian from the microSD card.
+
+Write the firmware **ONLY** for v1.3.2 boards:
+```sh
+sudo flashcp -v -p /usr/lib/linux-u-boot-*/u-boot-rockchip-spi-v132.bin /dev/mtd0
+```
+
 ## Rescue
 
 Use this if the board does not boot after a write to SPI or eMMC.
