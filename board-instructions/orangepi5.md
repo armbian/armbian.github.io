@@ -42,7 +42,7 @@ sudo dpkg -i linux-u-boot-orangepi5-vendor_26.11.0-trunk_arm64__2026.10-S5508-Pd
 
 Steps:
 1. Boot Armbian from the microSD card.
-2. Run `armbian-install` and select the SATA SSD.
+2. Run `armbian-install` and select the NVMe SSD.
 3. Select **Boot from SPI/MTD flash, system on this disk**.
 
 Write the firmware meant **ONLY** for v1.3.2 boards:
