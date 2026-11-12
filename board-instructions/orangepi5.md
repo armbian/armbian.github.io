@@ -37,7 +37,7 @@ Compile:
 and then install the dpkg on a booted Armbian install from `output/debs`:
 
 ```sh
-sudo dpkg -i linux-u-boot-orangepi5-vendor_26.11.0-trunk_arm64__2026.10-S5508-Pdcf1-H2e28-V8bcd-B3ba1-R448a.deb
+sudo dpkg -i ./linux-u-boot-orangepi5-vendor_<version>.deb
 ```
 
 Steps:
