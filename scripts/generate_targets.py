@@ -1298,7 +1298,8 @@ targets:
 
     # Debian forky Hyprland desktop (fast HDMI only). Same boards as
     # KDE Plasma. configng hyprland.yaml ships only on forky, so RELEASE
-    # is literal. Btrfs root and LUKS as in the UEFI Hyprland target.
+    # is literal. Btrfs root, LUKS and a 2 GiB /boot as in the UEFI
+    # Hyprland target.
     if current_fast or edge_fast:
         yaml += """
   # Debian forky Hyprland desktop (fast HDMI only)
@@ -1316,6 +1317,7 @@ targets:
       DESKTOP_TIER: "full"
       ROOTFS_TYPE: "btrfs"
       BTRFS_COMPRESSION: "zstd"
+      BOOTSIZE: "2048"
       CRYPTROOT_ENABLE: "yes"
       CRYPTROOT_AUTOUNLOCK: "yes"
       CRYPTROOT_SSH_UNLOCK: "no"
