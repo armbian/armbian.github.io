@@ -204,6 +204,6 @@ desktop-stable-debian-hyprland-uefi:
     CRYPTROOT_AUTOUNLOCK: "yes"
     CRYPTROOT_SSH_UNLOCK: "no"
   items:
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "nvidia,image-output-iso" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia" }
     - { BOARD: thinkpad-x13s, BRANCH: edge }
