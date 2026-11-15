@@ -1,5 +1,11 @@
 # Manual target additions for standard support builds
 # This content will be appended to the auto-generated targets-release-standard-support.yaml
+#
+# UEFI ISO images (uefi-x86, uefi-arm64; edge and current) have a btrfs root
+# with zstd and LUKS with automatic unlock, as the Hyprland images. The
+# settings are on each item, so the other boards in a target do not change.
+# Not for the cloud images (no use for LUKS on a VM, and the provider resizes
+# the disk) and not for uefi-loong64 (not tested).
 
 # Debian minimal - UEFI only
 minimal-stable-debian-uefi:
@@ -13,8 +19,8 @@ minimal-stable-debian-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -56,10 +62,10 @@ minimal-stable-ubuntu-current-uefi:
     BUILD_MINIMAL: "yes"
     BUILD_DESKTOP: "no"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso" }
-    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-arm64, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: current, ENABLE_EXTENSIONS: "image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-iso" }
     - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
@@ -85,8 +91,8 @@ desktop-stable-ubuntu-gnome-uefi:
     DESKTOP_ENVIRONMENT: "gnome"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
     - { BOARD: thinkpad-x13s, BRANCH: edge }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
@@ -107,8 +113,8 @@ desktop-stable-ubuntu-cinnamon-uefi:
     DESKTOP_ENVIRONMENT: "cinnamon"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
     - { BOARD: thinkpad-x13s, BRANCH: edge }
     - { BOARD: radxa-dragon-q6a, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
@@ -129,8 +135,8 @@ desktop-stable-ubuntu-kde-plasma-uefi:
     DESKTOP_ENVIRONMENT: "kde-plasma"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
 
 # Ubuntu MATE desktop - UEFI only
 desktop-stable-ubuntu-mate-uefi:
@@ -146,8 +152,8 @@ desktop-stable-ubuntu-mate-uefi:
     DESKTOP_ENVIRONMENT: "mate"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
 
 # Ubuntu Xfce desktop - UEFI only
 desktop-stable-ubuntu-xfce-uefi:
@@ -163,8 +169,8 @@ desktop-stable-ubuntu-xfce-uefi:
     DESKTOP_ENVIRONMENT: "xfce"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
 
 # Ubuntu i3 window-manager - UEFI only
 desktop-stable-ubuntu-i3-wm-uefi:
@@ -180,8 +186,8 @@ desktop-stable-ubuntu-i3-wm-uefi:
     DESKTOP_ENVIRONMENT: "i3-wm"
     DESKTOP_TIER: "mid"
   items:
-    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso" }
-    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso" }
+    - { BOARD: uefi-arm64, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
+    - { BOARD: uefi-x86, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,nvidia,image-output-iso", ROOTFS_TYPE: "btrfs", BTRFS_COMPRESSION: "zstd", BOOTSIZE: "2048", CRYPTROOT_ENABLE: "yes", CRYPTROOT_AUTOUNLOCK: "yes", CRYPTROOT_SSH_UNLOCK: "no" }
 
 # Debian forky Hyprland desktop - UEFI x86 and ThinkPad X13s
 # Btrfs root with zstd, LUKS encrypted with automatic unlock.
