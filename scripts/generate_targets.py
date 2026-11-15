@@ -1113,13 +1113,11 @@ def generate_stable_yaml(conf_wip_boards, manual_content="", hyprland_boards=Non
         yaml += '  # end of auto generated section\n\n'
 
     # Hyprland list: fast HDMI boards with the edge kernel only. A board
-    # without edge gets no Hyprland image. The .manual file sets the
-    # Hyprland target for uefi-x86 and thinkpad-x13s.
+    # without edge gets no Hyprland image.
     if hyprland_boards is None:
         hyprland_boards = conf_wip_boards
     hyprland_fast = {b['board']: b for b in hyprland_boards
-                     if b['branch'] == 'edge' and b['is_fast'] is True
-                     and b['board'] not in ('uefi-x86', 'thinkpad-x13s')}
+                     if b['branch'] == 'edge' and b['is_fast'] is True}
     if hyprland_fast:
         yaml += '  stable-hyprland-fast-hdmi: &stable-hyprland-fast-hdmi\n'
         yaml += '  # auto generated section\n'
