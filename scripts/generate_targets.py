@@ -586,7 +586,7 @@ def get_soc_extensions(entry, extensions_map=None, remove_extensions_map=None):
     return ','.join(extensions) if extensions else ''
 
 
-def extract_boards_by_support_level(image_info, extensions_map=None, remove_extensions_map=None, blacklist=None):
+def extract_boards_by_support_level(image_info, extensions_map=None, remove_extensions_map=None, blacklist=None, ignore_test_target=False):
     """
     Extract and categorize boards by support level.
 
@@ -595,6 +595,7 @@ def extract_boards_by_support_level(image_info, extensions_map=None, remove_exte
         extensions_map: Optional extensions mapping
         remove_extensions_map: Optional remove extensions mapping
         blacklist: Optional set of board names to exclude
+        ignore_test_target: Keep branches that KERNEL_TEST_TARGET excludes
 
     Returns:
         - conf_wip_boards: Boards with conf or wip support level
@@ -661,7 +662,7 @@ def extract_boards_by_support_level(image_info, extensions_map=None, remove_exte
         toplevel_vars = inventory.get('BOARD_TOP_LEVEL_VARS', {})
         kernel_test_target = toplevel_vars.get('KERNEL_TEST_TARGET', '')
 
-        if kernel_test_target:
+        if kernel_test_target and not ignore_test_target:
             # Parse KERNEL_TEST_TARGET - comma-separated list of branches
             allowed_branches = [b.strip() for b in kernel_test_target.split(',') if b.strip()]
             if data['branch'] not in allowed_branches:
@@ -928,12 +929,13 @@ targets:
     return yaml
 
 
-def generate_stable_yaml(conf_wip_boards, manual_content=""):
+def generate_stable_yaml(conf_wip_boards, manual_content="", hyprland_boards=None):
     """
     Generate stable.yml with full set of images.
     For conf/wip boards only.
     Separates fast, slow, riscv64, and loongarch boards based on CPU performance.
     manual_content: Additional YAML to append inside the targets section
+    hyprland_boards: Boards for the Hyprland target (edge, fast HDMI)
     """
     yaml = generate_yaml_header()
 
@@ -1108,6 +1110,21 @@ def generate_stable_yaml(conf_wip_boards, manual_content=""):
         yaml += '  # auto generated section\n'
         for board_data in sorted(edge_headless, key=lambda x: x['board']):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+
+    # Hyprland list: fast HDMI boards with the edge kernel only. A board
+    # without edge gets no Hyprland image. The .manual file sets the
+    # Hyprland target for uefi-x86 and thinkpad-x13s.
+    if hyprland_boards is None:
+        hyprland_boards = conf_wip_boards
+    hyprland_fast = {b['board']: b for b in hyprland_boards
+                     if b['branch'] == 'edge' and b['is_fast'] is True
+                     and b['board'] not in ('uefi-x86', 'thinkpad-x13s')}
+    if hyprland_fast:
+        yaml += '  stable-hyprland-fast-hdmi: &stable-hyprland-fast-hdmi\n'
+        yaml += '  # auto generated section\n'
+        for board in sorted(hyprland_fast):
+            yaml += format_board_item(hyprland_fast[board], include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
     yaml += """# automated lists stop
@@ -1296,11 +1313,11 @@ targets:
         if edge_fast:
             yaml += '      - *stable-edge-fast-hdmi\n'
 
-    # Debian forky Hyprland desktop (fast HDMI only). Same boards as
-    # KDE Plasma. configng hyprland.yaml ships only on forky, so RELEASE
-    # is literal. Btrfs root, LUKS and a 2 GiB /boot as in the UEFI
-    # Hyprland target.
-    if current_fast or edge_fast:
+    # Debian forky Hyprland desktop (fast HDMI only), edge kernel only.
+    # configng hyprland.yaml ships only on forky, so
+    # RELEASE is literal. Btrfs root, LUKS and a 2 GiB /boot as in the
+    # UEFI Hyprland target.
+    if hyprland_fast:
         yaml += """
   # Debian forky Hyprland desktop (fast HDMI only)
   desktop-stable-debian-hyprland:
@@ -1322,12 +1339,8 @@ targets:
       CRYPTROOT_AUTOUNLOCK: "yes"
       CRYPTROOT_SSH_UNLOCK: "no"
     items:
-      - *stable-current-fast-hdmi
+      - *stable-hyprland-fast-hdmi
 """
-        if vendor_fast:
-            yaml += '      - *stable-vendor-fast-hdmi\n'
-        if edge_fast:
-            yaml += '      - *stable-edge-fast-hdmi\n'
 
     # Ubuntu stable XFCE desktop for legacy fast HDMI boards
     if legacy_fast:
@@ -2246,7 +2259,9 @@ def main():
     manual_stable = load_manual_overrides(str(stable_path))
     conf_wip_boards_stable, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable)
     print(f"  stable: {len(conf_wip_boards_stable)} boards after blacklist", file=sys.stderr)
-    stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable)
+    # Hyprland uses edge, also where KERNEL_TEST_TARGET leaves it out.
+    hyprland_boards, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable, ignore_test_target=True)
+    stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable, hyprland_boards)
     stable_path.write_text(resolve_release_tokens(stable_yaml, args.debian_standard, args.ubuntu_standard))
     print(f"  Written {stable_path}", file=sys.stderr)
 
