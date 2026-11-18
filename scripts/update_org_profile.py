@@ -138,7 +138,11 @@ def label_query(label):
 
 
 def label_count(label):
-    return gh("search/issues", q=label_query(label), per_page=1)["total_count"]
+    res = gh("search/issues", q=label_query(label), per_page=1)
+    # A search that times out returns partial results, not an error.
+    if res.get("incomplete_results"):
+        raise RuntimeError(f"incomplete search results for label '{label}'")
+    return res["total_count"]
 
 
 def boards(build_dir):
@@ -193,11 +197,8 @@ def block_release(ctx):
     out = f'Next release **{nxt["version"]}** ships by the **{nxt["due"]}**.'
     if nxt["in_release_month"]:
         out += " This is the release month: bug fixes and hardware testing only."
-    try:
-        ms = milestone(nxt["version"])
-    except Exception as exc:  # the milestone is optional decoration
-        print(f"warning: milestone lookup failed: {exc}", file=sys.stderr)
-        ms = None
+    # No milestone is fine. A failed lookup raises: refresh() keeps the old block.
+    ms = milestone(nxt["version"])
     if ms:
         n = ms["open_issues"]
         out += f' [{n} open item{"s" if n != 1 else ""}]({ms["html_url"]}) on the milestone.'
