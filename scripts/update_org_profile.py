@@ -142,7 +142,11 @@ def label_count(label):
     # A search that times out returns partial results, not an error.
     if res.get("incomplete_results"):
         raise RuntimeError(f"incomplete search results for label '{label}'")
-    return res["total_count"]
+    count = res.get("total_count")
+    # bool is an int subclass: reject it too.
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        raise RuntimeError(f"bad total_count {count!r} for label '{label}'")
+    return count
 
 
 def boards(build_dir):
