@@ -122,19 +122,9 @@
 # image shows on NanoPi M6 V2 and NanoPC T6 LTS Plus).
 hide:
   - "friendlyelec-rk3588"
+  - "cix-acpi"
 
 boards:
-  - board_slug: "minisforum-msr1"
-    board_name: "Minisforum MS-R1"
-    board_vendor: "minisforum"
-    board_support: "conf"
-    board_introduced: "2024"
-
-    # The magic: reuse artifact set
-    uses: "uefi-arm64"
-    branch: "current"
-    file_extension: "img.xz"
-
   - board_slug: "khadasmind"
     board_name: "Khadas Mind Series"
     board_vendor: "khadas"
@@ -143,17 +133,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "uefi-x86"
-    branch: "current"
-    file_extension: "img.xz"
-
-  - board_slug: "orangepi6-plus"
-    board_name: "Orangepi 6 Plus"
-    board_vendor: "xunlong"
-    board_support: "csc"
-    board_introduced: "2025"
-
-    # The magic: reuse artifact set
-    uses: "uefi-arm64"
     branch: "current"
     file_extension: "img.xz"
 
@@ -386,4 +365,40 @@ boards:
     # selects tegra210-p3450-0000.dtb by machdb (armbian/build#11034).
     uses: "uefi-arm64-dt"
     branch: "current,edge"
+    file_extension: "img.xz"
+
+  # ---------------------------------------------------------------------
+  # Cix P1 (CD8180/CD8160) boards on the generic "cix-acpi" image. That
+  # image boots with ACPI on every Sky1 board, so it has no page of its own.
+
+  - board_slug: "minisforum-msr1"
+    board_name: "Minisforum MS-R1"
+    board_vendor: "minisforum"
+    board_support: "conf"
+    board_introduced: "2024"
+    uses: "cix-acpi"
+    file_extension: "img.xz"
+
+  - board_slug: "orangepi6-plus"
+    board_name: "Orangepi 6 Plus"
+    board_vendor: "xunlong"
+    board_support: "csc"
+    board_introduced: "2025"
+    uses: "cix-acpi"
+    file_extension: "img.xz"
+
+  - board_slug: "radxa-orion-o6"
+    board_name: "Radxa Orion O6"
+    board_vendor: "radxa"
+    board_support: "conf"
+    board_introduced: "2025"
+    uses: "cix-acpi"
+    file_extension: "img.xz"
+
+  - board_slug: "radxa-orion-o6n"
+    board_name: "Radxa Orion O6N"
+    board_vendor: "radxa"
+    board_support: "conf"
+    board_introduced: "2025"
+    uses: "cix-acpi"
     file_extension: "img.xz"
