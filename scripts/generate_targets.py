@@ -407,6 +407,48 @@ def match_exposed_override(overrides, *, board, boardfamily):
     return merged
 
 
+def load_exclude_rules(path):
+    """
+    Load the image exclude rules from targets-release.exclude.yaml.
+
+    The file is a YAML list. Each rule is a mapping of build variable to
+    a value, a glob, or a list of them. The build framework's
+    targets-compositor drops every image that matches all keys of a rule.
+    Keys are matched against the image variables (BOARD, BRANCH, RELEASE,
+    DESKTOP_ENVIRONMENT, ...), then against the board inventory (ARCH,
+    BOARDFAMILY, ...). Use literal release codenames in rules.
+
+    Missing file → []. A malformed file → error, so a typo cannot
+    silently change the build lists.
+    """
+    if not path.exists():
+        return []
+    with open(path) as f:
+        rules = yaml.safe_load(f)
+    if rules is None:  # empty file
+        rules = []
+    scalars = (str, int, float, bool)
+
+    def value_ok(v):
+        if isinstance(v, list):
+            return bool(v) and all(isinstance(m, scalars) for m in v)
+        return isinstance(v, scalars)
+
+    if not isinstance(rules, list) or not all(
+            isinstance(r, dict) and r and all(value_ok(v) for v in r.values()) for r in rules):
+        sys.exit(f"Error: {path}: must be a list of non-empty mappings of scalars or lists of scalars")
+    print(f"  Loaded {len(rules)} exclude rules from {path.name}", file=sys.stderr)
+    return rules
+
+
+def append_exclude_rules(yaml_text, rules):
+    """Append the exclude rules as the top-level `exclude:` key."""
+    if not rules:
+        return yaml_text
+    return yaml_text.rstrip('\n') + '\n\n# From targets-release.exclude.yaml\nexclude:\n' + \
+        yaml.safe_dump(rules, default_flow_style=None, sort_keys=False, indent=2)
+
+
 def load_blacklist(base_path):
     """
     Load blacklist of boards to exclude from automation.
@@ -2238,6 +2280,8 @@ def main():
     image_info = load_image_info(json_path)
     print(f"Loaded {len(image_info)} entries", file=sys.stderr)
 
+    exclude_rules = load_exclude_rules(output_dir / 'targets-release.exclude.yaml')
+
     # Generate YAML files
     print("Generating YAML files...", file=sys.stderr)
 
@@ -2248,7 +2292,7 @@ def main():
     conf_wip_boards_apps, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_apps)
     print(f"  apps: {len(conf_wip_boards_apps)} boards after blacklist", file=sys.stderr)
     apps_yaml = generate_apps_yaml(conf_wip_boards_apps, manual_apps)
-    apps_path.write_text(resolve_release_tokens(apps_yaml, args.debian_apps, args.ubuntu_apps))
+    apps_path.write_text(resolve_release_tokens(append_exclude_rules(apps_yaml, exclude_rules), args.debian_apps, args.ubuntu_apps))
     print(f"  Written {apps_path}", file=sys.stderr)
 
     # targets-release-standard-support.yaml
@@ -2260,7 +2304,7 @@ def main():
     # Hyprland uses edge, also where KERNEL_TEST_TARGET leaves it out.
     hyprland_boards, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable, ignore_test_target=True)
     stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable, hyprland_boards)
-    stable_path.write_text(resolve_release_tokens(stable_yaml, args.debian_standard, args.ubuntu_standard))
+    stable_path.write_text(resolve_release_tokens(append_exclude_rules(stable_yaml, exclude_rules), args.debian_standard, args.ubuntu_standard))
     print(f"  Written {stable_path}", file=sys.stderr)
 
     # targets-release-nightly.yaml
@@ -2270,7 +2314,7 @@ def main():
     conf_wip_boards_nightly, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_nightly)
     print(f"  nightly: {len(conf_wip_boards_nightly)} boards after blacklist", file=sys.stderr)
     nightly_yaml = generate_nightly_yaml(conf_wip_boards_nightly, manual_nightly)
-    nightly_path.write_text(resolve_release_tokens(nightly_yaml, args.debian_nightly, args.ubuntu_nightly))
+    nightly_path.write_text(resolve_release_tokens(append_exclude_rules(nightly_yaml, exclude_rules), args.debian_nightly, args.ubuntu_nightly))
     print(f"  Written {nightly_path}", file=sys.stderr)
 
     # targets-release-community-maintained.yaml
@@ -2280,7 +2324,7 @@ def main():
     _, csc_tvb_boards_community = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_community)
     print(f"  community: {len(csc_tvb_boards_community)} boards after blacklist", file=sys.stderr)
     community_yaml = generate_community_yaml(csc_tvb_boards_community, manual_community)
-    community_path.write_text(resolve_release_tokens(community_yaml, args.debian_community, args.ubuntu_community))
+    community_path.write_text(resolve_release_tokens(append_exclude_rules(community_yaml, exclude_rules), args.debian_community, args.ubuntu_community))
     print(f"  Written {community_path}", file=sys.stderr)
 
     # exposed.map

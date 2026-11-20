@@ -1,0 +1,16 @@
+# Images to drop from all generated build lists.
+#
+# Each rule drops every image that matches all keys of the rule.
+# A value is a string, a glob, or a list of them.
+# Keys: image variables (BOARD, BRANCH, RELEASE, BUILD_DESKTOP,
+# DESKTOP_ENVIRONMENT, CRYPTROOT_ENABLE, ...), then board variables
+# (ARCH, BOARDFAMILY, ...). Use literal release codenames.
+#
+# Example:
+#   - { BOARDFAMILY: "sun8i*", BRANCH: legacy, RELEASE: [noble, resolute] }
+#
+# To drop a board from all images of one scope, use
+# targets-release-<type>.blacklist instead.
+
+# Arduino UNO Q: no use for a Hyprland desktop.
+- { BOARD: arduino-uno-q, DESKTOP_ENVIRONMENT: hyprland }
