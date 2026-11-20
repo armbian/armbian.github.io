@@ -424,7 +424,9 @@ def load_exclude_rules(path):
     if not path.exists():
         return []
     with open(path) as f:
-        rules = yaml.safe_load(f) or []
+        rules = yaml.safe_load(f)
+    if rules is None:  # empty file
+        rules = []
     if not isinstance(rules, list) or not all(isinstance(r, dict) and r for r in rules):
         sys.exit(f"Error: {path}: must be a list of non-empty mappings")
     print(f"  Loaded {len(rules)} exclude rules from {path.name}", file=sys.stderr)
