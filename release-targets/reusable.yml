@@ -132,7 +132,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "uefi-arm64"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "khadasmind"
@@ -143,7 +142,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "uefi-x86"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "orangepi6-plus"
@@ -154,7 +152,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "uefi-arm64"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypizero2w"
@@ -165,7 +162,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi3aplus"
@@ -176,7 +172,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi3bplus"
@@ -186,7 +181,6 @@ boards:
     board_introduced: "2018"
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi3b"
@@ -197,7 +191,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypicm3"
@@ -208,7 +201,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypicm3plus"
@@ -219,7 +211,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi400"
@@ -230,7 +221,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi500"
@@ -241,7 +231,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi500plus"
@@ -252,7 +241,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypi5"
@@ -263,7 +251,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "rpi4b"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "qidi-x7"
@@ -274,7 +261,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "qidi-x6"
-    branch: "current"
     file_extension: "img.xz"
     
   - board_slug: "qidi-x4"
@@ -285,7 +271,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "qidi-x6"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "nanopct6-plus"
@@ -295,7 +280,6 @@ boards:
 
     # The magic: reuse artifact set
     uses: "nanopct6-lts"
-    branch: "current"
     file_extension: "img.xz"
 
   - board_slug: "nanopi-m6v2"
@@ -309,7 +293,6 @@ boards:
     # see armbian/build#10946. That board was originally named "nanopi6-series"
     # (armbian/build#10442) before being renamed as T6 support was added.
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   # ---------------------------------------------------------------------
@@ -328,7 +311,6 @@ boards:
     # dedicated build - it ships on the unified "friendlyelec-rk3588"
     # image, see armbian/build#10946.
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   - board_slug: "nanopi-r6s"
@@ -337,7 +319,6 @@ boards:
     board_support: "conf"
     board_introduced: "2023"
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   - board_slug: "nanopi-r6c"
@@ -346,7 +327,6 @@ boards:
     board_support: "csc"
     board_introduced: "2023"
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   - board_slug: "nanopi-m6"
@@ -355,7 +335,6 @@ boards:
     board_support: "conf"
     board_introduced: "2024"
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   - board_slug: "nanopct6"
@@ -364,7 +343,6 @@ boards:
     board_support: "conf"
     board_introduced: "2023"
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   - board_slug: "nanopct6-lts"
@@ -373,7 +351,6 @@ boards:
     board_support: "conf"
     board_introduced: "2024"
     uses: "friendlyelec-rk3588"
-    branch: "current,vendor"
     file_extension: "img.xz"
 
   - board_slug: "jetson-nano"
@@ -385,5 +362,4 @@ boards:
     # The generic UEFI/DT image boots it on the stock QSPI firmware: stubble
     # selects tegra210-p3450-0000.dtb by machdb (armbian/build#11034).
     uses: "uefi-arm64-dt"
-    branch: "current,edge"
     file_extension: "img.xz"
