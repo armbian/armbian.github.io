@@ -21,6 +21,7 @@ Files the script reads from the output directory. Every input is optional unless
 | `targets-extensions.map.blacklist` | Remove auto- or manually-added extensions per board / branch. |
 | `targets-release-<type>.blacklist` | Boards to exclude from a target type (one per line). |
 | `targets-release-<type>.manual` | YAML appended to the auto-generated section for that type. |
+| `targets-release.exclude.yaml` | Rules that drop single images from all types (for example one desktop on one board). |
 | `exposed.map.overrides.yaml` | Per-board / boardfamily overrides for the regex patterns in `exposed.map`. |
 | `reusable.yml` | "Virtual board" definitions that reuse another board's image set with custom branding (see [reusable.yml header](reusable.yml) for schema and examples). |
 
@@ -100,6 +101,17 @@ One board name per line. `#` comments allowed.
 ayn-odin2
 bananapim5
 ```
+
+### `targets-release.exclude.yaml`
+
+A list of rules. Each rule drops every image that matches all keys of the rule. A value is a string, a glob, or a list of them. Keys are image variables (`BOARD`, `BRANCH`, `RELEASE`, `DESKTOP_ENVIRONMENT`, ...), then board variables (`ARCH`, `BOARDFAMILY`, ...). Use literal release codenames.
+
+```yaml
+- { BOARD: arduino-uno-q, DESKTOP_ENVIRONMENT: hyprland }
+- { BOARDFAMILY: "sun8i*", BRANCH: legacy, RELEASE: [noble, resolute] }
+```
+
+The generator copies the rules into every `targets-release-<type>.yaml` as the top-level `exclude:` key. The build framework's `targets-compositor.py` applies them.
 
 ### `targets-release-<type>.manual`
 
