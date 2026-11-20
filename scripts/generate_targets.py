@@ -427,8 +427,16 @@ def load_exclude_rules(path):
         rules = yaml.safe_load(f)
     if rules is None:  # empty file
         rules = []
-    if not isinstance(rules, list) or not all(isinstance(r, dict) and r for r in rules):
-        sys.exit(f"Error: {path}: must be a list of non-empty mappings")
+    scalars = (str, int, float, bool)
+
+    def value_ok(v):
+        if isinstance(v, list):
+            return bool(v) and all(isinstance(m, scalars) for m in v)
+        return isinstance(v, scalars)
+
+    if not isinstance(rules, list) or not all(
+            isinstance(r, dict) and r and all(value_ok(v) for v in r.values()) for r in rules):
+        sys.exit(f"Error: {path}: must be a list of non-empty mappings of scalars or lists of scalars")
     print(f"  Loaded {len(rules)} exclude rules from {path.name}", file=sys.stderr)
     return rules
 
