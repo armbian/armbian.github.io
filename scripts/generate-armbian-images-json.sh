@@ -117,7 +117,8 @@ declare -A HIDDEN_BOARDS=()             # board_slug -> 1 (no own download entri
 if [[ -f "$REUSABLE_FILE" ]]; then
   echo "▶ Loading reusable board definitions from ${REUSABLE_FILE}…" >&2
 
-  while IFS=$'\t' read -r slug name vendor support uses branch ext introduced; do
+  # \x1f, not tab: whitespace IFS merges empty fields and shifts the rest.
+  while IFS=$'\x1f' read -r slug name vendor support uses branch ext introduced; do
     slug="${slug,,}"
     [[ -z "$slug" ]] && continue
 
@@ -142,7 +143,7 @@ try:
     with open('$REUSABLE_FILE') as f:
         data = yaml.safe_load(f)
     for b in data.get('boards', []):
-        print('\t'.join([
+        print('\x1f'.join([
             str(b.get('board_slug', '')),
             str(b.get('board_name', '')),
             str(b.get('board_vendor', '')),
