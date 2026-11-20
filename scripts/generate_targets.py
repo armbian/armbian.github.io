@@ -839,6 +839,15 @@ lists:
 """
 
 
+def bianbu_boards(boards):
+    """Return the SpacemiT K1 boards (BOARDFAMILY=spacemit). Bianbu ships only for K1, not for K3."""
+    def family(b):
+        inv = b['entry'].get('in', {}).get('inventory', {})
+        top = inv.get('BOARD_TOP_LEVEL_VARS', {})
+        return inv.get('BOARDFAMILY') or (top.get('BOARDFAMILY', '') if isinstance(top, dict) else '')
+    return [b for b in boards if family(b) == 'spacemit']
+
+
 def format_board_item(board_data, include_extensions=True):
     """Format a board entry for YAML, optionally including extensions."""
     board = board_data['board']
@@ -1394,11 +1403,12 @@ targets:
     # is therefore literal here, not the substitutable `UBUNTU` token.
     # Tier=mid because bianbu-minimal is intentionally bare; mid is the
     # canonical Bianbu desktop experience.
-    if legacy_riscv64:
+    k1_legacy = bianbu_boards(legacy_riscv64)
+    if k1_legacy:
         yaml += """
   # Ubuntu noble Bianbu desktop for SpacemiT K1 boards (legacy branch)
   desktop-stable-ubuntu-riscv64-bianbu:
-    enabled: no  # Bianbu desktop is broken
+    enabled: yes
     configs: [ armbian-images ]
     pipeline:
       gha: *armbian-gha
@@ -1410,8 +1420,9 @@ targets:
       DESKTOP_ENVIRONMENT: "bianbu"
       DESKTOP_TIER: "mid"
     items:
-      - *stable-legacy-riscv64
 """
+        for b in sorted(k1_legacy, key=lambda x: x['board']):
+            yaml += '  ' + format_board_item(b, include_extensions=True) + '\n'
 
     if manual_content:
         # Indent manual content by 2 spaces to be under targets:
@@ -1897,6 +1908,29 @@ targets:
             yaml += '      - *community-vendor-riscv64\n'
         if edge_riscv64:
             yaml += '      - *community-edge-riscv64\n'
+
+    # Ubuntu noble Bianbu desktop for community SpacemiT K1 boards (legacy
+    # branch). Same constraints as desktop-stable-ubuntu-riscv64-bianbu.
+    k1_legacy = bianbu_boards(legacy_riscv64)
+    if k1_legacy:
+        yaml += """
+  # Ubuntu noble Bianbu desktop for community SpacemiT K1 boards (legacy branch)
+  community-noble-riscv64-bianbu:
+    enabled: yes
+    configs: [ armbian-community ]
+    pipeline:
+      gha: *armbian-gha
+    build-image: "yes"
+    vars:
+      RELEASE: noble
+      BUILD_MINIMAL: "no"
+      BUILD_DESKTOP: "yes"
+      DESKTOP_ENVIRONMENT: "bianbu"
+      DESKTOP_TIER: "mid"
+    items:
+"""
+        for b in sorted(k1_legacy, key=lambda x: x['board']):
+            yaml += '  ' + format_board_item(b, include_extensions=True) + '\n'
 
     # Ubuntu minimal CLI for all community boards (excluding loongarch).
     # Mirrors community-trixie-all on the Debian side so every csc/tvb
