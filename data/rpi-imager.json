@@ -1,0 +1,94 @@
+{
+  "os_list": [
+    {
+      "name": "Armbian Forky Hyprland-crypt 26.11.2",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.11.2_Rpi4b_forky_edge_7.3.5_hyprland-crypt_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-11-19",
+      "extract_size": 9839837184,
+      "extract_sha256": "a588e6b6b922a5f88054682653faf7d5eb6ccca0c52be22fc243bfa617c465ff",
+      "image_download_size": 3397520680,
+      "image_download_sha256": "0e0172684731d55dfc3055afb8ee253f28fa51f5faec2068d9a28f1a14ed47aa",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Resolute Gnome Desktop 26.11.2",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.11.2_Rpi4b_resolute_current_6.18.64_gnome_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-11-19",
+      "extract_size": 6136266752,
+      "extract_sha256": "59ab40285173be8db22626c2cd4f6b6e01fb8a32f945b36c801daf689f4f2aa8",
+      "image_download_size": 1024645104,
+      "image_download_sha256": "61cc0e7f3d1baf7db0f4dd143b0c26c68b17c7f3ece47a31cc6813a5269fbd54",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Resolute KDE Plasma Desktop 26.11.2",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.11.2_Rpi4b_resolute_current_6.18.64_kde-plasma_desktop.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-11-19",
+      "extract_size": 7038042112,
+      "extract_sha256": "0d634d9cdf03a51939c1888e931875e043c399ae419f7ccbfe5163a31f430a82",
+      "image_download_size": 1206353924,
+      "image_download_sha256": "47524a2772a2df51f34e84ffabcd825ff9086abbfb907db7ca362a3d61054645",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Resolute Minimal 26.11.2",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.11.2_Rpi4b_resolute_current_6.18.64_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-11-19",
+      "extract_size": 1849688064,
+      "extract_sha256": "ec13ce2b7652cf7800daace79ace2877dd62826c79c702d9c02d9ab95b42f5de",
+      "image_download_size": 224420692,
+      "image_download_sha256": "2dfef80c7cffac6eb10896002c324af4204305dcdba81a3df4449340037b81b1",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    },
+    {
+      "name": "Armbian Trixie Minimal 26.11.2",
+      "description": "Ultralight custom Debian OS for single board computers",
+      "url": "https://dl.armbian.com/rpi4b/archive/Armbian_26.11.2_Rpi4b_trixie_current_6.18.64_minimal.img.xz",
+      "icon": "https://www.armbian.com/armbian-logo-40x40.png",
+      "website": "https://www.armbian.com",
+      "release_date": "2026-11-19",
+      "extract_size": 1958739968,
+      "extract_sha256": "6bd3ae7f7b2c39d44c40f3242f08722d92e718d9fdb5aa3bd595a70c0d9a1434",
+      "image_download_size": 236825592,
+      "image_download_sha256": "aed629e372f621e713e82fe7e288856b7435a6148cfb945c28e027d325c3a736",
+      "devices": [
+        "pi5-64bit",
+        "pi4-64bit",
+        "pi3-64bit"
+      ],
+      "init_format": "systemd"
+    }
+  ]
+}
