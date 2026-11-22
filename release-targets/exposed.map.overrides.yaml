@@ -57,8 +57,7 @@ overrides:
     desktop:
       release: noble
       branch: legacy
-      # Bianbu desktop is disabled (broken). Expose XFCE until it is fixed.
-      suffix: xfce_desktop
+      suffix: bianbu_desktop
 
   - boards: [bananapif3, musepipro]
     # K1 boards that *do* ship a current-branch trixie minimal CLI
