@@ -131,7 +131,7 @@ boards:
     board_introduced: "2024"
 
     # The magic: reuse artifact set
-    uses: "uefi-arm64"
+    uses: "cix-acpi"
     file_extension: "img.xz"
 
   - board_slug: "khadasmind"
@@ -151,7 +151,7 @@ boards:
     board_introduced: "2025"
 
     # The magic: reuse artifact set
-    uses: "uefi-arm64"
+    uses: "cix-acpi"
     file_extension: "img.xz"
 
   - board_slug: "raspberrypizero2w"
