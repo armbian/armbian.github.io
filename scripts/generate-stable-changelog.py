@@ -254,13 +254,20 @@ def framework_prs(build_repo, old, new):
     log = git(build_repo, "log", "--format=%x00%H%x09%s", "--name-only", f"{old}..{new}")
     prs = {}
     commits = 0
+    lost_commits = []
     for chunk in log.split("\x00")[1:]:
         lines = [l for l in chunk.split("\n") if l]
         sha, subject = lines[0].split("\t", 1)
         commits += 1
         m = re.search(r"\(#(\d+)\)$", subject)
-        numbers = [int(m.group(1))] if m else [
-            p["number"] for p in (gh_api(f"repos/armbian/build/commits/{sha}/pulls") or [])]
+        if m:
+            numbers = [int(m.group(1))]
+        else:
+            pulls = gh_api(f"repos/armbian/build/commits/{sha}/pulls")
+            if pulls is None:
+                lost_commits.append(sha)
+                continue
+            numbers = [p["number"] for p in pulls]
         for n in numbers:
             prs.setdefault(n, set()).update(lines[1:])
     shown, hidden, unknown = [], 0, []
@@ -277,7 +284,7 @@ def framework_prs(build_repo, old, new):
             continue
         shown.append({"number": n, "title": title, "author": author,
                       "group": pr_group(files)})
-    return commits, shown, hidden, unknown
+    return commits, shown, hidden, unknown, lost_commits
 
 
 def pr_group(files):
@@ -290,6 +297,32 @@ def pr_group(files):
     if any_prefix("config/boards/", "packages/bsp/", "config/sources/families/"):
         return "Boards and BSP"
     return "Build system"
+
+
+# ---------------------------------------------------------------- provenance
+
+def at(repo, when):
+    """main tip at a time. --first-parent: a merged branch can hold older commits."""
+    return git(repo, "rev-list", "-1", "--first-parent", f"--before={when}", "origin/main").strip()
+
+
+def cve_commit(cve_repo, arts, when):
+    """armbian/cve commit of a build.
+
+    Kernels with CVE patches carry the first 4 hex of that commit in the version
+    (part "CVE"). Take the newest main commit with this prefix that existed before
+    the kernel builds ended. Without the part, use the main tip at the build time.
+    """
+    prefixes = collections.Counter(split_version(a["version"])[1]["CVE"] for a in arts.values()
+                                   if a["type"] == "kernel" and "CVE" in split_version(a["version"])[1])
+    if prefixes:
+        prefix = prefixes.most_common(1)[0][0]
+        end = datetime.datetime.fromisoformat(when.replace("Z", "+00:00")) + datetime.timedelta(hours=24)
+        for sha in git(cve_repo, "rev-list", "--first-parent", f"--before={end.isoformat()}",
+                       "origin/main").split():
+            if sha.startswith(prefix):
+                return sha
+    return at(cve_repo, when)
 
 
 # ---------------------------------------------------------------- render
@@ -314,18 +347,18 @@ def main():
     ap.add_argument("--cve-repo", required=True, help="clone of armbian/cve")
     ap.add_argument("--vulns", required=True, help="kernel vulns repo (.dyad files)")
     ap.add_argument("--linux-repo", required=True, help="clone of armbian/linux with both kernel revisions")
+    ap.add_argument("--prev-build-sha", help="armbian/build commit of the previous build (from its log)")
+    ap.add_argument("--cur-build-sha", help="armbian/build commit of this build (from its log)")
     ap.add_argument("--out", default="CHANGELOG.md")
     ap.add_argument("--counts", default="counts.json")
     args = ap.parse_args()
 
     prev, cur = load_artifacts(args.prev_info), load_artifacts(args.cur_info)
 
-    def at(repo, branch, when):
-        return git(repo, "rev-list", "-1", f"--before={when}", branch).strip()
-    build_old = at(args.build_repo, "origin/main", args.prev_time)
-    build_new = at(args.build_repo, "origin/main", args.cur_time)
-    cve_old = at(args.cve_repo, "origin/main", args.prev_time)
-    cve_new = at(args.cve_repo, "origin/main", args.cur_time)
+    build_old = args.prev_build_sha or at(args.build_repo, args.prev_time)
+    build_new = args.cur_build_sha or at(args.build_repo, args.cur_time)
+    cve_old = cve_commit(args.cve_repo, prev, args.prev_time)
+    cve_new = cve_commit(args.cve_repo, cur, args.cur_time)
 
     built = datetime.datetime.fromisoformat(args.cur_time.replace("Z", "+00:00"))
     since = datetime.datetime.fromisoformat(args.prev_time.replace("Z", "+00:00"))
@@ -459,12 +492,15 @@ def main():
             md.append("</details>\n")
 
     # ---- framework
-    n_commits, prs, hidden, unknown = framework_prs(args.build_repo, build_old, build_new)
+    n_commits, prs, hidden, unknown, lost_commits = framework_prs(args.build_repo, build_old, build_new)
     counts["framework_prs"] = len(prs)
     md.append(f"## Framework changes ({len(prs)} PRs, {hidden} automated hidden)\n")
     if unknown:
         md.append(f"Incomplete: the GitHub API did not return {len(unknown)} PRs: "
                   + ", ".join(f"[#{n}](https://github.com/armbian/build/pull/{n})" for n in unknown) + "\n")
+    if lost_commits:
+        md.append(f"Incomplete: the GitHub API did not return the PRs of {len(lost_commits)} commits: "
+                  + ", ".join(f"[{c[:7]}](https://github.com/armbian/build/commit/{c})" for c in lost_commits) + "\n")
     groups = collections.defaultdict(list)
     for pr in prs:
         groups[pr["group"]].append(pr)

@@ -890,24 +890,35 @@ jobs:
                   "$dir/artifacts-info.json" > /dev/null; then
                 # The start of the matrix job: the time the build read armbian/build and armbian/cve.
                 for attempt in 1 2 3 4 5; do
-                  started=$(gh api "repos/armbian/ci/actions/runs/${run}/jobs?per_page=20" \
-                    -q '[.jobs[] | select(.name | test("JSON matrix"))][0].started_at' 2>/dev/null || true)
-                  [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] && break
+                  job=$(gh api "repos/armbian/ci/actions/runs/${run}/jobs?per_page=20" \
+                    -q '[.jobs[] | select(.name | test("JSON matrix"))][0] | "\(.id) \(.started_at)"' 2>/dev/null || true)
+                  [[ "$job" =~ ^[0-9]+\ [0-9]{4}-[0-9]{2}-[0-9]{2}T ]] && break
                   sleep $((attempt * 10))
                 done
-                [[ "$started" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || { echo "::error::No matrix job time for run ${run}" >&2; return 1; }
-                echo "Build of ${tag}: run ${run}, matrix started ${started}" >&2
-                echo "$started"
+                [[ "$job" =~ ^[0-9]+\ [0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || { echo "::error::No matrix job for run ${run}" >&2; return 1; }
+                read -r job_id started <<<"$job"
+                # The armbian/build commit: actions/checkout prints it after the checkout.
+                sha=$(gh api --allow-escape-sequences "repos/armbian/ci/actions/jobs/${job_id}/logs" \
+                  | sed 's/\x1b\[[0-9;]*m//g' \
+                  | awk '/Syncing repository: armbian\/build/ {f=1} f && /git log -1 --format=%H/ {getline; print $2; exit}' || true)
+                [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::warning::No armbian/build commit in the log of job ${job_id}: using the time" >&2; sha=""; }
+                echo "Build of ${tag}: run ${run}, matrix started ${started}, armbian/build ${sha:-?}" >&2
+                echo "$started" > "$dir/time"
+                echo "$sha" > "$dir/build-sha"
                 return 0
               fi
             done
             echo "::error::No build with build-info-json found for ${tag}" >&2
             return 1
           }
-          CUR_TIME=$(find_build "$CUR" info-cur)
-          PREV_TIME=$(find_build "$PREV" info-prev)
-          echo "CUR_TIME=$CUR_TIME" >> "$GITHUB_ENV"
-          echo "PREV_TIME=$PREV_TIME" >> "$GITHUB_ENV"
+          find_build "$CUR" info-cur
+          find_build "$PREV" info-prev
+          {
+            echo "CUR_TIME=$(cat info-cur/time)"
+            echo "PREV_TIME=$(cat info-prev/time)"
+            echo "CUR_BUILD_SHA=$(cat info-cur/build-sha)"
+            echo "PREV_BUILD_SHA=$(cat info-prev/build-sha)"
+          } >> "$GITHUB_ENV"
 
       - name: Fetch git history (blobless)
         run: |
@@ -935,6 +946,7 @@ jobs:
             --prev-info info-prev/artifacts-info.json --cur-info info-cur/artifacts-info.json \
             --prev-version "$PREV" --cur-version "$CUR" \
             --prev-time "$PREV_TIME" --cur-time "$CUR_TIME" \
+            ${PREV_BUILD_SHA:+--prev-build-sha "$PREV_BUILD_SHA"} ${CUR_BUILD_SHA:+--cur-build-sha "$CUR_BUILD_SHA"} \
             --build-repo build.git --cve-repo cve.git --vulns vulns --linux-repo linux.git \
             --out CHANGELOG.md --counts counts.json
           cat CHANGELOG.md >> "$GITHUB_STEP_SUMMARY"
