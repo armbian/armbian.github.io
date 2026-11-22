@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 MAINLINE_SOURCE = "https://github.com/armbian/linux.git"
 BOT_AUTHORS = {"armbianworker", "armbianworker[bot]", "github-actions[bot]",
@@ -38,9 +39,15 @@ def git(repo, *args):
                           capture_output=True, text=True).stdout
 
 
-def gh_api(path):
-    out = subprocess.run(["gh", "api", path], capture_output=True, text=True)
-    return json.loads(out.stdout) if out.returncode == 0 else None
+def gh_api(path, attempts=3):
+    """Parsed JSON, or None after the last failed attempt."""
+    for attempt in range(attempts):
+        out = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+        if out.returncode == 0:
+            return json.loads(out.stdout)
+        if attempt + 1 < attempts:
+            time.sleep(5 * (attempt + 1))
+    return None
 
 
 # ---------------------------------------------------------------- artifacts
@@ -48,7 +55,9 @@ def gh_api(path):
 def load_artifacts(path):
     """artifact name -> {version, inputs, needed_by, type}."""
     result = {}
-    for a in json.load(open(path)):
+    with open(path) as f:
+        data = json.load(f)
+    for a in data:
         out = a.get("out") or {}
         name = out.get("artifact_name")
         if not name or not out.get("artifact_version"):
@@ -105,23 +114,33 @@ def branch_series(arts):
     return {b: c.most_common(1)[0][0] for b, c in count.items()}
 
 
-def series_revision(arts, series, version):
+def branch_kernels(arts, branch, series):
+    """Mainline kernel artifacts of one branch and series."""
+    return [a for a in arts.values() if a["type"] == "kernel"
+            and a["inputs"].get("KERNELSOURCE") == MAINLINE_SOURCE
+            and a["inputs"].get("BRANCH") == branch
+            and a["inputs"].get("KERNEL_MAJOR_MINOR") == series]
+
+
+def series_revision(arts, branch, series, version):
     """armbian/linux commit of the most used kernel with this upstream version."""
-    best = max((a for a in arts.values() if a["type"] == "kernel"
-                and a["inputs"].get("KERNELSOURCE") == MAINLINE_SOURCE
-                and a["inputs"].get("KERNEL_MAJOR_MINOR") == series
-                and split_version(a["version"])[0] == version),
+    best = max((a for a in branch_kernels(arts, branch, series)
+                if split_version(a["version"])[0] == version),
                key=lambda a: a["needed_by"], default=None)
     return kernel_revision(best) if best else None
 
 
-def series_versions(arts, series):
-    """Upstream versions of the mainline kernels of one series."""
-    return sorted({split_version(a["version"])[0] for a in arts.values()
-                   if a["type"] == "kernel"
-                   and a["inputs"].get("KERNELSOURCE") == MAINLINE_SOURCE
-                   and a["inputs"].get("KERNEL_MAJOR_MINOR") == series},
+def series_versions(arts, branch, series):
+    """Upstream versions of the mainline kernels of one branch and series."""
+    return sorted({split_version(a["version"])[0] for a in branch_kernels(arts, branch, series)},
                   key=vkey)
+
+
+def point_releases(series, old, new):
+    """Stable releases in (old, new] of one series: 6.18.5 -> 6.18.7 gives .6 and .7."""
+    lo = (vkey(old) + (0, 0, 0))[2]
+    hi = (vkey(new) + (0, 0, 0))[2]
+    return [f"{series}.{i}" for i in range(lo + 1, hi + 1)]
 
 
 def vkey(v):
@@ -142,7 +161,9 @@ def load_dyads(vulns_dir):
             if not f.endswith(".dyad"):
                 continue
             cve = f[:-5]
-            for line in open(os.path.join(ydir, f), errors="replace"):
+            with open(os.path.join(ydir, f), errors="replace") as fh:
+                lines = fh.readlines()
+            for line in lines:
                 if line.startswith("#"):
                     continue
                 fields = line.strip().split(":")
@@ -187,9 +208,9 @@ def cve_patches(cve_repo, ref, series):
     return result
 
 
-def added_date(cve_repo, old_ref, new_ref, upstream):
+def added_date(cve_repo, old_ref, new_ref, path):
     out = git(cve_repo, "log", "--diff-filter=A", "--format=%cs", "--reverse",
-              f"{old_ref}..{new_ref}", "--", f"patches/*-{upstream}-*.patch")
+              f"{old_ref}..{new_ref}", "--", path)
     return out.split()[0] if out.split() else ""
 
 
@@ -242,9 +263,13 @@ def framework_prs(build_repo, old, new):
             p["number"] for p in (gh_api(f"repos/armbian/build/commits/{sha}/pulls") or [])]
         for n in numbers:
             prs.setdefault(n, set()).update(lines[1:])
-    shown, hidden = [], 0
+    shown, hidden, unknown = [], 0, []
     for n, files in sorted(prs.items()):
-        pr = gh_api(f"repos/armbian/build/pulls/{n}") or {}
+        pr = gh_api(f"repos/armbian/build/pulls/{n}")
+        if not pr:
+            # Cannot tell automation from real work: list the number apart, do not count it.
+            unknown.append(n)
+            continue
         title = pr.get("title", f"#{n}")
         author = (pr.get("user") or {}).get("login", "")
         if author in BOT_AUTHORS or AUTOMATION_TITLE.match(title):
@@ -252,7 +277,7 @@ def framework_prs(build_repo, old, new):
             continue
         shown.append({"number": n, "title": title, "author": author,
                       "group": pr_group(files)})
-    return commits, shown, hidden
+    return commits, shown, hidden, unknown
 
 
 def pr_group(files):
@@ -271,8 +296,11 @@ def pr_group(files):
 
 def main():
     # Helper for the workflow: which armbian/linux branches to fetch for this build.
-    if len(sys.argv) == 3 and sys.argv[1] == "--list-series":
-        print(" ".join(sorted(set(branch_series(load_artifacts(sys.argv[2])).values()), key=vkey)))
+    if len(sys.argv) >= 3 and sys.argv[1] == "--list-series":
+        series = set()
+        for info in sys.argv[2:]:
+            series |= set(branch_series(load_artifacts(info)).values())
+        print(" ".join(sorted(series, key=vkey)))
         return 0
 
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -304,6 +332,7 @@ def main():
     days = max(1, round((built - since).total_seconds() / 86400))
 
     branches = branch_series(cur)
+    prev_branches = branch_series(prev)
     dyads = load_dyads(args.vulns)
     md = []
     counts = collections.Counter()
@@ -322,33 +351,38 @@ def main():
         series = branches.get(branch)
         if not series:
             continue
-        old_v = series_versions(prev, series)
-        new_v = series_versions(cur, series)
+        # The branch can move to a new series (6.12 -> 6.18): then compare versions only.
+        old_series = prev_branches.get(branch, series)
+        old_v = series_versions(prev, branch, old_series)
+        new_v = series_versions(cur, branch, series)
         old_top, new_top = (old_v[-1] if old_v else None), (new_v[-1] if new_v else None)
+        same = old_series == series and old_top and new_top
         pkgs = [n for n, a in cur.items() if a["type"] == "kernel"
                 and a["inputs"].get("BRANCH") == branch
                 and a["inputs"].get("KERNEL_MAJOR_MINOR") == series
                 and n in prev and prev[n]["version"] != a["version"]]
-        ups = upstream_cves(dyads, series, old_top, new_top) if old_top and new_top else {}
+        ups = upstream_cves(dyads, series, old_top, new_top) if same else {}
+        releases = point_releases(series, old_top, new_top) if same else []
         old_p, new_p = cve_patches(args.cve_repo, cve_old, series), cve_patches(args.cve_repo, cve_new, series)
         added = {k: v for k, v in new_p.items() if k not in old_p}
         dropped = {k: v for k, v in old_p.items() if k not in new_p}
-        per_branch[branch] = dict(series=series, old=old_top, new=new_top, pkgs=pkgs,
-                                  old_rev=series_revision(prev, series, old_top) if old_top else None,
-                                  new_rev=series_revision(cur, series, new_top) if new_top else None,
+        per_branch[branch] = dict(series=series, old_series=old_series, same=same,
+                                  old=old_top, new=new_top, pkgs=pkgs, releases=releases,
+                                  old_rev=series_revision(prev, branch, old_series, old_top) if same else None,
+                                  new_rev=series_revision(cur, branch, series, new_top) if same else None,
                                   ups=ups, added=added, dropped=dropped)
         counts["upstream_cves"] += sum(len(v) for v in ups.values())
         counts["cve_patches"] += len(added)
-        if old_top != new_top:
-            counts["point_releases"] += len(ups) or 1
+        counts["point_releases"] += len(releases)
 
     # ---- kernel updates
     md.append("## Kernel updates\n")
     md.append("| Branch | Series | Upstream | Packages | Upstream CVEs | Armbian CVE patches |")
     md.append("|--------|--------|----------|----------|---------------|---------------------|")
     for branch, b in per_branch.items():
-        upstream = f"{b['old']} → {b['new']}" if b["old"] != b["new"] else f"{b['new']} (unchanged)"
-        md.append(f"| {branch.upper()} | {b['series']} | {upstream} | {len(b['pkgs'])} | "
+        upstream = f"{b['old'] or '—'} → {b['new']}" if b["old"] != b["new"] else f"{b['new']} (unchanged)"
+        series = b["series"] if b["same"] or not b["old"] else f"{b['old_series']} → {b['series']}"
+        md.append(f"| {branch.upper()} | {series} | {upstream} | {len(b['pkgs'])} | "
                   f"{sum(len(v) for v in b['ups'].values()) or '—'} | "
                   f"+{len(b['added'])} / −{len(b['dropped'])} |")
     vendor = []
@@ -372,29 +406,38 @@ def main():
             for up, p in sorted(b["added"].items(), key=lambda x: vkey(x[1]["cve"] or "0")):
                 cve = p["cve"]
                 cve_link = f"[{cve}](https://www.cve.org/CVERecord?id={cve})" if cve.startswith("CVE-") else (cve or "—")
-                date = added_date(args.cve_repo, cve_old, cve_new, up)
+                date = added_date(args.cve_repo, cve_old, cve_new, p["file"])
                 md.append(f"| {cve_link} | {p['subject']} | "
                           f"[{up}](https://git.kernel.org/linus/{up}) | {date} |")
             md.append("")
         if b["dropped"]:
+            # Claim an upstream fix only when the vulns repo shows it in this update.
             fixed_in = {c: v for v, cs in b["ups"].items() for c in cs}
-            items = [f"{p['cve'] or up}" + (f" ({fixed_in[p['cve']]})" if p["cve"] in fixed_in else "")
-                     for up, p in sorted(b["dropped"].items())]
-            md.append("Dropped, now in upstream: " + ", ".join(items) + "\n")
+            upstream = [f"{p['cve']} ({fixed_in[p['cve']]})" for _, p in sorted(b["dropped"].items())
+                        if p["cve"] in fixed_in]
+            removed = [p["cve"] or up for up, p in sorted(b["dropped"].items())
+                       if p["cve"] not in fixed_in]
+            if upstream:
+                md.append("Dropped, fixed upstream: " + ", ".join(upstream) + "\n")
+            if removed:
+                md.append("Dropped from armbian/cve: " + ", ".join(removed) + "\n")
 
     # ---- upstream changes
     md.append("## Upstream changes\n")
     for branch, b in per_branch.items():
-        if b["old"] == b["new"] or not b["old"]:
+        if not b["old"]:
+            md.append(f"### {branch.upper()}: {b['new']} (new)\n")
+            continue
+        if not b["same"]:
+            md.append(f"### {branch.upper()}: {b['old']} → {b['new']} (new series)\n")
+            continue
+        if b["old"] == b["new"]:
             md.append(f"### {branch.upper()}: {b['new']} (unchanged)\n")
             continue
         md.append(f"### {branch.upper()}: {b['old']} → {b['new']}\n")
         ch = upstream_changes(args.linux_repo, b["old_rev"], b["new_rev"]) \
             if b["old_rev"] and b["new_rev"] else None
-        releases = [v for v in sorted({v for v, _ in dyads.get(b["series"], [])} |
-                                      set(b["ups"]) | {b["new"]}, key=vkey)
-                    if vkey(b["old"]) < vkey(v) <= vkey(b["new"])]
-        links = " · ".join(f"[ChangeLog-{v}]({changelog_url(v)})" for v in releases)
+        links = " · ".join(f"[ChangeLog-{v}]({changelog_url(v)})" for v in b["releases"])
         n_cves = sum(len(v) for v in b["ups"].values())
         compare = (f"[{ch[0]} commits](https://github.com/armbian/linux/compare/"
                    f"{b['old_rev'][:12]}...{b['new_rev'][:12]})") if ch else "? commits"
@@ -416,9 +459,12 @@ def main():
             md.append("</details>\n")
 
     # ---- framework
-    n_commits, prs, hidden = framework_prs(args.build_repo, build_old, build_new)
+    n_commits, prs, hidden, unknown = framework_prs(args.build_repo, build_old, build_new)
     counts["framework_prs"] = len(prs)
     md.append(f"## Framework changes ({len(prs)} PRs, {hidden} automated hidden)\n")
+    if unknown:
+        md.append(f"Incomplete: the GitHub API did not return {len(unknown)} PRs: "
+                  + ", ".join(f"[#{n}](https://github.com/armbian/build/pull/{n})" for n in unknown) + "\n")
     groups = collections.defaultdict(list)
     for pr in prs:
         groups[pr["group"]].append(pr)
@@ -455,6 +501,12 @@ def main():
               f"{rebuilt} U-Boot and {len(changed['armbian-bsp-cli'])} BSP packages "
               "for framework changes only.\n")
     md.append("</details>\n")
+    for kind, names in (("New", sorted(n for n in cur if n not in prev)),
+                        ("Removed", sorted(n for n in prev if n not in cur))):
+        kernels = [n for n in names if (cur.get(n) or prev[n])["type"] == "kernel"]
+        if names:
+            md.append(f"{kind} packages: {len(names)}"
+                      + (f" (kernels: {', '.join(kernels)})" if kernels else "") + "\n")
 
     # ---- notes
     skipped = sorted(n.removeprefix("kernel-") for n, a in cur.items()
@@ -471,6 +523,7 @@ def main():
     with open(args.counts, "w") as f:
         json.dump(counts, f, indent=1)
     print(json.dumps(counts))
+    return 0
 
 
 if __name__ == "__main__":
