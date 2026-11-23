@@ -949,7 +949,6 @@ jobs:
             ${PREV_BUILD_SHA:+--prev-build-sha "$PREV_BUILD_SHA"} ${CUR_BUILD_SHA:+--cur-build-sha "$CUR_BUILD_SHA"} \
             --build-repo build.git --cve-repo cve.git --vulns vulns --linux-repo linux.git \
             --out CHANGELOG.md --counts counts.json
-          cat CHANGELOG.md >> "$GITHUB_STEP_SUMMARY"
 
       # The AI intro is optional: a failure keeps the counts-only summary.
       - name: Write the summary
@@ -1005,6 +1004,17 @@ jobs:
             echo "📄 [Full changelog](${URL}) · compare with [${PREV}](https://github.com/armbian/ci/releases/tag/${PREV})"
             echo "<!-- stable-changelog:end -->"
           } > release-block.md
+          # Run summary: the release block as the release will show it, then the full changelog.
+          {
+            echo "> [!NOTE]"
+            echo "> Preview of the [${CUR} release](https://github.com/armbian/ci/releases/tag/${CUR}) summary."
+            echo
+            cat release-block.md
+            echo
+            echo "---"
+            echo
+            cat CHANGELOG.md
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish the full changelog to the data branch
         run: |
