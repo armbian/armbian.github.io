@@ -9,7 +9,7 @@
 # repo and updates it in place. No PR when nothing changed.
 #
 # Secret: ACCESS_TOKEN_ARMBIANWORKER needs `repo` on both profile repos
-# (one of them is private) and `read:org` for the team list.
+# (one of them is private).
 name: "Maintenance: Update organisation profile"
 
 on:

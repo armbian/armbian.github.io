@@ -15,7 +15,7 @@ Blocks:
   public-status  latest stable release, next release, board counts (public)
   release        next release, due date, open milestone items (members)
   help           good-first-issue / help-wanted counts, boards without a maintainer
-  teams          who to ask: the visible organisation teams
+  hot            buttons for the repos with most PR activity in 14 days
 
 A block whose data source fails keeps its previous content, so one API error
 never blanks the page.
@@ -168,16 +168,6 @@ def boards(build_dir):
     return by_ext, orphans
 
 
-def teams():
-    out, page = [], 1
-    while True:
-        batch = gh(f"orgs/{ORG}/teams", per_page=100, page=page)
-        out += [t for t in batch if t.get("privacy") == "closed"]
-        if len(batch) < 100:
-            return sorted(out, key=lambda t: t["slug"])
-        page += 1
-
-
 # ---- blocks ---------------------------------------------------------------
 
 def block_public_status(ctx):
@@ -230,37 +220,55 @@ def block_help(ctx):
     return out
 
 
-def block_teams(ctx):
-    visible = teams()
-    slugs = {t["slug"] for t in visible}
-    children = {}
-    for t in visible:
-        parent = (t.get("parent") or {}).get("slug")
-        if parent in slugs:
-            children.setdefault(parent, []).append(t)
-    rows = []
-    for t in visible:
-        if (t.get("parent") or {}).get("slug") in slugs:
-            continue  # listed under its parent
-        desc = (t.get("description") or "").strip().rstrip(".")
-        link = f"[@{ORG}/{t['slug']}]({t['html_url']})"
-        rows.append(f"- {link}" + (f": {desc}" if desc else ""))
-        subs = children.get(t["slug"])
-        if subs:
-            prefix = os.path.commonprefix([c["slug"] for c in subs])
-            prefix = prefix[: prefix.rfind("-") + 1] if "-" in prefix else ""
-            rows.append("  - Subteams: " + " · ".join(
-                f"[{c['slug'][len(prefix):]}]({c['html_url']})" for c in subs))
-    if not rows:
-        raise RuntimeError("no visible teams")
-    return "\n".join(rows) + "\n"
+HOT_DAYS = 14
+HOT_COUNT = 8
+BRAND = "F26522"
+
+
+def pr_activity(days):
+    """Count PRs updated in the last `days` days, per repository."""
+    since = date.fromordinal(date.today().toordinal() - days).isoformat()
+    counts, page = {}, 1
+    while True:
+        res = gh("search/issues", q=f"org:{ORG} is:pr updated:>={since}", per_page=100, page=page)
+        if res.get("incomplete_results"):
+            raise RuntimeError("incomplete search results for PR activity")
+        if res.get("total_count", 0) > 1000:
+            raise RuntimeError("more than 1000 PRs: search cannot return them all")
+        for item in res["items"]:
+            repo = item["repository_url"].rsplit("/", 1)[1]
+            counts[repo] = counts.get(repo, 0) + 1
+        if len(res["items"]) < 100:
+            return counts
+        page += 1
+
+
+def badge_text(s):
+    # shields.io static badge escaping: "-" -> "--", "_" -> "__", space -> "_"
+    return urllib.parse.quote(s.replace("-", "--").replace("_", "__").replace(" ", "_"))
+
+
+def block_hot(ctx):
+    counts = pr_activity(HOT_DAYS)
+    top = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:HOT_COUNT]
+    if not top:
+        raise RuntimeError("no PR activity found")
+    buttons = []
+    for repo, n in top:
+        img = (f"https://img.shields.io/badge/{badge_text(repo)}-{badge_text(f'{n} PRs')}-{BRAND}"
+               "?style=for-the-badge&logo=github&logoColor=white")
+        buttons.append(f'<a href="https://github.com/{ORG}/{repo}"><img src="{img}" alt="{repo}"></a>')
+    return (
+        "\n".join(buttons)
+        + f"\n\n<sub>Most pull request activity in the last {HOT_DAYS} days.</sub>\n"
+    )
 
 
 BLOCKS = {
     "public-status": block_public_status,
     "release": block_release,
     "help": block_help,
-    "teams": block_teams,
+    "hot": block_hot,
 }
 
 
