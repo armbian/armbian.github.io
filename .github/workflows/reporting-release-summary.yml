@@ -22,7 +22,7 @@ on:
           - quarterly
           - stable
       stable_tag:
-        description: "Stable only: armbian/ci tag, e.g. 26.11.2 (default: the newest X.Y.Z tag)"
+        description: "Stable changelog for this armbian/ci tag, e.g. 26.11.2 (selects period stable)"
         required: false
         default: ""
       release_date:
@@ -48,7 +48,7 @@ permissions:
 jobs:
   pr-digest:
     name: "Get PR's"
-    if: ${{ (inputs.period || 'weekly') != 'stable' && github.event.schedule != '5 6 * * TUE' }}
+    if: ${{ (inputs.period || 'weekly') != 'stable' && !inputs.stable_tag && github.event.schedule != '5 6 * * TUE' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -842,7 +842,7 @@ jobs:
   # what was built, not a clock window.
   stable-changelog:
     name: "Stable changelog"
-    if: ${{ inputs.period == 'stable' || github.event.schedule == '5 6 * * TUE' }}
+    if: ${{ inputs.period == 'stable' || inputs.stable_tag || github.event.schedule == '5 6 * * TUE' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # push the full changelog to the data branch
