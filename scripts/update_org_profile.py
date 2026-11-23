@@ -223,7 +223,7 @@ def block_help(ctx):
         out += (
             "\n<details><summary>"
             f"<b>{len(orphans)}</b> community boards have no maintainer. Adopt one.</summary>\n\n"
-            + " · ".join(f"`{b}`" for b in orphans)
+            + " · ".join(f"[`{b}`](https://www.armbian.com/{b}/)" for b in orphans)
             + "\n\n[What maintaining a board means](https://docs.armbian.com/contribute/board-maintainer/)\n"
             "</details>\n"
         )
@@ -231,11 +231,26 @@ def block_help(ctx):
 
 
 def block_teams(ctx):
+    visible = teams()
+    slugs = {t["slug"] for t in visible}
+    children = {}
+    for t in visible:
+        parent = (t.get("parent") or {}).get("slug")
+        if parent in slugs:
+            children.setdefault(parent, []).append(t)
     rows = []
-    for t in teams():
+    for t in visible:
+        if (t.get("parent") or {}).get("slug") in slugs:
+            continue  # listed under its parent
         desc = (t.get("description") or "").strip().rstrip(".")
         link = f"[@{ORG}/{t['slug']}]({t['html_url']})"
         rows.append(f"- {link}" + (f": {desc}" if desc else ""))
+        subs = children.get(t["slug"])
+        if subs:
+            prefix = os.path.commonprefix([c["slug"] for c in subs])
+            prefix = prefix[: prefix.rfind("-") + 1] if "-" in prefix else ""
+            rows.append("  - Subteams: " + " · ".join(
+                f"[{c['slug'][len(prefix):]}]({c['html_url']})" for c in subs))
     if not rows:
         raise RuntimeError("no visible teams")
     return "\n".join(rows) + "\n"
