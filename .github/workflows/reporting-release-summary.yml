@@ -994,7 +994,7 @@ jobs:
       - name: Write the release block
         run: |
           set -euo pipefail
-          URL="https://github.com/${{ github.repository }}/blob/data/stable-changelog/${CUR}.md"
+          URL="https://github.com/${{ github.repository }}/blob/data/data/stable-changelog/${CUR}.md"
           {
             echo "<!-- stable-changelog:start -->"
             echo "## Armbian ${CUR}: stable packages"
@@ -1016,26 +1016,35 @@ jobs:
             cat CHANGELOG.md
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # data/ on the data branch is github.armbian.com. The branch rebuild keeps only data/.
       - name: Publish the full changelog to the data branch
         run: |
           set -euo pipefail
-          git clone -q --depth 1 --branch data \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" data
-          mkdir -p data/stable-changelog
-          cp CHANGELOG.md "data/stable-changelog/${CUR}.md"
-          # The release block stays on the data branch: a later run finishes a failed release edit.
-          cp release-block.md "data/stable-changelog/${CUR}.release.md"
-          cd data
-          git config user.name "github-actions"
-          git config user.email "github-actions@github"
-          git add "stable-changelog/${CUR}.md" "stable-changelog/${CUR}.release.md"
-          git diff --cached --quiet && { echo "No change"; exit 0; }
-          git commit -q -m "stable-changelog: ${CUR}"
+          # The branch rebuild force-pushes, so a retry clones again instead of a rebase.
           for attempt in 1 2 3; do
-            git push -q origin data && exit 0
-            git pull -q --rebase origin data || true
+            rm -rf data
+            git clone -q --depth 1 --branch data \
+              "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" data
+            mkdir -p data/data/stable-changelog
+            cp CHANGELOG.md "data/data/stable-changelog/${CUR}.md"
+            # The release block stays on the data branch: a later run finishes a failed release edit.
+            cp release-block.md "data/data/stable-changelog/${CUR}.release.md"
+            git -C data add "data/stable-changelog/${CUR}.md" "data/stable-changelog/${CUR}.release.md"
+            git -C data diff --cached --quiet && { echo "No change"; echo "DATA_CHANGED=no" >> "$GITHUB_ENV"; exit 0; }
+            git -C data -c user.name="github-actions" -c user.email="github-actions@github" \
+              commit -q -m "stable-changelog: ${CUR}"
+            if git -C data push -q origin data; then echo "DATA_CHANGED=yes" >> "$GITHUB_ENV"; exit 0; fi
+            sleep $((attempt * 15))
           done
           echo "::error::Cannot push to the data branch"; exit 1
+
+      # A push with GITHUB_TOKEN does not start other workflows: start the github.armbian.com rebuild.
+      - name: Rebuild github.armbian.com
+        if: env.DATA_CHANGED == 'yes'
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Web: Directory listing"
 
       # Edit this release, and finish earlier releases whose edit failed after the data push.
       - name: Add the summary to the releases
@@ -1051,7 +1060,7 @@ jobs:
             echo "Summary added to ${tag}"
           }
           add_block "$CUR" release-block.md
-          for block in $(ls data/stable-changelog/*.release.md | sort -V | tail -n 8); do
+          for block in $(ls data/data/stable-changelog/*.release.md | sort -V | tail -n 8); do
             tag=$(basename "$block" .release.md)
             [[ "$tag" == "$CUR" ]] && continue
             body=$(gh release view "$tag" -R armbian/ci --json body -q .body 2>/dev/null) || continue
