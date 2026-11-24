@@ -55,3 +55,51 @@ nightly-ubuntu-minimal-khadas-vims:
   items:
     - { BOARD: khadas-vim1s, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
     - { BOARD: khadas-vim4, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
+
+# Debian forky Hyprland desktop for KVM (qcow2).
+# Btrfs root with zstd, LUKS encrypted with automatic unlock.
+desktop-debian-hyprland-cloud:
+  enabled: yes
+  configs: [ armbian-cloud ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: forky
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "hyprland"
+    DESKTOP_TIER: "full"
+    ROOTFS_TYPE: "btrfs"
+    BTRFS_COMPRESSION: "zstd"
+    BOOTSIZE: "2048"
+    CRYPTROOT_ENABLE: "yes"
+    CRYPTROOT_AUTOUNLOCK: "yes"
+    CRYPTROOT_SSH_UNLOCK: "no"
+  items:
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+
+# Ubuntu GNOME desktop for KVM (qcow2).
+# Btrfs root with zstd, LUKS encrypted with automatic unlock.
+desktop-ubuntu-gnome-cloud:
+  enabled: yes
+  configs: [ armbian-cloud ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "no"
+    BUILD_DESKTOP: "yes"
+    DESKTOP_ENVIRONMENT: "gnome"
+    DESKTOP_TIER: "full"
+    ROOTFS_TYPE: "btrfs"
+    BTRFS_COMPRESSION: "zstd"
+    BOOTSIZE: "2048"
+    CRYPTROOT_ENABLE: "yes"
+    CRYPTROOT_AUTOUNLOCK: "yes"
+    CRYPTROOT_SSH_UNLOCK: "no"
+  items:
+    - { BOARD: uefi-x86, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
+    - { BOARD: uefi-arm64, BRANCH: cloud, ENABLE_EXTENSIONS: "image-output-qcow2" }
