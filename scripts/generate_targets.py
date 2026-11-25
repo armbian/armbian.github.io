@@ -823,7 +823,7 @@ armbian-gha: &armbian-gha
       rootfs-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
       rootfs-amd64: [ "self-hosted", "Linux", "X64" ]
       rootfs-riscv64: [ "ubuntu-24.04-riscv" ]
-      rootfs-loong64: [ "self-hosted", "Linux", "X64" ]
+      rootfs-loong64: [ "ubuntu-latest" ]
       image-armhf: [ "self-hosted", "Linux", 'images', 'X64' ]
       image-arm64: [ "self-hosted", "Linux", 'images', 'ARM64' ]
       image-amd64: [ "self-hosted", "Linux", 'images', "X64" ]
