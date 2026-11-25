@@ -730,7 +730,7 @@ def select_one_branch_per_board(boards):
 # arm64 image jobs per matrix run that stay on ARM64 runners. The rest
 # overflow to the X64 'images' runners instead of queueing behind the smaller
 # ARM64 pool. Needs armbian/build#10967.
-ARM64_IMAGE_NATIVE_FACTOR = 1.5   # jobs per ARM64 'images' runner kept native
+ARM64_IMAGE_NATIVE_FACTOR = 3     # jobs per ARM64 'images' runner kept native
 ARM64_IMAGE_NATIVE_FALLBACK = 80  # used when the runner list is not readable
 
 # Kernel jobs build only on 'alfa' and 'beta' runners (alfa runners also carry
