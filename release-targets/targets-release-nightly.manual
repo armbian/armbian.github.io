@@ -56,6 +56,39 @@ nightly-ubuntu-minimal-khadas-vims:
     - { BOARD: khadas-vim1s, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
     - { BOARD: khadas-vim4, BRANCH: edge, ENABLE_EXTENSIONS: "image-output-oowow" }
 
+# Radxa ROCK 4D on mainline (edge), next to the auto-generated vendor nightly.
+# Nightly picks only the first branch of KERNEL_TEST_TARGET ("vendor,edge"),
+# so edge, which has the NPU since 7.3 (armbian/build#11163), is added here.
+# Each target also builds a UFS (4K sector) image, like the stable release.
+# See armbian/build#11263.
+nightly-debian-minimal-rock-4d-edge:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: DEBIAN
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,ufs" }
+
+nightly-ubuntu-minimal-rock-4d-edge:
+  enabled: yes
+  configs: [ armbian-images ]
+  pipeline:
+    gha: *armbian-gha
+  build-image: "yes"
+  vars:
+    RELEASE: UBUNTU
+    BUILD_MINIMAL: "yes"
+    BUILD_DESKTOP: "no"
+  items:
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms" }
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,ufs" }
+
 # Debian forky Hyprland desktop for KVM (qcow2).
 # Btrfs root with zstd, LUKS encrypted with automatic unlock.
 desktop-debian-hyprland-cloud:
