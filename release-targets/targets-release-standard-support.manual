@@ -24,7 +24,7 @@ minimal-stable-debian-uefi:
     - { BOARD: radxa-dragon-q6a, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
-    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,ufs" }
 
 # Debian sid minimal - loong64 UEFI only.
 # LoongArch has no Debian stable port (it lives in sid), so uefi-loong64 is
@@ -69,7 +69,7 @@ minimal-stable-ubuntu-current-uefi:
     - { BOARD: radxa-dragon-q6a, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
-    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,ufs" }
 
 # Ubuntu GNOME desktop - UEFI only
 desktop-stable-ubuntu-gnome-uefi:
@@ -91,7 +91,7 @@ desktop-stable-ubuntu-gnome-uefi:
     - { BOARD: radxa-dragon-q6a, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
-    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,ufs" }
 
 # Ubuntu Cinnamon desktop - UEFI only
 desktop-stable-ubuntu-cinnamon-uefi:
@@ -113,7 +113,7 @@ desktop-stable-ubuntu-cinnamon-uefi:
     - { BOARD: radxa-dragon-q6a, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-dragon-q8b, BRANCH: vendor, ENABLE_EXTENSIONS: "ufs" }
     - { BOARD: radxa-nio-12l, BRANCH: edge, ENABLE_EXTENSIONS: "ufs" }
-    - { BOARD: radxa-rock-4d, BRANCH: current, ENABLE_EXTENSIONS: "ufs" }
+    - { BOARD: radxa-rock-4d, BRANCH: edge, ENABLE_EXTENSIONS: "v4l2loopback-dkms,ufs" }
 
 # Ubuntu KDE Plasma desktop - UEFI only
 desktop-stable-ubuntu-kde-plasma-uefi:
