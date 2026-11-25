@@ -196,6 +196,30 @@ All fast-HDMI boards (64-bit boards with video output) automatically get:
 
 Manual entries from `targets-extensions.map` are merged with these; entries in `targets-extensions.map.blacklist` are removed from both automatic and manual sets. The blacklist wins.
 
+## UFS images (`UFS_TARGET`)
+
+A board config in armbian/build can ask for UFS images (4K sectors, `-ufs` image suffix) next to its normal ones:
+
+```bash
+# config/boards/radxa-rock-4d.conf
+KERNEL_TARGET="vendor,edge"
+UFS_TARGET="edge"        # comma-separated branches that also get a UFS image
+```
+
+The variable reaches the generator through `BOARD_TOP_LEVEL_VARS` in `image-info.json`. For each listed branch the generator adds one more item with the board's usual extensions plus `ufs` (e.g. `v4l2loopback-dkms,ufs`), in its own lists:
+
+| Scope | Lists | Targets |
+|---|---|---|
+| standard-support | `stable-ufs-fast-hdmi`, `stable-ufs-slow-headless` | Debian and Ubuntu minimal; GNOME desktop (fast HDMI only) |
+| nightly | `nightly-ufs-fast-hdmi`, `nightly-ufs-slow-headless` | Debian and Ubuntu minimal |
+| community-maintained | `community-ufs-fast-hdmi`, `community-ufs-slow-headless` | Debian and Ubuntu minimal; GNOME desktop (fast HDMI only) |
+
+- `UFS_TARGET` is applied on its own: `KERNEL_TEST_TARGET` and the one-branch-per-board nightly rule don't drop a listed branch. The scope's `.blacklist` still applies.
+- A branch the board doesn't build is skipped with a warning, e.g. one missing from `KERNEL_TARGET`.
+- riscv64 and loongarch boards are skipped with a warning; their dedicated targets have no UFS lists.
+- A board/branch that the scope's `.manual` file already builds with `ufs` is skipped, so moving a board from hand-written UFS items to `UFS_TARGET` never builds an image twice. Remove the `.manual` items once the board config sets `UFS_TARGET`.
+- Boards whose only image is a UFS image set `SECTOR_SIZE=4096` in the board config instead.
+
 ## Examples
 
 ```bash

@@ -727,6 +727,116 @@ def select_one_branch_per_board(boards):
     return list(seen_boards.values())
 
 
+# Manual target items that already build a UFS image:
+# "{ BOARD: x, BRANCH: y, ENABLE_EXTENSIONS: "...,ufs,..." }"
+MANUAL_UFS_ITEM_RE = re.compile(
+    r'BOARD:\s*([\w.+-]+)\s*,\s*BRANCH:\s*([\w.+-]+)\s*,\s*ENABLE_EXTENSIONS:\s*"([^"]*)"')
+
+
+def manual_ufs_items(manual_content):
+    """(board, branch) pairs that a .manual file already builds with the ufs extension."""
+    pairs = set()
+    for board, branch, extensions in MANUAL_UFS_ITEM_RE.findall(manual_content or ''):
+        if 'ufs' in (e.strip() for e in extensions.split(',')):
+            pairs.add((board, branch))
+    return pairs
+
+
+def select_ufs_variants(boards, manual_content='', scope=''):
+    """
+    UFS image variants for boards that set UFS_TARGET in their board config.
+
+    UFS_TARGET is a comma-separated list of branches, like KERNEL_TARGET.
+    Each listed branch gets one more image built with the ufs extension
+    (4K sectors, "-ufs" image suffix) on top of the extensions the board
+    already gets, e.g. "v4l2loopback-dkms,ufs".
+
+    boards: board/branch entries extracted with ignore_test_target=True, so
+            UFS_TARGET is honoured on its own: KERNEL_TEST_TARGET and the
+            one-branch-per-board nightly rule don't drop a listed branch.
+    manual_content: the scope's .manual content. A board/branch that it
+            already builds with ufs is skipped, so moving a board from a
+            hand-written UFS item to UFS_TARGET never builds it twice.
+    scope: name used in warnings.
+
+    riscv64 and loongarch boards are skipped with a warning: their images
+    are built by dedicated targets that have no UFS list yet.
+    """
+    by_board = defaultdict(dict)
+    for board_data in boards:
+        by_board[board_data['board']][board_data['branch']] = board_data
+
+    already_manual = manual_ufs_items(manual_content)
+    variants = []
+    for board in sorted(by_board):
+        branches = by_board[board]
+        inventory = next(iter(branches.values()))['entry'].get('in', {}).get('inventory', {})
+        toplevel_vars = inventory.get('BOARD_TOP_LEVEL_VARS', {})
+        ufs_target = [b.strip() for b in toplevel_vars.get('UFS_TARGET', '').split(',') if b.strip()]
+        possible = inventory.get('BOARD_POSSIBLE_BRANCHES') or []
+
+        for branch in ufs_target:
+            if branch not in branches:
+                reason = ('not in KERNEL_TARGET' if possible and branch not in possible
+                          else 'not a release branch')
+                print(f"Warning: {scope}: {board} UFS_TARGET branch '{branch}' skipped ({reason})",
+                      file=sys.stderr)
+                continue
+            board_data = branches[branch]
+            if board_data['is_fast'] in ('riscv64', 'loongarch'):
+                print(f"Warning: {scope}: {board} UFS_TARGET skipped, no UFS targets for {board_data['is_fast']}",
+                      file=sys.stderr)
+                continue
+            if (board, branch) in already_manual:
+                print(f"  {scope}: {board}/{branch} UFS image comes from the .manual file", file=sys.stderr)
+                continue
+            extensions = [e for e in board_data['extensions'].split(',') if e]
+            if 'ufs' not in extensions:
+                extensions.append('ufs')
+            variants.append({**board_data, 'extensions': ','.join(extensions)})
+
+    return variants
+
+
+def ufs_lists_yaml(prefix, variants):
+    """
+    YAML anchor lists for UFS variants:
+      <prefix>-ufs-fast-hdmi      fast HDMI boards (minimal + GNOME desktop)
+      <prefix>-ufs-slow-headless  slow HDMI and headless boards (minimal only)
+    Empty lists are left out.
+    """
+    yaml = ''
+    for name, group in ufs_groups(prefix, variants):
+        yaml += f'  {name}: &{name}\n'
+        yaml += '  # auto generated section\n'
+        for board_data in sorted(group, key=lambda x: (x['board'], x['branch'])):
+            yaml += format_board_item(board_data, include_extensions=True) + '\n'
+        yaml += '  # end of auto generated section\n\n'
+    return yaml
+
+
+def ufs_groups(prefix, variants):
+    """(anchor name, boards) pairs for the non-empty UFS lists."""
+    groups = [
+        (f'{prefix}-ufs-fast-hdmi', [v for v in variants if v['is_fast'] is True]),
+        (f'{prefix}-ufs-slow-headless', [v for v in variants if v['is_fast'] in (False, None)]),
+    ]
+    return [(name, group) for name, group in groups if group]
+
+
+def ufs_items_yaml(prefix, variants, desktop=False):
+    """
+    Alias lines that add the UFS lists to a target's items.
+    desktop=True adds only the fast HDMI list (desktop targets).
+    """
+    yaml = ''
+    for name, _ in ufs_groups(prefix, variants):
+        if desktop and not name.endswith('-ufs-fast-hdmi'):
+            continue
+        yaml += f'      - *{name}\n'
+    return yaml
+
+
 # arm64 image jobs per matrix run that stay on ARM64 runners. The rest
 # overflow to the X64 'images' runners instead of queueing behind the smaller
 # ARM64 pool. Needs armbian/build#10967.
@@ -938,15 +1048,18 @@ targets:
     return yaml
 
 
-def generate_stable_yaml(conf_wip_boards, manual_content="", hyprland_boards=None):
+def generate_stable_yaml(conf_wip_boards, manual_content="", hyprland_boards=None, ufs_variants=None):
     """
     Generate stable.yml with full set of images.
     For conf/wip boards only.
     Separates fast, slow, riscv64, and loongarch boards based on CPU performance.
     manual_content: Additional YAML to append inside the targets section
     hyprland_boards: Boards for the Hyprland target (edge, fast HDMI)
+    ufs_variants: UFS images from select_ufs_variants() (Debian and Ubuntu
+                  minimal, plus the GNOME desktop for fast HDMI boards)
     """
     yaml = generate_yaml_header()
+    ufs_variants = ufs_variants or []
 
     # Separate by branch and performance/architecture
     # Only separate by actual branch names, not by category
@@ -1134,6 +1247,9 @@ def generate_stable_yaml(conf_wip_boards, manual_content="", hyprland_boards=Non
             yaml += format_board_item(hyprland_fast[board], include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    # UFS lists: boards with UFS_TARGET in their board config
+    yaml += ufs_lists_yaml('stable', ufs_variants)
+
     yaml += """# automated lists stop
 
 targets:
@@ -1189,6 +1305,7 @@ targets:
         yaml += '      - *stable-edge-loongarch\n'
     if edge_headless:
         yaml += '      - *stable-edge-headless\n'
+    yaml += ufs_items_yaml('stable', ufs_variants)
 
     yaml += """
   # Ubuntu stable minimal
@@ -1238,6 +1355,7 @@ targets:
         yaml += '      - *stable-edge-loongarch\n'
     if edge_headless:
         yaml += '      - *stable-edge-headless\n'
+    yaml += ufs_items_yaml('stable', ufs_variants)
 
     # Ubuntu stable XFCE desktop (slow HDMI only)
     if current_slow or edge_slow:
@@ -1289,6 +1407,7 @@ targets:
             yaml += '      - *stable-legacy-fast-hdmi\n'
         if edge_fast:
             yaml += '      - *stable-edge-fast-hdmi\n'
+        yaml += ufs_items_yaml('stable', ufs_variants, desktop=True)
 
     # Ubuntu stable KDE Plasma desktop (fast HDMI only).
     # Was kde-neon; switched to kde-plasma when the standard scope
@@ -1485,15 +1604,17 @@ targets:
     return yaml
 
 
-def generate_nightly_yaml(conf_wip_boards, manual_content=""):
+def generate_nightly_yaml(conf_wip_boards, manual_content="", ufs_variants=None):
     """
     Generate nightly.yml with minimal CLI images only, no desktops:
     - Debian minimal for all boards
     - Ubuntu minimal for all boards except loongarch
     Separates fast, slow, riscv64, loongarch, and headless boards based on CPU performance.
     manual_content: Additional YAML to append inside the targets section
+    ufs_variants: UFS images from select_ufs_variants() (Debian and Ubuntu minimal)
     """
     yaml = generate_yaml_header()
+    ufs_variants = ufs_variants or []
 
     # Select one branch per board, prefer current
     boards = select_one_branch_per_board(conf_wip_boards)
@@ -1542,6 +1663,9 @@ def generate_nightly_yaml(conf_wip_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    # UFS lists: boards with UFS_TARGET in their board config
+    yaml += ufs_lists_yaml('nightly', ufs_variants)
+
     yaml += """# automated lists stop
 
 targets:
@@ -1567,6 +1691,7 @@ targets:
         yaml += '      - *nightly-riscv64\n'
     if loongarch_boards:
         yaml += '      - *nightly-loongarch\n'
+    yaml += ufs_items_yaml('nightly', ufs_variants)
 
     yaml += """
   # Ubuntu minimal CLI for all boards except riscv64 and loongarch
@@ -1587,6 +1712,7 @@ targets:
         yaml += '      - *nightly-slow-hdmi\n'
     if headless_boards:
         yaml += '      - *nightly-headless\n'
+    yaml += ufs_items_yaml('nightly', ufs_variants)
 
     # Ubuntu minimal CLI for RISC-V boards
     if riscv64_boards:
@@ -1616,14 +1742,17 @@ targets:
     return yaml
 
 
-def generate_community_yaml(csc_tvb_boards, manual_content=""):
+def generate_community_yaml(csc_tvb_boards, manual_content="", ufs_variants=None):
     """
     Generate community.yml for csc+tvb boards with hardware-based desktop selection.
     - Debian Forky minimal CLI for all boards
     - Ubuntu Noble with desktops based on hardware speed (like nightly)
     manual_content: Additional YAML to append inside the targets section
+    ufs_variants: UFS images from select_ufs_variants() (Debian and Ubuntu
+                  minimal, plus the GNOME desktop for fast HDMI boards)
     """
     yaml = generate_yaml_header()
+    ufs_variants = ufs_variants or []
 
     # Separate by branch and performance
     current_fast = [b for b in csc_tvb_boards if b['branch'] == 'current' and b['is_fast'] is True]
@@ -1763,6 +1892,9 @@ def generate_community_yaml(csc_tvb_boards, manual_content=""):
             yaml += format_board_item(board_data, include_extensions=True) + '\n'
         yaml += '  # end of auto generated section\n\n'
 
+    # UFS lists: boards with UFS_TARGET in their board config
+    yaml += ufs_lists_yaml('community', ufs_variants)
+
     yaml += """# automated lists stop
 
 targets:
@@ -1809,6 +1941,7 @@ targets:
         yaml += '      - *community-edge-riscv64\n'
     if edge_loongarch:
         yaml += '      - *community-edge-loongarch\n'
+    yaml += ufs_items_yaml('community', ufs_variants)
 
     yaml += """
   # Ubuntu GNOME desktop for fast HDMI community boards
@@ -1831,6 +1964,7 @@ targets:
         yaml += '      - *community-vendor-fast-hdmi\n'
     if edge_fast:
         yaml += '      - *community-edge-fast-hdmi\n'
+    yaml += ufs_items_yaml('community', ufs_variants, desktop=True)
 
     # Ubuntu KDE Plasma desktop for fast HDMI community boards.
     # Was kde-neon; same reason as the standard-support block above —
@@ -1970,6 +2104,7 @@ targets:
             yaml += '      - *community-edge-slow-hdmi\n'
         if edge_headless:
             yaml += '      - *community-edge-headless\n'
+        yaml += ufs_items_yaml('community', ufs_variants)
 
     # Ubuntu minimal CLI for RISC-V community boards. Pinned to noble
     # (resolute riscv64 is broken) and split out of community-noble-minimal
@@ -2292,8 +2427,10 @@ def main():
     conf_wip_boards_stable, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable)
     print(f"  stable: {len(conf_wip_boards_stable)} boards after blacklist", file=sys.stderr)
     # Hyprland uses edge, also where KERNEL_TEST_TARGET leaves it out.
-    hyprland_boards, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable, ignore_test_target=True)
-    stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable, hyprland_boards)
+    # UFS_TARGET is not limited by KERNEL_TEST_TARGET either.
+    all_branches_stable, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_stable, ignore_test_target=True)
+    ufs_stable = select_ufs_variants(all_branches_stable, manual_stable, 'stable')
+    stable_yaml = generate_stable_yaml(conf_wip_boards_stable, manual_stable, all_branches_stable, ufs_stable)
     stable_path.write_text(resolve_release_tokens(stable_yaml, args.debian_standard, args.ubuntu_standard))
     print(f"  Written {stable_path}", file=sys.stderr)
 
@@ -2303,7 +2440,9 @@ def main():
     manual_nightly = load_manual_overrides(str(nightly_path))
     conf_wip_boards_nightly, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_nightly)
     print(f"  nightly: {len(conf_wip_boards_nightly)} boards after blacklist", file=sys.stderr)
-    nightly_yaml = generate_nightly_yaml(conf_wip_boards_nightly, manual_nightly)
+    all_branches_nightly, _ = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_nightly, ignore_test_target=True)
+    ufs_nightly = select_ufs_variants(all_branches_nightly, manual_nightly, 'nightly')
+    nightly_yaml = generate_nightly_yaml(conf_wip_boards_nightly, manual_nightly, ufs_nightly)
     nightly_path.write_text(resolve_release_tokens(nightly_yaml, args.debian_nightly, args.ubuntu_nightly))
     print(f"  Written {nightly_path}", file=sys.stderr)
 
@@ -2313,7 +2452,9 @@ def main():
     manual_community = load_manual_overrides(str(community_path))
     _, csc_tvb_boards_community = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_community)
     print(f"  community: {len(csc_tvb_boards_community)} boards after blacklist", file=sys.stderr)
-    community_yaml = generate_community_yaml(csc_tvb_boards_community, manual_community)
+    _, all_branches_community = extract_boards_by_support_level(image_info, extensions_map, remove_extensions_map, blacklist_community, ignore_test_target=True)
+    ufs_community = select_ufs_variants(all_branches_community, manual_community, 'community')
+    community_yaml = generate_community_yaml(csc_tvb_boards_community, manual_community, ufs_community)
     community_path.write_text(resolve_release_tokens(community_yaml, args.debian_community, args.ubuntu_community))
     print(f"  Written {community_path}", file=sys.stderr)
 
