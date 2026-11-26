@@ -4,6 +4,15 @@ on:
   repository_dispatch:
     types: ["Data: Update download index"]
   workflow_dispatch:
+    inputs:
+      source:
+        description: "Source of truth (rsync host)"
+        type: choice
+        default: "fi.mirror.armbian.de"
+        options:
+          - "fi.mirror.armbian.de"
+          - "k-space.ee.armbian.com"
+          - "armbian.atomonetworks.com"
 
 permissions:
   contents: write
@@ -13,7 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_OF_TRUTH: "rsync://fi.mirror.armbian.de"
+  # repository_dispatch has no inputs: it uses the default host.
+  SOURCE_OF_TRUTH: "rsync://${{ inputs.source || 'fi.mirror.armbian.de' }}"
 
 jobs:
   Webindex:
