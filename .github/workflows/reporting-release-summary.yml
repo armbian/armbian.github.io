@@ -20,6 +20,11 @@ on:
           - weekly
           - monthly
           - quarterly
+          - stable
+      stable_tag:
+        description: "Stable changelog for this armbian/ci tag, e.g. 26.11.2 (selects period stable)"
+        required: false
+        default: ""
       release_date:
         description: "Release date for the docs page, e.g. '29 May 2026' (default: the day this runs)"
         required: false
@@ -35,6 +40,7 @@ on:
 
   schedule:
     - cron: "5 6 * * MON"   # weekly, Mondays 06:05 UTC
+    - cron: "5 6 * * TUE"   # stable changelog, after the Monday 18:00 UTC stable build
 
 permissions:
   contents: read
@@ -42,6 +48,7 @@ permissions:
 jobs:
   pr-digest:
     name: "Get PR's"
+    if: ${{ (inputs.period || 'weekly') != 'stable' && !inputs.stable_tag && github.event.schedule != '5 6 * * TUE' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -828,3 +835,234 @@ jobs:
           delete-branch: true
           add-paths: |
             docs/releases/**
+
+  # Changelog of one weekly stable release (armbian/ci X.Y.Z tag): kernel updates,
+  # CVE patches, upstream changes, framework PRs and changed packages. The data
+  # comes from the build-info-json of the stable builds, so the notes describe
+  # what was built, not a clock window.
+  stable-changelog:
+    name: "Stable changelog"
+    if: ${{ inputs.period == 'stable' || inputs.stable_tag || github.event.schedule == '5 6 * * TUE' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the full changelog to the data branch
+    env:
+      GH_TOKEN: ${{ secrets.ACCESS_TOKEN_ARMBIANWORKER }} # reads armbian/ci runs, edits its releases
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      STABLE_TAG: ${{ inputs.stable_tag || '' }}
+    steps:
+
+      - name: Check out this repository for the script
+        uses: actions/checkout@v7
+        with:
+          path: self
+          persist-credentials: false
+
+      - name: Select the stable tag and the previous one
+        run: |
+          set -euo pipefail
+          TAGS=$(git ls-remote --tags --refs --sort=-v:refname https://github.com/armbian/ci \
+            | sed 's#.*refs/tags/##' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$')
+          CUR="${STABLE_TAG:-$(head -n1 <<<"$TAGS")}"
+          PREV=$(awk -v cur="$CUR" 'found {print; exit} $0 == cur {found=1}' <<<"$TAGS")
+          [[ -n "$CUR" && -n "$PREV" ]] || { echo "::error::No stable tag before '${CUR}'"; exit 1; }
+          echo "Changelog for ${CUR}, previous ${PREV}"
+          echo "CUR=$CUR" >> "$GITHUB_ENV"
+          echo "PREV=$PREV" >> "$GITHUB_ENV"
+
+      # The stable build publishes its release when it starts, so the build is a
+      # run that started near the publish time. createdAt can be days earlier
+      # (a draft). The build-info-json confirms the version.
+      - name: Download the build info of both builds
+        run: |
+          set -euo pipefail
+          find_build() {
+            local tag="$1" dir="$2" created lo hi started
+            created=$(gh release view "$tag" -R armbian/ci --json publishedAt,createdAt \
+              -q '.publishedAt // .createdAt')
+            lo=$(date -u -d "$created - 6 hours" +%Y-%m-%dT%H:%M:%SZ)
+            hi=$(date -u -d "$created + 3 hours" +%Y-%m-%dT%H:%M:%SZ)
+            for run in $(gh api "repos/armbian/ci/actions/runs?created=${lo}..${hi}&per_page=100" \
+                -q '.workflow_runs[] | select(.name == "Build All Stable Artifacts" or .name == "Build All Artifacts") | .id'); do
+              rm -rf "$dir"
+              gh run download "$run" -R armbian/ci -n build-info-json -D "$dir" 2>/dev/null || continue
+              if jq -e --arg v "$tag" 'any(.[]; .out.artifact_final_version_reversioned == $v)' \
+                  "$dir/artifacts-info.json" > /dev/null; then
+                # The start of the matrix job: the time the build read armbian/build and armbian/cve.
+                for attempt in 1 2 3 4 5; do
+                  job=$(gh api "repos/armbian/ci/actions/runs/${run}/jobs?per_page=20" \
+                    -q '[.jobs[] | select(.name | test("JSON matrix"))][0] | "\(.id) \(.started_at)"' 2>/dev/null || true)
+                  [[ "$job" =~ ^[0-9]+\ [0-9]{4}-[0-9]{2}-[0-9]{2}T ]] && break
+                  sleep $((attempt * 10))
+                done
+                [[ "$job" =~ ^[0-9]+\ [0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || { echo "::error::No matrix job for run ${run}" >&2; return 1; }
+                read -r job_id started <<<"$job"
+                # The armbian/build commit: actions/checkout prints it after the checkout.
+                sha=$(gh api --allow-escape-sequences "repos/armbian/ci/actions/jobs/${job_id}/logs" \
+                  | sed 's/\x1b\[[0-9;]*m//g' \
+                  | awk '/Syncing repository: armbian\/build/ {f=1} f && /git log -1 --format=%H/ {getline; print $2; exit}' || true)
+                [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::warning::No armbian/build commit in the log of job ${job_id}: using the time" >&2; sha=""; }
+                echo "Build of ${tag}: run ${run}, matrix started ${started}, armbian/build ${sha:-?}" >&2
+                echo "$started" > "$dir/time"
+                echo "$sha" > "$dir/build-sha"
+                return 0
+              fi
+            done
+            echo "::error::No build with build-info-json found for ${tag}" >&2
+            return 1
+          }
+          find_build "$CUR" info-cur
+          find_build "$PREV" info-prev
+          {
+            echo "CUR_TIME=$(cat info-cur/time)"
+            echo "PREV_TIME=$(cat info-prev/time)"
+            echo "CUR_BUILD_SHA=$(cat info-cur/build-sha)"
+            echo "PREV_BUILD_SHA=$(cat info-prev/build-sha)"
+          } >> "$GITHUB_ENV"
+
+      - name: Fetch git history (blobless)
+        run: |
+          set -euo pipefail
+          git clone -q --bare --filter=blob:none https://github.com/armbian/build.git build.git
+          git -C build.git fetch -q origin '+refs/heads/main:refs/remotes/origin/main'
+          git clone -q --bare --filter=blob:none https://github.com/armbian/cve.git cve.git
+          git -C cve.git fetch -q origin '+refs/heads/main:refs/remotes/origin/main'
+          # Only the .dyad files: they map each CVE to the stable release that fixed it.
+          git clone -q --depth 1 --no-checkout https://git.kernel.org/pub/scm/linux/security/vulns.git vulns
+          git -C vulns sparse-checkout set --no-cone '/cve/published/*/*.dyad'
+          git -C vulns checkout -q
+          # armbian/linux: the kernel revisions of both builds, CURRENT and EDGE series.
+          git init -q --bare linux.git
+          SINCE=$(date -u -d "$PREV_TIME - 60 days" +%Y-%m-%d)
+          for series in $(python3 -I self/scripts/generate-stable-changelog.py --list-series info-cur/artifacts-info.json); do
+            git -C linux.git fetch -q --filter=blob:none --shallow-since="$SINCE" \
+              https://github.com/armbian/linux.git "linux-${series}.y"
+          done
+
+      - name: Write the changelog
+        run: |
+          set -euo pipefail
+          python3 -I self/scripts/generate-stable-changelog.py \
+            --prev-info info-prev/artifacts-info.json --cur-info info-cur/artifacts-info.json \
+            --prev-version "$PREV" --cur-version "$CUR" \
+            --prev-time "$PREV_TIME" --cur-time "$CUR_TIME" \
+            ${PREV_BUILD_SHA:+--prev-build-sha "$PREV_BUILD_SHA"} ${CUR_BUILD_SHA:+--cur-build-sha "$CUR_BUILD_SHA"} \
+            --build-repo build.git --cve-repo cve.git --vulns vulns --linux-repo linux.git \
+            --out CHANGELOG.md --counts counts.json
+
+      # The AI intro is optional: a failure keeps the counts-only summary.
+      - name: Write the summary
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import json
+          with open("counts.json") as f:
+              counts = json.load(f)
+          line = (f"**{counts.get('kernel_packages', 0)} kernel packages updated · "
+                  f"{counts.get('point_releases', 0)} upstream point releases · "
+                  f"{counts.get('upstream_cves', 0)} upstream CVEs fixed · "
+                  f"{counts.get('cve_patches', 0)} Armbian CVE patches · "
+                  f"{counts.get('framework_prs', 0)} framework PRs**")
+          with open("summary.md", "w") as f:
+              f.write(line + "\n")
+          PY
+          if [[ -z "${ANTHROPIC_API_KEY}" ]]; then echo "No API key: counts only"; exit 0; fi
+          pip install -q 'anthropic>=0.40.0' || { echo "::warning::Cannot install the Anthropic SDK: counts only"; exit 0; }
+          python3 <<'PY' || echo "::warning::AI intro failed: counts only"
+          from anthropic import Anthropic
+          with open("CHANGELOG.md") as f:
+              changelog = f.read()[:60000]
+          msg = Anthropic().messages.create(
+              model="claude-opus-4-7",
+              max_tokens=600,
+              system=("You write the summary of a weekly Armbian stable package release for "
+                      "users of single-board computers. Write 3 or 4 plain sentences. Name the "
+                      "kernel versions, the security work and at most two headline framework "
+                      "changes. No lists, no headings, no marketing words. Use only facts from "
+                      "the changelog."),
+              messages=[{"role": "user", "content": changelog}],
+          )
+          intro = "".join(b.text for b in msg.content if b.type == "text").strip()
+          if intro:
+              with open("summary.md") as f:
+                  line = f.read()
+              with open("summary.md", "w") as f:
+                  f.write(intro + "\n\n" + line)
+          PY
+          cat summary.md
+
+      - name: Write the release block
+        run: |
+          set -euo pipefail
+          URL="https://github.com/${{ github.repository }}/blob/data/data/stable-changelog/${CUR}.md"
+          {
+            echo "<!-- stable-changelog:start -->"
+            echo "## Armbian ${CUR}: stable packages"
+            echo
+            cat summary.md
+            echo
+            echo "📄 [Full changelog](${URL}) · compare with [${PREV}](https://github.com/armbian/ci/releases/tag/${PREV})"
+            echo "<!-- stable-changelog:end -->"
+          } > release-block.md
+          # Run summary: the release block as the release will show it, then the full changelog.
+          {
+            echo "> [!NOTE]"
+            echo "> Preview of the [${CUR} release](https://github.com/armbian/ci/releases/tag/${CUR}) summary."
+            echo
+            cat release-block.md
+            echo
+            echo "---"
+            echo
+            cat CHANGELOG.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # data/ on the data branch is github.armbian.com. The branch rebuild keeps only data/.
+      - name: Publish the full changelog to the data branch
+        run: |
+          set -euo pipefail
+          # The branch rebuild force-pushes, so a retry clones again instead of a rebase.
+          for attempt in 1 2 3; do
+            rm -rf data
+            git clone -q --depth 1 --branch data \
+              "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" data
+            mkdir -p data/data/stable-changelog
+            cp CHANGELOG.md "data/data/stable-changelog/${CUR}.md"
+            # The release block stays on the data branch: a later run finishes a failed release edit.
+            cp release-block.md "data/data/stable-changelog/${CUR}.release.md"
+            git -C data add "data/stable-changelog/${CUR}.md" "data/stable-changelog/${CUR}.release.md"
+            git -C data diff --cached --quiet && { echo "No change"; echo "DATA_CHANGED=no" >> "$GITHUB_ENV"; exit 0; }
+            git -C data -c user.name="github-actions" -c user.email="github-actions@github" \
+              commit -q -m "stable-changelog: ${CUR}"
+            if git -C data push -q origin data; then echo "DATA_CHANGED=yes" >> "$GITHUB_ENV"; exit 0; fi
+            sleep $((attempt * 15))
+          done
+          echo "::error::Cannot push to the data branch"; exit 1
+
+      # A push with GITHUB_TOKEN does not start other workflows: start the github.armbian.com rebuild.
+      - name: Rebuild github.armbian.com
+        if: env.DATA_CHANGED == 'yes'
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: "Web: Directory listing"
+
+      # Edit this release, and finish earlier releases whose edit failed after the data push.
+      - name: Add the summary to the releases
+        run: |
+          set -euo pipefail
+          add_block() {
+            local tag="$1" block="$2"
+            gh release view "$tag" -R armbian/ci --json body -q .body > body.md
+            # Replace an earlier summary, keep the release header.
+            sed -i '/<!-- stable-changelog:start -->/,/<!-- stable-changelog:end -->/d' body.md
+            { cat "$block"; echo; cat body.md; } > release.md
+            gh release edit "$tag" -R armbian/ci --notes-file release.md
+            echo "Summary added to ${tag}"
+          }
+          add_block "$CUR" release-block.md
+          for block in $(ls data/data/stable-changelog/*.release.md | sort -V | tail -n 8); do
+            tag=$(basename "$block" .release.md)
+            [[ "$tag" == "$CUR" ]] && continue
+            body=$(gh release view "$tag" -R armbian/ci --json body -q .body 2>/dev/null) || continue
+            grep -q '<!-- stable-changelog:start -->' <<<"$body" || add_block "$tag" "$block"
+          done
