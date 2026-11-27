@@ -681,7 +681,7 @@ PREVIOUS_INDEX_URL="${PREVIOUS_INDEX_URL:-https://github.armbian.com/armbian-ima
 MIRROR_BOARD_MIN_PERCENT="${MIRROR_BOARD_MIN_PERCENT:-95}"
 if [[ "${MIRROR_BOARD_CHECK:-yes}" == "yes" ]]; then
   awk -F'|' '{split($2, u, "/"); print u[4]}' "$tmpdir/a.txt" | LC_ALL=C sort -u >"$tmpdir/mirror-boards.txt"
-  if curl -fsSL --retry 3 --connect-timeout 10 "$PREVIOUS_INDEX_URL" -o "$tmpdir/previous.json" &&
+  if curl -fsSL --retry 3 --connect-timeout 10 --max-time 120 "$PREVIOUS_INDEX_URL" -o "$tmpdir/previous.json" &&
     jq -r '.assets[].file_url | select(test("^https://dl\\.armbian\\.com/[^/]+/archive/")) | split("/")[3]' \
       "$tmpdir/previous.json" | LC_ALL=C sort -u >"$tmpdir/previous-boards.txt"; then
     mirror_count="$(wc -l <"$tmpdir/mirror-boards.txt")"
