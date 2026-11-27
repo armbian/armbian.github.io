@@ -674,6 +674,30 @@ awk '
   }
 }' >"$tmpdir/a.txt"
 
+# A mirror in mid-sync returns a short listing with exit code 0.
+# Stop when the listing has much fewer boards than the published index.
+# Set MIRROR_BOARD_CHECK=no to skip the check.
+PREVIOUS_INDEX_URL="${PREVIOUS_INDEX_URL:-https://github.armbian.com/armbian-images.json}"
+MIRROR_BOARD_MIN_PERCENT="${MIRROR_BOARD_MIN_PERCENT:-95}"
+if [[ "${MIRROR_BOARD_CHECK:-yes}" == "yes" ]]; then
+  awk -F'|' '{split($2, u, "/"); print u[4]}' "$tmpdir/a.txt" | LC_ALL=C sort -u >"$tmpdir/mirror-boards.txt"
+  if curl -fsSL --retry 3 --connect-timeout 10 --max-time 120 "$PREVIOUS_INDEX_URL" -o "$tmpdir/previous.json" &&
+    jq -r '.assets[].file_url | select(test("^https://dl\\.armbian\\.com/[^/]+/archive/")) | split("/")[3]' \
+      "$tmpdir/previous.json" | LC_ALL=C sort -u >"$tmpdir/previous-boards.txt"; then
+    mirror_count="$(wc -l <"$tmpdir/mirror-boards.txt")"
+    previous_count="$(wc -l <"$tmpdir/previous-boards.txt")"
+    echo "  - Mirror boards: ${mirror_count}, published index: ${previous_count}" >&2
+    if (( mirror_count * 100 < previous_count * MIRROR_BOARD_MIN_PERCENT )); then
+      echo "ERROR: ${SOURCE_OF_TRUTH} lists ${mirror_count} boards, the published index has ${previous_count}." >&2
+      echo "ERROR: The mirror is incomplete or in mid-sync. Boards not on the mirror:" >&2
+      LC_ALL=C comm -13 "$tmpdir/mirror-boards.txt" "$tmpdir/previous-boards.txt" | sed 's/^/    /' >&2
+      exit 1
+    fi
+  else
+    echo "WARNING: cannot read ${PREVIOUS_INDEX_URL}; mirror board check skipped" >&2
+  fi
+fi
+
 # GitHub feed
 # community  -> community images
 # ci         -> nightly (trunk) images   (moved here from armbian/os)
