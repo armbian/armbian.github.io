@@ -727,18 +727,48 @@ def select_one_branch_per_board(boards):
     return list(seen_boards.values())
 
 
-# Manual target items that already build a UFS image:
-# "{ BOARD: x, BRANCH: y, ENABLE_EXTENSIONS: "...,ufs,..." }"
-MANUAL_UFS_ITEM_RE = re.compile(
-    r'BOARD:\s*([\w.+-]+)\s*,\s*BRANCH:\s*([\w.+-]+)\s*,\s*ENABLE_EXTENSIONS:\s*"([^"]*)"')
+# riscv64 and loongarch images come from dedicated targets with no UFS lists.
+UFS_UNSUPPORTED_ARCHES = ('riscv64', 'loong64', 'loongarch64')
 
 
 def manual_ufs_items(manual_content):
-    """(board, branch) pairs that a .manual file already builds with the ufs extension."""
+    """
+    (board, branch) pairs that a .manual file already builds with the ufs
+    extension. The manual YAML is parsed, so commented-out items and items
+    of targets with `enabled: no` don't count.
+    """
+    if not manual_content or not manual_content.strip():
+        return set()
+
+    # The manual content uses anchors defined in the generated header
+    # (e.g. *armbian-gha). Stub them so it parses on its own.
+    defined = set(re.findall(r'&([\w-]+)', manual_content))
+    stubs = ''.join(f'{name}: &{name} {{}}\n'
+                    for name in sorted(set(re.findall(r'\*([\w-]+)', manual_content)) - defined))
+    indented = '\n'.join('  ' + line if line.strip() else line for line in manual_content.split('\n'))
+    try:
+        targets = (yaml.safe_load(stubs + 'targets:\n' + indented) or {}).get('targets') or {}
+    except yaml.YAMLError as e:
+        print(f"Warning: cannot parse manual targets to find UFS items: {e}", file=sys.stderr)
+        return set()
+
+    def flatten(items):
+        for item in items or []:
+            if isinstance(item, list):
+                yield from flatten(item)
+            else:
+                yield item
+
     pairs = set()
-    for board, branch, extensions in MANUAL_UFS_ITEM_RE.findall(manual_content or ''):
-        if 'ufs' in (e.strip() for e in extensions.split(',')):
-            pairs.add((board, branch))
+    for target in targets.values():
+        if not isinstance(target, dict) or target.get('enabled', True) is False:
+            continue
+        for item in flatten(target.get('items')):
+            if not isinstance(item, dict):
+                continue
+            extensions = str(item.get('ENABLE_EXTENSIONS', ''))
+            if 'ufs' in (e.strip() for e in extensions.split(',')):
+                pairs.add((str(item.get('BOARD')), str(item.get('BRANCH'))))
     return pairs
 
 
@@ -759,8 +789,9 @@ def select_ufs_variants(boards, manual_content='', scope=''):
             hand-written UFS item to UFS_TARGET never builds it twice.
     scope: name used in warnings.
 
-    riscv64 and loongarch boards are skipped with a warning: their images
-    are built by dedicated targets that have no UFS list yet.
+    riscv64 and loongarch boards (by ARCH, headless ones too) are skipped
+    with a warning: their images are built by dedicated targets that have
+    no UFS list yet.
     """
     by_board = defaultdict(dict)
     for board_data in boards:
@@ -783,8 +814,10 @@ def select_ufs_variants(boards, manual_content='', scope=''):
                       file=sys.stderr)
                 continue
             board_data = branches[branch]
-            if board_data['is_fast'] in ('riscv64', 'loongarch'):
-                print(f"Warning: {scope}: {board} UFS_TARGET skipped, no UFS targets for {board_data['is_fast']}",
+            # Checked on ARCH, not is_fast: headless boards are classified
+            # None before their architecture is looked at.
+            if board_data['arch'] in UFS_UNSUPPORTED_ARCHES:
+                print(f"Warning: {scope}: {board} UFS_TARGET skipped, no UFS targets for {board_data['arch']}",
                       file=sys.stderr)
                 continue
             if (board, branch) in already_manual:
@@ -1382,7 +1415,8 @@ targets:
             yaml += '      - *stable-edge-slow-hdmi\n'
 
     # Ubuntu stable GNOME desktop (fast HDMI only)
-    if current_fast or legacy_fast or edge_fast:
+    ufs_fast = any(v['is_fast'] is True for v in ufs_variants)
+    if current_fast or legacy_fast or edge_fast or ufs_fast:
         yaml += """
   # Ubuntu stable GNOME desktop (fast HDMI only)
   desktop-stable-ubuntu-gnome:
@@ -2071,7 +2105,7 @@ targets:
     # board gets a CLI Ubuntu image too, not just the headless ones.
     if (current_fast or current_slow or current_headless or current_riscv64 or
         vendor_fast or vendor_slow or vendor_headless or vendor_riscv64 or
-        edge_fast or edge_slow or edge_headless or edge_riscv64):
+        edge_fast or edge_slow or edge_headless or edge_riscv64 or ufs_variants):
         yaml += """
   # Ubuntu minimal CLI for all community boards
   community-noble-minimal:

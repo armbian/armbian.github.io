@@ -216,8 +216,8 @@ The variable reaches the generator through `BOARD_TOP_LEVEL_VARS` in `image-info
 
 - `UFS_TARGET` is applied on its own: `KERNEL_TEST_TARGET` and the one-branch-per-board nightly rule don't drop a listed branch. The scope's `.blacklist` still applies.
 - A branch the board doesn't build is skipped with a warning, e.g. one missing from `KERNEL_TARGET`.
-- riscv64 and loongarch boards are skipped with a warning; their dedicated targets have no UFS lists.
-- A board/branch that the scope's `.manual` file already builds with `ufs` is skipped, so moving a board from hand-written UFS items to `UFS_TARGET` never builds an image twice. Remove the `.manual` items once the board config sets `UFS_TARGET`.
+- riscv64 and loongarch boards (by `ARCH`, headless ones too) are skipped with a warning; their dedicated targets have no UFS lists.
+- A board/branch that the scope's `.manual` file already builds with `ufs` is skipped (commented-out items and targets with `enabled: no` don't count), so moving a board from hand-written UFS items to `UFS_TARGET` never builds an image twice. Remove the `.manual` items once the board config sets `UFS_TARGET`.
 - Boards whose only image is a UFS image set `SECTOR_SIZE=4096` in the board config instead.
 
 ## Examples
